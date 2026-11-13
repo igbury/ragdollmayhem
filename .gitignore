@@ -1,0 +1,13 @@
+# Project place file
+/ragdollmayhem.rbxlx
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+sourcemap.json
+
+rojo.exe
+
+# Blender backup files
+*.blend1
