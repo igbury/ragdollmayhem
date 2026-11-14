@@ -21,6 +21,7 @@ local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
 local Menu = require(script:WaitForChild("Menu"))
+require(script:WaitForChild("Music")) -- starts the background playlist
 
 -- Sprint run cycle (assets/anims/SprintFlail.json), built in memory, no upload.
 -- ponytail: a registered id is session-local, so other players see the default run; upload
