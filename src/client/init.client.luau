@@ -27,9 +27,50 @@ local sprintAnim = Instance.new("Animation")
 sprintAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
 	:RegisterKeyframeSequence(require(script:WaitForChild("SprintFlail")))
 local sprintTrack: AnimationTrack? = nil
+local rollAnim = Instance.new("Animation") -- same deal, see RollForward
+rollAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("RollForward")))
+local rollTrack: AnimationTrack? = nil
+local diveAnim = Instance.new("Animation") -- slam mode pose, see SupermanDive
+diveAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("SupermanDive")))
+local diveTrack: AnimationTrack? = nil
+-- wall run cycle, one mirror per wall side (1 = wall on the right, -1 = left), see WallRun
+local wallRunAnims = {}
+for _, side in { 1, -1 } do
+	local anim = Instance.new("Animation")
+	anim.AnimationId = game:GetService("KeyframeSequenceProvider")
+		:RegisterKeyframeSequence(require(script:WaitForChild("WallRun"))(side))
+	wallRunAnims[side] = anim
+end
+local wallRunTracks: { [number]: AnimationTrack } = {}
+local clingAnim = Instance.new("Animation") -- holding on to the wall, see WallCling
+clingAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("WallCling")))
+local clingTrack: AnimationTrack? = nil
+local flipAnim = Instance.new("Animation") -- backflip off the wall, see WallFlip
+flipAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("WallFlip")))
+local flipTrack: AnimationTrack? = nil
+local kickAnim = Instance.new("Animation") -- left click in third person, see HighKick
+kickAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("HighKick")))
+local kickTrack: AnimationTrack? = nil
+local flipUntil = 0
+
+-- Sounds (assets/sfx/*.wav, uploaded as Audio). An empty id stays silent.
+-- ponytail: played locally, so only you hear your own; add a remote if others should.
+local SFX = {
+	Jump = "122753128464765", -- assets/sfx/Jump.wav, wall jump / double jump / ledge launch / wall flip
+	Kick = "111158906695255", -- assets/sfx/Kick.wav
+	Slam = "99067212893039", -- ground slam (R in the air) hitting the ground
+	Run = "112506453896973", -- assets/sfx/Run.wav, looped while sprinting on the ground or wall running
+}
+local sounds: { [string]: Sound } = {} -- the body keeps facing the wall it flipped off until the flip is done
 
 local PUNCH_RANGE = 9
 local PUNCH_INTERVAL = 0.28
+local KICK_INTERVAL = 0.7
 local GRAB_RANGE = 13
 local THROW_SPEED = 90
 local SKIN = Color3.fromRGB(240, 240, 240)
@@ -42,6 +83,10 @@ rayParams.FilterType = Enum.RaycastFilterType.Exclude
 local holding = nil -- { part, dist, since }
 local punching = false
 local lastPunch = 0
+local lastKick = 0
+local kickParams = OverlapParams.new()
+kickParams.FilterType = Enum.RaycastFilterType.Include
+kickParams.FilterDescendantsInstances = { dummyFolder }
 local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
 local lastWeaponUse = 0
@@ -380,6 +425,38 @@ local function punch()
 	end
 end
 
+-- Third-person attack: the foot lands in front of the body, wherever the camera points.
+local function kick()
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if os.clock() - lastKick < KICK_INTERVAL or not root or not kickTrack then
+		return
+	end
+	lastKick = os.clock()
+	kickTrack:Play(0.05)
+	if sounds.Kick then
+		sounds.Kick:Play()
+	end
+	local running = sprint > 0.5
+	task.delay(0.18, function() -- leg fully out
+		if running then -- running kick: hits like a ground slam, server does crater, damage and fx
+			actionRemote:FireServer("kick")
+			return
+		end
+		local foot = root.Position + root.CFrame.LookVector * 3.5 + Vector3.yAxis
+		local best, bestDist = nil, math.huge
+		for _, part in workspace:GetPartBoundsInRadius(foot, 3.5, kickParams) do
+			local dist = (part.Position - foot).Magnitude
+			if dist < bestDist then
+				best, bestDist = part, dist
+			end
+		end
+		if best then
+			punchRemote:FireServer(best)
+			Fx.hit(best.Position)
+		end
+	end)
+end
+
 local function drop(velocity: Vector3)
 	grabRemote:FireServer("release", velocity)
 	holding = nil
@@ -399,6 +476,13 @@ local function toggleGrab()
 	end
 end
 
+-- Ground slam: R in the air arms it; the landing hits the ground with both hands, harder the
+-- faster you were falling (see updateLanding).
+local slamming = false
+-- the wall being run along or clung to (see Wall running); nil when not on a wall
+local wall: { normal: Vector3, key: Enum.KeyCode, velocity: Vector3, along: Vector3, clinging: boolean?, lookedAlong: boolean? }? = nil
+local fallSpeed = 0
+
 UserInputService.InputBegan:Connect(function(input, processed)
 	if processed or Menu.active then
 		return
@@ -412,7 +496,11 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		local weapon = Weapons[weaponIndex]
 		while punching and not holding and Weapons[weaponIndex] == weapon do
 			if not weapon.kind then
-				punch()
+				if isFirstPerson() then
+					punch()
+				else
+					kick()
+				end
 			else
 				useWeapon(weapon)
 			end
@@ -441,6 +529,17 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			actionRemote:FireServer("spawn", result.Position)
 		end
 	elseif input.KeyCode == Enum.KeyCode.R then
+		if wall then
+			return -- no slam (or revive) while running along or hanging on a wall
+		end
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.FloorMaterial == Enum.Material.Air and humanoid.Health > 0 then
+			slamming = true -- slam mode: lasts until you hit the ground
+			if diveTrack then
+				diveTrack:Play(0.2)
+			end
+			return
+		end
 		local result = aim(60)
 		actionRemote:FireServer("revive", result and dummyOf(result.Instance) and result.Instance)
 	elseif input.KeyCode == Enum.KeyCode.V then
@@ -491,9 +590,38 @@ end)
 -- Own ragdoll: the client owns its humanoid, so it switches the state itself.
 local function onCharacter(char: Model)
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+	local root = char:WaitForChild("HumanoidRootPart")
+	for name, id in SFX do
+		local sound = Instance.new("Sound")
+		sound.Name = name .. "Sfx"
+		sound.SoundId = id ~= "" and "rbxassetid://" .. id or ""
+		sound.Looped = name == "Run"
+		sound.Volume = name == "Run" and 0.4 or 0.7
+		sound.Parent = root
+		sounds[name] = sound
+	end
 	sprintTrack = humanoid:WaitForChild("Animator"):LoadAnimation(sprintAnim)
 	sprintTrack.Priority = Enum.AnimationPriority.Movement -- over the default run (Core)
 	sprintTrack.Looped = true
+	rollTrack = humanoid.Animator:LoadAnimation(rollAnim)
+	rollTrack.Priority = Enum.AnimationPriority.Action4
+	diveTrack = humanoid.Animator:LoadAnimation(diveAnim)
+	diveTrack.Priority = Enum.AnimationPriority.Action4
+	diveTrack.Looped = true
+	for side, anim in wallRunAnims do
+		local track = humanoid.Animator:LoadAnimation(anim)
+		track.Priority = Enum.AnimationPriority.Action -- over the sprint cycle (Movement)
+		track.Looped = true
+		wallRunTracks[side] = track
+	end
+	clingTrack = humanoid.Animator:LoadAnimation(clingAnim)
+	clingTrack.Priority = Enum.AnimationPriority.Action
+	clingTrack.Looped = true
+	flipTrack = humanoid.Animator:LoadAnimation(flipAnim)
+	flipTrack.Priority = Enum.AnimationPriority.Action4
+	kickTrack = humanoid.Animator:LoadAnimation(kickAnim)
+	kickTrack.Priority = Enum.AnimationPriority.Action4
+	slamming = false
 	task.spawn(function()
 		if not player:HasAppearanceLoaded() then
 			player.CharacterAppearanceLoaded:Wait()
@@ -514,6 +642,517 @@ if player.Character then
 	task.spawn(onCharacter, player.Character)
 end
 player.CharacterAdded:Connect(onCharacter)
+
+-- Wall running ------------------------------------------------------------------
+-- Jump at a wall (in front or beside you) and hold A or D to run along it left or right;
+-- look up to run up it. Letting go of the key drops you; WALL_TIME seconds per jump,
+-- refilled on landing. Client-side: we own our character's physics.
+local WALL_SPEED = 26
+local WALL_TIME = 3.5
+local WALL_REACH = 3.2
+local WALL_FADE = 0.7
+local CARRY_TIME = 0.5
+local AIR_STEER = 25 -- how fast WASD turns a boost in the air (per second); high = near-free air control
+local FALL_GRAVITY = 0.5 -- gravity multiplier while falling (going down, not on a wall)
+local carry, carryStart, carryTime = Vector3.zero, 0, CARRY_TIME
+local nextScrape = 0
+local SPARK = Color3.fromRGB(255, 205, 90)
+local regrabAt = 0 -- no grabbing a wall before this (set by the wall jump)
+local steerLockUntil = 0 -- no air steering before this: W held at a wall would turn a push-off back into it
+local CLING_JUMP_LOCK = 0.4
+local doubleJumpFrom, doubleJumpUntil = 0, 0 -- double jump window, opened by the wall jump
+local groundedAt, groundedY, ledgeUsed = 0, 0, false -- last time/height on the ground; ledge boost spent this airtime
+local WALL_KEYS = { [Enum.KeyCode.D] = 1, [Enum.KeyCode.A] = -1 }
+local wallParams = RaycastParams.new()
+wallParams.FilterType = Enum.RaycastFilterType.Exclude
+-- `wall` (the current wall run / cling) is declared up by the input handler, which needs it too
+
+-- Mantle: grabbing a wall close under its top edge pulls you up and over onto it.
+local MANTLE_REACH = 5 -- the top may be up to this far above the root
+local MANTLE_TIME = 0.4
+local mantle: { from: Vector3, over: Vector3, to: Vector3, face: Vector3, t: number }? = nil
+
+-- The standing spot on top of the wall in front (normal points out of the wall), or nil when the
+-- wall goes on up past reach, the top isn't flat, or there's no headroom to stand there.
+local function findLedge(root: BasePart, humanoid: Humanoid, normal: Vector3, wallPoint: Vector3): Vector3?
+	local above = root.Position + Vector3.yAxis * (MANTLE_REACH + 1)
+	if workspace:Raycast(above, -normal * (WALL_REACH + 1), wallParams) then
+		return nil -- still wall up there: not near the edge
+	end
+	-- probe the top a bit past the wall face (measured from where the wall was hit), so you
+	-- land with your feet on it rather than teetering on the edge
+	local probe = Vector3.new(wallPoint.X, above.Y, wallPoint.Z) - normal * 1.2
+	local top = workspace:Raycast(probe, -Vector3.yAxis * (MANTLE_REACH + 4), wallParams)
+	if not (top and top.Normal.Y > 0.7 and top.Position.Y > root.Position.Y - 2) then
+		return nil
+	end
+	local stand = humanoid.HipHeight + root.Size.Y / 2
+	if workspace:Raycast(top.Position + Vector3.yAxis * 0.1, Vector3.yAxis * (stand * 2), wallParams) then
+		return nil -- no room to stand up there
+	end
+	return top.Position + Vector3.yAxis * stand
+end
+-- Turning the camera into the wall mid-run grabs on: you hang there (the run timer pauses)
+-- until you look back along the wall, which runs on that way, or jump off it.
+local CLING_IN, CLING_OUT = 0.75, 0.55 -- camera-into-wall dot to grab on / let go (gap stops flicker)
+local wallLeft = WALL_TIME
+
+-- Holds a horizontal velocity against Humanoid air/ground control (which wins over a plain
+-- AssemblyLinearVelocity write within a physics step); Y stays free so gravity still works.
+-- nil releases it.
+local function hold(root: BasePart, velocity: Vector3?)
+	local mover = root:FindFirstChild("HoldVelocity") :: LinearVelocity?
+	if not mover then
+		mover = Instance.new("LinearVelocity")
+		mover.Name = "HoldVelocity"
+		mover.Attachment0 = root:FindFirstChild("RootAttachment") :: Attachment
+		mover.ForceLimitMode = Enum.ForceLimitMode.PerAxis
+		mover.MaxAxesForce = Vector3.new(1e5, 0, 1e5)
+		mover.RelativeTo = Enum.ActuatorRelativeTo.World
+		mover.Enabled = false
+		mover.Parent = root
+	end
+	mover.Enabled = velocity ~= nil
+	mover.VectorVelocity = velocity or Vector3.zero
+end
+
+local function findWall(root: BasePart): RaycastResult?
+	local look, right = root.CFrame.LookVector, root.CFrame.RightVector
+	for _, dir in { look, right, -right, (look + right).Unit, (look - right).Unit } do
+		local hit = workspace:Raycast(root.Position, dir * WALL_REACH, wallParams)
+		if hit and math.abs(hit.Normal.Y) < 0.3 then -- walls only, not floors or ramps
+			return hit
+		end
+	end
+	return nil
+end
+
+local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: BasePart)
+	wallParams.FilterDescendantsInstances = { char, workspace:FindFirstChild("Dummies") }
+	local grounded = humanoid.FloorMaterial ~= Enum.Material.Air
+	local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
+	if grounded then
+		wallLeft = WALL_TIME
+		doubleJumpUntil = 0
+		groundedAt, groundedY, ledgeUsed = os.clock(), root.Position.Y, false
+	end
+	if mantle then
+		-- up along the wall first, then forward onto the top; physics is held still meanwhile
+		hold(root, nil)
+		mantle.t += dt / MANTLE_TIME
+		local t = math.min(mantle.t, 1)
+		local p = t < 0.6 and mantle.from:Lerp(mantle.over, t / 0.6) or mantle.over:Lerp(mantle.to, (t - 0.6) / 0.4)
+		root.CFrame = CFrame.lookAt(p, p + mantle.face)
+		root.AssemblyLinearVelocity = Vector3.zero
+		if t >= 1 or not able then
+			mantle = nil
+		end
+		return
+	end
+	if wall then
+		hold(root, nil) -- the run sets velocity itself
+		local flat = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+		flat = flat.Magnitude > 0.01 and flat.Unit or root.CFrame.LookVector
+		local into = flat:Dot(-wall.normal)
+		-- runs often start looking straight at the wall: only grab on once you've looked along it
+		wall.lookedAlong = wall.lookedAlong or into < CLING_OUT
+		-- W while looking at the wall grabs on too (and holds you there without A/D)
+		local forward = UserInputService:IsKeyDown(Enum.KeyCode.W)
+		local clinging = (wall.lookedAlong or forward) and into > (wall.clinging and CLING_OUT or CLING_IN)
+		if wall.clinging and not clinging then
+			-- let go of the cling: run on whichever way along the wall you now look
+			wall.along = wall.along:Dot(flat) >= 0 and wall.along or -wall.along
+		end
+		wall.clinging = clinging
+		if not clinging then
+			wallLeft -= dt
+		end
+		local hit = workspace:Raycast(root.Position, -wall.normal * (WALL_REACH + 1), wallParams)
+		local held = UserInputService:IsKeyDown(wall.key) or (clinging and forward)
+		if not (held and wallLeft > 0 and not grounded and hit and able) then
+			-- keep the run's momentum and peel off gently, so the fall carries on from the run
+			-- from the run's own last velocity: the root's can already be bent by contacts
+			local v = wall.velocity + wall.normal * 8
+			root.AssemblyLinearVelocity = v
+			carry, carryStart, carryTime = v * Vector3.new(1, 0, 1), os.clock(), CARRY_TIME
+			wall = nil
+			return
+		end
+		local normal = hit.Normal
+		wall.normal = normal
+		-- keep the direction picked on grab: re-deciding from the camera every frame flips it
+		-- (you run backwards) as soon as you turn to look along the wall
+		local along = normal:Cross(Vector3.yAxis).Unit
+		if along:Dot(wall.along) < 0 then
+			along = -along
+		end
+		wall.along = along
+		if clinging then
+			local stand = findLedge(root, humanoid, normal, hit.Position)
+			if stand then
+				-- grabbed near the top edge: pull up onto it instead of hanging
+				local face = (-normal * Vector3.new(1, 0, 1)).Unit
+				mantle = {
+					from = root.Position,
+					over = Vector3.new(root.Position.X, stand.Y + 0.5, root.Position.Z),
+					to = stand + face * 0.8,
+					face = face,
+					t = 0,
+				}
+				flipUntil = os.clock() + MANTLE_TIME -- keep facing the wall while climbing
+				wall = nil
+				return
+			end
+			-- hang still: cancel this frame's gravity, press lightly into the wall, face it
+			wall.velocity = Vector3.zero
+			root.AssemblyLinearVelocity = Vector3.yAxis * workspace.Gravity * dt - normal * 2
+			root.CFrame = CFrame.lookAt(root.Position, root.Position - normal)
+			return
+		end
+		-- looking up bends the run up the wall
+		local dir = (along + Vector3.yAxis * math.max(camera.CFrame.LookVector.Y, 0) * 2.5).Unit
+		-- grip fades over the last WALL_FADE seconds: the run slows and you start sliding down
+		-- instead of dropping off all at once
+		local grip = math.clamp(wallLeft / WALL_FADE, 0, 1)
+		local slide = Vector3.yAxis * (workspace.Gravity * dt - 20 * (1 - grip)) -- gravity term cancels this frame's fall
+		wall.velocity = dir * WALL_SPEED * (0.3 + 0.7 * grip)
+		root.AssemblyLinearVelocity = wall.velocity - normal * 4 + slide
+		-- face the run direction, side to the wall (AutoRotate is off while running, see below)
+		root.CFrame = CFrame.lookAt(root.Position, root.Position + along)
+		if os.clock() > nextScrape then -- sparks scraping off where the feet hit the wall
+			nextScrape = os.clock() + 0.07
+			Fx.sparks(root.Position - normal * 1.2 - Vector3.yAxis * 2.5, 2, 2.5, SPARK, -dir)
+		end
+		return
+	end
+	-- Humanoid air control would kill the run's sideways speed in a frame or two; hold it and
+	-- let it fade over CARRY_TIME instead
+	local carried = (os.clock() - carryStart) / carryTime
+	local input = humanoid.MoveDirection
+	if carried < 1 and not grounded and input.Magnitude > 0.1 and os.clock() > steerLockUntil then
+		-- simple air steering: WASD bends the carried speed toward the input (S brakes it)
+		carry = carry:Lerp(input.Unit * carry.Magnitude, math.min(dt * AIR_STEER, 1))
+	end
+	hold(root, carried < 1 and not grounded and able and carry * (1 - carried * carried) or nil)
+	if not grounded and able and root.AssemblyLinearVelocity.Y < 0 then
+		-- scaled gravity on the way down only, so jumps keep their height but float down slower
+		root.AssemblyLinearVelocity -= Vector3.yAxis * workspace.Gravity * (FALL_GRAVITY - 1) * dt
+	end
+	if grounded or not able or wallLeft <= 0 or os.clock() < regrabAt then
+		return
+	end
+	for key, side in WALL_KEYS do
+		local hit = UserInputService:IsKeyDown(key) and findWall(root)
+		if hit then
+			-- facing the wall, D runs right and A left; with the wall beside you (the key's
+			-- side tells nothing about along-wall direction) you run the way you are looking
+			local along = hit.Normal:Cross(Vector3.yAxis).Unit
+			local flat = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+			local sideways = along:Dot(camera.CFrame.RightVector) * side
+			local pick = math.abs(sideways) > 0.5 and sideways or along:Dot(flat)
+			wall = { normal = hit.Normal, key = key, velocity = Vector3.zero, along = pick < 0 and -along or along }
+			return
+		end
+	end
+	-- W in the air while looking at a big wall grabs straight on (no run first). "Big": the
+	-- wall is there both at the hips and a body height above, so crates and low ledges don't count.
+	if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+		local flat = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+		if flat.Magnitude < 0.01 then
+			return
+		end
+		flat = flat.Unit
+		local hit = workspace:Raycast(root.Position, flat * WALL_REACH, wallParams)
+		local high = hit and workspace:Raycast(root.Position + Vector3.yAxis * 5, flat * (WALL_REACH + 1), wallParams)
+		if hit and high and math.abs(hit.Normal.Y) < 0.3 then
+			wall = {
+				normal = hit.Normal, key = Enum.KeyCode.W, velocity = Vector3.zero,
+				along = hit.Normal:Cross(Vector3.yAxis).Unit, clinging = true, lookedAlong = true,
+			}
+		end
+	end
+end
+
+-- Landing roll -------------------------------------------------------------------
+-- Falling more than ROLL_HEIGHT (from the highest point of the jump or wall run) ends in a
+-- forward roll that carries you on instead of a dead stop.
+local ROLL_HEIGHT = 16
+local ROLL_TIME = 0.65 -- the body animation's own length
+local FP_ROLL_TIME = 0.42 -- first person: only the camera rolls, so it can be quicker
+local ROLL_SPEED = 22
+local airPeak: number? = nil
+local rollUntil = 0
+local rollTime = ROLL_TIME
+local rollFirstPerson = false
+local rollDir = Vector3.zAxis
+
+local function updateLanding(humanoid: Humanoid, root: BasePart, able: boolean)
+	local y = root.Position.Y
+	if humanoid.FloorMaterial == Enum.Material.Air then
+		airPeak = math.max(airPeak or y, y)
+		fallSpeed = math.max(-root.AssemblyLinearVelocity.Y, 0) -- last airborne frame = impact speed
+		if slamming and math.random() < 0.5 then -- red trail streaming off the dive
+			Fx.sparks(root.Position - Vector3.yAxis * 2, 2, 1.5, Color3.fromRGB(255, 40, 40), Vector3.yAxis, 0.3)
+		end
+		return
+	end
+	if slamming then
+		slamming = false
+		if diveTrack then
+			diveTrack:Stop(0.1)
+		end
+		airPeak = nil -- the slam replaces the landing roll
+		if able then
+			hands.left.t, hands.right.t = 0, 0 -- both fists into the ground
+			actionRemote:FireServer("slam", fallSpeed)
+			sounds.Slam:Play()
+		end
+		return
+	end
+	if airPeak and airPeak - y > ROLL_HEIGHT and able and rollTrack then
+		rollFirstPerson = isFirstPerson()
+		rollTime = rollFirstPerson and FP_ROLL_TIME or ROLL_TIME
+		rollTrack:Play(0.05, 1, ROLL_TIME / rollTime) -- body keeps pace with the camera
+		rollUntil = os.clock() + rollTime
+		local flat = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		rollDir = flat.Magnitude > 0.01 and flat.Unit or Vector3.zAxis
+	end
+	airPeak = nil
+	local left = rollUntil - os.clock()
+	if left > 0 and able then -- roll carries you forward, easing off at the end
+		hold(root, rollDir * ROLL_SPEED * math.min(left / 0.25, 1))
+	end
+end
+
+-- Movement screen effects ------------------------------------------------------------
+-- White streaks on the screen edges (strongest on the wall's side) while wall running, and a
+-- flash of them plus an FOV kick on the jumps. UI gradients, no textures, like the rest of Fx.
+local AIR = Color3.fromRGB(120, 220, 255)
+local edgeGui = Instance.new("ScreenGui")
+edgeGui.Name = "MoveFx"
+edgeGui.IgnoreGuiInset = true
+edgeGui.ResetOnSpawn = false
+local edges = {}
+for _, side in { -1, 1 } do
+	local frame = Instance.new("Frame")
+	frame.BorderSizePixel = 0
+	frame.BackgroundColor3 = Color3.new(1, 1, 1)
+	frame.BackgroundTransparency = 1
+	frame.Size = UDim2.fromScale(0.3, 1)
+	frame.Position = UDim2.fromScale(side < 0 and 0 or 0.7, 0)
+	local gradient = Instance.new("UIGradient") -- solid at the screen edge, clear toward the middle
+	gradient.Transparency = NumberSequence.new(side < 0 and 0.2 or 1, side < 0 and 1 or 0.2)
+	gradient.Parent = frame
+	frame.Parent = edgeGui
+	edges[side] = frame
+end
+edgeGui.Parent = player:WaitForChild("PlayerGui")
+local fovKick, flash, wallGlow, moveFov = 0, 0, 0, 0
+
+local function kick(fov: number, flashAmount: number)
+	fovKick = math.max(fovKick, fov)
+	flash = math.max(flash, flashAmount)
+end
+
+-- Wall jump and double jump --------------------------------------------------------
+-- Space on a wall kicks off it with a boost forward (the run direction) and up, then gives
+-- DOUBLE_JUMP_WINDOW seconds for one more jump in the air: a strong boost toward where you
+-- look and up. Landing closes the window.
+local WALL_JUMP_ALONG = 30
+local WALL_JUMP_AWAY = 18
+local WALL_JUMP_UP = 55
+local DOUBLE_JUMP_FORWARD = 48
+local DOUBLE_JUMP_UP = 65
+local DOUBLE_JUMP_WINDOW = 3
+local LEDGE_DROP = 10 -- a jump off an edge over a drop deeper than this gets the same launch
+local LEDGE_COOLDOWN = 1.5 -- seconds between ledge launches
+local ledgeReadyAt = 0
+local LEDGE_GRACE = 2 -- seconds after leaving the ground (walking or jumping off) the ledge launch can still be triggered
+
+local function zap() -- the special jumps' sound, not the plain jump
+	if sounds.Jump then
+		sounds.Jump:Play()
+	end
+end
+
+-- The double jump's launch: a strong boost toward where you look, and up.
+local function launch(root: BasePart, now: number)
+	local flat = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+	flat = flat.Magnitude > 0.01 and flat.Unit or root.CFrame.LookVector
+	local v = flat * DOUBLE_JUMP_FORWARD + Vector3.yAxis * DOUBLE_JUMP_UP
+	root.AssemblyLinearVelocity = v
+	carry, carryStart, carryTime = v * Vector3.new(1, 0, 1), now, 0.9 -- a long carry: it's the big one
+	local feet = root.Position - Vector3.yAxis * 3
+	Fx.ring(CFrame.new(feet), 1, 10, 0.4, AIR, { thick = 0.7, sides = 8, spin = 1 })
+	Fx.sparks(feet, 12, 8, AIR, -flat)
+	for _ = 1, 10 do
+		Fx.speedLine()
+	end
+	Fx.dust(feet, 5, 3, 0.8)
+	Fx.shake(root.Position, 0.5, 0.25)
+	kick(30, 0.8)
+	zap()
+end
+
+-- Standing at an edge with a deep drop just ahead (where you look): no wall in the way, and
+-- nothing within LEDGE_DROP studs below your feet a couple of steps out.
+local function ledgeAhead(root: BasePart, humanoid: Humanoid): boolean
+	-- where you're running, else where you look
+	local flat = humanoid.MoveDirection.Magnitude > 0.1 and humanoid.MoveDirection or camera.CFrame.LookVector
+	flat *= Vector3.new(1, 0, 1)
+	if flat.Magnitude < 0.01 then
+		return false
+	end
+	flat = flat.Unit
+	if workspace:Raycast(root.Position, flat * 3, wallParams) then
+		return false
+	end
+	-- measured from the height you left the ground at, so a plain jump over flat ground doesn't count
+	local toFeet = humanoid.HipHeight + root.Size.Y / 2 + math.max(root.Position.Y - groundedY, 0)
+	for _, dist in { 0, 1.5, 3, 5, 7 } do -- 0: already out over the drop (pressed mid-air)
+		if not workspace:Raycast(root.Position + flat * dist, -Vector3.yAxis * (toFeet + LEDGE_DROP), wallParams) then
+			return true
+		end
+	end
+	return false
+end
+
+-- InputBegan rather than JumpRequest: JumpRequest repeats while Space is held, and the
+-- double jump should need a fresh press. Not gated on `processed`: the default jump binding
+-- may claim Space.
+UserInputService.InputBegan:Connect(function(input)
+	if input.KeyCode ~= Enum.KeyCode.Space or Menu.active or UserInputService:GetFocusedTextBox() then
+		return
+	end
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	if not (root and humanoid) or humanoid.Health <= 0 or char:GetAttribute("Ragdolled") then
+		return
+	end
+	local now = os.clock()
+	if wall then
+		-- off a cling there's no run to carry on: push back off the wall instead, and keep W (still
+		-- held, still facing the wall) from steering you straight back into it for a moment
+		local v = wall.clinging and wall.normal * WALL_JUMP_AWAY * 1.6 + Vector3.yAxis * WALL_JUMP_UP
+			or wall.along * WALL_JUMP_ALONG + wall.normal * WALL_JUMP_AWAY + Vector3.yAxis * WALL_JUMP_UP
+		if wall.clinging then
+			steerLockUntil = now + CLING_JUMP_LOCK
+		end
+		root.AssemblyLinearVelocity = v
+		carry, carryStart, carryTime = v * Vector3.new(1, 0, 1), now, 0.6 -- keep the kick against air control
+		local push = root.Position - wall.normal * 1.2 -- the spot on the wall you kick from
+		Fx.ring(CFrame.fromMatrix(push, wall.along, wall.normal), 1, 8, 0.35, AIR, { thick = 0.5 })
+		Fx.sparks(push, 10, 7, AIR, wall.normal)
+		wall = nil
+		regrabAt = now + 0.4 -- A/D is probably still held: don't snap straight back on
+		doubleJumpFrom, doubleJumpUntil = now + 0.15, now + DOUBLE_JUMP_WINDOW
+		Fx.dust(root.Position - Vector3.new(0, 3, 0), 4, 2, 0.6)
+		Fx.shake(root.Position, 0.35, 0.2)
+		kick(20, 0.55)
+		zap()
+	elseif now > doubleJumpFrom and now < doubleJumpUntil and humanoid.FloorMaterial == Enum.Material.Air then
+		doubleJumpUntil = 0 -- one per window
+		launch(root, now)
+	elseif not ledgeUsed and now > ledgeReadyAt and now - groundedAt < LEDGE_GRACE and ledgeAhead(root, humanoid) then
+		-- leaping off an edge over a drop: from the ground, or a press shortly after jumping off it
+		ledgeUsed = humanoid.FloorMaterial == Enum.Material.Air
+		ledgeReadyAt = now + LEDGE_COOLDOWN
+		launch(root, now)
+	end
+end)
+
+-- Wall backflip: hanging on a wall with W held, S kicks off it with one foot and backflips
+-- hard away from it (WallFlip animation), then the double jump window opens like a wall jump.
+local WALL_FLIP_BACK = 55
+local WALL_FLIP_UP = 60
+local WALL_FLIP_TIME = 0.7 -- the animation's length
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed or input.KeyCode ~= Enum.KeyCode.S or Menu.active then
+		return
+	end
+	if not (wall and wall.clinging and UserInputService:IsKeyDown(Enum.KeyCode.W)) then
+		return
+	end
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return
+	end
+	local now = os.clock()
+	local normal = wall.normal
+	wall = nil
+	root.CFrame = CFrame.lookAt(root.Position, root.Position - normal) -- facing the wall it kicks off
+	local v = normal * WALL_FLIP_BACK + Vector3.yAxis * WALL_FLIP_UP
+	root.AssemblyLinearVelocity = v
+	carry, carryStart, carryTime = v * Vector3.new(1, 0, 1), now, 0.8
+	steerLockUntil = now + 0.5 -- W is still held toward the wall
+	regrabAt = now + 0.6
+	doubleJumpFrom, doubleJumpUntil = now + 0.3, now + DOUBLE_JUMP_WINDOW
+	flipUntil = now + WALL_FLIP_TIME
+	if flipTrack then
+		flipTrack:Play(0.05)
+	end
+	local foot = root.Position - normal * 1.2 - Vector3.yAxis * 1.5 -- where the foot hits the wall
+	Fx.ring(CFrame.fromMatrix(foot, normal:Cross(Vector3.yAxis), normal), 1, 9, 0.35, AIR, { thick = 0.6 }) -- flat on the wall, like the wall jump's
+	Fx.sparks(foot, 12, 7, AIR, normal)
+	Fx.dust(foot, 4, 2, 0.7)
+	Fx.shake(root.Position, 0.4, 0.2)
+	kick(24, 0.6)
+	zap()
+end)
+
+-- Camera: leans away from the wall while wall running, and somersaults with the roll in first
+-- person (you can't see your own body there). Both ease in and out.
+local ROLL_PIVOT = 1.6 -- studs from the eyes down to the hips the view turns around
+local ROLL_SINK = 0.6 -- how far the view drops at the middle of the roll
+local ROLL_PITCH = math.rad(30) -- how far the view nods forward mid-roll (was a full 360 flip)
+local wallTilt = 0
+-- The default camera builds each frame from the current camera.CFrame, so an offset left in
+-- place would be fed back into it (the view stays turned after the roll). Put the camera's own
+-- frame back before it runs; the offset is re-applied after it.
+local cleanCamera: CFrame? = nil
+RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Value - 1, function()
+	if cleanCamera and camera.CameraType ~= Enum.CameraType.Scriptable then
+		camera.CFrame = cleanCamera
+	end
+	cleanCamera = nil
+end)
+RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	local target = 0
+	if wall then
+		target = math.rad(10) * (wall.normal:Dot(camera.CFrame.RightVector) > 0 and 1 or -1)
+	end
+	wallTilt += (target - wallTilt) * math.min(dt * 6, 1)
+	local cf = camera.CFrame
+	local left = rollUntil - os.clock()
+	if left > 0 and rollFirstPerson then
+		-- first-person roll: a gentle forward nod around the hips (ROLL_PIVOT below the eyes)
+		-- and a small sink, in and back out, instead of a full somersault
+		local t = 1 - left / rollTime
+		local s = math.sin(t * math.pi)
+		cf = (cf - Vector3.yAxis * s * ROLL_SINK) * CFrame.new(0, -ROLL_PIVOT, 0) * CFrame.Angles(-ROLL_PITCH * s, 0, 0) * CFrame.new(0, ROLL_PIVOT, 0)
+	end
+	if wallTilt ~= 0 then
+		cf *= CFrame.Angles(0, 0, wallTilt)
+	end
+	if cf ~= camera.CFrame then
+		cleanCamera = camera.CFrame
+		camera.CFrame = cf
+	end
+
+	-- screen edges and FOV (applied by Fx through fovBoost in the sprint block)
+	wallGlow += ((wall and 1 or 0) - wallGlow) * math.min(dt * 8, 1)
+	flash *= math.exp(-dt * 6)
+	fovKick *= math.exp(-dt * 4)
+	moveFov = wallGlow * 12 + fovKick
+	-- the wall's side of the screen: its normal points away from it
+	local wallSide = wall and (wall.normal:Dot(camera.CFrame.RightVector) > 0 and -1 or 1) or 0
+	for side, frame in edges do
+		local level = flash * 0.6 + wallGlow * (side == wallSide and 0.5 or 0.18)
+		frame.BackgroundTransparency = 1 - math.clamp(level, 0, 0.7)
+	end
+end)
 
 -- Per frame -------------------------------------------------------------------
 RunService.RenderStepped:Connect(function(dt)
@@ -547,16 +1186,55 @@ RunService.RenderStepped:Connect(function(dt)
 	if humanoid then
 		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
 	end
+	if humanoid and root and not Menu.active then
+		updateWallRun(dt, char, humanoid, root)
+		updateLanding(humanoid, root, humanoid.Health > 0 and not char:GetAttribute("Ragdolled"))
+	end
+	-- wall run: its own mirrored cycle for the wall's side, and no turning toward the camera
+	if wall and slamming then -- getting onto a wall calls off an armed ground slam
+		slamming = false
+		if diveTrack then
+			diveTrack:Stop(0.15)
+		end
+	end
+	local clingNow = (wall ~= nil and wall.clinging == true) or mantle ~= nil -- hands-up pose for the climb too
+	if clingTrack and clingNow ~= clingTrack.IsPlaying then
+		if clingNow then
+			clingTrack:Play(0.15)
+		else
+			clingTrack:Stop(0.15)
+		end
+	end
+	local wallSide = wall and not clingNow and ((-wall.normal):Dot(wall.along:Cross(Vector3.yAxis)) > 0 and 1 or -1) or nil
+	for side, track in wallRunTracks do
+		if side == wallSide and not track.IsPlaying then
+			track:Play(0.12)
+		elseif side ~= wallSide and track.IsPlaying then
+			track:Stop(0.25)
+		end
+	end
+	local turnFree = wall == nil and os.clock() > flipUntil
+	if humanoid and humanoid.AutoRotate ~= turnFree then
+		humanoid.AutoRotate = turnFree
+	end
 	local running = sprinting and humanoid.FloorMaterial ~= Enum.Material.Air
+	local footsteps = running or (wall ~= nil and not clingNow)
+	if sounds.Run and footsteps ~= sounds.Run.IsPlaying then
+		if footsteps then
+			sounds.Run:Play()
+		else
+			sounds.Run:Stop()
+		end
+	end
 	if sprintTrack and running and not sprintTrack.IsPlaying then
 		sprintTrack:Play(0.15)
 	elseif sprintTrack and not running and sprintTrack.IsPlaying then
-		sprintTrack:Stop(0.2)
+		sprintTrack:Stop(0.35) -- a slower fade reads as easing into the fall, not a snap
 	end
 	sprint += ((sprinting and 1 or 0) - sprint) * math.min(dt * 8, 1)
-	Fx.fovBoost = 14 * sprint
+	Fx.fovBoost = 14 * sprint + moveFov
 	local now = os.clock()
-	if sprinting and now > nextLine then
+	if (sprinting or wall) and now > nextLine then
 		nextLine = now + 0.03
 		Fx.speedLine()
 	end

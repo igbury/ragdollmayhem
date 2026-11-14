@@ -536,6 +536,33 @@ attackRemote.OnServerEvent:Connect(function(player, id)
 	run(root, cf)
 end)
 
+-- Ground slam: the client reports how fast it hit the ground in slam mode; crater and damage
+-- scale with that speed. A kick thrown while sprinting ("kick") hits the ground in front the
+-- same way, at a fixed strength, and also knocks things forward.
+local KICK_POWER = 45 -- crater radius 8.4, centred far enough ahead that you do not run into your own hole
+local SLAM_MAX_SPEED = 250 -- ponytail: client-reported speed, clamped; check against server physics if cheating matters
+local slamReady = {}
+actionRemote.OnServerEvent:Connect(function(player, action, speed)
+	local kick = action == "kick"
+	if not kick and (action ~= "slam" or typeof(speed) ~= "number" or speed ~= speed) then
+		return
+	end
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local now = os.clock()
+	if not root or char:GetAttribute("Ragdolled") or now < (slamReady[player] or 0) then
+		return
+	end
+	slamReady[player] = now + (kick and 0.6 or 0.4)
+	local s = kick and KICK_POWER or math.clamp(speed, 0, SLAM_MAX_SPEED)
+	local radius = 3 + s * 0.12
+	local look = flat(root).LookVector
+	local centre = ground(kick and root.Position + look * 9 or root.Position)
+	fxRemote:FireAllClients("Slam", nil, centre, radius)
+	Map.blast(centre, radius, 25 + s * 0.7)
+	smash(centre, radius * 1.4, s * 0.5, kick and look * s or Vector3.zero, 30 + s * 0.6)
+end)
+
 -- Weapons ---------------------------------------------------------------------
 local weaponById = {}
 for _, weapon in Weapons do

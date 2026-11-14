@@ -256,35 +256,70 @@ function Fx.speedLine()
 	end)
 end
 
--- Comic-book word that pops in, settles, drifts up and fades.
+-- Comic-book word that pops in, settles, drifts up and fades. Strong hits (scale >= BURST_SCALE)
+-- put it on the comic starburst image (assets/fx/burst.png, drawn by assets/fx/make_burst.py):
+-- yellow letters with a dark outline, only the word changes.
+local BURST_SCALE = 2
+local BURST_IMAGE = "rbxassetid://121244599706688"
+local BURST_ASPECT = 1232 / 772 -- burst.png width / height
+local BURST_INK = Color3.fromRGB(70, 10, 10)
+local BURST_YELLOW = Color3.fromRGB(255, 215, 40)
+
 function Fx.text(position: Vector3, text: string, color: Color3, scale: number)
+	local comic = scale >= BURST_SCALE
 	local anchor = part(Enum.PartType.Block, WHITE)
 	anchor.Transparency = 1
 	anchor.Position = position
 	local gui = Instance.new("BillboardGui")
-	gui.Size = UDim2.fromScale(scale * #text * 0.6, scale * 1.4)
+	local w, h = scale * #text * 0.6, scale * 1.4
+	if comic then
+		local bw = math.max(w * 1.9, scale * 5) -- the burst keeps its own shape, words fit inside it
+		gui.Size = UDim2.fromScale(bw, bw / BURST_ASPECT)
+	else
+		gui.Size = UDim2.fromScale(w, h)
+	end
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
+	local pop = Instance.new("Frame") -- everything scales together through this
+	pop.BackgroundTransparency = 1
+	pop.AnchorPoint = Vector2.new(0.5, 0.5)
+	pop.Position = UDim2.fromScale(0.5, 0.5)
+	pop.Parent = gui
+	local burst: ImageLabel? = nil
+	if comic then
+		burst = Instance.new("ImageLabel")
+		burst.BackgroundTransparency = 1
+		burst.Image = BURST_IMAGE
+		burst.Size = UDim2.fromScale(1, 1)
+		burst.Parent = pop
+	end
 	local label = Instance.new("TextLabel")
 	label.BackgroundTransparency = 1
 	label.AnchorPoint = Vector2.new(0.5, 0.5)
-	label.Position = UDim2.fromScale(0.5, 0.5)
+	-- the burst's body sits a touch right of and below the image centre
+	label.Position = comic and UDim2.fromScale(0.52, 0.5) or UDim2.fromScale(0.5, 0.5)
+	label.Size = comic and UDim2.fromScale(0.64, 0.46) or UDim2.fromScale(1, 1)
 	label.Font = Enum.Font.Bangers
 	label.TextScaled = true
 	label.Text = text
-	label.TextColor3 = color
-	label.Rotation = rng:NextInteger(-9, 9)
+	label.TextColor3 = comic and BURST_YELLOW or color
+	label.Rotation = comic and rng:NextInteger(-10, -4) or rng:NextInteger(-9, 9) -- comic words tilt up
+	label.ZIndex = 2
 	local stroke = Instance.new("UIStroke")
-	stroke.Thickness = 3
+	stroke.Thickness = comic and 4 or 3
+	stroke.Color = comic and BURST_INK or Color3.new(0, 0, 0)
 	stroke.Parent = label
-	label.Parent = gui
+	label.Parent = pop
 	gui.Parent = anchor
-	run(1, { anchor }, function(a)
+	run(comic and 1.2 or 1, { anchor }, function(a)
 		local s = a < 0.12 and a / 0.12 * 1.25 or 1.25 - 0.25 * math.min((a - 0.12) / 0.1, 1)
-		label.Size = UDim2.fromScale(s, s)
+		pop.Size = UDim2.fromScale(s, s)
 		local fade = math.max(0, (a - 0.7) / 0.3)
 		label.TextTransparency = fade
 		stroke.Transparency = fade
+		if burst then
+			burst.ImageTransparency = fade
+		end
 		anchor.Position = position + UP * a * 2
 	end)
 end
@@ -576,6 +611,14 @@ function EVENTS.Boom(_, position: Vector3, radius: number)
 end
 
 -- Burning pool: flames are small cubes that rise, tumble and shrink; every fifth one is smoke.
+function EVENTS.Slam(_, position: Vector3, radius: number)
+	local red = Color3.fromRGB(255, 40, 40)
+	local words = radius > 20 and { "KABOOM!", "KRAKOOM!", "KA-BLAM!" } or { "BANG!", "POW!", "WHAM!", "SMASH!", "SLAM!" }
+	Fx.boom(position, radius, red, radius > 9 and words[rng:NextInteger(1, #words)] or nil, 6)
+	Fx.sparks(position, math.clamp(math.floor(radius * 3), 16, 60), radius * 2.5, red, Vector3.yAxis) -- extra red debris spray
+	Fx.dust(position, 8, radius, radius * 0.3)
+end
+
 function EVENTS.Fire(_, position: Vector3, radius: number, dur: number)
 	Fx.boom(position, 3, FLAME[1])
 	local floor = Vector3.new(position.X, math.max(position.Y - 1, 0.2), position.Z)

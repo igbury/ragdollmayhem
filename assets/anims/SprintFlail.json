@@ -26,10 +26,10 @@
         "RightLowerArm": [75, 0, 0],
         "RightHand": [-15, 0, 0],
         "LeftUpperLeg": [8, 0, 0],
-        "LeftLowerLeg": [-8, 0, 0],
+        "LeftLowerLeg": [8, 0, 0],
         "LeftFoot": [0, 0, 0],
         "RightUpperLeg": [-38, 0, 0],
-        "RightLowerLeg": [75, 0, 0],
+        "RightLowerLeg": [-75, 0, 0],
         "RightFoot": [-25, 0, 0]
       }
     },
@@ -46,10 +46,10 @@
         "RightLowerArm": [25, 0, 0],
         "RightHand": [25, 0, 0],
         "LeftUpperLeg": [-18, 0, 0],
-        "LeftLowerLeg": [55, 0, 0],
+        "LeftLowerLeg": [-55, 0, 0],
         "LeftFoot": [-22, 0, 0],
         "RightUpperLeg": [30, 0, 0],
-        "RightLowerLeg": [-55, 0, 0],
+        "RightLowerLeg": [55, 0, 0],
         "RightFoot": [12, 0, 0]
       }
     },
@@ -66,10 +66,10 @@
         "RightLowerArm": [20, 0, 0],
         "RightHand": [25, 0, 0],
         "LeftUpperLeg": [-38, 0, 0],
-        "LeftLowerLeg": [75, 0, 0],
+        "LeftLowerLeg": [-75, 0, 0],
         "LeftFoot": [-25, 0, 0],
         "RightUpperLeg": [8, 0, 0],
-        "RightLowerLeg": [-8, 0, 0],
+        "RightLowerLeg": [8, 0, 0],
         "RightFoot": [0, 0, 0]
       }
     },
@@ -86,10 +86,10 @@
         "RightLowerArm": [60, 0, 0],
         "RightHand": [-20, 0, 0],
         "LeftUpperLeg": [30, 0, 0],
-        "LeftLowerLeg": [-55, 0, 0],
+        "LeftLowerLeg": [55, 0, 0],
         "LeftFoot": [12, 0, 0],
         "RightUpperLeg": [-18, 0, 0],
-        "RightLowerLeg": [55, 0, 0],
+        "RightLowerLeg": [-55, 0, 0],
         "RightFoot": [-22, 0, 0]
       }
     },
@@ -106,10 +106,10 @@
         "RightLowerArm": [75, 0, 0],
         "RightHand": [-15, 0, 0],
         "LeftUpperLeg": [8, 0, 0],
-        "LeftLowerLeg": [-8, 0, 0],
+        "LeftLowerLeg": [8, 0, 0],
         "LeftFoot": [0, 0, 0],
         "RightUpperLeg": [-38, 0, 0],
-        "RightLowerLeg": [75, 0, 0],
+        "RightLowerLeg": [-75, 0, 0],
         "RightFoot": [-25, 0, 0]
       }
     }

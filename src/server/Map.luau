@@ -15,6 +15,7 @@ local REGEN = 25
 local LOOSE_LIFE = 6 -- fallen structure bricks are swept after this, the structure returns at REGEN
 local MAX_LOOSE = 110 -- bricks kept per falling structure, the rest vanish in the dust
 local MAX_CHUNKS = 140 -- flying cubes per blast
+local MAX_DEBRIS = 250 -- loose cubes alive at once across all blasts, extra ones just aren't spawned
 local GRASS = { Color3.fromRGB(40, 170, 80), Color3.fromRGB(34, 150, 70) }
 local DIRT = Color3.fromRGB(120, 85, 60)
 local STONE = Color3.fromRGB(190, 182, 170)
@@ -63,7 +64,18 @@ local function block(size: Vector3, position: Vector3, color: Color3, material: 
 	return p
 end
 
+local live = 0
+local function track(p: BasePart)
+	live += 1
+	p.Destroying:Once(function()
+		live -= 1
+	end)
+end
+
 local function chunk(source: BasePart, size: number, velocity: Vector3)
+	if live >= MAX_DEBRIS then
+		return
+	end
 	local p = Instance.new("Part")
 	p.Size = Vector3.one * size
 	p.Color = math.random() < 0.3 and DIRT or source.Color
@@ -71,6 +83,7 @@ local function chunk(source: BasePart, size: number, velocity: Vector3)
 	studs(p)
 	p.CFrame = source.CFrame + Vector3.new(0, CUBE / 2, 0)
 	p.CollisionGroup = "Debris"
+	track(p)
 	p.Parent = workspace
 	p.AssemblyLinearVelocity = velocity
 	p.AssemblyAngularVelocity = Vector3.new(math.random(-12, 12), math.random(-12, 12), math.random(-12, 12))
@@ -200,12 +213,13 @@ local function collapse(model: Model, from: Vector3, power: number)
 	end
 	model:SetAttribute("Fallen", true)
 	local bricks = model:GetChildren()
-	local keep = MAX_LOOSE / #bricks
+	local keep = math.max(0, math.min(MAX_LOOSE, MAX_DEBRIS - live)) / #bricks
 	for _, cube in bricks do
 		if math.random() > keep then
 			cube:Destroy()
 			continue
 		end
+		track(cube)
 		cube.CollisionGroup = "Debris"
 		cube.Anchored = false
 		-- cubes next to the blast get thrown, the rest just lose their footing
@@ -287,6 +301,16 @@ function Map.build()
 		block(Vector3.new(wide, CUBE, HALF * 2), Vector3.new(side * far, -CUBE / 2, 0), GRASS[1], Enum.Material.Grass, rim)
 	end
 	rim.Parent = workspace
+	-- big wall for testing wall runs: just outside the arena on the east side, outside the
+	-- destructible folder so blasts leave it alone
+	local testWall = Instance.new("Part")
+	testWall.Name = "TestWall"
+	testWall.Anchored = true
+	testWall.Size = Vector3.new(4, 48, 160)
+	testWall.Position = Vector3.new(HALF + 24, 24, 0)
+	testWall.Color = Color3.fromRGB(70, 78, 105)
+	testWall.Material = Enum.Material.SmoothPlastic
+	testWall.Parent = workspace
 	-- rings of structures around the middle; snapped to the cube grid and turned in 90-degree
 	-- steps so everything sits on whole cubes
 	local function ring(kind: string, count: number, radius: number, phase: number)
