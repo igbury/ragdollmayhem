@@ -82,7 +82,7 @@ local panelBody = text(panel, {
 })
 
 local PANELS = {
-	SETTINGS = "Shift  Sprint\nQ / F  Switch weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive\nV  Camera",
+	SETTINGS = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump\nA / D  Wall run\nQ / F  Switch weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam\nV  Camera",
 	CREDITS = "Ragdoll Mayhem",
 }
 

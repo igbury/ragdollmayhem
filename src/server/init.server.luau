@@ -50,6 +50,38 @@ fxRemote.Parent = remotes
 local hazardRemote = Instance.new("RemoteEvent") -- server -> client: fling your own character
 hazardRemote.Name = "Hazard"
 hazardRemote.Parent = remotes
+-- Movement looks (animations, sounds) exist only on the client that plays them: it reports what
+-- its body is doing here and the other clients replay it (client/Others.luau).
+local moveRemote = Instance.new("RemoteEvent")
+moveRemote.Name = "Move"
+moveRemote.Parent = remotes
+local MOVE_NAMES = {
+	loop = { [""] = true, sprint = true, wall1 = true, ["wall-1"] = true, cling = true, slide = true, crouch = true, dive = true },
+	shot = { roll = true, flip = true, kick = true, jump = true, slam = true },
+}
+local MOVE_RATE = 30 -- reports passed on per player per second; more are dropped
+local moveBudget = {} -- [Player] = { start = os.clock(), count = number }
+moveRemote.OnServerEvent:Connect(function(player, kind, name)
+	local names = typeof(kind) == "string" and MOVE_NAMES[kind]
+	if not names or typeof(name) ~= "string" or not names[name] then
+		return
+	end
+	local now = os.clock()
+	local budget = moveBudget[player]
+	if not budget or now - budget.start > 1 then
+		budget = { start = now, count = 0 }
+		moveBudget[player] = budget
+	end
+	budget.count += 1
+	if budget.count > MOVE_RATE then
+		return
+	end
+	for _, other in Players:GetPlayers() do
+		if other ~= player then
+			moveRemote:FireClient(other, player, kind, name)
+		end
+	end
+end)
 
 local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN }
 remotes.Parent = ReplicatedStorage
@@ -538,12 +570,15 @@ end)
 
 -- Ground slam: the client reports how fast it hit the ground in slam mode; crater and damage
 -- scale with that speed. A kick thrown while sprinting ("kick") hits the ground in front the
--- same way, at a fixed strength, and also knocks things forward.
+-- same way, at a fixed strength, and also knocks things forward. A dive kick ("dive", thrown in
+-- the air) is that kick landing where the foot is: on whoever is there, wherever that is, with the
+-- crater only when the ground is close under it.
 local KICK_POWER = 45 -- crater radius 8.4, centred far enough ahead that you do not run into your own hole
 local SLAM_MAX_SPEED = 250 -- ponytail: client-reported speed, clamped; check against server physics if cheating matters
 local slamReady = {}
 actionRemote.OnServerEvent:Connect(function(player, action, speed)
-	local kick = action == "kick"
+	local dive = action == "dive"
+	local kick = action == "kick" or dive
 	if not kick and (action ~= "slam" or typeof(speed) ~= "number" or speed ~= speed) then
 		return
 	end
@@ -557,10 +592,13 @@ actionRemote.OnServerEvent:Connect(function(player, action, speed)
 	local s = kick and KICK_POWER or math.clamp(speed, 0, SLAM_MAX_SPEED)
 	local radius = 3 + s * 0.12
 	local look = flat(root).LookVector
-	local centre = ground(kick and root.Position + look * 9 or root.Position)
-	fxRemote:FireAllClients("Slam", nil, centre, radius)
-	Map.blast(centre, radius, 25 + s * 0.7)
-	smash(centre, radius * 1.4, s * 0.5, kick and look * s or Vector3.zero, 30 + s * 0.6)
+	local ahead = root.Position + look * (dive and 4 or kick and 9 or 0)
+	local centre = ground(ahead)
+	if not dive or (centre - ahead).Magnitude < 8 then
+		fxRemote:FireAllClients("Slam", nil, centre, radius)
+		Map.blast(centre, radius, 25 + s * 0.7)
+	end
+	smash(dive and ahead or centre, radius * 1.4, s * 0.5, kick and look * s or Vector3.zero, 30 + s * 0.6)
 end)
 
 -- Weapons ---------------------------------------------------------------------
@@ -680,6 +718,14 @@ Players.PlayerAdded:Connect(function(player)
 		char:WaitForChild("RightAnkle", 5) -- wait for the rig to finish loading
 		task.wait()
 		Ragdoll.setup(char)
+		-- Ragdoll.setup turns RequiresNeck off, so losing the body to the void no longer kills on its
+		-- own: without this, running off the edge leaves the player with no character for good.
+		char.ChildRemoved:Connect(function(child)
+			local humanoid = char:FindFirstChildOfClass("Humanoid")
+			if child.Name == "HumanoidRootPart" and humanoid then
+				humanoid.Health = 0
+			end
+		end)
 		local map = player:GetAttribute("Map")
 		if map then
 			char:PivotTo(SPAWNS[map])
@@ -693,6 +739,8 @@ Players.PlayerRemoving:Connect(function(player)
 	end
 	lastUse[player] = nil
 	attackReady[player] = nil
+	slamReady[player] = nil
+	moveBudget[player] = nil
 end)
 
 RunService.Heartbeat:Connect(function(dt)
