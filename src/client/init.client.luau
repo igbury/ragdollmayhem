@@ -24,6 +24,8 @@ local PUNCH_INTERVAL = 0.28
 local GRAB_RANGE = 13
 local THROW_SPEED = 90
 local SKIN = Color3.fromRGB(240, 240, 240)
+local WALK_SPEED = 16
+local SPRINT_SPEED = 28
 
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
@@ -35,6 +37,8 @@ local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
 local lastWeaponUse = 0
 local recoil = 0
+local sprint = 0 -- eased 0..1
+local nextLine, nextStep = 0, 0
 
 player.CameraMode = Enum.CameraMode.LockFirstPerson
 
@@ -57,7 +61,7 @@ local function label(props)
 	return l
 end
 
-label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20) })
+local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20) })
 local hint = label({
 	TextSize = 16,
 	AnchorPoint = Vector2.new(0.5, 0),
@@ -67,7 +71,7 @@ local hint = label({
 	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
 })
 label({
-	Text = "Q  Next weapon\nF  Previous weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive\nV  Camera",
+	Text = "Shift  Sprint\nQ  Next weapon\nF  Previous weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -500,7 +504,29 @@ RunService.RenderStepped:Connect(function(dt)
 	-- fists
 	local show = isFirstPerson() and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
-	local bob = math.sin(os.clock() * 9) * 0.05 * moving
+	UserInputService.MouseIconEnabled = not isFirstPerson()
+	crosshair.Visible = isFirstPerson()
+
+	-- sprint
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local sprinting = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) and moving == 1 and not holding and root
+		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
+	if humanoid then
+		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
+	end
+	sprint += ((sprinting and 1 or 0) - sprint) * math.min(dt * 8, 1)
+	Fx.fovBoost = 14 * sprint
+	local now = os.clock()
+	if sprinting and now > nextLine then
+		nextLine = now + 0.03
+		Fx.speedLine()
+	end
+	if sprinting and now > nextStep and humanoid.FloorMaterial ~= Enum.Material.Air then
+		nextStep = now + 0.25
+		Fx.dust(root.Position - Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0), 3, 2, 0.6)
+	end
+
+	local bob = math.sin(os.clock() * (9 + 5 * sprint)) * 0.05 * (1 + 1.5 * sprint) * moving
 	local weapon = Weapons[weaponIndex]
 	local hold = HOLD[weapon.id]
 	recoil = math.max(recoil - dt / 0.15, 0)

@@ -29,6 +29,7 @@ local tint = Instance.new("ColorCorrectionEffect")
 tint.Parent = Lighting
 
 local Fx = {}
+Fx.fovBoost = 0 -- extra FOV set by the client (sprint)
 local active = {} -- { t0, dur, fn, parts }
 local shakeMag, shakeStart, shakeEnd = 0, 0, 0
 
@@ -75,7 +76,7 @@ RunService.RenderStepped:Connect(function()
 	if humanoid then
 		humanoid.CameraOffset = left > 0 and rng:NextUnitVector() * shakeMag * left or Vector3.zero
 	end
-	camera.FieldOfView = BASE_FOV + shakeMag * 5 * left
+	camera.FieldOfView = BASE_FOV + Fx.fovBoost + shakeMag * 5 * left
 end)
 
 function Fx.shake(position: Vector3, magnitude: number, duration: number)
@@ -239,6 +240,20 @@ function Fx.dust(position: Vector3, count: number, spread: number, size: number)
 			p.Transparency = 0.1 + 0.9 * a * a
 		end)
 	end
+end
+
+-- Speed line: a white streak that rushes past the edge of the view, in camera space.
+function Fx.speedLine()
+	local angle = rng:NextNumber() * math.pi * 2
+	local r = 2.5 + rng:NextNumber() * 1.5
+	local offset = Vector3.new(math.cos(angle) * r * 1.5, math.sin(angle) * r, 0)
+	local length = 3 + rng:NextNumber() * 3
+	local p = part(Enum.PartType.Block, WHITE)
+	p.Size = Vector3.new(0.04, 0.04, length)
+	run(0.18, { p }, function(a)
+		p.CFrame = camera.CFrame * CFrame.new(offset + Vector3.new(0, 0, -14 + 18 * a))
+		p.Transparency = 0.3 + 0.7 * a
+	end)
 end
 
 -- Comic-book word that pops in, settles, drifts up and fades.
