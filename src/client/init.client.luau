@@ -18,6 +18,15 @@ local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("A
 local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
+local Menu = require(script:WaitForChild("Menu"))
+
+-- Sprint run cycle (assets/anims/SprintFlail.json), built in memory, no upload.
+-- ponytail: a registered id is session-local, so other players see the default run; upload
+-- assets/anims/SprintFlail.rbxmx from the Animation Editor and use that id if they should see it.
+local sprintAnim = Instance.new("Animation")
+sprintAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("SprintFlail")))
+local sprintTrack: AnimationTrack? = nil
 
 local PUNCH_RANGE = 9
 local PUNCH_INTERVAL = 0.28
@@ -391,7 +400,7 @@ local function toggleGrab()
 end
 
 UserInputService.InputBegan:Connect(function(input, processed)
-	if processed then
+	if processed or Menu.active then
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -459,10 +468,32 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 fxRemote.OnClientEvent:Connect(Fx.play)
+-- Sky light (environment diffuse/specular) is not blocked by the factory roof and floods the
+-- inside, so switch it off in there and let the lamps plus a little ambient do the work.
+local Lighting = game:GetService("Lighting")
+local OUTSIDE = { Ambient = Lighting.Ambient, EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale, EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale }
+local INSIDE = { Ambient = Color3.fromRGB(20, 20, 20), EnvironmentDiffuseScale = 0, EnvironmentSpecularScale = 0 }
+player:GetAttributeChangedSignal("Map"):Connect(function()
+	for prop, value in player:GetAttribute("Map") == "FACTORY" and INSIDE or OUTSIDE do
+		Lighting[prop] = value
+	end
+end)
+remotes:WaitForChild("Hazard").OnClientEvent:Connect(function(velocity: Vector3)
+	-- a factory machine hit us; we own our physics, so the server cannot fling us itself
+	local char = player.Character
+	for _, part in char and char:GetDescendants() or {} do
+		if part:IsA("BasePart") then
+			part.AssemblyLinearVelocity = velocity
+		end
+	end
+end)
 
 -- Own ragdoll: the client owns its humanoid, so it switches the state itself.
 local function onCharacter(char: Model)
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
+	sprintTrack = humanoid:WaitForChild("Animator"):LoadAnimation(sprintAnim)
+	sprintTrack.Priority = Enum.AnimationPriority.Movement -- over the default run (Core)
+	sprintTrack.Looped = true
 	task.spawn(function()
 		if not player:HasAppearanceLoaded() then
 			player.CharacterAppearanceLoaded:Wait()
@@ -501,6 +532,8 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
+	gui.Enabled = not Menu.active
+
 	-- fists
 	local show = isFirstPerson() and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
@@ -513,6 +546,12 @@ RunService.RenderStepped:Connect(function(dt)
 		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if humanoid then
 		humanoid.WalkSpeed = sprinting and SPRINT_SPEED or WALK_SPEED
+	end
+	local running = sprinting and humanoid.FloorMaterial ~= Enum.Material.Air
+	if sprintTrack and running and not sprintTrack.IsPlaying then
+		sprintTrack:Play(0.15)
+	elseif sprintTrack and not running and sprintTrack.IsPlaying then
+		sprintTrack:Stop(0.2)
 	end
 	sprint += ((sprinting and 1 or 0) - sprint) * math.min(dt * 8, 1)
 	Fx.fovBoost = 14 * sprint

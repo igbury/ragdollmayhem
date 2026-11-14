@@ -32,9 +32,22 @@ PhysicsService:CollisionGroupSetCollidable("Debris", "Debris", false)
 
 local folder = Instance.new("Folder")
 folder.Name = "Map"
+Map.folder = folder
 local params = OverlapParams.new()
 params.FilterType = Enum.RaycastFilterType.Include
 params.FilterDescendantsInstances = { folder }
+
+-- Plastic parts get the classic brick look: studs on top, weld on every other face.
+local function studs(p: BasePart)
+	if p.Material ~= Enum.Material.Plastic then
+		return
+	end
+	p.TopSurface = Enum.SurfaceType.Studs
+	for _, face in { "BottomSurface", "FrontSurface", "BackSurface", "LeftSurface", "RightSurface" } do
+		p[face] = Enum.SurfaceType.Weld
+	end
+end
+Map.studs = studs
 
 local function block(size: Vector3, position: Vector3, color: Color3, material: Enum.Material, parent: Instance)
 	local p = Instance.new("Part")
@@ -45,6 +58,7 @@ local function block(size: Vector3, position: Vector3, color: Color3, material: 
 	p.Material = material
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
+	studs(p)
 	p.Parent = parent
 	return p
 end
@@ -54,6 +68,7 @@ local function chunk(source: BasePart, size: number, velocity: Vector3)
 	p.Size = Vector3.one * size
 	p.Color = math.random() < 0.3 and DIRT or source.Color
 	p.Material = source.Material
+	studs(p)
 	p.CFrame = source.CFrame + Vector3.new(0, CUBE / 2, 0)
 	p.CollisionGroup = "Debris"
 	p.Parent = workspace
@@ -79,8 +94,9 @@ local function hide(cubes: { BasePart })
 end
 
 -- Each kind lists its cubes through add(x, y, z, color, material, size?), in cube-grid units
--- relative to the structure's origin on the ground.
+-- relative to the structure's origin on the ground. Other maps (Factory) add their own kinds.
 local KINDS = {}
+Map.KINDS = KINDS
 
 function KINDS.Pillar(add)
 	for y = 0, 6 do
@@ -169,6 +185,12 @@ local function buildStructure(kind: string, origin: CFrame)
 	end)
 	model:SetAttribute("Origin", origin)
 	model.Parent = folder
+end
+Map.structure = buildStructure
+
+-- A breakable floor/deck tile: blasts hide it, it comes back after REGEN.
+function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enum.Material)
+	return block(size, position, color, material, folder)
 end
 
 local function collapse(model: Model, from: Vector3, power: number)

@@ -6,6 +6,7 @@ local Attacks = require(ReplicatedStorage.Shared.Attacks)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
 local Map = require(script.Map)
+local Factory = require(script.Factory)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -46,6 +47,11 @@ weaponRemote.Parent = remotes
 local fxRemote = Instance.new("RemoteEvent")
 fxRemote.Name = "Fx"
 fxRemote.Parent = remotes
+local hazardRemote = Instance.new("RemoteEvent") -- server -> client: fling your own character
+hazardRemote.Name = "Hazard"
+hazardRemote.Parent = remotes
+
+local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN }
 remotes.Parent = ReplicatedStorage
 
 local dummyFolder = Instance.new("Folder")
@@ -359,6 +365,13 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 	if rateLimited(player, 0.25) then
 		return
 	end
+	if action == "map" and SPAWNS[arg] then
+		player:SetAttribute("Map", arg)
+		if player.Character then
+			player.Character:PivotTo(SPAWNS[arg])
+		end
+		return
+	end
 	local head = headOf(player)
 	if not head then
 		return
@@ -394,14 +407,32 @@ for _, attack in Attacks do
 	cooldownOf[attack.id] = attack.cd
 end
 
+-- The breakable surface under `position` (factory decks count), so blasts land on your floor.
+local groundParams = RaycastParams.new()
+groundParams.FilterType = Enum.RaycastFilterType.Include
+groundParams.FilterDescendantsInstances = { Map.folder }
 local function ground(position: Vector3): Vector3
-	return Vector3.new(position.X, 0, position.Z)
+	local hit = workspace:Raycast(position + UP * 2, -UP * 30, groundParams)
+	return hit and hit.Position or Vector3.new(position.X, position.Y - 3, position.Z)
 end
 
 local function flat(root: BasePart): CFrame
 	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
 	look = look.Magnitude > 0.01 and look.Unit or Vector3.zAxis
 	return CFrame.lookAt(root.Position, root.Position + look)
+end
+
+local function harm(d, damage: number)
+	if d.state == "Dead" then
+		return
+	end
+	d.hp -= damage
+	if d.hp <= 0 then
+		knockDown(d, math.huge, "Dead")
+	else
+		knockDown(d, 4, "Knocked down")
+	end
+	syncAttributes(d)
 end
 
 -- Damage + launch every dummy in range. `radial` pushes away from the centre.
@@ -415,15 +446,7 @@ local function smash(position: Vector3, radius: number, damage: number, push: Ve
 		if d.heldBy then
 			release(d, Vector3.zero)
 		end
-		if d.state ~= "Dead" then
-			d.hp -= damage
-			if d.hp <= 0 then
-				knockDown(d, math.huge, "Dead")
-			else
-				knockDown(d, 4, "Knocked down")
-			end
-			syncAttributes(d)
-		end
+		harm(d, damage)
 		local out = offset * Vector3.new(1, 0, 1)
 		out = out.Magnitude > 0.1 and out.Unit or Vector3.zero
 		local velocity = push + (out + UP * 0.6) * radial
@@ -630,6 +653,10 @@ Players.PlayerAdded:Connect(function(player)
 		char:WaitForChild("RightAnkle", 5) -- wait for the rig to finish loading
 		task.wait()
 		Ragdoll.setup(char)
+		local map = player:GetAttribute("Map")
+		if map then
+			char:PivotTo(SPAWNS[map])
+		end
 	end)
 end)
 
@@ -666,6 +693,42 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 
+-- Factory machines: dummies go through harm(), players take Humanoid damage and are flung by
+-- their own client (it owns their physics).
+local wakeToken = setmetatable({}, { __mode = "k" })
+Factory.build(function(model, damage, velocity)
+	local d = dummies[model]
+	if d then
+		if d.heldBy then
+			release(d, Vector3.zero)
+		end
+		harm(d, damage)
+		for _, part in model:GetDescendants() do
+			if part:IsA("BasePart") then
+				part.AssemblyLinearVelocity = velocity
+			end
+		end
+		return
+	end
+	local player = Players:GetPlayerFromCharacter(model)
+	local humanoid = model:FindFirstChildOfClass("Humanoid")
+	if not player or humanoid.Health <= 0 then
+		return
+	end
+	humanoid:TakeDamage(damage)
+	Ragdoll.set(model, true)
+	hazardRemote:FireClient(player, velocity)
+	local token = {}
+	wakeToken[model] = token
+	task.delay(2.5, function()
+		if wakeToken[model] == token and model.Parent and humanoid.Health > 0 then
+			Ragdoll.set(model, false)
+		end
+	end)
+end)
+for _, spot in Factory.DUMMY_SPOTS do
+	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
+end
 Map.build()
 for i = 1, 8 do
 	local angle = i / 8 * math.pi * 2
