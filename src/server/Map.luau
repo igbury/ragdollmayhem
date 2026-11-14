@@ -201,6 +201,44 @@ local function buildStructure(kind: string, origin: CFrame)
 end
 Map.structure = buildStructure
 
+-- A grave a dummy dug: a mound and a headstone with the name on it, at `origin` (on the ground,
+-- the stone at its -Z end). Built of small bricks so a hit shatters it like the rest of the map;
+-- once broken it does not come back.
+function Map.grave(origin: CFrame, name: string)
+	local model = Instance.new("Model")
+	model.Name = "Grave"
+	local function slab(size: Vector3, at: Vector3, color: Color3, material: Enum.Material)
+		local n = Vector3.new(math.max(1, math.round(size.X / 0.6)), math.max(1, math.round(size.Y / 0.6)), math.max(1, math.round(size.Z / 0.6)))
+		local brick = size / n
+		for x = 1, n.X do
+			for y = 1, n.Y do
+				for z = 1, n.Z do
+					local cube = block(brick, Vector3.zero, color, material, model)
+					cube.CFrame = origin * CFrame.new(at + (Vector3.new(x, y, z) - (n + Vector3.one) / 2) * brick)
+				end
+			end
+		end
+	end
+	slab(Vector3.new(2.4, 0.6, 4.2), Vector3.new(0, 0.3, 0.6), DIRT, Enum.Material.Ground)
+	slab(Vector3.new(2.4, 3, 0.6), Vector3.new(0, 1.5, -1.8), STONE, Enum.Material.Slate)
+	local plate = block(Vector3.new(2.2, 1.6, 0.05), Vector3.zero, STONE, Enum.Material.Slate, model)
+	plate.CFrame = origin * CFrame.new(0, 1.9, -1.8 + 0.33)
+	local gui = Instance.new("SurfaceGui")
+	gui.Face = Enum.NormalId.Back -- toward the mound
+	gui.PixelsPerStud = 60
+	local text = Instance.new("TextLabel")
+	text.Size = UDim2.fromScale(1, 1)
+	text.BackgroundTransparency = 1
+	text.Font = Enum.Font.Garamond
+	text.TextScaled = true
+	text.TextColor3 = Color3.fromRGB(60, 56, 52)
+	text.Text = "R.I.P.\n" .. name
+	text.Parent = gui
+	gui.Parent = plate
+	model.Parent = folder
+	return model
+end
+
 -- A breakable floor/deck tile: blasts hide it, it comes back after REGEN.
 function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enum.Material)
 	return block(size, position, color, material, folder)
@@ -230,7 +268,9 @@ local function collapse(model: Model, from: Vector3, power: number)
 	task.delay(LOOSE_LIFE, model.ClearAllChildren, model)
 	task.delay(REGEN, function()
 		model:Destroy()
-		buildStructure(model.Name, model:GetAttribute("Origin"))
+		if model:GetAttribute("Origin") then -- a grave (Map.grave) stays broken
+			buildStructure(model.Name, model:GetAttribute("Origin"))
+		end
 	end)
 end
 
@@ -288,7 +328,8 @@ function Map.build()
 		for iz = 0, count - 1 do
 			local position = Vector3.new(-HALF + (ix + 0.5) * TILE, -CUBE / 2, -HALF + (iz + 0.5) * TILE)
 			local color = GRASS[(ix // 6 + iz // 6) % 2 + 1]
-			block(Vector3.new(TILE, CUBE, TILE), position, color, Enum.Material.Grass, folder)
+			-- nothing under the floor to shade, and 14k shadow casters cost the client every frame
+			block(Vector3.new(TILE, CUBE, TILE), position, color, Enum.Material.Grass, folder).CastShadow = false
 		end
 	end
 	-- solid grass around the arena, out to the edge of the 512 baseplate

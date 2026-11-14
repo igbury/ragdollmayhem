@@ -157,7 +157,8 @@ local function floors()
 	local s = FLOOR_TILE
 	for x = -W + s / 2, W - s / 2, s do
 		for z = -W + s / 2, W - s / 2, s do
-			Map.tile(Vector3.new(s, 4, s), ORIGIN + Vector3.new(x, -2, z), floorColor(x, z), Enum.Material.Plastic)
+			-- ground floor: nothing under it to shade, and thousands of shadow casters cost every frame
+			Map.tile(Vector3.new(s, 4, s), ORIGIN + Vector3.new(x, -2, z), floorColor(x, z), Enum.Material.Plastic).CastShadow = false
 		end
 		if x % 40 < s then
 			task.wait()
@@ -658,16 +659,28 @@ function Factory.build(hurt: (Model, number, Vector3) -> ())
 	local include = {}
 	local params = OverlapParams.new()
 	params.FilterType = Enum.RaycastFilterType.Include
+	-- The machines are dozens of parts moved by the server every frame, all replicated: they only
+	-- run while a player is in the building. Their motion is a function of the clock, so they pick
+	-- up where they would have been. ponytail: dummies left alone in there are safe meanwhile.
 	RunService.Heartbeat:Connect(function()
+		table.clear(include)
+		local watched = false
+		for _, player in Players:GetPlayers() do
+			local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root then
+				local offset = root.Position - ORIGIN
+				watched = watched or (math.abs(offset.X) < W + 60 and math.abs(offset.Z) < W + 60)
+				table.insert(include, player.Character)
+			end
+		end
+		if not watched then
+			return
+		end
 		local t = os.clock()
 		for _, move in movers do
 			move(t)
 		end
-		table.clear(include)
 		table.insert(include, workspace:FindFirstChild("Dummies"))
-		for _, player in Players:GetPlayers() do
-			table.insert(include, player.Character)
-		end
 		params.FilterDescendantsInstances = include
 		for _, h in hazards do
 			if h.armed and not h.armed(t) then

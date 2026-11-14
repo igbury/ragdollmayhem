@@ -6,22 +6,25 @@ local Ragdoll = {}
 local DOWN = CFrame.Angles(0, 0, -math.pi / 2) -- attachment X axis along the limb (down)
 local UP = CFrame.Angles(0, 0, math.pi / 2)
 
--- [motor name] = { kind, axis rotation, cone/lower angle, twist/upper angle }
+-- [motor name] = { kind, axis rotation, cone/lower angle, twist/upper angle, friction torque }
+-- Friction is the muscle tone left in a limp body: limbs swing and flop but stop instead of
+-- wobbling forever, so a body at rest goes to sleep (no physics, nothing to replicate).
+-- Calibration knob: roughly a fifth of the torque gravity puts on what hangs off the joint.
 local JOINTS = {
-	Neck = { "Ball", UP, 55, 60 },
-	Waist = { "Ball", UP, 40, 35 },
-	LeftShoulder = { "Ball", DOWN, 150, 90 },
-	RightShoulder = { "Ball", DOWN, 150, 90 },
-	LeftElbow = { "Hinge", nil, 0, 150 },
-	RightElbow = { "Hinge", nil, 0, 150 },
-	LeftWrist = { "Ball", DOWN, 50, 30 },
-	RightWrist = { "Ball", DOWN, 50, 30 },
-	LeftHip = { "Ball", DOWN, 95, 40 },
-	RightHip = { "Ball", DOWN, 95, 40 },
-	LeftKnee = { "Hinge", nil, -150, 0 },
-	RightKnee = { "Hinge", nil, -150, 0 },
-	LeftAnkle = { "Ball", DOWN, 40, 25 },
-	RightAnkle = { "Ball", DOWN, 40, 25 },
+	Neck = { "Ball", UP, 55, 60, 12 },
+	Waist = { "Ball", UP, 40, 35, 40 },
+	LeftShoulder = { "Ball", DOWN, 150, 90, 14 },
+	RightShoulder = { "Ball", DOWN, 150, 90, 14 },
+	LeftElbow = { "Hinge", nil, 0, 150, 7 },
+	RightElbow = { "Hinge", nil, 0, 150, 7 },
+	LeftWrist = { "Ball", DOWN, 50, 30, 3 },
+	RightWrist = { "Ball", DOWN, 50, 30, 3 },
+	LeftHip = { "Ball", DOWN, 95, 40, 25 },
+	RightHip = { "Ball", DOWN, 95, 40, 25 },
+	LeftKnee = { "Hinge", nil, -150, 0, 12 },
+	RightKnee = { "Hinge", nil, -150, 0, 12 },
+	LeftAnkle = { "Ball", DOWN, 40, 25, 4 },
+	RightAnkle = { "Ball", DOWN, 40, 25, 4 },
 }
 
 local downParams = RaycastParams.new()
@@ -59,11 +62,16 @@ function Ragdoll.setup(model: Model)
 			joint.UpperAngle = spec[3]
 			joint.TwistLowerAngle = -spec[4]
 			joint.TwistUpperAngle = spec[4]
+			joint.MaxFrictionTorque = spec[5]
 		else
 			joint = Instance.new("HingeConstraint")
 			joint.LimitsEnabled = true
 			joint.LowerAngle = spec[3]
 			joint.UpperAngle = spec[4]
+			-- a hinge has no friction setting: a weak motor told to stand still is one
+			joint.ActuatorType = Enum.ActuatorType.Motor
+			joint.AngularVelocity = 0
+			joint.MotorMaxTorque = spec[5]
 		end
 		joint.Name = "RagJoint"
 		joint:SetAttribute("Joint", motor.Name) -- which motor it stands in for (see Ragdoll.joints)
@@ -139,10 +147,12 @@ function Ragdoll.set(model: Model, on: boolean)
 			d.CanCollide = on or d:GetAttribute("RagCollide")
 		end
 	end
-	-- the root is a big invisible box: left solid, the body lies on it like a plank
-	local root = model:FindFirstChild("HumanoidRootPart")
+	-- The root is a big invisible box welded to the hips, and the heaviest part of the rig: while
+	-- limp it neither collides nor weighs anything, or the hips swing as if they carried a brick.
+	local root = model:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if root then
 		root.CanCollide = not on
+		root.Massless = on
 	end
 	local humanoid = model:FindFirstChildOfClass("Humanoid")
 	if not on then

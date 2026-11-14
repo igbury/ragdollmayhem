@@ -22,6 +22,7 @@ local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
+require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubbles over dummies
 
 -- Sprint run cycle (assets/anims/SprintFlail.json), built in memory, no upload.
 -- ponytail: a registered id is session-local, so other players see the default run; upload
@@ -580,7 +581,7 @@ local function punch()
 	hands[nextHand].t = 0
 	nextHand = nextHand == "right" and "left" or "right"
 	local result = aim(PUNCH_RANGE)
-	if result and dummyOf(result.Instance) then
+	if result and (dummyOf(result.Instance) or (result.Instance.Parent and result.Instance.Parent.Name == "Grave")) then
 		punchRemote:FireServer(result.Instance)
 		Fx.hit(result.Position)
 	end
@@ -1895,7 +1896,7 @@ RunService.RenderStepped:Connect(function(dt)
 		local injuries = dummy:GetAttribute("Injuries")
 		local blood = dummy:GetAttribute("Blood") or 100
 		targetTitle.Text = injuries ~= "" and injuries or "No injuries"
-		targetInfo.Text = `{dummy.Name} · {dummy:GetAttribute("Status")} · {blood >= 100 and "full blood" or blood .. "% blood"}`
+		targetInfo.Text = `{dummy.Name} · {dummy:GetAttribute("Trait") or "?"} · {dummy:GetAttribute("Status")} · {blood >= 100 and "full blood" or blood .. "% blood"}`
 		mv.seen, mv.seenAt = dummy, os.clock()
 		-- pointing a gun at it: tell the server now and then, so it puts its hands up
 		local aimRemote = remotes:FindFirstChild("Aim")

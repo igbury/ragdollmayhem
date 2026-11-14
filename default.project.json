@@ -28,7 +28,9 @@
 
     "Workspace": {
       "$properties": {
-        "FilteringEnabled": true
+        "FilteringEnabled": true,
+        "StreamingTargetRadius": 320,
+        "StreamOutBehavior": "Opportunistic"
       },
       "Baseplate": {
         "$className": "Part",
