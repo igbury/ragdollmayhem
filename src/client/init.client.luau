@@ -197,13 +197,13 @@ local hint = label({
 	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
 })
 label({
-	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash (roll on the ground)\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon\nF  Previous weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nV  Camera",
+	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash (roll on the ground)\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon\nF  Previous weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 16, 1, -16),
-	Size = UDim2.fromOffset(320, 260),
+	Size = UDim2.fromOffset(320, 280),
 })
 local weaponLabel = label({
 	TextSize = 18,
@@ -260,6 +260,73 @@ do
 		return label({ Text = text, TextSize = 12, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 1, -94), Size = UDim2.fromOffset(50, 14) })
 	end
 	mv.hud = { wallBack = back, wall = fill, jump = pip("JUMP", -30), dash = pip("DASH", 30) }
+end
+-- Vitals panel, bottom right, for the dummy you last looked at: a body diagram seen from the front
+-- (grey = fine, yellow = hurt, orange = broken, dark = cut off), its condition, pulse, blood and
+-- how awake it is. Filled in from the dummy's attributes in the per-frame block.
+do
+	local panel = Instance.new("Frame")
+	panel.AnchorPoint = Vector2.new(1, 1)
+	panel.Position = UDim2.new(1, -16, 1, -160) -- above the attack list
+	panel.Size = UDim2.fromOffset(150, 216)
+	panel.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	panel.BackgroundTransparency = 0.25
+	panel.BorderSizePixel = 0
+	panel.Visible = false
+	panel.Parent = gui
+	local cells = {}
+	local function cell(name: string, x: number, y: number, w: number, h: number)
+		local f = Instance.new("Frame")
+		f.Position = UDim2.fromOffset(x, y)
+		f.Size = UDim2.fromOffset(w, h)
+		f.BorderSizePixel = 0
+		f.Parent = panel
+		cells[name] = f
+	end
+	cell("Head", 61, 8, 28, 26)
+	cell("UpperTorso", 53, 37, 44, 34)
+	cell("LowerTorso", 53, 73, 44, 14)
+	for side, left in { Right = true, Left = false } do -- facing us: its right arm is on our left
+		local arm, leg = left and 37 or 99, left and 53 or 76
+		cell(side .. "UpperArm", arm, 37, 14, 24)
+		cell(side .. "LowerArm", arm, 63, 14, 22)
+		cell(side .. "Hand", arm, 87, 14, 10)
+		cell(side .. "UpperLeg", leg, 89, 21, 26)
+		cell(side .. "LowerLeg", leg, 117, 21, 24)
+		cell(side .. "Foot", leg, 143, 21, 8)
+	end
+	local function line(y: number, size: number, color: Color3)
+		local l = label({ TextSize = size, TextColor3 = color, Position = UDim2.fromOffset(0, y), Size = UDim2.new(1, 0, 0, size + 2) })
+		l.Parent = panel
+		return l
+	end
+	local function bar(y: number, name: string, color: Color3)
+		local l = line(y - 3, 10, Color3.new(1, 1, 1))
+		l.Text = name
+		l.TextXAlignment = Enum.TextXAlignment.Left
+		l.Position = UDim2.fromOffset(8, y - 3)
+		local back = Instance.new("Frame")
+		back.Position = UDim2.fromOffset(50, y)
+		back.Size = UDim2.fromOffset(92, 6)
+		back.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+		back.BorderSizePixel = 0
+		back.Parent = panel
+		local fill = Instance.new("Frame")
+		fill.Size = UDim2.fromScale(1, 1)
+		fill.BackgroundColor3 = color
+		fill.BorderSizePixel = 0
+		fill.Parent = back
+		return fill
+	end
+	mv.vitals = {
+		panel = panel,
+		cells = cells,
+		status = line(156, 13, Color3.fromRGB(255, 160, 60)),
+		pulse = line(172, 12, Color3.fromRGB(120, 230, 150)),
+		blood = bar(194, "Blood", Color3.fromRGB(150, 90, 255)),
+		awake = bar(205, "Awake", Color3.fromRGB(120, 230, 150)),
+		colors = { [0] = Color3.fromRGB(150, 150, 155), Color3.fromRGB(240, 200, 70), Color3.fromRGB(255, 120, 40), Color3.fromRGB(45, 30, 70) },
+	}
 end
 gui.Parent = player:WaitForChild("PlayerGui")
 
@@ -676,6 +743,12 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 		local result = aim(60)
 		actionRemote:FireServer("revive", result and dummyOf(result.Instance) and result.Instance)
+	elseif input.KeyCode == Enum.KeyCode.B then -- scan: X-ray the whole dummy you are looking at
+		local result = aim(60)
+		local dummy = result and dummyOf(result.Instance)
+		if dummy then
+			Fx.scan(dummy, 4)
+		end
 	elseif input.KeyCode == Enum.KeyCode.V then
 		if player.CameraMode == Enum.CameraMode.LockFirstPerson then
 			player.CameraMode = Enum.CameraMode.Classic
@@ -1820,10 +1893,47 @@ RunService.RenderStepped:Connect(function(dt)
 	local dummy = result and dummyOf(result.Instance)
 	if dummy then
 		local injuries = dummy:GetAttribute("Injuries")
+		local blood = dummy:GetAttribute("Blood") or 100
 		targetTitle.Text = injuries ~= "" and injuries or "No injuries"
-		targetInfo.Text = `{dummy.Name} · {dummy:GetAttribute("State")} · {dummy:GetAttribute("HP")}% health`
+		targetInfo.Text = `{dummy.Name} · {dummy:GetAttribute("Status")} · {blood >= 100 and "full blood" or blood .. "% blood"}`
+		mv.seen, mv.seenAt = dummy, os.clock()
+		-- pointing a gun at it: tell the server now and then, so it puts its hands up
+		local aimRemote = remotes:FindFirstChild("Aim")
+		if weapon.kind == "gun" and aimRemote and not holding and os.clock() - (mv.aimedAt or 0) > 0.4 then
+			mv.aimedAt = os.clock()
+			aimRemote:FireServer(result.Instance)
+		end
 	else
 		targetTitle.Text = ""
 		targetInfo.Text = ""
+	end
+
+	-- vitals of the dummy last looked at; the panel lingers a while after you look away
+	local seen = mv.seen
+	if seen and (not seen.Parent or os.clock() - mv.seenAt > 8) then
+		seen, mv.seen = nil, nil
+	end
+	local vitals = mv.vitals
+	vitals.panel.Visible = seen ~= nil
+	if seen then
+		local blood = seen:GetAttribute("Blood") or 100
+		local pain = seen:GetAttribute("Pain") or 0
+		local status = seen:GetAttribute("Status") or ""
+		local levels = {}
+		for name, level in (seen:GetAttribute("Body") or ""):gmatch("(%w+):(%d)") do
+			levels[name] = tonumber(level)
+		end
+		for name, cell in vitals.cells do
+			cell.BackgroundColor3 = vitals.colors[levels[name] or 0]
+		end
+		local dead = status:sub(1, 4) == "Dead"
+		-- the heart races with pain and with blood loss
+		local bpm = dead and 0 or math.floor(72 + pain * 0.7 + (100 - blood) * 1.6 + math.sin(os.clock() * 3) * 2)
+		vitals.status.Text = status
+		vitals.pulse.Text = bpm .. " bpm"
+		vitals.pulse.TextColor3 = (dead or bpm > 140) and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(120, 230, 150)
+		vitals.blood.Size = UDim2.fromScale(blood / 100, 1)
+		local awake = (dead or status == "Out cold") and 0 or status == "Drowsy" and 0.35 or 1 - pain / 250
+		vitals.awake.Size = UDim2.fromScale(awake, 1)
 	end
 end)

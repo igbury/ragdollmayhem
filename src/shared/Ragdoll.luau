@@ -66,6 +66,7 @@ function Ragdoll.setup(model: Model)
 			joint.UpperAngle = spec[4]
 		end
 		joint.Name = "RagJoint"
+		joint:SetAttribute("Joint", motor.Name) -- which motor it stands in for (see Ragdoll.joints)
 		joint.Attachment0 = a0
 		joint.Attachment1 = a1
 		joint.Enabled = false
@@ -105,6 +106,22 @@ local function standUp(model: Model, humanoid: Humanoid?)
 	root.AssemblyLinearVelocity = Vector3.zero
 	root.AssemblyAngularVelocity = Vector3.zero
 	root.CFrame = CFrame.lookAt(pos, pos + facing.Unit)
+end
+
+-- Let only the named joints go limp (or drive them again) on a body that is otherwise up and
+-- animated: an arm that hangs and swings after a hit, a head that snaps back. Does nothing while
+-- the whole body is ragdolled; set() switches every joint, so limp ones are re-applied after it.
+function Ragdoll.joints(model: Model, names: { string }, limp: boolean)
+	if model:GetAttribute("Ragdolled") then
+		return
+	end
+	for _, d in model:GetDescendants() do
+		if (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) and table.find(names, d.Name) then
+			d.Enabled = not limp
+		elseif d.Name == "RagJoint" and d:IsA("Constraint") and table.find(names, d:GetAttribute("Joint")) then
+			d.Enabled = limp
+		end
+	end
 end
 
 function Ragdoll.set(model: Model, on: boolean)

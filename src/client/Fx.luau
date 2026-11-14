@@ -654,6 +654,299 @@ function EVENTS.Fire(_, position: Vector3, radius: number, dur: number)
 	end
 end
 
+-- Injuries ----------------------------------------------------------------------
+-- What the server's injury rules look like (server hit()): blood that sprays out of a wound, lands
+-- and pools, wounds that keep dripping (the "Bleeder" tag), and the X-ray: the part that was hit
+-- turns to glass for a moment and shows its bones, the broken ones in orange.
+local CollectionService = game:GetService("CollectionService")
+local Debris = game:GetService("Debris")
+local BLOOD = Color3.fromRGB(96, 34, 214)
+local BONE = Color3.fromRGB(245, 245, 235)
+local BONE_BROKEN = Color3.fromRGB(255, 140, 40)
+local GLASS = Color3.fromRGB(150, 200, 255)
+local GRAVITY = 70
+local MAX_PUDDLES = 140
+local POOL_GROW = TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+-- blood lands on the world, not on bodies, loose limbs or other effects
+local bloodParams = RaycastParams.new()
+bloodParams.FilterType = Enum.RaycastFilterType.Exclude
+local function aimBlood()
+	local skip = { folder }
+	table.insert(skip, workspace:FindFirstChild("Dummies")) -- inserting nil adds nothing
+	table.insert(skip, workspace:FindFirstChild("Gibs"))
+	table.insert(skip, player.Character)
+	bloodParams.FilterDescendantsInstances = skip
+end
+
+local puddles = {} -- oldest first
+-- ponytail: a puddle stays where it fell when the floor under it is blown away; it is gone in
+-- a minute anyway. Weld it to the hit part if floating puddles ever bother anyone.
+-- `splat` makes it a splash rather than a neat disc: lobes round the rim and a few thin tongues
+-- thrown out of it (a drop that hit the ground at speed); pools that drips fill stay round.
+local function puddle(position: Vector3, normal: Vector3, radius: number, splat: boolean?): Part
+	local p = part(Enum.PartType.Cylinder, BLOOD, Enum.Material.SmoothPlastic)
+	local up = math.abs(normal.Y) > 0.9 and Vector3.xAxis or UP
+	-- the cylinder's axis (X) along the normal; a hair of random lift so pools do not flicker in each other
+	p.CFrame = CFrame.lookAt(position + normal * rng:NextNumber(0.02, 0.06), position + normal, up) * CFrame.Angles(0, math.pi / 2, 0)
+	p.Size = Vector3.new(0.06, 0.3, 0.3)
+	p.Reflectance = 0.12
+	TweenService:Create(p, POOL_GROW, { Size = Vector3.new(0.06, radius * 2, radius * 2) }):Play()
+	if splat then
+		for _ = 1, rng:NextInteger(3, 5) do
+			local angle = rng:NextNumber(0, math.pi * 2)
+			local reach = radius * rng:NextNumber(0.7, 1.15)
+			local r = radius * rng:NextNumber(0.25, 0.55)
+			local lobe = part(Enum.PartType.Cylinder, BLOOD, Enum.Material.SmoothPlastic)
+			lobe.Reflectance = 0.12
+			lobe.CFrame = p.CFrame * CFrame.new(0, math.cos(angle) * reach, math.sin(angle) * reach)
+			lobe.Parent = p -- goes when the puddle goes
+			TweenService:Create(lobe, POOL_GROW, { Size = Vector3.new(0.06, r * 2, r * 2) }):Play()
+		end
+		for _ = 1, rng:NextInteger(2, 4) do
+			local tongue = part(Enum.PartType.Block, BLOOD, Enum.Material.SmoothPlastic)
+			local length = radius * rng:NextNumber(0.7, 1.4)
+			tongue.CFrame = p.CFrame * CFrame.Angles(rng:NextNumber(0, math.pi * 2), 0, 0) * CFrame.new(0, radius * 0.8 + length / 2, 0)
+			tongue.Parent = p
+			TweenService:Create(tongue, POOL_GROW, { Size = Vector3.new(0.05, length, radius * rng:NextNumber(0.1, 0.2)) }):Play()
+		end
+	end
+	table.insert(puddles, p)
+	if #puddles > MAX_PUDDLES then
+		table.remove(puddles, 1):Destroy()
+	end
+	Debris:AddItem(p, 60)
+	return p
+end
+
+-- The haze a drop leaves where it bursts.
+local function mist(at: Vector3)
+	local m = part(Enum.PartType.Ball, BLOOD, Enum.Material.SmoothPlastic)
+	local size = rng:NextNumber(0.5, 1.1)
+	run(0.7, { m }, function(a)
+		m.Size = Vector3.one * size * (0.4 + a)
+		m.Position = at + UP * (0.15 + a * 0.5)
+		m.Transparency = 0.55 + 0.45 * a
+	end)
+end
+
+-- One drop on a ballistic arc, stretched into a tear along its flight; `onLand(position, normal)`
+-- runs where and when it meets the ground.
+local function droplet(from: Vector3, velocity: Vector3, size: number, onLand: ((Vector3, Vector3) -> ())?)
+	local function fall(groundY: number): number
+		local height = math.max(from.Y - groundY, 0)
+		return (velocity.Y + math.sqrt(velocity.Y ^ 2 + 2 * GRAVITY * height)) / GRAVITY
+	end
+	local under = workspace:Raycast(from, -UP * 60, bloodParams)
+	local t = fall(under and under.Position.Y or from.Y - 6)
+	local over = from + velocity * t
+	local top = math.max(from.Y, from.Y + velocity.Y ^ 2 / (2 * GRAVITY)) + 1
+	local ground = workspace:Raycast(Vector3.new(over.X, top, over.Z), -UP * (top - from.Y + 60), bloodParams)
+	if ground then
+		t = fall(ground.Position.Y)
+	end
+	t = math.clamp(t, 0.1, 2.5)
+	local p = part(Enum.PartType.Block, BLOOD, Enum.Material.SmoothPlastic)
+	local round = Instance.new("SpecialMesh") -- an ellipsoid the size of the part
+	round.MeshType = Enum.MeshType.Sphere
+	round.Parent = p
+	run(t, { p }, function(a)
+		local s = a * t
+		local flight = velocity - UP * (GRAVITY * s)
+		local position = from + velocity * s - UP * (0.5 * GRAVITY * s * s)
+		local width = size * (1 - a * 0.3)
+		p.Size = Vector3.new(width, width, width * (1 + math.min(flight.Magnitude * 0.07, 2.2)))
+		p.CFrame = CFrame.lookAt(position, position + flight)
+	end)
+	if ground then
+		task.delay(t, onLand or mist, ground.Position, ground.Normal)
+	end
+end
+
+-- A wound opening: `amount` 1 = a small hit, 2 = a heavy bullet, 3+ = a limb coming off. `kind`
+-- shapes the spray: a bullet drives most of it out the far side in a cone and splashes a little
+-- back, a blast throws it every way, anything else wells up and out.
+function Fx.blood(position: Vector3, dir: Vector3, amount: number, kind: string?)
+	aimBlood()
+	for _ = 1, math.ceil(amount) do
+		mist(position)
+	end
+	for i = 1, math.floor(6 + amount * 9) do
+		local any = rng:NextUnitVector()
+		local spray
+		if kind == "bullet" then
+			spray = i % 3 == 0 and (-dir + any * 0.7).Unit * rng:NextNumber(3, 8) or (dir + any * 0.45).Unit * rng:NextNumber(8, 18 + amount * 4) + UP * rng:NextNumber(0, 4)
+		elseif kind == "blast" then
+			spray = any * rng:NextNumber(8, 22) + UP * 4
+		else
+			spray = Vector3.new(any.X, math.abs(any.Y) * 1.3, any.Z) * rng:NextNumber(4, 10 + amount * 5) + dir * rng:NextNumber(0, 5)
+		end
+		local pool = i % 3 == 0 and rng:NextNumber(0.35, 0.9) * (amount >= 3 and 1.5 or 1) or nil
+		droplet(position, spray, rng:NextNumber(0.18, 0.3 + amount * 0.1), pool and function(at, normal)
+			puddle(at, normal, pool, true)
+		end)
+	end
+end
+
+-- Open wounds drip, and the drips under a body that lies still run together into one pool. A
+-- stump does more than drip: it throws a jet out along the cut with every beat.
+local pools = setmetatable({}, { __mode = "k" }) -- [bleeding part] = { part = Part, at = Vector3, radius = number }
+task.spawn(function()
+	while true do
+		task.wait(0.35)
+		aimBlood()
+		for _, source in CollectionService:GetTagged("Bleeder") do
+			if not source:IsDescendantOf(workspace) or (source.Position - camera.CFrame.Position).Magnitude > 160 then
+				continue
+			end
+			local function land(at: Vector3, normal: Vector3)
+				local pool = pools[source]
+				if pool and pool.part.Parent and (pool.at - at).Magnitude < 1.3 then
+					pool.radius = math.min(pool.radius + 0.06, 2.2)
+					TweenService:Create(pool.part, POOL_GROW, { Size = Vector3.new(0.06, pool.radius * 2, pool.radius * 2) }):Play()
+				else
+					pools[source] = { part = puddle(at, normal, 0.4), at = at, radius = 0.4 }
+				end
+			end
+			local carried = source.AssemblyLinearVelocity * 0.3
+			if source.Name == "Stump" then
+				local out = source.CFrame.XVector -- the cap faces along its X (server stump())
+				for i = 1, 3 do
+					droplet(source.Position, out * rng:NextNumber(4, 10) + UP * rng:NextNumber(1, 4) + rng:NextUnitVector() * 1.5 + carried, 0.26, i == 1 and land or nil)
+				end
+			else
+				droplet(source.Position, rng:NextUnitVector() * 1.5 + carried, 0.22, land)
+			end
+		end
+	end
+end)
+
+-- The bones inside one body part, in the part's own space: { shape, size, offset, hurt? }.
+-- Boxy on purpose, like the bodies. `broken` snaps them: those pieces come back marked hurt.
+local function bonesOf(name: string, size: Vector3, broken: boolean): { { any } }
+	local list = {}
+	local function add(shape: Enum.PartType, s: Vector3, cf: CFrame, hurt: boolean?)
+		table.insert(list, { shape, s, cf, hurt })
+	end
+	local Block, Ball, Cylinder = Enum.PartType.Block, Enum.PartType.Ball, Enum.PartType.Cylinder
+	local x, y, z = size.X, size.Y, size.Z
+	if name == "UpperTorso" then
+		local t = 0.09
+		add(Block, Vector3.new(0.16, y * 0.95, 0.16), CFrame.new(0, 0, z * 0.3)) -- spine
+		add(Block, Vector3.new(0.14, y * 0.55, 0.1), CFrame.new(0, y * 0.08, -z * 0.36)) -- sternum
+		for i = 0, 3 do
+			local h = y * 0.36 - i * y * 0.2
+			local w = x * (0.4 - i * 0.02) -- half the rib cage's width at this rib
+			for side = -1, 1, 2 do
+				local snapped = broken and side == 1 and i >= 1 and i <= 2
+				local sag = snapped and CFrame.new(0, -0.07, 0) * CFrame.Angles(0, 0, side * 0.3) or CFrame.identity
+				add(Block, Vector3.new(w, t, t), CFrame.new(side * w / 2, h, z * 0.3)) -- back
+				add(Block, Vector3.new(t, t, z * 0.66), CFrame.new(side * w, h - 0.03, 0) * sag, snapped) -- side
+				add(Block, Vector3.new(w - 0.07, t, t), CFrame.new(side * (w + 0.07) / 2, h - 0.06, -z * 0.36) * sag, snapped) -- front
+			end
+		end
+	elseif name == "LowerTorso" then
+		add(Block, Vector3.new(0.16, y, 0.16), CFrame.new(0, 0, z * 0.3)) -- spine
+		add(Block, Vector3.new(x * 0.8, y * 0.4, z * 0.5), CFrame.new(0, -y * 0.15, 0), broken) -- pelvis
+	elseif name == "Head" then
+		local r = math.min(x, y, z) * 0.7
+		add(Ball, Vector3.one * r, CFrame.new(0, y * 0.06, 0)) -- skull
+		add(Block, Vector3.new(r * 0.6, r * 0.22, r * 0.5), CFrame.new(0, -y * 0.3, -z * 0.1)) -- jaw
+		if broken then
+			add(Block, Vector3.new(0.06, r * 0.6, r * 0.9), CFrame.new(r * 0.15, y * 0.15, 0) * CFrame.Angles(0, 0, 0.4), true) -- crack
+		end
+	elseif name:find("Hand") or name:find("Foot") then
+		add(Block, Vector3.new(x * 0.5, y * 0.5, z * 0.6), CFrame.identity, broken)
+	else -- arm or leg segment: one long bone with a knuckle at each end
+		local w = math.min(x, z) * 0.22
+		local along = CFrame.Angles(0, 0, math.pi / 2) -- a cylinder's axis is X
+		if broken then
+			add(Cylinder, Vector3.new(y * 0.4, w, w), CFrame.new(0.06, y * 0.2, 0) * CFrame.Angles(0, 0, 0.3) * along)
+			add(Cylinder, Vector3.new(y * 0.4, w, w), CFrame.new(-0.06, -y * 0.2, 0) * CFrame.Angles(0, 0, -0.35) * along, true)
+		else
+			add(Cylinder, Vector3.new(y * 0.8, w, w), along)
+		end
+		add(Ball, Vector3.one * w * 1.7, CFrame.new(0, y * 0.4, 0))
+		add(Ball, Vector3.one * w * 1.7, CFrame.new(0, -y * 0.4, 0))
+	end
+	return list
+end
+
+-- Show `target`'s bones through it for `dur` seconds. Only this client sees its own X-rays.
+local xrayed = setmetatable({}, { __mode = "k" }) -- [BasePart] = true while one is running
+function Fx.xray(target: BasePart, dur: number, broken: boolean)
+	if xrayed[target] then
+		return
+	end
+	xrayed[target] = true
+	local parts, offsets = {}, {}
+	for _, bone in bonesOf(target.Name, target.Size, broken) do
+		local p = part(bone[1], bone[4] and BONE_BROKEN or BONE, Enum.Material.SmoothPlastic) -- solid, not glowing
+		p.Size = bone[2]
+		offsets[p] = bone[3]
+		table.insert(parts, p)
+	end
+	local skin = target.Color
+	target.Color = GLASS
+	target.LocalTransparencyModifier = 0.72
+	run(dur, parts, function(a)
+		local cf = target.CFrame
+		local fade = math.max(0, (a - 0.75) / 0.25)
+		for _, p in parts do
+			p.CFrame = cf * offsets[p]
+			p.Transparency = fade
+		end
+		if a >= 1 then
+			xrayed[target] = nil
+			target.LocalTransparencyModifier = 0
+			target.Color = target:GetAttribute("Skin") or skin -- the server's bruise colour, if it has one
+		end
+	end)
+end
+
+-- The whole skeleton of a dummy at once (the Scan key).
+function Fx.scan(model: Model, dur: number)
+	local broken = {}
+	for name, level in (model:GetAttribute("Body") or ""):gmatch("(%w+):(%d)") do
+		broken[name] = level == "2"
+	end
+	for _, child in model:GetChildren() do
+		if child:IsA("BasePart") and child.Name ~= "HumanoidRootPart" then
+			Fx.xray(child, dur, broken[child.Name] or false)
+		end
+	end
+end
+
+-- `kind`: "blunt", "bullet", "blade", "cut" (a limb coming off) or "blast".
+function EVENTS.Wound(_, target: BasePart?, position: Vector3, dir: Vector3, blood: number, bone: string?, kind: string?)
+	if blood > 0 then
+		Fx.blood(position, dir, blood, kind)
+	end
+	if kind == "blunt" then
+		-- a thud: a flash and a ring off the skin, and a little blood once something has broken
+		Fx.glint(position, 2, WHITE, 0.12)
+		Fx.burst(position, 0.4, bone == "broken" and 3.2 or 1.8, 0.22, WHITE, 0.7)
+		if bone == "broken" then
+			Fx.blood(position, dir, 0.4)
+		end
+	elseif kind == "cut" then
+		Fx.shake(position, 0.4, 0.2)
+	end
+	if bone and target and target.Parent then
+		Fx.xray(target, 1.1, bone == "broken")
+		if bone == "broken" then
+			Fx.text(position + UP * 1.2, "CRACK!", WHITE, 1.2)
+			Fx.shake(position, 0.3, 0.15)
+		end
+	end
+end
+
+function EVENTS.Burst(_, position: Vector3, dir: Vector3)
+	Fx.blood(position, dir, 4)
+	Fx.glint(position, 4, WHITE, 0.15)
+	Fx.sparks(position, 10, 5, BONE, nil, 0.35)
+end
+
 local colorOf = {}
 for _, attack in Attacks do
 	colorOf[attack.id] = attack.color
