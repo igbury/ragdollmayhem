@@ -127,6 +127,25 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 			end
 		end
 	end
+	-- headphones: a band over the head and a cup on each ear, carried by the head like an accessory
+	local hs = parts.Head.Size
+	local DARK, GREY, RED = Color3.fromRGB(30, 30, 36), Color3.fromRGB(70, 70, 80), Color3.fromRGB(232, 70, 56)
+	local function phone(size: Vector3, offset: CFrame, color: Color3, cylinder: boolean?)
+		local p = box(model, size, CFrame.identity, color)
+		p.CanCollide = false
+		if cylinder then
+			p.Shape = Enum.PartType.Cylinder -- axis along X: faces out of the ears
+		end
+		table.insert(extras, { part = p, on = "Head", offset = offset, phone = true })
+	end
+	local earX = hs.X / 2 + 0.1
+	phone(Vector3.new(hs.X + 0.32, 0.16, 0.26), CFrame.new(0, hs.Y / 2 + 0.06, 0), GREY)
+	for _, s in { -1, 1 } do
+		phone(Vector3.new(0.14, hs.Y * 0.5, 0.24), CFrame.new(s * (earX + 0.06), hs.Y * 0.28, 0), GREY)
+		phone(Vector3.new(0.26, 0.66, 0.66), CFrame.new(s * earX, 0, 0), DARK, true)
+		phone(Vector3.new(0.04, 0.4, 0.4), CFrame.new(s * (earX + 0.14), 0, 0), RED, true)
+	end
+
 	for _, child in character:GetChildren() do
 		if child:IsA("Clothing") or child:IsA("ShirtGraphic") or child:IsA("BodyColors") then
 			child:Clone().Parent = model
@@ -146,6 +165,7 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 	local standY = hum.HipHeight + hrp.Size.Y / 2
 	local seatTop = standY + hipY - 0.6 -- a low stool: shins angled well forward keep the feet off the floor
 	self.sitRoot = CFrame.new(0, seatTop + thigh.Z / 2 - hipY, 0.45)
+	self.standRoot = CFrame.new(0, standY, -0.3) -- a step forward, off the chair
 
 	-- Chair, facing -Z like the puppet.
 	local chair = Instance.new("Model")
@@ -168,6 +188,10 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 	local shadow = box(chair, Vector3.new(0.1, 3.2, 3.2), CFrame.new(0, 0.05, 0) * CFrame.Angles(0, 0, math.rad(90)), Color3.new(0, 0, 0))
 	shadow.Shape = Enum.PartType.Cylinder
 	shadow.Transparency = 0.7
+	self.chairParts = {}
+	for _, p in chair:GetChildren() do
+		table.insert(self.chairParts, { part = p, alpha = p.Transparency })
+	end
 
 	-- the whole scene turns a little toward the camera
 	self.base = CFrame.Angles(0, math.rad(-28), 0)
@@ -178,6 +202,7 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 	camera.CFrame = CFrame.lookAt(Vector3.new(0.8, seatTop + 2.8, -14), Vector3.new(0, seatTop + 1.2, -0.3))
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
+	self.camera, self.camHome = camera, camera.CFrame
 
 	return self
 end
@@ -188,7 +213,8 @@ function MenuPuppet:sitPose(t: number): Pose
 	local pose = {
 		root = self.sitRoot * CFrame.new(0, math.abs(swing) * 0.03, 0),
 		waist = v(-9, math.sin(t * 0.7) * 4),
-		neck = v(4 + swing * 2, math.sin(t * 0.5) * 18),
+		-- nodding to the music in the headphones: a sharp dip on every beat (120 bpm)
+		neck = v(2 - math.abs(math.sin(t * math.pi * 2)) ^ 3 * 14, math.sin(t * 0.5) * 18),
 	}
 	pair(pose, "Hip", v(88, 0, 4))
 	pose.rKnee = v(-62 + swing * 16) -- swings forward of the seat, never back under it
@@ -200,9 +226,113 @@ function MenuPuppet:sitPose(t: number): Pose
 	return pose
 end
 
--- Frame ------------------------------------------------------------------------------------------
-function MenuPuppet:step(t: number)
+-- smoothstep, clamped: 0 below 0, 1 above 1
+local function ease(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+local function blend(pose: Pose, target: Pose, w: number)
+	if w <= 0 then
+		return
+	end
+	for key, goal in target do
+		pose[key] = (pose[key] or (if key == "root" then CFrame.identity else Vector3.zero)):Lerp(goal, w)
+	end
+end
+
+-- Leaving for the game (PLAY), in seconds since PLAY:
+--   hop off the chair (it fades), camera still -> turn round (headphones fade), walk off ->
+--   ZOOM_AT the camera chases him -> STRIPES_OFF_AT the menu drops its speed lines ->
+--   LEAVE_TIME the camera is at the back of his head and the menu cuts to the game.
+MenuPuppet.ZOOM_AT = 1.5
+MenuPuppet.STRIPES_OFF_AT = 2.6
+MenuPuppet.LEAVE_TIME = 3.2
+local WALK_FROM, WALK_SPEED = 1.15, 7
+local CHASE_FAR = 6 -- studs behind the head the chase settles at before pushing in
+
+-- Camera `d` studs behind the back of a head (centre `head`, back face `back` studs behind it),
+-- looking the way `fwd` (flat) points. Shared with the game camera, so the cut lines up.
+function MenuPuppet.chaseCamera(head: Vector3, fwd: Vector3, back: number, d: number): CFrame
+	local pos = head - fwd * (back + d) + Vector3.yAxis * d * 0.08
+	return CFrame.lookAt(pos, head + fwd * 8)
+end
+
+-- the back of the head: half its depth plus room for hair
+function MenuPuppet.headBack(head: BasePart): number
+	return head.Size.Z / 2 + 0.3
+end
+
+function MenuPuppet:leave()
+	self.leaveAt = self.t
+end
+
+function MenuPuppet:leavePose(e: number, t: number): Pose
 	local pose = self:sitPose(t)
+	-- hop: an arc off the seat onto the floor, then the knees take the landing
+	local u = math.clamp(e / 0.5, 0, 1)
+	local stand = { waist = v(0), neck = v(0) }
+	pair(stand, "Hip", v(0))
+	pair(stand, "Knee", v(0))
+	pair(stand, "Ankle", v(0))
+	pair(stand, "Shoulder", v(0, 0, -4))
+	pair(stand, "Elbow", v(10))
+	pair(stand, "Wrist", v(0))
+	blend(pose, stand, ease(u))
+	local landing = math.sin(math.pi * math.clamp((e - 0.45) / 0.3, 0, 1))
+	local crouch = {}
+	pair(crouch, "Hip", v(28))
+	pair(crouch, "Knee", v(-45))
+	pair(crouch, "Ankle", v(17))
+	pair(crouch, "Shoulder", v(20, 0, -12))
+	blend(pose, crouch, landing)
+
+	-- turn round, then walk
+	local yaw = math.pi * ease((e - 0.75) / 0.5)
+	local walk = math.max(0, e - WALK_FROM)
+	local p = walk * 9
+	local stride = {}
+	stride.rHip, stride.lHip = v(math.sin(p) * 32), v(-math.sin(p) * 32)
+	stride.rKnee, stride.lKnee = v(-math.max(0, math.sin(p + 1.3)) * 50), v(-math.max(0, math.sin(p + 1.3 + math.pi)) * 50)
+	stride.rShoulder, stride.lShoulder = v(-math.sin(p) * 28, 0, -4), v(math.sin(p) * 28, 0, 4)
+	stride.waist = v(-4)
+	local w = ease(walk / 0.3)
+	blend(pose, stride, w)
+	local hop = self.sitRoot:Lerp(self.standRoot, ease(u)) * CFrame.new(0, math.sin(math.pi * u) * 0.7 - landing * 0.3, 0)
+	pose.root = CFrame.new(0, 0, walk * WALK_SPEED) * hop * CFrame.Angles(0, yaw, 0) * CFrame.new(0, math.abs(math.sin(p)) * 0.12 * w, 0)
+	return pose
+end
+
+-- Frame ------------------------------------------------------------------------------------------
+-- Wave the left hand for a moment, then settle back onto the knee.
+local WAVE_TIME = 1.2
+function MenuPuppet:wave()
+	self.waveAt = self.t
+end
+
+function MenuPuppet:applyWave(pose: Pose, t: number)
+	local e = t - (self.waveAt or -math.huge)
+	if e >= WAVE_TIME then
+		return
+	end
+	local w = ease(math.min(e / 0.2, (WAVE_TIME - e) / 0.3))
+	local swing = math.sin(e * 12) * 25
+	local up = { lShoulder = v(165, 0, swing), lElbow = v(15), lWrist = v(0), neck = v(0, 12, 0) }
+	for key, target in up do
+		pose[key] = (pose[key] or Vector3.zero):Lerp(target, w)
+	end
+end
+
+function MenuPuppet:step(t: number)
+	self.t = t
+	local e = self.leaveAt and t - self.leaveAt
+	local pose
+	if e then
+		pose = self:leavePose(e, t)
+	else
+		pose = self:sitPose(t)
+		self:applyWave(pose, t)
+	end
 	local parts = self.parts
 	local root = self.base * pose.root
 	parts.LowerTorso.CFrame = root * self.rootJoint
@@ -210,8 +340,28 @@ function MenuPuppet:step(t: number)
 		local a = pose[j.key] or Vector3.zero
 		parts[j.part].CFrame = parts[j.parent].CFrame * j.a * CFrame.Angles(math.rad(a.X), math.rad(a.Y), math.rad(a.Z)) * j.b
 	end
-	for _, e in self.extras do
-		e.part.CFrame = parts[e.on].CFrame * e.offset
+	-- headphones fade away while he turns round
+	local gone = e and ease((e - 0.8) / 0.35) or 0
+	for _, x in self.extras do
+		x.part.CFrame = parts[x.on].CFrame * x.offset
+		if x.phone then
+			x.part.Transparency = gone
+		end
+	end
+	if e then
+		local fade = ease((e - 0.2) / 0.3) -- the chair goes as he lands
+		for _, c in self.chairParts do
+			c.part.Transparency = c.alpha + (1 - c.alpha) * fade
+		end
+		-- the camera holds still, then chases him and pushes straight in to the back of his head,
+		-- widening to the game's field of view on the way
+		local head = parts.Head
+		local fwd = (self.base * pose.root).LookVector * Vector3.new(1, 0, 1)
+		local push = math.clamp((e - MenuPuppet.ZOOM_AT - 0.3) / (MenuPuppet.LEAVE_TIME - MenuPuppet.ZOOM_AT - 0.3), 0, 1) ^ 2
+		local d = CHASE_FAR * (1 - push)
+		local chase = MenuPuppet.chaseCamera(head.Position, fwd.Unit, MenuPuppet.headBack(head), d)
+		self.camera.CFrame = self.camHome:Lerp(chase, ease((e - MenuPuppet.ZOOM_AT) / 1))
+		self.camera.FieldOfView = 30 + 40 * push
 	end
 end
 

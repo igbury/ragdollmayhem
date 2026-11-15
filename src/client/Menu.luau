@@ -491,9 +491,9 @@ local function title(p: Panel, n: number, text: string, color: Color3, withValue
 end
 
 local statP, shopP, mapP, playP, sceneP = PANELS[1], PANELS[2], PANELS[3], PANELS[4], PANELS[5]
-statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 16, 40, 0, WHITE, 0.8, 6)
+statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(150, 205, 80), 0.3, 14) -- PLAY's rays, light green
 title(statP, 1, "STATS", YELLOW, false) -- yellow on green
-shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 12, 22, 40, WHITE, 0.55, -9)
+shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(240, 100, 70), 0.3, 14) -- PLAY's rays, red
 title(shopP, 2, "SHOP", RED, false) -- red on yellow
 mapP.burst = rays(mapP.content :: GuiObject, 0.5, 0.5, 18, 70, 0, Color3.fromRGB(255, 120, 100), 0.35, -10)
 local mapValue = title(mapP, 3, "MAP", WHITE, true) :: TextLabel -- white on red
@@ -563,29 +563,86 @@ end
 refresh()
 
 -- Actions --------------------------------------------------------------------------------------
-local function play()
-	Menu.active = false
+-- The cut to the game, on the frame the menu camera reaches the back of the avatar's head: the game
+-- camera is put at the same spot behind the real character (the server has moved it to the map
+-- by now) and first person takes it from there.
+local function handOff()
 	RunService:UnbindFromRenderStep("MenuCamera")
-	ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("map", MAPS[mapIndex])
-	tween(burstScale, 0.3, { Scale = 3 })
-	tween(blur, 0.7, { Size = 0 })
-	task.delay(0.15, function()
-		tween(page, 0.5, { Position = UDim2.fromScale(0.5, 1.7), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-		tween(pageShadow, 0.5, { Position = UDim2.new(0.5, 14, 1.7, 16), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-		tween(back, 0.6, { BackgroundTransparency = 1 })
-		for _, d in back:GetChildren() do
-			if d:IsA("ImageLabel") then
-				tween(d, 0.4, { ImageTransparency = 1 })
-			end
-		end
-	end)
-	task.delay(0.8, function()
-		blur:Destroy()
-		gui:Destroy()
-	end)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local head = char and char:FindFirstChild("Head") :: BasePart?
+	if root and head then
+		local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		local fwd = if look.Magnitude > 0.01 then look.Unit else Vector3.new(0, 0, -1)
+		camera.CFrame = MenuPuppet.chaseCamera(head.Position, fwd, MenuPuppet.headBack(head), 0)
+	end
+	Menu.active = false
 	camera.CameraType = Enum.CameraType.Custom
 	player.CameraMode = Enum.CameraMode.LockFirstPerson
 	ContextActionService:UnbindAction("MenuSink")
+	blur:Destroy()
+	gui:Destroy()
+end
+
+-- The scene panel grows to fill the screen as the camera starts chasing the avatar.
+local function zoom(): Frame
+	local c = sceneP.content :: GuiObject
+	local stage = new("Frame", gui, {
+		BackgroundColor3 = BLUE,
+		Position = UDim2.fromOffset(c.AbsolutePosition.X - gui.AbsolutePosition.X, c.AbsolutePosition.Y - gui.AbsolutePosition.Y),
+		Size = UDim2.fromOffset(c.AbsoluteSize.X, c.AbsoluteSize.Y),
+		ClipsDescendants = true,
+		ZIndex = 30,
+	})
+	halftone(stage, Color3.fromRGB(30, 55, 115), 1)
+	rays(stage, 0.5, 0.45, 40, 4, 120, WHITE, 0.45, 0, 160)
+	viewport.Parent = stage
+	tween(stage, 0.8, { Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
+	tween(page, 0.5, { Position = UDim2.fromScale(0.5, 1.7), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	tween(pageShadow, 0.5, { Position = UDim2.new(0.5, 14, 1.7, 16), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+	tween(back, 0.6, { BackgroundTransparency = 1 })
+	for _, d in back:GetChildren() do
+		if d:IsA("ImageLabel") then
+			tween(d, 0.4, { ImageTransparency = 1 })
+		end
+	end
+	return stage
+end
+
+-- PLAY: the avatar hops off its chair, turns and walks off; the camera follows him into the game.
+-- Timed on the menu clock, the same one the avatar runs on, so the cut lands on the right frame.
+local leaving = false
+local function play()
+	leaving = true
+	ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("map", MAPS[mapIndex])
+	tween(burstScale, 0.3, { Scale = 3 })
+	tween(blur, 0.7, { Size = 0 })
+	if not puppet then
+		return handOff()
+	end
+	puppet:leave()
+	local playAt = os.clock() - start
+	local stage: Frame? = nil
+	local stripesOff = false
+	table.insert(tickers, function(t: number)
+		local e = t - playAt
+		if not stage and e >= MenuPuppet.ZOOM_AT then
+			stage = zoom()
+		end
+		if stage and not stripesOff and e >= MenuPuppet.STRIPES_OFF_AT then
+			stripesOff = true
+			for _, d in stage:GetDescendants() do
+				if d:IsA("ImageLabel") then
+					tween(d, 0.3, { ImageTransparency = 1 })
+				elseif d:IsA("Frame") then
+					tween(d, 0.3, { BackgroundTransparency = 1 })
+				end
+			end
+		end
+		if e >= MenuPuppet.LEAVE_TIME and gui.Parent then
+			handOff()
+		end
+	end)
 end
 
 mapP.onClick = function()
@@ -596,6 +653,11 @@ end
 shopP.onClick = function() openPopup("SHOP") end
 statP.onClick = function() openPopup("STATS") end
 playP.onClick = play
+sceneP.onClick = function()
+	if puppet then
+		puppet:wave()
+	end
+end
 
 -- One invisible button over the page; the polygon under the mouse decides hover and click.
 local hovered: Panel? = nil
@@ -625,7 +687,7 @@ end
 local hit = new("TextButton", page, { Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 10 })
 hit.Activated:Connect(function()
 	local p = panelAt(UserInputService:GetMouseLocation())
-	if p and p.onClick and Menu.active and not dim.Visible then
+	if p and p.onClick and Menu.active and not leaving and not dim.Visible then
 		pow()
 		;(p.onClick :: () -> ())()
 	end

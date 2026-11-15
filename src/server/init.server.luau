@@ -1712,7 +1712,13 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3)
 	explode(position)
 end
 
-weaponRemote.OnServerEvent:Connect(function(player, id, dir)
+-- How far the shooter's own idea of their head may sit from ours. Their body is theirs to move, so
+-- ours trails it (a stride or two when strafing); shooting from ours left the shot behind the model.
+local MAX_ORIGIN_DRIFT = 8 -- ponytail: trusted within this; tighten (or rewind positions) if cheating matters
+
+local AIMED_PELLETS = 0.3 -- an aimed shotgun throws its pellets in this share of the hip cone
+
+weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	local weapon = typeof(id) == "string" and weaponById[id]
 	local char = player.Character
 	local head = headOf(player)
@@ -1723,6 +1729,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 		return
 	end
 	dir = dir.Unit
+	local origin = head.Position
+	if typeof(from) == "Vector3" and from == from and (from - origin).Magnitude < MAX_ORIGIN_DRIFT then
+		origin = from
+	end
 	local ready = attackReady[player] or {}
 	attackReady[player] = ready
 	local now = os.clock()
@@ -1734,29 +1744,29 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 		lastSwing[player] = now
 	end
 	if weapon.kind == "rocket" then -- the warhead is in the air for seconds: the handler runs on in its own thread
-		task.spawn(rocket, weapon, char, head.Position, dir)
+		task.spawn(rocket, weapon, char, origin, dir)
 		return
 	end
 
 	if weapon.kind == "thrown" then
-		throw(weapon, char, head.Position, dir)
+		throw(weapon, char, origin, dir)
 		return
 	end
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = { char }
-	local origin = head.Position
 	if weapon.kind == "gun" then -- a gunshot scares whoever hears it, hit or miss
 		alarm(nil, origin, "shot", origin)
 	end
 	-- one ray, or a shotgun's spray of them (each pellet hits on its own)
 	local rng = Random.new()
+	local cone = (weapon.spread or 0) * (aimed == true and AIMED_PELLETS or 1)
 	for pellet = 1, weapon.pellets or 1 do
 		local aim = dir
-		if weapon.spread then
+		if cone > 0 then
 			local right = dir:Cross(Vector3.yAxis)
 			right = right.Magnitude > 0.01 and right.Unit or Vector3.xAxis
 			local up = right:Cross(dir).Unit
-			aim = (dir + right * rng:NextNumber(-1, 1) * weapon.spread + up * rng:NextNumber(-1, 1) * weapon.spread).Unit
+			aim = (dir + right * rng:NextNumber(-1, 1) * cone + up * rng:NextNumber(-1, 1) * cone).Unit
 		end
 		local result = workspace:Raycast(origin, aim * weapon.range, params)
 		local target = result and result.Position or origin + aim * weapon.range

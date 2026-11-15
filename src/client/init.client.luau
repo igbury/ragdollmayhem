@@ -74,6 +74,14 @@ dashAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
 	:RegisterKeyframeSequence(require(script:WaitForChild("DashBurst")))
 local dashTrack: AnimationTrack? = nil
 local flipUntil = 0
+local aimAnims = {} -- third-person aiming poses, see AimPose
+for _, kind in { "gun", "rocket", "throw" } do
+	local anim = Instance.new("Animation")
+	anim.AnimationId = game:GetService("KeyframeSequenceProvider")
+		:RegisterKeyframeSequence(require(script:WaitForChild("AimPose"))(kind))
+	aimAnims[kind] = anim
+end
+local aimTracks: { [string]: AnimationTrack } = {}
 
 -- Sounds (assets/sfx/*.wav, uploaded as Audio). An empty id stays silent.
 -- ponytail: played locally, so only you hear your own; add a remote if others should.
@@ -170,6 +178,41 @@ local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
 local lastWeaponUse = 0
 local recoil = 0
+local aiming = false -- right mouse / L2 held: aim down the sights (guns) or show the throw arc (thrown)
+local ads = 0 -- eased 0..1
+-- [weaponId] = camera-space nudge of the right hand while aiming, learnt frame by frame so the
+-- top of the held mesh ends up just under the crosshair whatever the wrist / grip offsets are
+local adsFix = {}
+-- [weaponId] = camera-space spot the left fist goes to while aiming (from HOLD.support, refreshed
+-- every frame from where the held mesh actually is; a frame old, as the left hand is placed first)
+local leftGrip = {}
+-- Pulled-back camera with a weapon out: the mouse is locked to the crosshair in the middle and the
+-- body turns with the camera, so every shot goes where the crosshair is and never backwards.
+-- Right mouse raises the weapon (AimPose) and brings the camera over the shoulder; it stays back.
+local thirdWeapon = false
+local thirdAim = 0 -- eased 0..1
+local mouseLocked = false -- thirdWeapon as of last frame, to unlock the mouse once when it ends
+local SHOULDER = Vector3.new(1.6, 0.4, 0) -- camera offset over the right shoulder when aiming
+-- The weapon in the character's own right hand, seen with the camera pulled back. BODY_GRIP turns
+-- the first-person hold (HOLD.grip, -Z out along the aim, +Y up) into the R15 hand's grip frame.
+local BODY_GRIP = CFrame.identity -- calibration knob; the R15 grip attachment already matches
+local bodyWeapon: { id: string?, part: MeshPart? } = {}
+-- Throwing-knife aim (right mouse): the knife is tossed up out of the fist, turns over and is caught
+-- by the blade, while the arm bends back beside the head with the handle pointing at the crosshair.
+local KNIFE_FLIP = 0.5 -- seconds for the whole toss
+local KNIFE_BLADE = 0.75 -- how far up the knife slides so the palm closes on the blade, not the handle
+local KNIFE_COCK = Vector3.new(-0.15, 0.55, 0.3) -- the right fist's move from rest: up beside the head, pulled back
+local KNIFE_TILT = -60 -- wrist tilt when cocked (melee rests at -25; -90 lays the knife flat along the view)
+local knifeT = 0
+local function smooth(t: number): number
+	return t * t * (3 - 2 * t)
+end
+-- The knife relative to its normal place in the hand at toss progress t: lifted on an arc, spun
+-- one and a half turns (ends upside down), sliding down so the blade ends up in the palm.
+local function knifeFlip(t: number): CFrame
+	local e = smooth(t)
+	return CFrame.new(0, math.sin(math.pi * t) * 0.9 + KNIFE_BLADE * e, 0) * CFrame.Angles(math.pi * 3 * e, 0, 0)
+end
 local sprint = 0 -- eased 0..1
 local nextLine, nextStep = 0, 0
 
@@ -195,14 +238,33 @@ local function label(props)
 end
 
 local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20) })
-local hint = label({
-	TextSize = 16,
-	AnchorPoint = Vector2.new(0.5, 0),
-	Position = UDim2.new(0.5, 0, 0, 50),
-	Size = UDim2.fromOffset(500, 28),
-	BackgroundTransparency = 0.4,
-	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
-})
+-- sniper scope: a clear circle (a huge black stroke round a round frame blacks out the rest) and a cross
+local scope = Instance.new("Frame")
+scope.AnchorPoint = Vector2.new(0.5, 0.5)
+scope.Position = UDim2.fromScale(0.5, 0.5)
+scope.Size = UDim2.fromScale(0.8, 0.8)
+scope.SizeConstraint = Enum.SizeConstraint.RelativeYY
+scope.BackgroundTransparency = 1
+scope.Visible = false
+scope.Parent = gui
+do
+	local round = Instance.new("UICorner")
+	round.CornerRadius = UDim.new(0.5, 0)
+	round.Parent = scope
+	local dark = Instance.new("UIStroke")
+	dark.Thickness = 3000
+	dark.Color = Color3.new(0, 0, 0)
+	dark.Parent = scope
+	for _, size in { UDim2.new(1, 0, 0, 2), UDim2.new(0, 2, 1, 0) } do
+		local line = Instance.new("Frame")
+		line.AnchorPoint = Vector2.new(0.5, 0.5)
+		line.Position = UDim2.fromScale(0.5, 0.5)
+		line.Size = size
+		line.BackgroundColor3 = Color3.new(0, 0, 0)
+		line.BorderSizePixel = 0
+		line.Parent = scope
+	end
+end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
 	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon (hold: weapon wheel)\nF / scroll  Previous / switch weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
@@ -361,9 +423,12 @@ local function aim(range: number)
 	rayParams.FilterDescendantsInstances = { char, camera }
 	local mouse = UserInputService:GetMouseLocation()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
-	-- in third person the camera sits behind the head, so extend the ray by that gap
-	local extra = head and (camera.CFrame.Position - head.Position).Magnitude or 0
-	return workspace:Raycast(ray.Origin, ray.Direction * (range + extra), rayParams), ray
+	-- in third person the camera sits behind the head: start the ray level with the head, so
+	-- nothing between the camera and the body (a dummy walking behind you) can be the target
+	-- and a shot from the head never goes backwards
+	local skip = head and math.max((head.Position - ray.Origin):Dot(ray.Direction), 0) or 0
+	local start = ray.Origin + ray.Direction * skip
+	return workspace:Raycast(start, ray.Direction * range, rayParams), Ray.new(start, ray.Direction)
 end
 
 local function dummyOf(inst: Instance?): Model?
@@ -408,6 +473,10 @@ end
 -- weapons hang off, and as the fallback for a rig without R15 arms.
 -- Where a tool sits in an R15 hand: in the palm, turned so the tool's -Z runs out along the fingers.
 local DEFAULT_GRIP = CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+-- Forearm angle off the view direction (smaller = arms point straight ahead) and how much the
+-- cloned lower / upper arm is stretched along its length.
+local ARM_PITCH, ARM_YAW = 12, 24
+local ARM_STRETCH = 1.15
 local armModel: Model? = nil
 local arms = {} -- [side] = { pieces = { { part, offset from the hand } }, wrist = Vector3, grip = CFrame }
 
@@ -436,7 +505,11 @@ local function buildArms(char: Model)
 		if not (lowerOffset and elbowOffset) then
 			continue
 		end
-		local upperOffset = lowerOffset * elbowOffset
+		local function stretch(cf: CFrame): CFrame
+			return cf.Rotation + cf.Position * ARM_STRETCH
+		end
+		lowerOffset = stretch(lowerOffset)
+		local upperOffset = lowerOffset * stretch(elbowOffset)
 		local list = {}
 		for _, entry in { { hand, CFrame.identity }, { lower, lowerOffset }, { upper, upperOffset } } do
 			local clone = entry[1]:Clone()
@@ -444,6 +517,9 @@ local function buildArms(char: Model)
 				if not child:IsA("SurfaceAppearance") then
 					child:Destroy() -- joints, ragdoll constraints, attachments
 				end
+			end
+			if entry[1] ~= hand then
+				clone.Size *= Vector3.new(1, ARM_STRETCH, 1)
 			end
 			clone.Anchored = true
 			clone.CanCollide = false
@@ -554,11 +630,13 @@ end
 -- grip: the mesh relative to the hand's grip attachment (-Z = where the camera looks, +Y = up out
 --       of the fist), i.e. which point of the model the palm closes around.
 -- scale: optional, shrinks the in-hand mesh only.
+-- support: guns only, the point of the mesh (its own space, origin = grip) the left hand holds
+--          while aiming: under the barrel / pump / front grip, or round the right hand on a pistol.
 -- hand: where the right hand moves to for this weapon, relative to its fist position (camera space).
 local HOLD = {
-	Handgun = { grip = CFrame.new(0, 0.24, 0.08), hand = Vector3.new(-0.25, 0.2, 0.1) },
-	Revolver = { grip = CFrame.new(0, 0.23, -0.08), hand = Vector3.new(-0.25, 0.2, 0.1) },
-	Rifle = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45) },
+	Handgun = { grip = CFrame.new(0, -0.08, 0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1) },
+	Revolver = { grip = CFrame.new(0, -0.09, -0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1) },
+	Rifle = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.12, -0.9) },
 	Knife = { grip = CFrame.Angles(math.rad(90), 0, 0) * CFrame.new(0, 0, -0.32), hand = Vector3.new(0, 0.15, 0) }, -- blade up
 	Bat = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
 	Axe = { grip = CFrame.new(0, 0.15, 0), hand = Vector3.new(0.1, 0.05, 0) },
@@ -566,22 +644,53 @@ local HOLD = {
 	Molotov = { grip = CFrame.new(0, 0.38, 0), hand = Vector3.new(0, 0.1, 0) },
 	Pan = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
 	Katana = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
-	Shotgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45) },
-	Sniper = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.5) },
-	Rocket = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(-0.1, 0.35, 0.4) },
+	Shotgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.2, -1.3) },
+	Sniper = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.5), support = Vector3.new(0, 0.15, -1.3) },
+	Rocket = { grip = CFrame.new(0, -0.2, 0), hand = Vector3.new(-0.1, 0.35, 0.4), support = Vector3.new(0, 0, -0.85) },
+	Tomato = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 }
-local viewMeshes = {} -- [weaponId] = MeshPart
-task.spawn(function()
-	for id in HOLD do
-		local mesh = WeaponMeshes.create(id)
-		if mesh then
-			mesh.Size *= HOLD[id].scale or 1
-			mesh.Transparency = 1
-			mesh.Parent = camera
-			viewMeshes[id] = mesh
+-- Only the weapon in hand gets its mesh (a client may keep just 8 EditableMeshes alive); false =
+-- still building or failed, the blocks show meanwhile.
+local viewMeshes = {} -- [weaponId] = MeshPart | false
+local function equipMesh(id: string)
+	for other, mesh in viewMeshes do
+		if other ~= id then
+			if mesh then
+				mesh:Destroy()
+			end
+			viewMeshes[other] = nil
 		end
 	end
-end)
+	if viewMeshes[id] ~= nil or not HOLD[id] then
+		return
+	end
+	viewMeshes[id] = false
+	task.spawn(function()
+		local mesh = WeaponMeshes.create(id)
+		if not mesh then
+			return
+		end
+		if viewMeshes[id] ~= false then -- switched away while it was building
+			mesh:Destroy()
+			return
+		end
+		mesh.Size *= HOLD[id].scale or 1
+		mesh.Transparency = 1
+		mesh.Parent = camera
+		viewMeshes[id] = mesh
+	end)
+end
+
+-- Where our own shots leave from (Fx draws the tracer from here): the front end of the weapon mesh
+-- we are holding, first-person viewmodel or the one in the body's hand, wherever it is this frame.
+Fx.muzzle = function(id: string): Vector3?
+	local mesh = if isFirstPerson() then viewMeshes[id] else bodyWeapon.id == id and bodyWeapon.part
+	local lo, hi = WeaponMeshes.bounds(id)
+	if not mesh or not lo or not hi then
+		return nil
+	end
+	return mesh.CFrame * Vector3.new((lo.X + hi.X) / 2, lo.Y + (hi.Y - lo.Y) * 0.7, lo.Z) -- barrel height, front end
+end
 
 -- Thrown grenades / molotovs are plain server parts; dress them in the same meshes locally.
 workspace.ChildAdded:Connect(function(child)
@@ -589,7 +698,11 @@ workspace.ChildAdded:Connect(function(child)
 		return
 	end
 	local mesh = WeaponMeshes.create(child.Name)
-	if not mesh or not child.Parent then
+	if not mesh then
+		return
+	end
+	if not child.Parent then
+		mesh:Destroy()
 		return
 	end
 	child.LocalTransparencyModifier = 1
@@ -605,6 +718,69 @@ workspace.ChildAdded:Connect(function(child)
 	end)
 end)
 
+-- Throw arc (right mouse held with a grenade / molotov / tomato): the server's throw (throw() in
+-- init.server: from the head + 2.5 studs along the aim, dir * speed + 12 up, workspace gravity)
+-- stepped forward until it hits something, drawn as dots with a ring where it lands.
+local ARC_DOTS, ARC_STEP = 48, 0.012 -- a dot every 2 steps: ~1.7 studs apart at grenade speed
+local arcDots = {}
+for i = 1, ARC_DOTS do
+	local dot = Instance.new("Part")
+	dot.Shape = Enum.PartType.Ball
+	dot.Size = Vector3.one * 0.18
+	dot.Material = Enum.Material.Neon
+	dot.Color = Color3.fromRGB(255, 255, 255)
+	dot.Anchored, dot.CanCollide, dot.CanQuery, dot.CanTouch, dot.CastShadow = true, false, false, false, false
+	dot.Transparency = 1
+	dot.Parent = camera
+	arcDots[i] = dot
+end
+local arcRing = Instance.new("Part")
+arcRing.Shape = Enum.PartType.Cylinder
+arcRing.Size = Vector3.new(0.08, 2.4, 2.4)
+arcRing.Material = Enum.Material.Neon
+arcRing.Color = Color3.fromRGB(255, 90, 60)
+arcRing.Anchored, arcRing.CanCollide, arcRing.CanQuery, arcRing.CanTouch, arcRing.CastShadow = true, false, false, false, false
+arcRing.Transparency = 1
+arcRing.Parent = camera
+
+local function drawArc(weapon)
+	local head = weapon and player.Character and player.Character:FindFirstChild("Head")
+	local shown = 0
+	if head then
+		local result, ray = aim(300)
+		local target = result and result.Position or ray.Origin + ray.Direction * 300
+		local dir = (target - head.Position).Unit
+		local pos = head.Position + dir * 2.5
+		local vel = dir * weapon.speed + Vector3.yAxis * 12
+		local g = Vector3.new(0, -workspace.Gravity, 0)
+		local hit
+		for i = 1, ARC_DOTS * 2 do
+			local nextVel = vel + g * ARC_STEP
+			local step = (vel + nextVel) / 2 * ARC_STEP
+			hit = workspace:Raycast(pos, step, rayParams) -- aim() left the filter on the character + camera
+			if hit then
+				break
+			end
+			pos += step
+			vel = nextVel
+			if i % 2 == 0 and i >= 6 and shown < ARC_DOTS then -- none right in front of the eye
+				shown += 1
+				arcDots[shown].Position = pos
+				arcDots[shown].Transparency = 0.15 + 0.6 * shown / ARC_DOTS
+			end
+		end
+		arcRing.Transparency = hit and 0.25 or 1
+		if hit then
+			arcRing.CFrame = CFrame.lookAlong(hit.Position + hit.Normal * 0.05, hit.Normal) * CFrame.Angles(0, math.rad(90), 0)
+		end
+	else
+		arcRing.Transparency = 1
+	end
+	for i = shown + 1, ARC_DOTS do
+		arcDots[i].Transparency = 1
+	end
+end
+
 local function useWeapon(weapon)
 	local now = os.clock()
 	local char = player.Character
@@ -615,7 +791,21 @@ local function useWeapon(weapon)
 	lastWeaponUse = now
 	local result, ray = aim(300)
 	local target = result and result.Position or ray.Origin + ray.Direction * 300
-	weaponRemote:FireServer(weapon.id, (target - head.Position).Unit)
+	local dir = (target - head.Position).Unit
+	if dir:Dot(ray.Direction) < 0.5 then -- something right beside the head: aim past it, straight down the crosshair
+		dir = (ray.Origin + ray.Direction * 300 - head.Position).Unit
+	end
+	-- hip fire: the shot leaves somewhere in a wide cone round the crosshair; aiming (first or third
+	-- person) closes it, and once fully up the shot goes exactly to the crosshair
+	local aimed = math.max(ads, thirdAim)
+	local spread = aimed > 0.95 and 0 or (weapon.hip or 0) * (1 - aimed)
+	if spread > 0 then
+		dir = (CFrame.lookAlong(Vector3.zero, dir)
+			* CFrame.Angles(0, 0, math.random() * math.pi * 2)
+			* CFrame.Angles(spread * math.sqrt(math.random()), 0, 0)).LookVector -- sqrt: even over the cone, not bunched in the middle
+	end
+	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
+	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95)
 	if weapon.kind == "gun" or weapon.kind == "rocket" then
 		recoil = 1
 	else
@@ -802,6 +992,8 @@ UserInputService.InputBegan:Connect(function(input, processed)
 				break -- one use per click
 			end
 		end
+	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
+		aiming = true
 	elseif attackByKey[input.KeyCode] then
 		local attack = attackByKey[input.KeyCode]
 		if os.clock() >= attack.readyAt and not holding then
@@ -844,6 +1036,8 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
+	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
+		aiming = false
 	end
 end)
 
@@ -904,6 +1098,12 @@ local function onCharacter(char: Model)
 	clingTrack = humanoid.Animator:LoadAnimation(clingAnim)
 	clingTrack.Priority = Enum.AnimationPriority.Action
 	clingTrack.Looped = true
+	for kind, anim in aimAnims do
+		local track = humanoid.Animator:LoadAnimation(anim)
+		track.Priority = Enum.AnimationPriority.Action2 -- over the walk, run and wall cycles
+		track.Looped = true
+		aimTracks[kind] = track
+	end
 	flipTrack = humanoid.Animator:LoadAnimation(flipAnim)
 	flipTrack.Priority = Enum.AnimationPriority.Action4
 	kickTrack = humanoid.Animator:LoadAnimation(kickAnim)
@@ -1765,6 +1965,12 @@ RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Valu
 	cleanCamera = nil
 end)
 RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	if thirdWeapon then -- after the camera scripts, which would set their own mouse behaviour
+		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
+	elseif mouseLocked and not isFirstPerson() then -- weapon put away: free the mouse again
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+	mouseLocked = thirdWeapon
 	local target = 0
 	if wall then
 		target = math.rad(10) * (wall.normal:Dot(camera.CFrame.RightVector) > 0 and 1 or -1)
@@ -1824,8 +2030,8 @@ RunService.RenderStepped:Connect(function(dt)
 	-- fists
 	local show = isFirstPerson() and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
-	UserInputService.MouseIconEnabled = not isFirstPerson()
-	crosshair.Visible = isFirstPerson()
+	UserInputService.MouseIconEnabled = not isFirstPerson() and not thirdWeapon
+	crosshair.Visible = isFirstPerson() or thirdWeapon
 
 	-- sprint
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -1896,8 +2102,31 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	local turnFree = wall == nil and os.clock() > flipUntil
+	local out = Weapons[weaponIndex]
+	thirdWeapon = out.kind ~= nil and not isFirstPerson() and not holding and not Menu.active
+		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
+	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
+		local look = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+		if look.Magnitude > 0.01 then
+			root.CFrame = CFrame.lookAlong(root.Position, look)
+		end
+		turnFree = false
+	end
 	if humanoid and humanoid.AutoRotate ~= turnFree then
 		humanoid.AutoRotate = turnFree
+	end
+	thirdAim += (((thirdWeapon and aiming) and 1 or 0) - thirdAim) * math.min(dt * 12, 1)
+	Fx.cameraOffset = SHOULDER * (thirdWeapon and 0.5 + 0.5 * thirdAim or 0)
+	local pose = thirdWeapon and aiming and (out.kind == "gun" and "gun" or out.kind == "rocket" and "rocket"
+		or (out.kind == "knife" or out.kind == "thrown") and "throw") or nil
+	for kind, track in aimTracks do
+		if (kind == pose) ~= track.IsPlaying then
+			if kind == pose then
+				track:Play(0.15)
+			else
+				track:Stop(0.2)
+			end
+		end
 	end
 	local running = sprinting and humanoid.FloorMaterial ~= Enum.Material.Air
 	local footsteps = running or (wall ~= nil and not clingNow)
@@ -1914,7 +2143,26 @@ RunService.RenderStepped:Connect(function(dt)
 		sprintTrack:Stop(0.35) -- a slower fade reads as easing into the fall, not a snap
 	end
 	sprint += ((sprinting and 1 or 0) - sprint) * math.min(dt * 8, 1)
-	Fx.fovBoost = 14 * sprint + moveFov
+	-- aiming down the sights: zoom in, slow the mouse; the sniper looks through its scope instead
+	local held = Weapons[weaponIndex]
+	local sniper = held.id == "Sniper"
+	local wantAds = aiming and show and (held.kind == "gun" or held.kind == "rocket")
+	ads += ((wantAds and 1 or 0) - ads) * math.min(dt * 14, 1)
+	Fx.fovBoost = (14 * sprint + moveFov) * (1 - ads) - ads * (sniper and 52 or 22)
+	UserInputService.MouseDeltaSensitivity = 1 - ads * (sniper and 0.7 or 0.35)
+	crosshair.TextSize = 22 + math.min((held.hip or 0) * (1 - math.max(ads, thirdAim)) * 300, 50) -- a wide cross for a wide spread
+	local scoped = sniper and ads > 0.85
+	scope.Visible = scoped
+	if scoped then
+		show = false
+		crosshair.Visible = false
+	end
+	drawArc(aiming and (show or thirdWeapon) and held.kind == "thrown" and held)
+	Fx.fovBoost -= 10 * thirdAim
+	-- knife aim: 0 -> 1 plays the toss and catch by the blade, 1 -> 0 (letting go) plays it back
+	local wantKnife = aiming and show and held.kind == "knife"
+	knifeT = math.clamp(knifeT + (wantKnife and dt or -dt) / KNIFE_FLIP, 0, 1)
+	Fx.fovBoost -= 8 * knifeT
 	local now = os.clock()
 	-- tell the other clients what this body is doing, so they can show it too (see Others)
 	local loop = clingNow and "cling" or wallSide and "wall" .. wallSide or slamming and "dive"
@@ -1948,20 +2196,31 @@ RunService.RenderStepped:Connect(function(dt)
 		local ext = math.sin(h.t * math.pi)
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
 		local move = (side == "right" and hold) and hold.hand + Vector3.new(0, 0, 0.25 * recoil) or Vector3.zero
+		if side == "right" and hold and ads > 0 then -- aiming: the gun comes up to the crosshair (adsFix, below)
+			move = move:Lerp(hold.hand + (adsFix[weapon.id] or Vector3.zero) + Vector3.new(0, 0, -0.35 + 0.15 * recoil), ads) -- held out, so both hands show
+		elseif side == "right" and hold and weapon.kind == "knife" and knifeT > 0 then -- the arm bends back once it's caught
+			move = move:Lerp(KNIFE_COCK, smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1)))
+		elseif side == "left" and ads > 0 and leftGrip[weapon.id] then -- and the left hand takes hold of it
+			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
+			move = move:Lerp(leftGrip[weapon.id] - rest, ads)
+		end
 		local fist = camera.CFrame
-			* CFrame.new(h.x * (0.85 - 0.6 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2 - 1.2 * ext + move.Z)
+			* CFrame.new(h.x * (0.85 - 0.5 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2.35 - 1.2 * ext + move.Z)
 		h.fist.CFrame = fist
-		h.arm.CFrame = fist * CFrame.Angles(math.rad(25), math.rad(14 * h.x), 0) * CFrame.new(0, 0, 1.3)
+		h.arm.CFrame = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.new(0, 0, 1.3)
 		local real = arms[side]
 		h.fist.Transparency = (show and not real) and 0 or 1
 		h.arm.Transparency = (show and not real) and 0 or 1
 		-- fingers forward, forearm running back, down and outward past the camera
-		local arm = fist * CFrame.Angles(math.rad(25), math.rad(14 * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
+		local arm = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
 		local hand = arm
 		if side == "right" and hold then
 			-- The wrist bends so the hand is square to the view whatever the forearm is doing:
 			-- guns point at the crosshair, melee and throwables stand upright and tip forward to swing.
 			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket") and 14 * recoil or -25 - 75 * ext
+			if weapon.kind == "knife" and knifeT > 0 then -- cocked: the wrist tips the upturned knife's handle at the crosshair
+				tilt += (KNIFE_TILT - tilt) * smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1))
+			end
 			local pivot = real and real.wrist or Vector3.zero
 			hand = CFrame.new(arm * pivot)
 				* camera.CFrame.Rotation
@@ -1988,12 +2247,67 @@ RunService.RenderStepped:Connect(function(dt)
 			v.part.CFrame = weaponCF * v.offset
 		end
 	end
+	if viewMeshes[weapon.id] == nil then
+		equipMesh(weapon.id)
+	end
 	for id, mesh in viewMeshes do
 		local active = id == weapon.id and inHand
-		mesh.Transparency = active and 0 or 1
-		if active then
-			mesh:PivotTo(weaponCF * HOLD[id].grip)
+		if mesh then
+			mesh.Transparency = active and 0 or 1
+			if active then
+				mesh:PivotTo(weaponCF * (id == "Knife" and knifeT > 0 and knifeFlip(knifeT) or CFrame.identity) * HOLD[id].grip)
+				if HOLD[id].support then -- the fist's centre sits a little under the point the palm grips
+					leftGrip[id] = camera.CFrame:PointToObjectSpace(mesh.CFrame * HOLD[id].support) + Vector3.new(0, -0.2, 0)
+				end
+				if ads > 0.9 and recoil < 0.05 then -- learn only once settled, or the easing / kick skews it
+					local lo, hi = WeaponMeshes.bounds(id)
+					local topCentre = Vector3.new((lo.X + hi.X) / 2, hi.Y, (lo.Z + hi.Z) / 2)
+					local top = camera.CFrame:PointToObjectSpace(mesh.CFrame * topCentre)
+					-- the top of the mesh is the sight: the launcher's flip-up sight sits a little higher
+					local want = Vector3.new(0, weapon.kind == "rocket" and -0.04 or -0.12, top.Z)
+					adsFix[id] = (adsFix[id] or Vector3.zero) + (want - top) * math.min(dt * 12, 1)
+				end
+			end
 		end
+	end
+	-- the same weapon in the body's own right hand, for the pulled-back camera
+	local bodyId = not isFirstPerson() and humanoid and humanoid.Health > 0 and HOLD[weapon.id]
+		and not (thrown and os.clock() - lastWeaponUse < weapon.cd) and weapon.id or nil
+	if bodyWeapon.id ~= bodyId then
+		if bodyWeapon.part then
+			bodyWeapon.part:Destroy()
+		end
+		bodyWeapon.id, bodyWeapon.part = bodyId, nil
+		if bodyId then
+			task.spawn(function()
+				local mesh = WeaponMeshes.create(bodyId)
+				if not mesh then
+					return
+				end
+				if bodyWeapon.id ~= bodyId or bodyWeapon.part then -- switched again while it was building
+					mesh:Destroy()
+					return
+				end
+				mesh.Size *= HOLD[bodyId].scale or 1
+				mesh.Parent = camera
+				bodyWeapon.part = mesh
+			end)
+		end
+	end
+	local rightHand = char and char:FindFirstChild("RightHand") :: BasePart?
+	if bodyWeapon.part and rightHand then
+		local grip = rightHand:FindFirstChild("RightGripAttachment") :: Attachment?
+		local meshCF = rightHand.CFrame * (grip and grip.CFrame or DEFAULT_GRIP) * BODY_GRIP * HOLD[bodyWeapon.id].grip
+		local leftHand = char:FindFirstChild("LeftHand") :: BasePart?
+		if thirdAim > 0.5 and leftHand and (weapon.kind == "gun" or weapon.kind == "rocket") then
+			-- aimed, both hands on it: the gun sits halfway between the hands (the middle of its
+			-- grip-to-support span there) and points straight at the crosshair
+			local leftGrip = leftHand:FindFirstChild("LeftGripAttachment") :: Attachment?
+			local mid = ((grip and grip.WorldPosition or rightHand.Position) + (leftGrip and leftGrip.WorldPosition or leftHand.Position)) / 2
+			local rot = CFrame.lookAlong(Vector3.zero, camera.CFrame.LookVector) * HOLD[bodyWeapon.id].grip.Rotation
+			meshCF = rot + mid - rot:VectorToWorldSpace((HOLD[bodyWeapon.id].support or Vector3.zero) / 2)
+		end
+		bodyWeapon.part:PivotTo(meshCF)
 	end
 	weaponLabel.Text = weapon.name
 
@@ -2002,7 +2316,6 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	-- hints + target info
-	hint.Text = holding and "Click: throw   Scroll: distance   E: drop" or (weapon.kind and "Click: use weapon   Q / F: switch" or "Click: punch, hold to keep going   Q / F: weapons")
 	local result = aim(60)
 	local dummy = result and dummyOf(result.Instance)
 	if dummy then

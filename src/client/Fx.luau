@@ -30,6 +30,8 @@ tint.Parent = Lighting
 
 local Fx = {}
 Fx.fovBoost = 0 -- extra FOV set by the client (sprint)
+Fx.muzzle = nil :: ((weaponId: string) -> Vector3?)? -- set by the client: our held weapon's muzzle, now
+Fx.cameraOffset = Vector3.zero -- Humanoid.CameraOffset set by the client (over the shoulder), shake goes on top
 local active = {} -- { t0, dur, fn, parts }
 local shakeMag, shakeStart, shakeEnd = 0, 0, 0
 
@@ -74,7 +76,7 @@ RunService.RenderStepped:Connect(function()
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	local left = now < shakeEnd and (shakeEnd - now) / (shakeEnd - shakeStart) or 0
 	if humanoid then
-		humanoid.CameraOffset = left > 0 and rng:NextUnitVector() * shakeMag * left or Vector3.zero
+		humanoid.CameraOffset = Fx.cameraOffset + (left > 0 and rng:NextUnitVector() * shakeMag * left or Vector3.zero)
 	end
 	camera.FieldOfView = BASE_FOV + Fx.fovBoost + shakeMag * 5 * left
 end)
@@ -603,7 +605,10 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 	end
 end
 
-function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: boolean)
+function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean)
+	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
+	-- model however we move (the server's position for us lags a little behind)
+	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
 	local aimCf = CFrame.lookAt(from, to)
 	local distance = (to - from).Magnitude
 	if MELEE[weaponId] then
@@ -626,8 +631,9 @@ function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: bo
 		local blade = mesh or part(Enum.PartType.Block, Color3.fromRGB(210, 215, 225), Enum.Material.Metal)
 		blade.Parent = folder
 		local trail = part(Enum.PartType.Block, WHITE)
+		local start = ownMuzzle or from
 		run(distance / 160, { blade, trail }, function(a)
-			local position = from:Lerp(to, a)
+			local position = start:Lerp(to, a)
 			if not mesh then
 				blade.Size = Vector3.new(0.12, 0.3, 1.5)
 			end
@@ -641,7 +647,7 @@ function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: bo
 		end
 	else
 		-- guns: tracer from the hip so it does not start inside the shooter's camera
-		local muzzle = (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
+		local muzzle = ownMuzzle or (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
 		local sniper = weaponId == "Sniper"
 		local big = weaponId == "Revolver" or sniper
 		local pellet = weaponId == "Shotgun"

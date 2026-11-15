@@ -1,17 +1,23 @@
 -- Weapon models without any uploaded asset: the geometry lives in the sibling data modules
--- (exported from assets/weapons/weapons.blend) and is turned into MeshParts here with EditableMesh.
--- Colours are per face, so the part itself stays white SmoothPlastic.
+-- (exported from assets/weapons/weapons.blend by assets/weapons/export.py) and is turned into
+-- MeshParts here with EditableMesh. Colours are per face, so the part itself stays white SmoothPlastic.
+--
+-- A Play client may only keep 8 EditableMeshes alive (whatever their size), and a MeshPart goes
+-- blank when its EditableMesh is destroyed. So:
+--  * create(id): one EditableMesh per weapon, shared by every part made from it, freed once the
+--    last of those parts is destroyed (callers must :Destroy() what they stop using);
+--  * icon(id): every weapon in ONE EditableMesh (an atlas, weapons stacked SPACING apart on Y),
+--    for ViewportFrames, where the camera only ever frames one of them.
 local AssetService = game:GetService("AssetService")
 
 local WeaponMeshes = {}
 
-local editable = {} -- [id] = EditableMesh | false (false = build failed, don't retry)
+local SPACING = 12
 
-local function build(data): EditableMesh
-	local mesh = AssetService:CreateEditableMesh()
+local function fill(mesh: EditableMesh, data, offset: Vector3)
 	local v, n, c = {}, {}, {}
 	for i = 1, #data.v, 3 do
-		table.insert(v, mesh:AddVertex(Vector3.new(data.v[i], data.v[i + 1], data.v[i + 2])))
+		table.insert(v, mesh:AddVertex(Vector3.new(data.v[i], data.v[i + 1], data.v[i + 2]) + offset))
 	end
 	for i = 1, #data.n, 3 do
 		table.insert(n, mesh:AddNormal(Vector3.new(data.n[i], data.n[i + 1], data.n[i + 2])))
@@ -26,27 +32,20 @@ local function build(data): EditableMesh
 		local color = c[f[i + 6]]
 		mesh:SetFaceColors(face, { color, color, color })
 	end
-	return mesh
 end
 
--- Returns a new anchored, non-colliding MeshPart for the weapon, or nil if this client can't
--- build one (callers keep their block fallback). The part's origin is the modelled origin (the
--- grip), not the bounding-box centre. Yields.
-function WeaponMeshes.create(id: string): MeshPart?
-	local data = script:FindFirstChild(id)
-	if not data or editable[id] == false then
-		return nil
+local function bounds(data): (Vector3, Vector3)
+	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+	for i = 1, #data.v, 3 do
+		local p = Vector3.new(data.v[i], data.v[i + 1], data.v[i + 2])
+		lo, hi = lo:Min(p), hi:Max(p)
 	end
-	local ok, part = pcall(function()
-		editable[id] = editable[id] or build(require(data))
-		return AssetService:CreateMeshPartAsync(Content.fromObject(editable[id]), { CollisionFidelity = Enum.CollisionFidelity.Box })
-	end)
-	if not ok then
-		warn(`WeaponMeshes: {id} failed, using blocks: {part}`)
-		editable[id] = false
-		return nil
-	end
-	part.Name = id
+	return lo, hi
+end
+
+local function meshPart(mesh: EditableMesh, name: string): MeshPart
+	local part = AssetService:CreateMeshPartAsync(Content.fromObject(mesh), { CollisionFidelity = Enum.CollisionFidelity.Box })
+	part.Name = name
 	part.Material = Enum.Material.SmoothPlastic
 	part.Anchored = true
 	part.CanCollide = false
@@ -54,6 +53,100 @@ function WeaponMeshes.create(id: string): MeshPart?
 	part.CanTouch = false
 	part.CastShadow = false
 	return part
+end
+
+-- The weapon's bounding box (min, max corners) relative to its origin (the grip), in the mesh's
+-- own space; a part from create() has its CFrame at that origin, not at the box centre.
+local boxes = {}
+function WeaponMeshes.bounds(id: string): (Vector3?, Vector3?)
+	local data = script:FindFirstChild(id)
+	if not data then
+		return nil, nil
+	end
+	boxes[id] = boxes[id] or { bounds(require(data)) }
+	return boxes[id][1], boxes[id][2]
+end
+
+-- [id] = { part, mesh, users } | true (being built) | false (failed, don't retry)
+local live = {}
+
+-- Returns a new anchored, non-colliding MeshPart for the weapon, or nil if this client can't
+-- build one (callers keep their block fallback). The part's origin is the modelled origin (the
+-- grip), not the bounding-box centre. Destroy it when done. Yields.
+function WeaponMeshes.create(id: string): MeshPart?
+	local data = script:FindFirstChild(id)
+	if not data then
+		return nil
+	end
+	while live[id] == true do
+		task.wait()
+	end
+	if live[id] == nil then
+		live[id] = true
+		local mesh = AssetService:CreateEditableMesh()
+		local ok, part = pcall(function()
+			fill(mesh, require(data), Vector3.zero)
+			return meshPart(mesh, id)
+		end)
+		if not ok then
+			warn(`WeaponMeshes: {id} failed, using blocks: {part}`)
+			live[id] = false
+			return nil
+		end
+		live[id] = { part = part, mesh = mesh, users = 0 }
+	end
+	local entry = live[id]
+	if not entry then
+		return nil
+	end
+	local clone = entry.part:Clone()
+	entry.users += 1
+	clone.Destroying:Once(function()
+		entry.users -= 1
+		if entry.users == 0 and live[id] == entry then
+			live[id] = nil
+			entry.part:Destroy()
+			entry.mesh:Destroy()
+		end
+	end)
+	return clone
+end
+
+local atlas -- { part, at = { [id] = { centre, size } } } | true (being built) | false (failed)
+
+-- A MeshPart for a ViewportFrame, placed so the weapon's bounding-box centre is at the origin,
+-- plus that box's size; the rest of the atlas sits SPACING studs and more above / below it. Yields.
+function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
+	while atlas == true do
+		task.wait()
+	end
+	if atlas == nil then
+		atlas = true
+		local ok, result = pcall(function()
+			local mesh = AssetService:CreateEditableMesh()
+			local at = {}
+			for k, data in script:GetChildren() do
+				local d = require(data)
+				local offset = Vector3.new(0, k * SPACING, 0)
+				local lo, hi = bounds(d)
+				fill(mesh, d, offset)
+				at[data.Name] = { centre = offset + (lo + hi) / 2, size = hi - lo }
+			end
+			return { part = meshPart(mesh, "WeaponAtlas"), at = at }
+		end)
+		if not ok then
+			warn(`WeaponMeshes: atlas failed, icons use blocks: {result}`)
+		end
+		atlas = ok and result or false
+	end
+	local spot = atlas and atlas.at[id]
+	if not spot then
+		return nil
+	end
+	local part = atlas.part:Clone()
+	part.Name = id
+	part.CFrame = CFrame.new(-spot.centre)
+	return part, spot.size
 end
 
 return WeaponMeshes

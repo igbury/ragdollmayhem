@@ -8,6 +8,8 @@
 -- broken bones, bullet = bleeding wounds and shattered bones, blade = deep cuts; a blade with
 -- dmg >= 4 (the axe, the katana) takes limbs off; a bullet with dmg >= 4 is a heavy round.
 -- pellets / spread: a shotgun fires that many rays, each turned off the aim by up to `spread`.
+-- hip: from the hip a shot leaves within this many radians of the crosshair; aiming (right
+-- mouse) takes it away entirely.
 -- tag: the group on the hotbar and wheel (colour), short: the word on a small slot.
 return {
 	{ id = "Fists", name = "FISTS", tag = "melee", short = "FIST" },
@@ -16,13 +18,13 @@ return {
 	{ id = "Katana", name = "KATANA", tag = "melee", short = "KTN", kind = "melee", hurt = "blade", cd = 0.45, range = 12, dmg = 4, push = 40, chip = 2.5 },
 	{ id = "Axe", name = "AXE", tag = "melee", short = "AXE", kind = "melee", hurt = "blade", cd = 0.8, range = 11, dmg = 4, push = 45, chip = 3.5 },
 	{ id = "Knife", name = "THROWING KNIFE", tag = "thrown", short = "KNF", kind = "knife", hurt = "blade", cd = 0.6, range = 140, speed = 160, dmg = 3, push = 30 },
-	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1 },
-	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2 },
-	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09 },
-	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1 },
-	{ id = "Sniper", name = "SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 7, push = 130, chip = 2.5 },
+	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1, hip = 0.08 },
+	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2, hip = 0.1 },
+	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09, hip = 0.1 },
+	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1, hip = 0.045 },
+	{ id = "Sniper", name = "SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 7, push = 130, chip = 2.5, hip = 0.25 },
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },
 	{ id = "Tomato", name = "TOMATO", tag = "thrown", short = "TMT", kind = "thrown", cd = 0.35, speed = 95 },
-	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140 },
+	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140, hip = 0.12 },
 }
