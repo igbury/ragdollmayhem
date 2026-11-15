@@ -1705,6 +1705,8 @@ RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, 
 end)
 
 -- Per frame -------------------------------------------------------------------
+local bounceParams = RaycastParams.new()
+bounceParams.FilterType = Enum.RaycastFilterType.Exclude
 RunService.RenderStepped:Connect(function(dt)
 	local char = player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
@@ -1745,6 +1747,21 @@ RunService.RenderStepped:Connect(function(dt)
 		updateLanding(humanoid, root, able)
 		mv.updateLow(humanoid, root, humanoid.FloorMaterial ~= Enum.Material.Air, able)
 		mv.updateDive(humanoid, root)
+		-- trampolines (server/Map.luau): the pad names how hard it throws; we own our body, so we
+		-- do the bounce ourselves
+		if able then
+			bounceParams.FilterDescendantsInstances = { char }
+			local under = workspace:Raycast(root.Position, Vector3.new(0, -(humanoid.HipHeight + root.Size.Y / 2 + 1.5), 0), bounceParams)
+			local bounce = under and under.Instance:GetAttribute("Bounce")
+			local v = root.AssemblyLinearVelocity
+			if typeof(bounce) == "number" and v.Y < 10 then
+				root.AssemblyLinearVelocity = Vector3.new(v.X, bounce, v.Z)
+				mv.airJumpUsed = false -- a fresh double jump up there
+				if sounds.Jump then
+					sounds.Jump:Play()
+				end
+			end
+		end
 	end
 	for kind, track in lowTracks do
 		local on = mv.low and (kind == "slide") == mv.sliding
