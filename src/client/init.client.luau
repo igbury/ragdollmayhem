@@ -528,6 +528,10 @@ local VIEWMODELS = { -- { shape, size, offset, color, transparency? }
 		{ BALL, Vector3.one * 0.62, CFrame.new(0, 0.5, -2.2), Color3.fromRGB(220, 60, 50) },
 		{ BLOCK, Vector3.new(0.2, 0.45, 0.25), CFrame.new(0, 0, 0), DARK },
 	},
+	Tomato = {
+		{ BALL, Vector3.one * 0.8, CFrame.new(0, 0.35, -0.1), Color3.fromRGB(215, 30, 25) },
+		{ BLOCK, Vector3.new(0.3, 0.1, 0.3), CFrame.new(0, 0.76, -0.1), Color3.fromRGB(60, 140, 50) },
+	},
 	Molotov = {
 		{ BLOCK, Vector3.new(0.42, 0.9, 0.42), CFrame.new(0, 0.5, 0), Color3.fromRGB(200, 120, 40), 0.3 },
 		{ BLOCK, Vector3.new(0.18, 0.35, 0.18), CFrame.new(0, 1.1, 0), Color3.fromRGB(200, 120, 40), 0.3 },

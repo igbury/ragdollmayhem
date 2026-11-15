@@ -1559,9 +1559,57 @@ local function ignite(position: Vector3)
 	end
 end
 
+-- A tomato: harmless, humiliating. It bursts on the first thing it meets, everyone sees the red
+-- splash and the stain it leaves (client Fx "Splat"), a dummy it hits flinches, wipes its face
+-- and says something about it; the touchy ones come for you. A player it hits gets red all over
+-- the screen ("Splatted", only on that player's client).
+local TOMATO_RED = Color3.fromRGB(215, 30, 25)
+local TOMATO_LINES = { "My shirt!", "Did you just...", "A TOMATO?!", "Ew! EW!", "You'll pay for that!", "Who does that?!", "It's in my eyes!" }
+local function tomato(p: BasePart, char: Model, owner: Player?)
+	local done = false
+	local function splat(other: BasePart?)
+		if done or not p.Parent then
+			return
+		end
+		done = true
+		local position, velocity = p.Position, p.AssemblyLinearVelocity
+		p:Destroy()
+		local dir = velocity.Magnitude > 1 and velocity.Unit or -UP
+		fxRemote:FireAllClients("Splat", nil, position, dir, other)
+		local d = other and dummyOf(other)
+		if d and d.state ~= "Dead" and not d.model:GetAttribute("Ragdolled") then
+			playTrack(d, Anims.stagger):Play(0.05)
+			say(d, pick(TOMATO_LINES), "shout")
+			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+			if torso then
+				torso.AssemblyLinearVelocity += dir * Vector3.new(6, 0, 6)
+			end
+			if owner and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.6)) then
+				d.target = owner
+			end
+			return
+		end
+		local victim = other and other.Parent and Players:GetPlayerFromCharacter(other.Parent)
+		if victim then
+			fxRemote:FireClient(victim, "Splatted", nil)
+		end
+	end
+	p.Touched:Connect(function(other)
+		if not other:IsDescendantOf(char) and not other:IsDescendantOf(p) then
+			splat(other)
+		end
+	end)
+	task.delay(5, splat)
+end
+
 local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 	local p = Instance.new("Part")
-	if weapon.id == "Grenade" then
+	if weapon.id == "Tomato" then
+		p.Shape = Enum.PartType.Ball
+		p.Size = Vector3.one * 0.85
+		p.Color = TOMATO_RED
+		p.Material = Enum.Material.SmoothPlastic
+	elseif weapon.id == "Grenade" then
 		p.Shape = Enum.PartType.Ball
 		p.Size = Vector3.one * 1.1
 		p.Color = Color3.fromRGB(60, 80, 50)
@@ -1578,6 +1626,19 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 	p:SetNetworkOwner(nil)
 	p.AssemblyLinearVelocity = dir * weapon.speed + UP * 12
 	p.AssemblyAngularVelocity = Vector3.new(8, 0, 8)
+	if weapon.id == "Tomato" then
+		local stem = Instance.new("Part") -- welded after the ball is in place, so it rides along
+		stem.Size = Vector3.new(0.3, 0.12, 0.3)
+		stem.Color = Color3.fromRGB(60, 140, 50)
+		stem.CanCollide, stem.CanQuery, stem.CanTouch, stem.Massless = false, false, false, true
+		stem.CFrame = p.CFrame * CFrame.new(0, 0.42, 0)
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0, weld.Part1 = p, stem
+		weld.Parent = stem
+		stem.Parent = p
+		tomato(p, char, Players:GetPlayerFromCharacter(char))
+		return
+	end
 	if weapon.id == "Grenade" then
 		task.wait(2)
 		local position = p.Position

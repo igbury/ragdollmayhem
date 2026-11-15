@@ -999,6 +999,90 @@ function EVENTS.Wound(_, target: BasePart?, position: Vector3, dir: Vector3, blo
 	end
 end
 
+-- A tomato bursting: red pulp sprayed back off what it hit, a "SPLAT!", and a stain stuck to the
+-- surface (it rides along on a moving body) that fades out after a while.
+local TOMATO = Color3.fromRGB(215, 30, 25)
+local PULP = Color3.fromRGB(240, 90, 60)
+local SEED = Color3.fromRGB(250, 220, 120)
+local splatParams = RaycastParams.new()
+splatParams.FilterType = Enum.RaycastFilterType.Exclude
+function EVENTS.Splat(_, position: Vector3, dir: Vector3, other: BasePart?)
+	Fx.sparks(position, 16, 3.5, TOMATO, -dir, 0.45)
+	Fx.sparks(position, 6, 2.5, SEED, -dir, 0.35)
+	Fx.burst(position, 0.3, 2.2, 0.18, PULP, 0.3)
+	Fx.text(position + UP * 1.5, "SPLAT!", TOMATO, 1.6)
+	-- find the surface: straight along the flight, else straight down
+	splatParams.FilterDescendantsInstances = { folder, camera }
+	local result = workspace:Raycast(position - dir * 1.5, dir * 4, splatParams) or workspace:Raycast(position + UP, -UP * 4, splatParams)
+	local surface = result and result.Instance :: BasePart?
+	if not result or not surface then
+		return
+	end
+	local at = CFrame.lookAt(result.Position + result.Normal * 0.03, result.Position + result.Normal * 2)
+	local offset = surface.CFrame:ToObjectSpace(at)
+	local blobs = {}
+	for i = 0, 5 do
+		local blob = part(Enum.PartType.Cylinder, i == 0 and TOMATO or PULP, Enum.Material.SmoothPlastic)
+		local size = i == 0 and rng:NextNumber(1.6, 2.1) or rng:NextNumber(0.35, 0.8)
+		blob.Size = Vector3.new(0.05, size, size)
+		local spread = i == 0 and Vector2.zero or Vector2.new(rng:NextNumber(-1.4, 1.4), rng:NextNumber(-1.4, 1.4))
+		-- the cylinder's axis is X: turn it to lie flat on the surface (axis along the normal)
+		table.insert(blobs, { part = blob, local_ = CFrame.new(spread.X, spread.Y, -0.01 * i) * CFrame.Angles(0, math.pi / 2, 0) })
+	end
+	local parts = {}
+	for _, b in blobs do
+		table.insert(parts, b.part)
+	end
+	run(9, parts, function(a)
+		if not surface.Parent then
+			for _, b in blobs do
+				b.part.Transparency = 1
+			end
+			return
+		end
+		local base = surface.CFrame * offset
+		local fade = a > 0.75 and (a - 0.75) / 0.25 or 0
+		for i, b in blobs do
+			local grow = math.min(a * 40, 1) -- slaps on in the first fraction of a second
+			b.part.CFrame = base * b.local_ * CFrame.new(0, -a * 0.6 * (i % 3), 0) -- drips a little
+			b.part.Transparency = 1 - grow + fade
+		end
+	end)
+end
+
+-- A tomato to your own face: red pulp all over the screen, sliding down and fading.
+function EVENTS.Splatted()
+	local screen = Instance.new("ScreenGui")
+	screen.Name = "Splatted"
+	screen.IgnoreGuiInset = true
+	screen.DisplayOrder = 50
+	screen.Parent = player:WaitForChild("PlayerGui")
+	local blobs = {}
+	for i = 1, 9 do
+		local f = Instance.new("Frame")
+		local size = i == 1 and rng:NextNumber(0.45, 0.6) or rng:NextNumber(0.08, 0.22)
+		f.Size = UDim2.fromScale(size, size)
+		f.SizeConstraint = Enum.SizeConstraint.RelativeYY
+		f.AnchorPoint = Vector2.new(0.5, 0.5)
+		local x, y = i == 1 and 0.5 or rng:NextNumber(0.15, 0.85), i == 1 and 0.45 or rng:NextNumber(0.15, 0.8)
+		f.Position = UDim2.fromScale(x, y)
+		f.BackgroundColor3 = i % 3 == 0 and PULP or TOMATO
+		f.BorderSizePixel = 0
+		local corner = Instance.new("UICorner")
+		corner.CornerRadius = UDim.new(0.5, 0)
+		corner.Parent = f
+		f.Parent = screen
+		table.insert(blobs, { frame = f, x = x, y = y, speed = rng:NextNumber(0.02, 0.08) })
+	end
+	Fx.shake(camera.CFrame.Position, 0.15, 0.15)
+	run(3, { screen }, function(a)
+		for _, b in blobs do
+			b.frame.Position = UDim2.fromScale(b.x, b.y + b.speed * a * a * 3)
+			b.frame.BackgroundTransparency = 0.05 + 0.95 * math.max(0, (a - 0.35) / 0.65)
+		end
+	end)
+end
+
 function EVENTS.Burst(_, position: Vector3, dir: Vector3)
 	Fx.blood(position, dir, 4)
 	Fx.glint(position, 4, WHITE, 0.15)

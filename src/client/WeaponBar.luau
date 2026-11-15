@@ -32,6 +32,7 @@ local ABOUT = {
 	Sniper = "One shot, pops heads",
 	Grenade = "Two second fuse, then BOOM",
 	Molotov = "Breaks on impact, sets fire",
+	Tomato = "Harmless. Deeply humiliating",
 	Rocket = "Flies straight, blows up anything",
 }
 local INK = Color3.fromRGB(16, 15, 20)
