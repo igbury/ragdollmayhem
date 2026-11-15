@@ -7,10 +7,19 @@
 -- and upload them (see AnimIds).
 local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
 local AnimIds = require(script.Parent:WaitForChild("AnimIds"))
+local RunService = game:GetService("RunService")
 
 return function(sequence: KeyframeSequence): string
 	shared.KeyframeSequences = shared.KeyframeSequences or {}
 	shared.KeyframeSequences[sequence.Name] = sequence
+	-- Studio previews must use the edited poses, rather than a stale uploaded clip.
+	-- Published servers still use the group-owned asset IDs below.
+	if RunService:IsStudio() then
+		local ok, id = pcall(KeyframeSequenceProvider.RegisterKeyframeSequence, KeyframeSequenceProvider, sequence)
+		if ok then
+			return id
+		end
+	end
 	local uploaded = AnimIds[sequence.Name]
 	if uploaded then
 		return "rbxassetid://" .. uploaded

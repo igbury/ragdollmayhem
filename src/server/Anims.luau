@@ -5,6 +5,7 @@
 -- ponytail: KeyframeSequenceProvider ids only play in Studio, like the other animations here;
 -- upload them and use asset ids before publishing.
 local keyframeId = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KeyframeId"))
+local clips = require(game:GetService("ReplicatedStorage").Shared:WaitForChild("AnimationClips"))
 
 local Anims = {}
 
@@ -202,12 +203,23 @@ Anims.kick = build("DummyKick", {
 
 -- took a hit while still standing: the spine whips back, head after it, arms thrown out, then
 -- back to where it was. Short, so it reads on every punch without stalling the fight.
-Anims.stagger = build("DummyStagger", {
-	{ 0, {}, "snap" },
-	{ 0.09, { UpperTorso = rx(18) * yaw(-8), Head = rx(26), LeftUpperArm = rxy(25, 0, -35), RightUpperArm = rxy(25, 0, 35),
-		LeftLowerArm = rx(30), RightLowerArm = rx(30) }, "bounce" },
-	{ 0.45, {} },
-}, false, Enum.AnimationPriority.Action2, true)
+local function polished(name: string): Animation?
+	local animation = Instance.new("Animation")
+	animation.Name = name
+	animation.AnimationId = keyframeId(clips.build(name))
+	if animation.AnimationId == "" then
+		animation:Destroy()
+		return nil
+	end
+	return animation
+end
+Anims.stagger = polished("DummyStagger")
+Anims.staggers = {
+	front = Anims.stagger,
+	back = polished("DummyStaggerBack") or Anims.stagger,
+	left = polished("DummyStaggerLeft") or Anims.stagger,
+	right = polished("DummyStaggerRight") or Anims.stagger,
+}
 
 -- a sidestep out of the way of a punch: duck and lean to the left, fists still up
 Anims.dodge = build("DummyDodge", {
@@ -231,21 +243,12 @@ Anims.taunt = build("DummyTaunt", {
 }, false, Enum.AnimationPriority.Action2, true)
 
 -- down on its knees, both hands digging at the ground in front (burying)
-local dig = {
-	LowerTorso = body(0.6, -25),
-	LeftUpperLeg = rx(25), RightUpperLeg = rx(25), LeftLowerLeg = rx(-90), RightLowerLeg = rx(-90),
-	LeftUpperArm = rx(55), RightUpperArm = rx(55), LeftLowerArm = rx(20), RightLowerArm = rx(20),
-}
-local scoop = table.clone(dig)
-scoop.LeftUpperArm, scoop.RightUpperArm = rx(90), rx(90)
-Anims.dig = build("Dig", { { 0, dig }, { 0.5, scoop }, { 1, dig } }, true, Enum.AnimationPriority.Action3)
+Anims.dig = polished("Dig")
 
 -- a broken leg held stiff and a little out: the walk only moves the good one, so it drags
 Anims.limp = {}
 for _, side in { "Left", "Right" } do
-	local out = CFrame.Angles(math.rad(-8), 0, math.rad(side == "Left" and -6 or 6))
-	local key = { [side .. "UpperLeg"] = out, [side .. "LowerLeg"] = rx(-4), [side .. "Foot"] = rx(10) }
-	Anims.limp[side:lower()] = build("Limp" .. side, { { 0, key }, { 1, key } }, true, Enum.AnimationPriority.Action, true)
+	Anims.limp[side:lower()] = polished("Limp" .. side)
 end
 
 return Anims

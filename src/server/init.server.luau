@@ -64,8 +64,10 @@ local moveRemote = Instance.new("RemoteEvent")
 moveRemote.Name = "Move"
 moveRemote.Parent = remotes
 local MOVE_NAMES = {
-	loop = { [""] = true, sprint = true, wall1 = true, ["wall-1"] = true, cling = true, slide = true, crouch = true, dive = true },
-	shot = { roll = true, flip = true, kick = true, jump = true, slam = true, dash = true },
+	loop = { [""] = true, sprint = true, wall1 = true, ["wall-1"] = true, cling = true, slide = true,
+		crouch = true, crouchIdle = true, dive = true },
+	shot = { roll = true, flip = true, kick = true, jump = true, slam = true, dash = true,
+		mantle = true, vault = true, slideEnter = true, slideExit = true, diveEnter = true },
 }
 local MOVE_RATE = 30 -- reports passed on per player per second; more are dropped
 local moveBudget = {} -- [Player] = { start = os.clock(), count = number }
@@ -728,6 +730,32 @@ local function playTrack(d, animation: Animation): AnimationTrack
 	return track
 end
 
+-- A reaction interrupts the visible attack AND its pending damage callback.
+-- Otherwise Action3/4 attacks cover the flinch and a cancelled punch still hits.
+local function reactToHit(d, direction: Vector3?)
+	for _, animation in { Anims.punch, Anims.haymaker, Anims.kick, Anims.dodge, Anims.taunt } do
+		local track = d.tracks[animation]
+		if track and track.IsPlaying then
+			track:Stop(0.035)
+		end
+	end
+	for _, animation in Anims.staggers do
+		local track = d.tracks[animation]
+		if track and track.IsPlaying then
+			track:Stop(0.035)
+		end
+	end
+	if d.brain then
+		d.brain.swingToken = (d.brain.swingToken or 0) + 1
+		d.brain.busyUntil = math.max(d.brain.busyUntil or 0, os.clock() + 0.3)
+	end
+	local root = d.model:FindFirstChild("HumanoidRootPart")
+	local localDir = root and direction and root.CFrame:VectorToObjectSpace(direction) or Vector3.zAxis
+	local side = math.abs(localDir.X) > math.abs(localDir.Z)
+		and (localDir.X > 0 and "right" or "left") or (localDir.Z < 0 and "back" or "front")
+	playTrack(d, Anims.staggers[side]):Play(0.035)
+end
+
 -- Run from `from`, carrying what hurts: a hand stays on a wound that still bleeds, a broken leg
 -- drags (the Heartbeat).
 local function flee(d, from: Vector3, distance: number)
@@ -1005,7 +1033,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		end
 		if d.state == "Awake" and not d.model:GetAttribute("Ragdolled") and os.clock() >= d.risingUntil then
 			-- still up: the blow rocks it back, and a fight it is in loses a beat
-			playTrack(d, Anims.stagger):Play(0.03)
+			reactToHit(d, dir)
 			if d.brain then
 				d.brain.swingAt = math.max(d.brain.swingAt, os.clock() + 0.4)
 				table.clear(d.brain.queue)
@@ -1628,7 +1656,7 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 		fxRemote:FireAllClients("Splat", nil, position, dir, other)
 		local d = other and dummyOf(other)
 		if d and d.state ~= "Dead" and not d.model:GetAttribute("Ragdolled") then
-			playTrack(d, Anims.stagger):Play(0.05)
+			reactToHit(d, dir)
 			say(d, pick(TOMATO_LINES), "shout")
 			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 			if torso then
@@ -2068,11 +2096,14 @@ local function strike(d, b, name: string, target, now: number)
 		say(d, pick(move.shout), "shout")
 	end
 	playTrack(d, move.anim):Play(0.05)
+	b.swingToken = (b.swingToken or 0) + 1
+	local swingToken = b.swingToken
 	if name ~= "jab" then -- the heavy ones step into it
 		root.AssemblyLinearVelocity += root.CFrame.LookVector * XZ * 12
 	end
 	task.delay(move.at, function()
-		if d.target ~= target or d.state ~= "Awake" or d.model:GetAttribute("Ragdolled") or not root.Parent then
+		if b.swingToken ~= swingToken or d.target ~= target or d.state ~= "Awake"
+			or d.model:GetAttribute("Ragdolled") or not root.Parent then
 			return
 		end
 		local other = targetRoot(target)
@@ -2086,7 +2117,7 @@ local function strike(d, b, name: string, target, now: number)
 			-- swung at air: a heavy blow that misses throws it off balance, an opening for the player
 			if name ~= "jab" then
 				b.swingAt = math.max(b.swingAt, os.clock() + 0.7)
-				playTrack(d, Anims.stagger):Play(0.05)
+				reactToHit(d, -root.CFrame.LookVector)
 				if math.random() < 0.4 then
 					say(d, pick(WHIFF_LINES))
 				end
@@ -2506,14 +2537,18 @@ RunService.Heartbeat:Connect(function(dt)
 			d.calmAt = 0
 			d.speed = pace(d)
 		end
-		-- a broken leg: held stiff, and every step on it a hitch
+		-- The asymmetric clip supplies the limp. Match its cadence to actual
+		-- travel instead of independently pulsing the Humanoid's speed.
 		if d.limpSide then
 			local limpTrack = playTrack(d, Anims.limp[d.limpSide])
 			if not limpTrack.IsPlaying then
-				limpTrack:Play()
+				limpTrack:Play(0.18)
 			end
+			local root = d.model:FindFirstChild("HumanoidRootPart")
+			local speed = root and (root.AssemblyLinearVelocity * XZ).Magnitude or 0
+			limpTrack:AdjustSpeed(not rising and speed > 0.25 and math.clamp(speed / 3.5, 0.3, 2) or 0)
 		end
-		d.humanoid.WalkSpeed = rising and 0 or d.speed * (d.limpSide and 0.35 + 0.65 * math.abs(math.sin(now * 4)) or 1)
+		d.humanoid.WalkSpeed = rising and 0 or d.speed
 		for key, untilTime in d.limpJoints do
 			if now >= untilTime then
 				d.limpJoints[key] = nil

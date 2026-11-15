@@ -30,6 +30,27 @@ require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubble
 -- ponytail: a registered id is session-local, so other players see the default run; upload
 -- assets/anims/SprintFlail.rbxmx from the Animation Editor and use that id if they should see it.
 local keyframeId = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KeyframeId"))
+local polished = {
+	clips = require(ReplicatedStorage.Shared:WaitForChild("AnimationClips")),
+	anims = {}, tracks = {}, kickToken = 0, diveToken = 0, sliding = false,
+}
+for key, name in { slideEnter = "SlideEnter", slideExit = "SlideExit",
+	mantle = "Mantle", diveEnter = "DiveEnter", slam = "SlamLand" } do
+	local animation = Instance.new("Animation")
+	animation.Name = name
+	animation.AnimationId = keyframeId(polished.clips.build(name))
+	if animation.AnimationId ~= "" then
+		polished.anims[key] = animation
+	else
+		animation:Destroy() -- an optional clip awaiting upload must not break startup
+	end
+end
+function polished.play(name: string, fade: number?, speed: number?)
+	local track = polished.tracks[name]
+	if track then
+		track:Play(fade or 0.08, 1, speed or 1)
+	end
+end
 local sprintAnim = Instance.new("Animation")
 sprintAnim.AnimationId = keyframeId(require(script:WaitForChild("SprintFlail")))
 local sprintTrack: AnimationTrack? = nil
@@ -58,11 +79,11 @@ kickAnim.AnimationId = keyframeId(require(script:WaitForChild("HighKick")))
 local kickTrack: AnimationTrack? = nil
 -- slide pose and crouch shuffle, see SlideCrouch
 local lowAnims, lowTracks = {}, {} :: { [string]: AnimationTrack }
-for _, kind in { "slide", "crouch" } do
+for _, kind in { "slide", "crouch", "crouchIdle" } do
 	local anim = Instance.new("Animation")
 	anim.AnimationId = keyframeId(require(script:WaitForChild("SlideCrouch"))(kind))
 	anim.Name = kind
-	lowAnims[kind] = anim
+	if anim.AnimationId ~= "" then lowAnims[kind] = anim else anim:Destroy() end
 end
 local dashAnim = Instance.new("Animation") -- the dash burst, see DashBurst
 dashAnim.AnimationId = keyframeId(require(script:WaitForChild("DashBurst")))
@@ -90,6 +111,9 @@ require(script:WaitForChild("Others")).start(moveRemote, {
 	sprint = sprintAnim, roll = rollAnim, dive = diveAnim, wall1 = wallRunAnims[1], ["wall-1"] = wallRunAnims[-1],
 	cling = clingAnim, flip = flipAnim, kick = kickAnim, slide = lowAnims.slide, crouch = lowAnims.crouch,
 	dash = dashAnim,
+	crouchIdle = lowAnims.crouchIdle, slideEnter = polished.anims.slideEnter,
+	slideExit = polished.anims.slideExit, mantle = polished.anims.mantle,
+	vault = polished.anims.mantle, diveEnter = polished.anims.diveEnter, slam = polished.anims.slam,
 }, SFX)
 
 local PUNCH_RANGE = 9
@@ -207,7 +231,7 @@ local function knifeFlip(t: number): CFrame
 	return CFrame.new(0, math.sin(math.pi * t) * 0.9 + KNIFE_BLADE * e, 0) * CFrame.Angles(math.pi * 3 * e, 0, 0)
 end
 local sprint = 0 -- eased 0..1
-local nextLine, nextStep = 0, 0
+local nextLine = 0
 
 player.CameraMode = Enum.CameraMode.LockFirstPerson
 
@@ -873,18 +897,30 @@ end
 
 -- Third-person attack: the foot lands in front of the body, wherever the camera points.
 local function kick()
-	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local character = player.Character
+	local root = character and character:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if os.clock() - lastKick < KICK_INTERVAL or not root or not kickTrack then
 		return
 	end
 	lastKick = os.clock()
-	kickTrack:Play(0.05)
-	if sounds.Kick then
-		sounds.Kick:Play()
-	end
-	moveRemote:FireServer("shot", "kick")
+	polished.kickToken += 1
+	local token = polished.kickToken
 	local running = sprint > 0.5 or mv.sliding -- a kick out of a slide hits like the running one
-	task.delay(0.18, function() -- leg fully out
+	local fired = false
+	local markerConnection, stoppedConnection
+	local function disconnect()
+		if markerConnection then markerConnection:Disconnect() end
+		if stoppedConnection then stoppedConnection:Disconnect() end
+	end
+	local function impact()
+		if fired then return end
+		fired = true
+		disconnect()
+		local humanoid = character and character:FindFirstChildOfClass("Humanoid")
+		if token ~= polished.kickToken or player.Character ~= character or not root.Parent
+			or not humanoid or humanoid.Health <= 0 or character:GetAttribute("Ragdolled") then
+			return
+		end
 		if running then -- running kick: hits like a ground slam, server does crater, damage and fx
 			actionRemote:FireServer("kick")
 			return
@@ -904,7 +940,19 @@ local function kick()
 				Sfx.playLocal(Sfx.PUNCH, best.Position)
 			end
 		end
+	end
+	markerConnection = kickTrack:GetMarkerReachedSignal("Hit"):Connect(impact)
+	stoppedConnection = kickTrack.Stopped:Connect(function()
+		fired = true
+		disconnect()
 	end)
+	kickTrack:Play(0.05)
+	if sounds.Kick then sounds.Kick:Play() end
+	moveRemote:FireServer("shot", "kick")
+	-- Old uploaded clips do not have a Hit marker; the same authored impact
+	-- timestamp is their fallback. The fired flag prevents double damage.
+	task.delay(polished.clips.impactTime("HighKick") + 1 / 30, impact)
+	task.delay(KICK_INTERVAL + 0.1, disconnect)
 end
 
 -- Let go. The body stays ours to simulate until it lies still (server: release), so the throw and
@@ -991,7 +1039,15 @@ function mv.armSlam(): boolean
 		carry *= 0.4
 		mv.diveUntil = 0
 		if diveTrack then
-			diveTrack:Play(0.2)
+			polished.diveToken += 1
+			local token = polished.diveToken
+			polished.play("diveEnter", 0.035)
+			moveRemote:FireServer("shot", "diveEnter")
+			task.delay(0.18, function()
+				if slamming and player.Character == char and token == polished.diveToken then
+					diveTrack:Play(0.08)
+				end
+			end)
 		end
 	end
 	return true
@@ -1105,6 +1161,18 @@ end)
 local function onCharacter(char: Model)
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	local root = char:WaitForChild("HumanoidRootPart")
+	polished.diveToken += 1
+	polished.kickToken += 1
+	polished.sliding = false
+	polished.tracks = {}
+	mv.baseHip = humanoid.HipHeight
+	for name, animation in polished.anims do
+		local track = humanoid:WaitForChild("Animator"):LoadAnimation(animation)
+		track.Priority = (name == "slideEnter" or name == "slideExit")
+			and Enum.AnimationPriority.Action2 or Enum.AnimationPriority.Action4
+		track.Looped = false
+		polished.tracks[name] = track
+	end
 	for name, id in SFX do
 		local sound = Instance.new("Sound")
 		sound.Name = name .. "Sfx"
@@ -1118,6 +1186,14 @@ local function onCharacter(char: Model)
 	sprintTrack = humanoid:WaitForChild("Animator"):LoadAnimation(sprintAnim)
 	sprintTrack.Priority = Enum.AnimationPriority.Movement -- over the default run (Core)
 	sprintTrack.Looped = true
+	for _, marker in { "StepLeft", "StepRight" } do
+		sprintTrack:GetMarkerReachedSignal(marker):Connect(function()
+			if player.Character ~= char or humanoid.FloorMaterial == Enum.Material.Air
+				or mv.low or char:GetAttribute("Ragdolled") then return end
+			local foot = char:FindFirstChild(marker == "StepLeft" and "LeftFoot" or "RightFoot")
+			if foot then Fx.dust(foot.Position - Vector3.yAxis * foot.Size.Y / 2, 3, 2, 0.6) end
+		end)
+	end
 	rollTrack = humanoid.Animator:LoadAnimation(rollAnim)
 	rollTrack.Priority = Enum.AnimationPriority.Action4
 	diveTrack = humanoid.Animator:LoadAnimation(diveAnim)
@@ -1163,6 +1239,13 @@ local function onCharacter(char: Model)
 	end)
 	char:GetAttributeChangedSignal("Ragdolled"):Connect(function()
 		if char:GetAttribute("Ragdolled") then
+			polished.kickToken += 1
+			polished.diveToken += 1
+			slamming = false
+			for _, track in polished.tracks do track:Stop(0.05) end
+			for _, track in lowTracks do track:Stop(0.05) end
+			if kickTrack then kickTrack:Stop(0.05) end
+			if diveTrack then diveTrack:Stop(0.05) end
 			humanoid:ChangeState(Enum.HumanoidStateType.Physics)
 		else
 			humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
@@ -1242,6 +1325,8 @@ local function startMantle(root: BasePart, stand: Vector3, normal: Vector3, time
 	flipUntil = os.clock() + time -- keep facing the wall while climbing
 	wall = nil
 	carry = Vector3.zero
+	polished.play("mantle", 0.045, polished.clips.length("Mantle") / time)
+	moveRemote:FireServer("shot", speed > 0 and "vault" or "mantle")
 end
 -- Turning the camera into the wall mid-run grabs on: you hang there (the run timer pauses)
 -- until you look back along the wall, which runs on that way, or jump off it.
@@ -1303,7 +1388,9 @@ local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: 
 		hold(root, nil)
 		mantle.t += dt / mantle.time
 		local t = math.min(mantle.t, 1)
-		local p = t < 0.6 and mantle.from:Lerp(mantle.over, t / 0.6) or mantle.over:Lerp(mantle.to, (t - 0.6) / 0.4)
+		local phase = t < 0.6 and t / 0.6 or (t - 0.6) / 0.4
+		local eased = phase * phase * (3 - 2 * phase)
+		local p = t < 0.6 and mantle.from:Lerp(mantle.over, eased) or mantle.over:Lerp(mantle.to, eased)
 		root.CFrame = CFrame.lookAt(p, p + mantle.face)
 		root.AssemblyLinearVelocity = Vector3.zero
 		if t >= 1 or not able then
@@ -1546,12 +1633,15 @@ local function updateLanding(humanoid: Humanoid, root: BasePart, able: boolean)
 		if diveTrack then
 			diveTrack:Stop(0.1)
 		end
+		polished.diveToken += 1
+		if polished.tracks.diveEnter then polished.tracks.diveEnter:Stop(0.04) end
 		airPeak = nil -- the slam replaces the landing roll
 		if able then
 			hands.left.t, hands.right.t = 0, 0 -- both fists into the ground
 			actionRemote:FireServer("slam", fallSpeed * MOVE.SLAM_POWER)
 			sounds.Slam:Play()
 			moveRemote:FireServer("shot", "slam")
+			polished.play("slam", 0.025)
 		end
 		return
 	end
@@ -1842,7 +1932,7 @@ end
 -- enough when it does, it is a slide: your speed, plus a boost, carried along the ground with
 -- little drag until it runs out; jumping out of it keeps the speed. Otherwise it is a crouch.
 -- Holding Ctrl through a landing slides out of the fall. You stay down under a low ceiling.
-function mv.updateLow(humanoid: Humanoid, root: BasePart, grounded: boolean, able: boolean)
+function mv.updateLow(humanoid: Humanoid, root: BasePart, grounded: boolean, able: boolean, dt: number)
 	local now = os.clock()
 	local want = mv.crouchHeld and able and not wall and not mantle and not slamming
 	local v = root.AssemblyLinearVelocity * XZ
@@ -1869,13 +1959,9 @@ function mv.updateLow(humanoid: Humanoid, root: BasePart, grounded: boolean, abl
 	if mv.low and not low and grounded and workspace:Raycast(root.Position, Vector3.yAxis * (MOVE.LOW_DROP + 3), wallParams) then
 		low = true -- no room to stand up
 	end
-	if low ~= mv.low then
-		if low then
-			mv.baseHip = humanoid.HipHeight
-		end
-		mv.low = low
-		humanoid.HipHeight = mv.baseHip - (low and MOVE.LOW_DROP or 0)
-	end
+	mv.low = low
+	local targetHeight = mv.baseHip - (low and MOVE.LOW_DROP or 0)
+	humanoid.HipHeight += (targetHeight - humanoid.HipHeight) * (1 - math.exp(-22 * dt))
 end
 
 -- Dive kick ------------------------------------------------------------------------
@@ -2098,7 +2184,7 @@ RunService.RenderStepped:Connect(function(dt)
 		local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 		updateWallRun(dt, char, humanoid, root)
 		updateLanding(humanoid, root, able)
-		mv.updateLow(humanoid, root, humanoid.FloorMaterial ~= Enum.Material.Air, able)
+		mv.updateLow(humanoid, root, humanoid.FloorMaterial ~= Enum.Material.Air, able, dt)
 		mv.updateDive(humanoid, root)
 		-- trampolines (server/Map.luau): the pad names how hard it throws; we own our body, so we
 		-- do the bounce ourselves
@@ -2116,8 +2202,21 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 		end
 	end
+	if polished.sliding ~= mv.sliding then
+		polished.sliding = mv.sliding
+		if humanoid and humanoid.Health > 0 and not char:GetAttribute("Ragdolled") then
+			local transition = mv.sliding and "slideEnter" or "slideExit"
+			if polished.tracks.slideEnter then polished.tracks.slideEnter:Stop(0.04) end
+			if polished.tracks.slideExit then polished.tracks.slideExit:Stop(0.04) end
+			polished.play(transition, 0.045)
+			moveRemote:FireServer("shot", transition)
+		end
+	end
 	for kind, track in lowTracks do
-		local on = mv.low and (kind == "slide") == mv.sliding
+		local speed = root and (root.AssemblyLinearVelocity * XZ).Magnitude or 0
+		local on = mv.low and (mv.sliding and kind == "slide"
+			or not mv.sliding and kind == (speed > 0.5 and moving == 1 and "crouch"
+				or lowTracks.crouchIdle and "crouchIdle" or "crouch"))
 		if on ~= track.IsPlaying then
 			if on then
 				track:Play(0.12)
@@ -2127,16 +2226,20 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	if lowTracks.crouch then
-		lowTracks.crouch:AdjustSpeed(moving) -- the shuffle freezes when you stand still
+		local speed = root and (root.AssemblyLinearVelocity * XZ).Magnitude or 0
+		lowTracks.crouch:AdjustSpeed(moving == 0 and not lowTracks.crouchIdle and 0
+			or math.clamp(speed / polished.clips.referenceSpeed("crouch"), 0.2, 2.4))
 	end
 	-- wall run: its own mirrored cycle for the wall's side, and no turning toward the camera
 	if wall and slamming then -- getting onto a wall calls off an armed ground slam
 		slamming = false
+		polished.diveToken += 1
+		if polished.tracks.diveEnter then polished.tracks.diveEnter:Stop(0.08) end
 		if diveTrack then
 			diveTrack:Stop(0.15)
 		end
 	end
-	local clingNow = (wall ~= nil and wall.clinging == true) or mantle ~= nil -- hands-up pose for the climb too
+	local clingNow = (wall ~= nil and wall.clinging == true) or (mantle ~= nil and not polished.tracks.mantle)
 	if clingTrack and clingNow ~= clingTrack.IsPlaying then
 		if clingNow then
 			clingTrack:Play(0.15)
@@ -2193,6 +2296,10 @@ RunService.RenderStepped:Connect(function(dt)
 	elseif sprintTrack and not running and sprintTrack.IsPlaying then
 		sprintTrack:Stop(0.35) -- a slower fade reads as easing into the fall, not a snap
 	end
+	if sprintTrack and running and root then
+		local speed = (root.AssemblyLinearVelocity * XZ).Magnitude
+		sprintTrack:AdjustSpeed(math.clamp(speed / polished.clips.referenceSpeed("SprintFlail"), 0.5, 2.4))
+	end
 	sprint += ((sprinting and 1 or 0) - sprint) * math.min(dt * 8, 1)
 	-- aiming down the sights: zoom in, slow the mouse; the sniper looks through its scope instead
 	local held = Weapons[weaponIndex]
@@ -2216,8 +2323,10 @@ RunService.RenderStepped:Connect(function(dt)
 	Fx.fovBoost -= 8 * knifeT
 	local now = os.clock()
 	-- tell the other clients what this body is doing, so they can show it too (see Others)
-	local loop = clingNow and "cling" or wallSide and "wall" .. wallSide or slamming and "dive"
-		or mv.sliding and "slide" or mv.low and "crouch" or running and "sprint" or ""
+	local lowMoving = root and moving == 1 and (root.AssemblyLinearVelocity * XZ).Magnitude > 0.5
+	local loop = mantle and "" or clingNow and "cling" or wallSide and "wall" .. wallSide or slamming and "dive"
+		or mv.sliding and "slide" or mv.low and (lowMoving and "crouch"
+			or lowTracks.crouchIdle and "crouchIdle" or "crouch") or running and "sprint" or ""
 	if loop ~= mv.loop then
 		mv.loop = loop
 		moveRemote:FireServer("loop", loop)
@@ -2231,10 +2340,6 @@ RunService.RenderStepped:Connect(function(dt)
 	if (sprinting or wall or mv.sliding) and now > nextLine then
 		nextLine = now + 0.03
 		Fx.speedLine()
-	end
-	if sprinting and now > nextStep and humanoid.FloorMaterial ~= Enum.Material.Air then
-		nextStep = now + 0.25
-		Fx.dust(root.Position - Vector3.new(0, humanoid.HipHeight + root.Size.Y / 2, 0), 3, 2, 0.6)
 	end
 
 	local bob = math.sin(os.clock() * (9 + 5 * sprint)) * 0.05 * (1 + 1.5 * sprint) * moving
