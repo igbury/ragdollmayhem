@@ -11,3 +11,6 @@ rojo.exe
 
 # Blender backup files
 *.blend1
+
+# Obsidian notes
+/Anime/
