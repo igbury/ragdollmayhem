@@ -61,7 +61,7 @@ moveRemote.Name = "Move"
 moveRemote.Parent = remotes
 local MOVE_NAMES = {
 	loop = { [""] = true, sprint = true, wall1 = true, ["wall-1"] = true, cling = true, slide = true, crouch = true, dive = true },
-	shot = { roll = true, flip = true, kick = true, jump = true, slam = true },
+	shot = { roll = true, flip = true, kick = true, jump = true, slam = true, dash = true },
 }
 local MOVE_RATE = 30 -- reports passed on per player per second; more are dropped
 local moveBudget = {} -- [Player] = { start = os.clock(), count = number }

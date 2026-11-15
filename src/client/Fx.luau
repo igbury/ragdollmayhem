@@ -79,6 +79,45 @@ RunService.RenderStepped:Connect(function()
 	camera.FieldOfView = BASE_FOV + Fx.fovBoost + shakeMag * 5 * left
 end)
 
+-- Afterimages of a body (the dash): `count` see-through neon copies of its limbs left behind
+-- along the way, `gap` seconds apart, each fading and thinning out in `life` seconds. The copies
+-- are the limbs' own meshes (cloned bare), so they read as the character, not as boxes.
+function Fx.ghosts(char: Model, color: Color3, count: number, gap: number, life: number)
+	task.spawn(function()
+		for i = 1, count do
+			if not char.Parent then
+				return
+			end
+			local parts = {}
+			for _, limb in char:GetChildren() do
+				local was = limb.Archivable
+				limb.Archivable = true -- a part that is not archivable clones to nil
+				local copy = limb:IsA("BasePart") and limb.Name ~= "HumanoidRootPart" and limb.Transparency < 1 and limb:Clone() or nil
+				limb.Archivable = was
+				if copy then
+					copy:ClearAllChildren() -- no joints, faces, sounds or attachments
+					copy.Anchored = true
+					copy.CanCollide, copy.CanQuery, copy.CanTouch, copy.CastShadow = false, false, false, false
+					copy.Material = Enum.Material.Neon
+					copy.Color = i == 1 and WHITE or color -- the first one flashes white
+					copy.Transparency = 0.35
+					copy.CFrame = limb.CFrame
+					copy.Parent = folder
+					table.insert(parts, copy)
+				end
+			end
+			local start = 0.35 + (i - 1) / count * 0.25 -- later copies start fainter
+			run(life, parts, function(a)
+				local fade = start + (1 - start) * out(a)
+				for _, p in parts do
+					p.Transparency = fade
+				end
+			end)
+			task.wait(gap)
+		end
+	end)
+end
+
 function Fx.shake(position: Vector3, magnitude: number, duration: number)
 	local falloff = math.clamp(1 - (camera.CFrame.Position - position).Magnitude / 150, 0, 1)
 	magnitude *= falloff

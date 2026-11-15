@@ -69,6 +69,10 @@ for _, kind in { "slide", "crouch" } do
 	anim.Name = kind
 	lowAnims[kind] = anim
 end
+local dashAnim = Instance.new("Animation") -- the dash burst, see DashBurst
+dashAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
+	:RegisterKeyframeSequence(require(script:WaitForChild("DashBurst")))
+local dashTrack: AnimationTrack? = nil
 local flipUntil = 0
 
 -- Sounds (assets/sfx/*.wav, uploaded as Audio). An empty id stays silent.
@@ -84,6 +88,7 @@ local sounds: { [string]: Sound } = {} -- the body keeps facing the wall it flip
 require(script:WaitForChild("Others")).start(moveRemote, {
 	sprint = sprintAnim, roll = rollAnim, dive = diveAnim, wall1 = wallRunAnims[1], ["wall-1"] = wallRunAnims[-1],
 	cling = clingAnim, flip = flipAnim, kick = kickAnim, slide = lowAnims.slide, crouch = lowAnims.crouch,
+	dash = dashAnim,
 }, SFX)
 
 local PUNCH_RANGE = 9
@@ -114,7 +119,8 @@ local MOVE = {
 	DASH_TIME = 0.18,
 	DASH_EXIT = 34, -- speed left when the dash is over
 	DASH_COOLDOWN = 0.9,
-	DODGE_SPEED = 44, -- the dash on the ground is a roll
+	GROUND_DASH_SPEED = 58, -- on the ground: a burst along it, low and flat (no more somersault)
+	GROUND_DASH_TIME = 0.2,
 	DIVE_SPEED = 75, -- dive kick
 	DIVE_TIME = 0.6,
 	DIVE_COOLDOWN = 1.2,
@@ -829,6 +835,8 @@ local function onCharacter(char: Model)
 	flipTrack.Priority = Enum.AnimationPriority.Action4
 	kickTrack = humanoid.Animator:LoadAnimation(kickAnim)
 	kickTrack.Priority = Enum.AnimationPriority.Action4
+	dashTrack = humanoid.Animator:LoadAnimation(dashAnim)
+	dashTrack.Priority = Enum.AnimationPriority.Action4
 	for kind, anim in lowAnims do
 		local track = humanoid.Animator:LoadAnimation(anim)
 		track.Priority = Enum.AnimationPriority.Action
@@ -1251,6 +1259,7 @@ end
 -- White streaks on the screen edges (strongest on the wall's side) while wall running, and a
 -- flash of them plus an FOV kick on the jumps. UI gradients, no textures, like the rest of Fx.
 local AIR = Color3.fromRGB(120, 220, 255)
+local WHITE_FLASH = Color3.new(1, 1, 1)
 local edgeGui = Instance.new("ScreenGui")
 edgeGui.Name = "MoveFx"
 edgeGui.IgnoreGuiInset = true
@@ -1488,22 +1497,36 @@ function mv.dash()
 			diveTrack:Stop(0.1)
 		end
 	end
-	if grounded and not mv.low then
-		startRoll(dir, MOVE.DODGE_SPEED)
-	else
-		mv.airDashUsed = not grounded
-		mv.dashing = true
-		mv.dashUntil = now + MOVE.DASH_TIME
-		carry = dir * math.max(MOVE.DASH_SPEED, carry.Magnitude)
-		root.AssemblyLinearVelocity = carry
+	-- one burst for the ground and the air alike: the body throws itself forward flat (DashBurst)
+	-- and the speed is held, undragged and unsteered, for the burst, then mostly let go
+	mv.airDashUsed = not grounded
+	mv.dashing = true
+	mv.dashUntil = now + (grounded and MOVE.GROUND_DASH_TIME or MOVE.DASH_TIME)
+	carry = dir * math.max(grounded and MOVE.GROUND_DASH_SPEED or MOVE.DASH_SPEED, carry.Magnitude)
+	root.AssemblyLinearVelocity = carry
+	root.CFrame = CFrame.lookAt(root.Position, root.Position + dir) -- face the way it goes, at once
+	flipUntil = math.max(flipUntil, now + 0.25) -- AutoRotate stays off for the burst
+	if dashTrack then
+		dashTrack:Play(0.03)
 	end
-	local feet = root.Position - Vector3.yAxis * 2
-	Fx.ring(CFrame.lookAt(feet, feet + dir) * CFrame.Angles(math.pi / 2, 0, 0), 1, 7, 0.3, AIR, { thick = 0.5 })
-	Fx.sparks(feet, 8, 6, AIR, -dir)
-	for _ = 1, 8 do
+	moveRemote:FireServer("shot", "dash")
+
+	local feet = root.Position - Vector3.yAxis * (humanoid.HipHeight + root.Size.Y / 2 - 0.2)
+	-- a white flash ring torn open where it left, a wind ring behind, sparks and dust thrown back
+	Fx.ring(CFrame.lookAt(root.Position, root.Position + dir) * CFrame.Angles(math.pi / 2, 0, 0), 1.5, 9, 0.25, WHITE_FLASH, { thick = 0.35 })
+	Fx.ring(CFrame.lookAt(root.Position - dir * 2, root.Position + dir) * CFrame.Angles(math.pi / 2, 0, 0), 1, 6, 0.35, AIR, { thick = 0.5 })
+	Fx.sparks(root.Position, 12, 7, AIR, -dir)
+	if grounded then
+		Fx.dust(feet, 6, 3, 1.2)
+	end
+	if not isFirstPerson() and player.Character then
+		Fx.ghosts(player.Character, AIR, 5, 0.035, 0.32)
+	end
+	for _ = 1, 12 do
 		Fx.speedLine()
 	end
-	jolt(18, 0.5)
+	Fx.shake(root.Position, 0.25, 0.12)
+	jolt(22, 0.55)
 	zap()
 end
 

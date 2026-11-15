@@ -20,7 +20,9 @@ local LOOPS = {
 }
 -- one-off moves and the sound that goes with each ("" = none); the animation, when there is one,
 -- has the same name
-local SHOTS = { roll = "", flip = "", kick = "Kick", jump = "Jump", slam = "Slam" }
+local SHOTS = { roll = "", flip = "", kick = "Kick", jump = "Jump", slam = "Slam", dash = "Jump" }
+local Fx = require(script.Parent:WaitForChild("Fx")) -- the dash leaves afterimages here too
+local DASH_COLOR = Color3.fromRGB(120, 220, 255)
 local RUN = { sprint = true, wall1 = true, ["wall-1"] = true } -- loops with the footsteps sound under them
 
 local state = setmetatable({}, { __mode = "k" }) -- [character] = { tracks = { [name] = AnimationTrack }, loop = AnimationTrack? }
@@ -84,6 +86,9 @@ function Others.start(remote: RemoteEvent, anims: { [string]: Animation }, sfx: 
 			end
 			if SHOTS[name] ~= "" then
 				sound(root, SHOTS[name]):Play()
+			end
+			if name == "dash" then
+				Fx.ghosts(char, DASH_COLOR, 5, 0.035, 0.32)
 			end
 		end
 	end)
