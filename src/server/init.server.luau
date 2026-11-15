@@ -1604,6 +1604,53 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 	task.delay(4, shatter)
 end
 
+-- A rocket: a warhead flown straight along the aim (stepped by hand and raycast each frame, so it
+-- never tunnels through a thin wall at speed), trailing fire and smoke, that blows up on the
+-- first thing it meets or at the end of its range.
+local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3)
+	local p = Instance.new("Part")
+	p.Name = "Rocket"
+	p.Size = Vector3.new(0.7, 0.7, 2.4)
+	p.Color = Color3.fromRGB(80, 96, 64)
+	p.Material = Enum.Material.Metal
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch = true, false, false, false
+	local tip = Instance.new("Part")
+	tip.Shape = Enum.PartType.Ball
+	tip.Size = Vector3.one * 0.75
+	tip.Color = Color3.fromRGB(220, 60, 50)
+	tip.Anchored, tip.CanCollide, tip.CanQuery, tip.CanTouch = true, false, false, false
+	tip.Parent = p
+	local fire = Instance.new("Fire")
+	fire.Size, fire.Heat = 4, 0
+	fire.Parent = p
+	local smoke = Instance.new("Smoke")
+	smoke.Size, smoke.RiseVelocity, smoke.Opacity = 2.5, 1, 0.35
+	smoke.Color = Color3.fromRGB(200, 196, 190)
+	smoke.Parent = p
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = { char, p }
+	local position = origin + dir * 3
+	p.CFrame = CFrame.lookAt(position, position + dir)
+	p.Parent = workspace
+	alarm(nil, origin, "shot", origin)
+	local travelled = 0
+	while travelled < weapon.range do
+		local dt = RunService.Heartbeat:Wait()
+		local step = dir * weapon.speed * dt
+		local result = workspace:Raycast(position, step, params)
+		if result then
+			position = result.Position - dir * 0.5
+			break
+		end
+		position += step
+		travelled += step.Magnitude
+		p.CFrame = CFrame.lookAt(position, position + dir)
+		tip.CFrame = p.CFrame * CFrame.new(0, 0, -1.3)
+	end
+	p:Destroy()
+	explode(position)
+end
+
 weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 	local weapon = typeof(id) == "string" and weaponById[id]
 	local char = player.Character
@@ -1625,6 +1672,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 	if weapon.kind == "melee" then
 		lastSwing[player] = now
 	end
+	if weapon.kind == "rocket" then -- the warhead is in the air for seconds: the handler runs on in its own thread
+		task.spawn(rocket, weapon, char, head.Position, dir)
+		return
+	end
 
 	if weapon.kind == "thrown" then
 		throw(weapon, char, head.Position, dir)
@@ -1633,30 +1684,43 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = { char }
 	local origin = head.Position
-	local result = workspace:Raycast(origin, dir * weapon.range, params)
-	local target = result and result.Position or origin + dir * weapon.range
-	fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil)
 	if weapon.kind == "gun" then -- a gunshot scares whoever hears it, hit or miss
 		alarm(nil, origin, "shot", origin)
 	end
-	if not result then
-		return
-	end
-	if weapon.speed then -- knife flies there first
-		task.wait((target - origin).Magnitude / weapon.speed)
-	end
-	local d = dummyOf(result.Instance)
-	if d and weapon.kind == "melee" and tryDodge(d, player) then
-		return -- ducked under the swing
-	end
-	if d then
-		if result.Instance.Parent then
-			hit(d, result.Instance, dir, weapon.dmg, weapon.push, weapon.hurt, target, origin)
+	-- one ray, or a shotgun's spray of them (each pellet hits on its own)
+	local rng = Random.new()
+	for pellet = 1, weapon.pellets or 1 do
+		local aim = dir
+		if weapon.spread then
+			local right = dir:Cross(Vector3.yAxis)
+			right = right.Magnitude > 0.01 and right.Unit or Vector3.xAxis
+			local up = right:Cross(dir).Unit
+			aim = (dir + right * rng:NextNumber(-1, 1) * weapon.spread + up * rng:NextNumber(-1, 1) * weapon.spread).Unit
 		end
-	elseif result.Instance:IsDescendantOf(gibFolder) then -- a loose limb: just knock it about
-		result.Instance:ApplyImpulse(dir * result.Instance.AssemblyMass * weapon.push)
-	elseif weapon.chip then
-		Map.blast(target, weapon.chip, 30)
+		local result = workspace:Raycast(origin, aim * weapon.range, params)
+		local target = result and result.Position or origin + aim * weapon.range
+		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil)
+		if not result then
+			continue
+		end
+		if weapon.speed then -- knife flies there first
+			task.wait((target - origin).Magnitude / weapon.speed)
+		end
+		local d = dummyOf(result.Instance)
+		if d and weapon.kind == "melee" and tryDodge(d, player) then
+			return -- ducked under the swing
+		end
+		if d then
+			if result.Instance.Parent then
+				hit(d, result.Instance, aim, weapon.dmg, weapon.push, weapon.hurt, target, origin)
+			end
+		elseif result.Instance:IsDescendantOf(gibFolder) then -- a loose limb: just knock it about
+			result.Instance:ApplyImpulse(aim * result.Instance.AssemblyMass * weapon.push)
+		elseif result.Instance.Name == "Pin" and not result.Instance.Anchored then -- bowling pins (Map)
+			result.Instance:ApplyImpulse(aim * result.Instance.AssemblyMass * weapon.push)
+		elseif weapon.chip and pellet == 1 then
+			Map.blast(target, weapon.chip, 30)
+		end
 	end
 end)
 

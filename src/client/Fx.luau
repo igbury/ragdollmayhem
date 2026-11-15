@@ -595,17 +595,31 @@ local EVENTS = {}
 local FLAME = { Color3.fromRGB(255, 120, 30), Color3.fromRGB(255, 200, 60), Color3.fromRGB(255, 70, 20), BLACK }
 local TRACER = Color3.fromRGB(255, 235, 150)
 
+local SLASH = Color3.fromRGB(170, 225, 255)
+local MELEE = {}
+for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
+	if w.kind == "melee" then
+		MELEE[w.id] = true
+	end
+end
+
 function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: boolean)
 	local aimCf = CFrame.lookAt(from, to)
 	local distance = (to - from).Magnitude
-	if weaponId == "Bat" or weaponId == "Axe" then
-		-- swing: a white crescent sweeping in front of the attacker
-		local tilt = weaponId == "Axe" and rng:NextNumber(1.2, 1.5) or rng:NextNumber(-0.4, 0.4)
-		Fx.ring(aimCf * CFrame.Angles(0, 0, tilt), 4.5, 6, 0.2, WHITE, { arc = 2.2, thick = 1.4, height = 0.3, ink = false })
+	if MELEE[weaponId] then
+		-- swing: a crescent sweeping in front of the attacker; the katana's is a thin, wide,
+		-- steel-blue slash cut at a slant, the others a fat white arc
+		local katana = weaponId == "Katana"
+		local tilt = (weaponId == "Axe" or katana) and rng:NextNumber(1.0, 1.6) * (rng:NextNumber() < 0.5 and -1 or 1) or rng:NextNumber(-0.4, 0.4)
+		Fx.ring(aimCf * CFrame.Angles(0, 0, tilt), katana and 5 or 4.5, katana and 8 or 6, katana and 0.16 or 0.2, katana and SLASH or WHITE,
+			{ arc = katana and 2.8 or 2.2, thick = katana and 0.5 or 1.4, height = 0.3, ink = false })
 		if landed then
 			Fx.hit(to)
 			Fx.sparks(to, 6, weaponId == "Axe" and 5 or 8, TRACER, -aimCf.LookVector, 0.3)
-			Fx.shake(to, 0.3, 0.15)
+			Fx.shake(to, weaponId == "Pan" and 0.5 or 0.3, 0.15)
+			if weaponId == "Pan" then
+				Fx.text(to + UP * 2, "BONK!", Color3.fromRGB(255, 220, 60), 2.4) -- the pan's whole point
+			end
 		end
 	elseif weaponId == "Knife" then
 		local mesh = WeaponMeshes.create("Knife")
@@ -628,10 +642,12 @@ function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: bo
 	else
 		-- guns: tracer from the hip so it does not start inside the shooter's camera
 		local muzzle = (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
-		local big = weaponId == "Revolver"
+		local sniper = weaponId == "Sniper"
+		local big = weaponId == "Revolver" or sniper
+		local pellet = weaponId == "Shotgun"
 		local tracer = part(Enum.PartType.Block, TRACER)
-		run(big and 0.14 or 0.08, { tracer }, function(a)
-			local w = (big and 0.35 or 0.18) * (1 - a)
+		run(sniper and 0.35 or big and 0.14 or 0.08, { tracer }, function(a)
+			local w = (sniper and 0.55 or big and 0.35 or pellet and 0.1 or 0.18) * (1 - a)
 			tracer.Size = Vector3.new(w, w, (to - muzzle).Magnitude)
 			tracer.CFrame = CFrame.lookAt(muzzle:Lerp(to, 0.5), to)
 			tracer.Transparency = 0.2 + 0.8 * a
@@ -641,7 +657,10 @@ function EVENTS.Shot(_, weaponId: string, from: Vector3, to: Vector3, landed: bo
 			Fx.sparks(to, big and 8 or 4, big and 6 or 3, TRACER, -aimCf.LookVector, 0.25)
 			Fx.dust(to, big and 3 or 1, 2, 1)
 		end
-		Fx.shake(from, big and 0.35 or 0.12, 0.12)
+		Fx.shake(from, sniper and 0.7 or big and 0.35 or pellet and 0.08 or 0.12, sniper and 0.2 or 0.12)
+		if sniper and landed then
+			Fx.ring(CFrame.lookAt(to, to - aimCf.LookVector) * CFrame.Angles(math.pi / 2, 0, 0), 0.5, 4, 0.25, WHITE, { thick = 0.3 })
+		end
 	end
 end
 

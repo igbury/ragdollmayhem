@@ -203,8 +203,9 @@ local hint = label({
 	BackgroundTransparency = 0.4,
 	BackgroundColor3 = Color3.fromRGB(20, 20, 20),
 })
-label({
-	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash (roll on the ground)\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon\nF  Previous weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+local controls = label({
+	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
+	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon (hold: weapon wheel)\nF / scroll  Previous / switch weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -212,7 +213,23 @@ label({
 	Position = UDim2.new(0, 16, 1, -16),
 	Size = UDim2.fromOffset(320, 280),
 })
+local controlsHint = label({
+	Text = "H  Controls",
+	TextSize = 13,
+	TextTransparency = 0.25,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	AnchorPoint = Vector2.new(0, 1),
+	Position = UDim2.new(0, 16, 1, -16),
+	Size = UDim2.fromOffset(160, 16),
+})
+UserInputService.InputBegan:Connect(function(input, processed)
+	if not processed and input.KeyCode == Enum.KeyCode.H then
+		controls.Visible = not controls.Visible
+		controlsHint.Visible = not controls.Visible
+	end
+end)
 local weaponLabel = label({
+	Visible = false, -- the hotbar shows the weapon's name (WeaponBar)
 	TextSize = 18,
 	AnchorPoint = Vector2.new(0.5, 0),
 	Position = UDim2.new(0.5, 0, 0, 84),
@@ -236,14 +253,14 @@ local targetTitle = label({
 	TextSize = 16,
 	TextColor3 = Color3.fromRGB(255, 190, 70),
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -48),
+	Position = UDim2.new(0.5, 0, 1, -150), -- above the hotbar
 	Size = UDim2.fromOffset(600, 20),
 })
 local targetInfo = label({
 	TextSize = 14,
 	Font = Enum.Font.Gotham,
 	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -28),
+	Position = UDim2.new(0.5, 0, 1, -130),
 	Size = UDim2.fromOffset(600, 18),
 })
 -- Movement HUD, bottom centre (clear of the body in third person): the wall run time left (shown
@@ -251,7 +268,7 @@ local targetInfo = label({
 do
 	local back = Instance.new("Frame")
 	back.AnchorPoint = Vector2.new(0.5, 0)
-	back.Position = UDim2.new(0.5, 0, 1, -104)
+	back.Position = UDim2.new(0.5, 0, 1, -186)
 	back.Size = UDim2.fromOffset(120, 4)
 	back.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 	back.BackgroundTransparency = 0.4
@@ -264,7 +281,7 @@ do
 	fill.BorderSizePixel = 0
 	fill.Parent = back
 	local function pip(text: string, x: number)
-		return label({ Text = text, TextSize = 12, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 1, -94), Size = UDim2.fromOffset(50, 14) })
+		return label({ Text = text, TextSize = 12, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 1, -176), Size = UDim2.fromOffset(50, 14) })
 	end
 	mv.hud = { wallBack = back, wall = fill, jump = pip("JUMP", -30), dash = pip("DASH", 30) }
 end
@@ -486,6 +503,31 @@ local VIEWMODELS = { -- { shape, size, offset, color, transparency? }
 		{ BALL, Vector3.one * 0.75, CFrame.new(0, 0.3, -0.1), Color3.fromRGB(60, 80, 50) },
 		{ BLOCK, Vector3.new(0.2, 0.25, 0.2), CFrame.new(0, 0.75, -0.1), GREY },
 	},
+	Pan = {
+		{ BLOCK, Vector3.new(0.14, 1.2, 0.14), CFrame.new(0, 0.45, 0), DARK },
+		{ CYL, Vector3.new(0.12, 1.5, 1.5), CFrame.new(0, 1.75, 0) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(46, 46, 52) },
+	},
+	Katana = {
+		{ BLOCK, Vector3.new(0.16, 0.8, 0.16), CFrame.new(0, 0, 0), DARK },
+		{ BLOCK, Vector3.new(0.5, 0.08, 0.5), CFrame.new(0, 0.42, 0), Color3.fromRGB(200, 160, 60) },
+		{ BLOCK, Vector3.new(0.05, 3.2, 0.2), CFrame.new(0, 2.05, 0), STEEL },
+	},
+	Shotgun = {
+		{ BLOCK, Vector3.new(0.26, 0.28, 2.4), CFrame.new(0, 0.3, -1.0), DARK },
+		{ BLOCK, Vector3.new(0.3, 0.22, 0.7), CFrame.new(0, 0.08, -1.3), WOOD },
+		{ BLOCK, Vector3.new(0.24, 0.42, 0.9), CFrame.new(0, 0.12, 0.65), WOOD },
+	},
+	Sniper = {
+		{ BLOCK, Vector3.new(0.14, 0.16, 3.4), CFrame.new(0, 0.3, -1.6), DARK },
+		{ BLOCK, Vector3.new(0.26, 0.34, 1.3), CFrame.new(0, 0.22, -0.2), GREY },
+		{ CYL, Vector3.new(1.0, 0.24, 0.24), CFrame.new(0, 0.6, -0.4) * CFrame.Angles(0, math.pi / 2, 0), DARK },
+		{ BLOCK, Vector3.new(0.22, 0.42, 0.9), CFrame.new(0, 0.12, 0.75), WOOD },
+	},
+	Rocket = {
+		{ CYL, Vector3.new(3.4, 0.7, 0.7), CFrame.new(0, 0.5, -0.5) * CFrame.Angles(0, math.pi / 2, 0), Color3.fromRGB(80, 96, 64) },
+		{ BALL, Vector3.one * 0.62, CFrame.new(0, 0.5, -2.2), Color3.fromRGB(220, 60, 50) },
+		{ BLOCK, Vector3.new(0.2, 0.45, 0.25), CFrame.new(0, 0, 0), DARK },
+	},
 	Molotov = {
 		{ BLOCK, Vector3.new(0.42, 0.9, 0.42), CFrame.new(0, 0.5, 0), Color3.fromRGB(200, 120, 40), 0.3 },
 		{ BLOCK, Vector3.new(0.18, 0.35, 0.18), CFrame.new(0, 1.1, 0), Color3.fromRGB(200, 120, 40), 0.3 },
@@ -518,6 +560,11 @@ local HOLD = {
 	Axe = { grip = CFrame.new(0, 0.15, 0), hand = Vector3.new(0.1, 0.05, 0) },
 	Grenade = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.7 }, -- full size overflows the hand
 	Molotov = { grip = CFrame.new(0, 0.38, 0), hand = Vector3.new(0, 0.1, 0) },
+	Pan = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	Katana = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	Shotgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45) },
+	Sniper = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.5) },
+	Rocket = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(-0.1, 0.35, 0.4) },
 }
 local viewMeshes = {} -- [weaponId] = MeshPart
 task.spawn(function()
@@ -565,17 +612,43 @@ local function useWeapon(weapon)
 	local result, ray = aim(300)
 	local target = result and result.Position or ray.Origin + ray.Direction * 300
 	weaponRemote:FireServer(weapon.id, (target - head.Position).Unit)
-	if weapon.kind == "gun" then
+	if weapon.kind == "gun" or weapon.kind == "rocket" then
 		recoil = 1
 	else
 		hands.right.t = 0 -- the punch motion doubles as the swing / throw
 	end
 end
 
-local function cycleWeapon(step: number)
-	weaponIndex = (weaponIndex - 1 + step) % #Weapons + 1
-	lastWeaponUse = 0
-end
+-- Hotbar (bottom centre) + weapon wheel (hold Q); Q tap / F / L1 R1 / the mouse wheel step through.
+require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
+	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
+	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
+}, {
+	get = function()
+		return weaponIndex
+	end,
+	set = function(i: number)
+		weaponIndex = i
+		lastWeaponUse = 0
+	end,
+	cooldown = function(): number
+		local cd = Weapons[weaponIndex].cd
+		if not cd then
+			return 0
+		end
+		return math.clamp(1 - (os.clock() - lastWeaponUse) / cd, 0, 1)
+	end,
+	blocked = function(): boolean
+		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		return Menu.active or not hum or hum.Health <= 0
+	end,
+	scrollable = function(): boolean
+		return holding == nil
+	end,
+	freeze = function(on: boolean)
+		camera.CameraType = on and Enum.CameraType.Scriptable or Enum.CameraType.Custom
+	end,
+})
 
 -- Actions ---------------------------------------------------------------------
 local function punch()
@@ -725,10 +798,6 @@ UserInputService.InputBegan:Connect(function(input, processed)
 				break -- one use per click
 			end
 		end
-	elseif input.KeyCode == Enum.KeyCode.Q then
-		cycleWeapon(1)
-	elseif input.KeyCode == Enum.KeyCode.F then
-		cycleWeapon(-1)
 	elseif attackByKey[input.KeyCode] then
 		local attack = attackByKey[input.KeyCode]
 		if os.clock() >= attack.readyAt and not holding then
@@ -1888,7 +1957,7 @@ RunService.RenderStepped:Connect(function(dt)
 		if side == "right" and hold then
 			-- The wrist bends so the hand is square to the view whatever the forearm is doing:
 			-- guns point at the crosshair, melee and throwables stand upright and tip forward to swing.
-			local tilt = weapon.kind == "gun" and 14 * recoil or -25 - 75 * ext
+			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket") and 14 * recoil or -25 - 75 * ext
 			local pivot = real and real.wrist or Vector3.zero
 			hand = CFrame.new(arm * pivot)
 				* camera.CFrame.Rotation
@@ -1940,7 +2009,7 @@ RunService.RenderStepped:Connect(function(dt)
 		mv.seen, mv.seenAt = dummy, os.clock()
 		-- pointing a gun at it: tell the server now and then, so it puts its hands up
 		local aimRemote = remotes:FindFirstChild("Aim")
-		if weapon.kind == "gun" and aimRemote and not holding and os.clock() - (mv.aimedAt or 0) > 0.4 then
+		if (weapon.kind == "gun" or weapon.kind == "rocket") and aimRemote and not holding and os.clock() - (mv.aimedAt or 0) > 0.4 then
 			mv.aimedAt = os.clock()
 			aimRemote:FireServer(result.Instance)
 		end
