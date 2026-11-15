@@ -96,7 +96,8 @@ dummyFolder.Parent = workspace
 
 local dummies = {} -- [Model] = data
 local held = {} -- [Player] = data
-local lastUse = {} -- [Player] = os.clock()
+local lastUse = {} -- [Player] = { [bucket] = os.clock() } (rateLimited)
+local lastSwing = {} -- [Player] = os.clock() of the last punch / melee swing (the dummies dodge it)
 
 local description = Instance.new("HumanoidDescription")
 for _, prop in { "HeadColor", "TorsoColor", "LeftArmColor", "RightArmColor", "LeftLegColor", "RightLegColor" } do
@@ -455,6 +456,7 @@ local function release(d, velocity: Vector3)
 end
 
 local spawnDummy
+local tryDodge -- Brain: fighting (the punch and weapon handlers above it ask it)
 
 local function revive(d)
 	if d.heldBy then
@@ -485,6 +487,16 @@ local function revive(d)
 		end
 	end
 	d.speed, d.limpSide, d.risingUntil = 8, nil, 0
+	-- a fresh start for the mind too: it used to come back still fighting, still digging a grave,
+	-- or bent over a wound it no longer has
+	d.target, d.burying, d.digUntil, d.legless = nil, nil, 0, false
+	d.morale, d.brain = d.baseMorale, nil
+	d.humanoid.AutoRotate = true
+	d.impact = nil
+	table.clear(d.peaks)
+	dropPose(d)
+	d.postureKey = ""
+	Looks.posture(d.model, {})
 	for _, t in d.tracks do
 		t:Stop(0)
 	end
@@ -728,6 +740,7 @@ end
 -- keeps at it however badly it is hurt, Hothead hits back but gives up once something is broken
 -- or it bleeds hard, Mourner buries the dead, Coward runs at the very sight of a player.
 local TRAITS = { { "Berserk", 5 }, { "Tough", 20 }, { "Hothead", 20 }, { "Mourner", 50 }, { "Coward", 5 } }
+local MORALE = { Berserk = 100, Tough = 90, Hothead = 60, Mourner = 40, Coward = 15 } -- starting morale
 local function rollTrait(): string
 	local roll = math.random() * 100
 	for _, t in TRAITS do
@@ -771,6 +784,7 @@ local function dummyAt(from: Vector3, victim): any
 	return nil
 end
 
+local JOIN_LINES = { "Hey! Pick on someone your own size!", "Get that one!", "Nobody touches my friend!", "Oh, it's on now!" }
 local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 	local now = os.clock()
 	for _, d in dummies do
@@ -782,6 +796,16 @@ local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 			continue
 		end
 		d.nextReact = now + math.random(3, 6)
+		if kind == "death" then
+			d.morale -= 15 -- seeing one of its own drop shakes it
+		end
+		-- the fighters among them pile in on whoever is beating up one of their own
+		local culprit = kind == "hit" and from and playerAt(from)
+		if culprit and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.4)) then
+			d.target = culprit
+			say(d, pick(JOIN_LINES))
+			continue
+		end
 		d.nextWander, d.calmAt = now + 4, now + 4
 		if victim and victim.state ~= "Dead" and kind ~= "shot" and not d.limp and math.random() < 0.2 then
 			say(d, "Hang on, I'm coming!")
@@ -942,6 +966,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	if not dead then
 		d.hurtUntil = os.clock() + 1.6
 		d.hp -= zone.damage * power
+		d.morale -= zone.damage * power * (d.trait == "Tough" and 0.5 or 1)
 		d.daze += zone.daze * (kind and kind ~= "blunt" and 1.5 or 1)
 		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if root and not d.model:GetAttribute("Ragdolled") then
@@ -963,6 +988,14 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 			limp(d, "neck", 0.5) -- the head snaps back
 		else
 			limp(d, "waist", 0.35) -- doubles over for a moment
+		end
+		if d.state == "Awake" and not d.model:GetAttribute("Ragdolled") and os.clock() >= d.risingUntil then
+			-- still up: the blow rocks it back, and a fight it is in loses a beat
+			playTrack(d, Anims.stagger):Play(0.03)
+			if d.brain then
+				d.brain.swingAt = math.max(d.brain.swingAt, os.clock() + 0.4)
+				table.clear(d.brain.queue)
+			end
 		end
 	end
 
@@ -1044,6 +1077,7 @@ function spawnDummy(cf: CFrame, as: string?)
 		end)
 	end
 
+	local trait = rollTrait()
 	local d = {
 		model = model,
 		humanoid = humanoid,
@@ -1065,7 +1099,10 @@ function spawnDummy(cf: CFrame, as: string?)
 		speed = 8, -- walk speed it wants; the Heartbeat sets WalkSpeed from it (and the limp)
 		limpSide = nil :: string?, -- "left" / "right": the broken leg it drags
 		risingUntil = 0, -- getting up (Anims): it does not move or pose until then
-		trait = rollTrait(), -- its character (Personalities)
+		trait = trait, -- its character (Personalities)
+		baseMorale = MORALE[trait] or 50, -- how much fight it has in it (Brain: fighting)
+		morale = MORALE[trait] or 50,
+		brain = nil :: any, -- the fight it is in (Brain: fighting)
 		peaks = {}, -- [part name] = { speed, dir }: its recent top speed (impacts)
 		impact = nil :: any, -- { lost, part, dir }: a landing still under way (impacts)
 		nextImpact = 0,
@@ -1123,13 +1160,27 @@ local function trimDummies()
 	list[1].model:Destroy()
 end
 
-local function rateLimited(player: Player, cooldown: number): boolean
+-- One timer per player AND per kind of request: a punch, a spawn and the aim reports used to share
+-- a single timer, so a kick (which sends "kick" on Action, then a Punch) ate its own punch and a
+-- G right after a click did nothing.
+local function rateLimited(player: Player, cooldown: number, bucket: string?): boolean
 	local now = os.clock()
-	if now - (lastUse[player] or 0) < cooldown then
+	local times = lastUse[player]
+	if not times then
+		times = {}
+		lastUse[player] = times
+	end
+	local key = bucket or "default"
+	if now - (times[key] or 0) < cooldown then
 		return true
 	end
-	lastUse[player] = now
+	times[key] = now
 	return false
+end
+
+-- A Vector3 that physics can take: no NaN, no infinity (a NaN velocity on a part can wreck the whole assembly).
+local function finite(v: any): boolean
+	return typeof(v) == "Vector3" and v == v and math.abs(v.X) < 1e6 and math.abs(v.Y) < 1e6 and math.abs(v.Z) < 1e6
 end
 
 local function headOf(player: Player): BasePart?
@@ -1138,9 +1189,10 @@ local function headOf(player: Player): BasePart?
 end
 
 punchRemote.OnServerEvent:Connect(function(player, part)
-	if typeof(part) ~= "Instance" or not part:IsA("BasePart") or rateLimited(player, PUNCH_COOLDOWN) then
+	if typeof(part) ~= "Instance" or not part:IsA("BasePart") or rateLimited(player, PUNCH_COOLDOWN, "punch") then
 		return
 	end
+	lastSwing[player] = os.clock() -- the dummies see the punch coming (Brain: dodging)
 	local d = dummyOf(part)
 	local head = headOf(player)
 	if not head or (part.Position - head.Position).Magnitude > PUNCH_RANGE then
@@ -1151,6 +1203,9 @@ punchRemote.OnServerEvent:Connect(function(player, part)
 			Map.blast(part.Position, 1.5, 25)
 		end
 		return
+	end
+	if tryDodge(d, player) then
+		return -- it slipped the punch
 	end
 	hit(d, part, (part.Position - head.Position).Unit, nil, nil, nil, nil, head.Position)
 end)
@@ -1163,6 +1218,9 @@ aimRemote.Parent = remotes
 local SCARED_LINES = { "Don't shoot!", "Whoa, easy!", "I give up!", "Not me, not me!" }
 local BLEEDING_LINES = { "I'm already bleeding!", "Please, I need a doctor!", "Haven't you done enough?", "It won't stop bleeding!" }
 aimRemote.OnServerEvent:Connect(function(player, part)
+	if rateLimited(player, 0.2, "aim") then -- the client sends one every 0.4 s
+		return
+	end
 	local d = typeof(part) == "Instance" and dummyOf(part)
 	local head = headOf(player)
 	if not d or not head or d.state ~= "Awake" or d.target or (d.model:GetPivot().Position - head.Position).Magnitude > 60 then
@@ -1220,7 +1278,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg)
 	elseif action == "release" then
 		local d = held[player]
 		if d then
-			local velocity = typeof(arg) == "Vector3" and arg or Vector3.zero
+			local velocity = finite(arg) and arg or Vector3.zero
 			if velocity.Magnitude > MAX_THROW_SPEED then
 				velocity = velocity.Unit * MAX_THROW_SPEED
 			end
@@ -1229,8 +1287,9 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg)
 	end
 end)
 
+local MENU_ACTIONS = { map = true, spawn = true, revive = true, fall = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg)
-	if rateLimited(player, 0.25) then
+	if not MENU_ACTIONS[action] or rateLimited(player, 0.25, "action") then
 		return
 	end
 	if action == "map" and SPAWNS[arg] then
@@ -1247,7 +1306,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 	if not head then
 		return
 	end
-	if action == "spawn" and typeof(arg) == "Vector3" and (arg - head.Position).Magnitude < 200 then
+	if action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
 		trimDummies()
 		spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 	elseif action == "revive" then
@@ -1563,6 +1622,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 		return
 	end
 	ready[id] = now + weapon.cd - 0.03
+	if weapon.kind == "melee" then
+		lastSwing[player] = now
+	end
 
 	if weapon.kind == "thrown" then
 		throw(weapon, char, head.Position, dir)
@@ -1584,6 +1646,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir)
 		task.wait((target - origin).Magnitude / weapon.speed)
 	end
 	local d = dummyOf(result.Instance)
+	if d and weapon.kind == "melee" and tryDodge(d, player) then
+		return -- ducked under the swing
+	end
 	if d then
 		if result.Instance.Parent then
 			hit(d, result.Instance, dir, weapon.dmg, weapon.push, weapon.hurt, target, origin)
@@ -1597,7 +1662,17 @@ end)
 
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(char)
-		char:WaitForChild("Humanoid")
+		-- dying or respawning with a dummy in hand used to leave it "Held" for good: hanging in the
+		-- air, owned by a client that no longer drives it
+		if held[player] then
+			release(held[player], Vector3.zero)
+		end
+		local hum = char:WaitForChild("Humanoid") :: Humanoid
+		hum.Died:Connect(function()
+			if held[player] then
+				release(held[player], Vector3.zero)
+			end
+		end)
 		char:WaitForChild("RightAnkle", 5) -- wait for the rig to finish loading
 		task.wait()
 		Ragdoll.setup(char)
@@ -1622,7 +1697,14 @@ Players.PlayerRemoving:Connect(function(player)
 		release(held[player], Vector3.zero)
 	end
 	lastUse[player] = nil
+	lastSwing[player] = nil
 	attackReady[player] = nil
+	for _, d in dummies do -- nobody keeps chasing a player who left
+		if d.target == player then
+			d.target, d.brain = nil, nil
+			d.humanoid.AutoRotate = true
+		end
+	end
 	slamReady[player] = nil
 	moveBudget[player] = nil
 end)
@@ -1665,51 +1747,328 @@ local function nearestDummy(d, root: BasePart): (any, BasePart?, number)
 	return best, bestRoot, bestDist
 end
 
+-- Brain: fighting ----------------------------------------------------------------------------
+-- A fight reads like a film brawl instead of a queue of dummies walking into your fists:
+--  * at most ENGAGE_SLOTS dummies press one target at a time (the nearest ones); the rest circle
+--    it at CIRCLE_RADIUS, strafing and taunting, and step in as soon as a slot frees up;
+--  * every blow is telegraphed: a guard stance while it fights, the jab is quick, the haymaker
+--    and the kick wind up first (Anims), so a player who watches can get out of the way;
+--  * it reads the player's swings: when a punch or a bat comes, a dummy fighting that player may
+--    duck aside so the blow misses (tryDodge, asked by punchRemote / weaponRemote), then counters;
+--  * a blow that lands on a player throws them, and the heavy ones knock them down (knockPlayer);
+--  * morale: every hit takes some, seeing a body drop takes more; under MORALE_BREAK it breaks off
+--    and runs (a Berserk never does), and it comes back slowly while nothing hurts it;
+--  * stuck on something on the way (a wall, a crate): it jumps, then finds a path round it.
 -- `d.target` is a Player, or another dummy's record (Berserk, or hitting back at one).
+local PathfindingService = game:GetService("PathfindingService")
+local XZ = Vector3.new(1, 0, 1)
+local ENGAGE_SLOTS = 2
+local CIRCLE_RADIUS = 10
+local MORALE_BREAK = 20
+local DODGE = { Berserk = 0.2, Tough = 0.35, Hothead = 0.25, Mourner = 0.12, Coward = 0.3 } -- chance to slip a blow
+-- [trait] = weights of { jab, combo (jab, jab, haymaker), haymaker, kick }
+local STYLE = {
+	Berserk = { 2, 3, 4, 2 },
+	Tough = { 3, 2, 2, 3 },
+	Hothead = { 4, 2, 2, 1 },
+	Mourner = { 5, 1, 1, 1 },
+	Coward = { 5, 0, 1, 1 },
+}
+local STYLE_MOVES = { "jab", "combo", "haymaker", "kick" }
+-- at: when it lands (Anims), damage / push / up / down: what it does to a player (down = seconds
+-- ragdolled), reach: how close the target must still be when it lands, recover: until the next
+-- blow, power: the punch it counts as on a dummy
+local MOVES = {
+	jab = { anim = Anims.punch, at = Anims.PUNCH_HIT, damage = 6, push = 22, up = 8, down = 0, reach = 5.5, recover = 0.45, power = 0.8 },
+	haymaker = { anim = Anims.haymaker, at = Anims.HAYMAKER_HIT, damage = 15, push = 62, up = 30, down = 1.4, reach = 6, recover = 1.0, power = 2,
+		shout = { "HRAAH!", "Eat this!", "Night night!" } },
+	kick = { anim = Anims.kick, at = Anims.KICK_HIT, damage = 11, push = 52, up = 16, down = 0.9, reach = 6.5, recover = 0.8, power = 1.6,
+		shout = { "HYAH!", "Boot!" } },
+}
+local TAUNT_LINES = { "Come on then!", "Your turn's coming.", "Is that all you've got?", "I'm next, I'm next!", "Get them!" }
+local DODGE_LINES = { "Too slow!", "Missed me!", "Ha!", "Nope." }
+local BREAK_LINES = { "I'm out!", "Nope, not today!", "This isn't worth it!", "I want my mom!" }
+local WHIFF_LINES = { "Hold still!", "Where'd you go?", "Get back here!" }
+
+local playerWake = setmetatable({}, { __mode = "k" }) -- [character] = token of its latest knock-down
+-- Hurt a player and throw them. Their client owns their physics, so it does the flinging (Hazard);
+-- `down` seconds > 0 also ragdolls them and stands them back up after (the latest knock-down wins).
+local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number)
+	humanoid:TakeDamage(damage)
+	local char = player.Character
+	if down > 0 and char and humanoid.Health > 0 then
+		Ragdoll.set(char, true)
+		local token = {}
+		playerWake[char] = token
+		task.delay(down, function()
+			if playerWake[char] == token and char.Parent and humanoid.Health > 0 then
+				Ragdoll.set(char, false)
+			end
+		end)
+	end
+	hazardRemote:FireClient(player, velocity)
+end
+
+local function targetRoot(target): BasePart?
+	if typeof(target) == "Instance" then
+		local char = (target :: Player).Character
+		return char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	end
+	return target.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+end
+
+local function stopFighting(d)
+	d.target, d.brain = nil, nil
+	d.humanoid.AutoRotate = true
+	local guard = d.tracks[Anims.guard]
+	if guard and guard.IsPlaying then
+		guard:Stop(0.3)
+	end
+end
+
+-- 1 for the dummy nearest the target among those going for it, 2 for the next, and so on.
+local function queuePlace(d, target, at: Vector3, dist: number): number
+	local place = 1
+	for _, other in dummies do
+		if other ~= d and other.target == target and other.brain and other.state == "Awake" then
+			local r = other.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if r and ((r.Position - at) * XZ).Magnitude < dist then
+				place += 1
+			end
+		end
+	end
+	return place
+end
+
+local function pickMove(d, b): string
+	local weights = STYLE[d.trait] or STYLE.Mourner
+	local total = 0
+	for _, w in weights do
+		total += w
+	end
+	local roll = math.random() * total
+	for i, w in weights do
+		roll -= w
+		if roll <= 0 then
+			if STYLE_MOVES[i] == "combo" then
+				b.queue = { "jab", "haymaker" }
+				return "jab"
+			end
+			return STYLE_MOVES[i]
+		end
+	end
+	return "jab"
+end
+
+local function strike(d, b, name: string, target, now: number)
+	local move = MOVES[name]
+	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return
+	end
+	b.busyUntil = now + move.at + 0.12
+	b.swingAt = now + move.recover + (#b.queue > 0 and 0 or 0.3 + math.random() * 0.6)
+	if move.shout and math.random() < 0.45 then
+		say(d, pick(move.shout), "shout")
+	end
+	playTrack(d, move.anim):Play(0.05)
+	if name ~= "jab" then -- the heavy ones step into it
+		root.AssemblyLinearVelocity += root.CFrame.LookVector * XZ * 12
+	end
+	task.delay(move.at, function()
+		if d.target ~= target or d.state ~= "Awake" or d.model:GetAttribute("Ragdolled") or not root.Parent then
+			return
+		end
+		local other = targetRoot(target)
+		if not other then
+			return
+		end
+		local to = other.Position - root.Position
+		local flatTo = to * XZ
+		local dir = flatTo.Magnitude > 0.1 and flatTo.Unit or root.CFrame.LookVector * XZ
+		if flatTo.Magnitude >= move.reach or math.abs(to.Y) > 4.5 or dir:Dot(root.CFrame.LookVector) < 0.2 then
+			-- swung at air: a heavy blow that misses throws it off balance, an opening for the player
+			if name ~= "jab" then
+				b.swingAt = math.max(b.swingAt, os.clock() + 0.7)
+				playTrack(d, Anims.stagger):Play(0.05)
+				if math.random() < 0.4 then
+					say(d, pick(WHIFF_LINES))
+				end
+			end
+			return
+		end
+		if typeof(target) == "Instance" then
+			local char = (target :: Player).Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum and hum.Health > 0 and not char:GetAttribute("Ragdolled") then
+				knockPlayer(target, hum, dir * move.push + Vector3.yAxis * move.up, move.damage, move.down)
+			end
+		elseif target.state ~= "Dead" then
+			local head = d.model:FindFirstChild("Head") :: BasePart?
+			local partName = name == "kick" and "LowerTorso" or (math.random() < 0.3 and "Head" or "UpperTorso")
+			local part = target.model:FindFirstChild(partName) or other
+			if head and part.Parent then
+				hit(target, part, dir, move.power, 20 + move.push * 0.5, nil, nil, head.Position)
+			end
+		end
+	end)
+end
+
+-- Toward the target, round whatever is in the way.
+local function chase(d, b, root: BasePart, goal: Vector3, now: number)
+	if (root.Position - b.lastPos).Magnitude > 1 then
+		b.lastPos, b.movedAt = root.Position, now
+	end
+	local stuck = now - b.movedAt
+	if stuck > 0.8 and now >= b.nextJump then
+		b.nextJump = now + 1.2
+		d.humanoid.Jump = true
+	end
+	if stuck > 1.6 and now >= b.pathAt then
+		b.pathAt = now + 2.5
+		local from = root.Position
+		task.spawn(function()
+			local path = PathfindingService:CreatePath({ AgentRadius = 2, AgentHeight = 5, AgentCanJump = true })
+			local ok = pcall(path.ComputeAsync, path, from, goal)
+			if ok and path.Status == Enum.PathStatus.Success and d.brain == b then
+				b.path, b.step, b.pathUntil = path:GetWaypoints(), 2, os.clock() + 4
+				b.movedAt = os.clock()
+			end
+		end)
+	end
+	local path = b.path
+	if path and b.step <= #path and now < b.pathUntil then
+		local wp = path[b.step]
+		if ((wp.Position - root.Position) * XZ).Magnitude < 2.5 then
+			b.step += 1
+		elseif now >= d.nextLook then
+			d.nextLook = now + 0.2
+			if wp.Action == Enum.PathWaypointAction.Jump then
+				d.humanoid.Jump = true
+			end
+			d.humanoid:MoveTo(wp.Position)
+		end
+		return
+	end
+	b.path = nil
+	if now >= d.nextLook then
+		d.nextLook = now + 0.25
+		local to = (goal - root.Position) * XZ
+		d.humanoid:MoveTo(goal - (to.Magnitude > 0.1 and to.Unit * 2.8 or Vector3.zero))
+	end
+end
+
+-- A punch or a swing is coming from `player`: a dummy fighting them may get out of the way.
+-- True when it did (the blow misses).
+function tryDodge(d, player: Player): boolean
+	local b = d.brain
+	local now = os.clock()
+	if not b or d.target ~= player or d.state ~= "Awake" or d.limp or d.model:GetAttribute("Ragdolled")
+		or now < b.nextDodge or now < b.busyUntil or now < d.risingUntil then
+		return false
+	end
+	b.nextDodge = now + 1.6 -- one try per flurry: hold the button and the next one lands
+	if math.random() >= (DODGE[d.trait] or 0.2) then
+		return false
+	end
+	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return false
+	end
+	local side = root.CFrame.RightVector * (math.random() < 0.5 and -1 or 1)
+	root.AssemblyLinearVelocity += side * 30 - root.CFrame.LookVector * 8
+	playTrack(d, Anims.dodge):Play(0.05)
+	if math.random() < 0.5 then
+		say(d, pick(DODGE_LINES))
+	end
+	b.queue = { "jab" } -- and straight back in with a counter
+	b.swingAt = math.min(b.swingAt, now + 0.35)
+	return true
+end
+
 local function fight(d, root: BasePart, now: number)
 	local target = d.target
 	local player = typeof(target) == "Instance" and target :: Player or nil
 	local victim = not player and target or nil
 	local char = player and player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-	local other = (if victim then victim.model:FindFirstChild("HumanoidRootPart") else char and char:FindFirstChild("HumanoidRootPart")) :: BasePart?
+	local other = targetRoot(target)
 	local alive = if victim then dummies[victim.model] ~= nil and victim.state ~= "Dead" else player.Parent ~= nil and humanoid ~= nil and humanoid.Health > 0
 	local gone = not (alive and other) or (other.Position - root.Position).Magnitude > 80
-	if gone or (d.trait == "Hothead" and badlyHurt(d)) then
-		d.target = nil
+	local broken = d.trait ~= "Berserk" and (d.morale < MORALE_BREAK or (d.trait == "Hothead" and badlyHurt(d)))
+	if gone or broken then
+		stopFighting(d)
 		d.speed = pace(d)
 		if not gone then
-			say(d, pick(GIVE_UP_LINES))
-			flee(d, other.Position, 24)
+			say(d, pick(d.morale < MORALE_BREAK and BREAK_LINES or GIVE_UP_LINES))
+			flee(d, other.Position, 28)
 		end
 		return
 	end
-	d.speed = pace(d) * 1.8
-	local to = (other.Position - root.Position) * Vector3.new(1, 0, 1)
-	if now >= d.nextLook then
-		d.nextLook = now + 0.3
-		d.humanoid:MoveTo(other.Position - (to.Magnitude > 0.1 and to.Unit * 2.5 or Vector3.zero))
+	local b = d.brain
+	if not b then
+		b = {
+			swingAt = now + 0.3, busyUntil = 0, queue = {}, nextDodge = 0,
+			angle = math.random() * math.pi * 2, spin = math.random() < 0.5 and -1 or 1, t = now,
+			nextTaunt = now + 2 + math.random() * 3,
+			lastPos = root.Position, movedAt = now, nextJump = 0, pathAt = 0, path = nil, step = 0, pathUntil = 0,
+		}
+		d.brain = b
 	end
-	if to.Magnitude < 4.5 and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= d.nextSwing then
-		d.nextSwing = now + 1.1
-		root.CFrame = CFrame.lookAt(root.Position, root.Position + to)
-		playTrack(d, Anims.punch):Play(0.05)
-		task.delay(Anims.PUNCH_HIT, function()
-			local reach = (other.Position - root.Position).Magnitude
-			if d.state ~= "Awake" or d.model:GetAttribute("Ragdolled") or reach >= 5.5 then
-				return
+	local dt = now - b.t
+	b.t = now
+	local guard = playTrack(d, Anims.guard)
+	if not guard.IsPlaying then
+		guard:Play(0.25)
+	end
+
+	local to = (other.Position - root.Position) * XZ
+	local dist = to.Magnitude
+	-- close in it squares up to the target; the humanoid alone would turn to where it walks
+	-- (sideways while it circles)
+	local close = dist < 16 and dist > 0.5
+	d.humanoid.AutoRotate = not close
+	if close then
+		local look = (root.CFrame.LookVector * XZ):Lerp(to.Unit, math.min(dt * 10, 1))
+		if look.Magnitude > 0.05 then
+			root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+		end
+	end
+	if now < b.busyUntil then
+		return -- mid-blow
+	end
+
+	if queuePlace(d, target, other.Position, dist) > ENGAGE_SLOTS then
+		-- waiting its turn: round and round at a distance, now and then the other way, egging on
+		b.angle += b.spin * 0.6 * dt
+		if math.random() < dt * 0.25 then
+			b.spin = -b.spin
+		end
+		d.speed = pace(d) * 1.1
+		if now >= d.nextLook then
+			d.nextLook = now + 0.3
+			d.humanoid:MoveTo(other.Position + Vector3.new(math.cos(b.angle), 0, math.sin(b.angle)) * CIRCLE_RADIUS)
+		end
+		if now >= b.nextTaunt and dist < 20 then
+			b.nextTaunt = now + 4 + math.random() * 4
+			playTrack(d, Anims.taunt):Play(0.1)
+			if math.random() < 0.6 then
+				say(d, pick(TAUNT_LINES))
 			end
-			if victim then
-				local head = d.model:FindFirstChild("Head") :: BasePart?
-				local part = victim.model:FindFirstChild(math.random() < 0.3 and "Head" or "UpperTorso") or other
-				if victim.state ~= "Dead" and head and part.Parent then
-					hit(victim, part, to.Unit, 1, 30, nil, nil, head.Position)
-				end
-			elseif humanoid.Health > 0 then
-				humanoid:TakeDamage(8)
-				hazardRemote:FireClient(player, to.Unit * 35 + Vector3.yAxis * 14) -- it owns its physics
-			end
-		end)
+		end
+		return
+	end
+
+	d.speed = pace(d) * 1.8
+	if dist > 4 then
+		chase(d, b, root, other.Position, now)
+	elseif now >= d.nextLook then
+		d.nextLook = now + 0.3
+		d.humanoid:MoveTo(root.Position) -- in range: plant the feet
+		b.lastPos, b.movedAt = root.Position, now
+	end
+	if dist < 5.5 and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= b.swingAt then
+		strike(d, b, table.remove(b.queue, 1) or pickMove(d, b), target, now)
 	end
 end
 
@@ -1866,6 +2225,14 @@ RunService.Heartbeat:Connect(function(dt)
 		nextSync = now + 0.3
 	end
 	for _, d in dummies do
+		-- fell off the map (or the engine took its root / torso at FallenPartsDestroyHeight): the
+		-- shell used to stay in the list for good, holding one of the MAX_DUMMIES slots and running
+		-- the whole loop below on a body with no root
+		local core = d.model:FindFirstChild("UpperTorso") :: BasePart?
+		if not core or not d.model:FindFirstChild("HumanoidRootPart") or core.Position.Y < workspace.FallenPartsDestroyHeight + 40 then
+			d.model:Destroy()
+			continue
+		end
 		if d.bleed > 0 then
 			-- a hand pressed on the wound halves the loss
 			d.blood = math.max(0, d.blood - d.bleed * (d.pressing and 0.5 or 1) * dt)
@@ -1980,6 +2347,7 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 		d.daze = math.max(0, d.daze - 8 * dt)
+		d.morale = math.min(d.baseMorale, d.morale + 2.5 * dt) -- the nerve comes back while nothing hurts
 		local busy = not rising and behave(d, now)
 		if now >= d.nextWander and not rising and not busy then
 			d.nextWander = now + math.random(4, 9)
@@ -1995,7 +2363,6 @@ end)
 
 -- Factory machines: dummies go through harm(), players take Humanoid damage and are flung by
 -- their own client (it owns their physics).
-local wakeToken = setmetatable({}, { __mode = "k" })
 Factory.build(function(model, damage, velocity)
 	local d = dummies[model]
 	if d then
@@ -2015,16 +2382,7 @@ Factory.build(function(model, damage, velocity)
 	if not player or humanoid.Health <= 0 then
 		return
 	end
-	humanoid:TakeDamage(damage)
-	Ragdoll.set(model, true)
-	hazardRemote:FireClient(player, velocity)
-	local token = {}
-	wakeToken[model] = token
-	task.delay(2.5, function()
-		if wakeToken[model] == token and model.Parent and humanoid.Health > 0 then
-			Ragdoll.set(model, false)
-		end
-	end)
+	knockPlayer(player, humanoid, velocity, damage, 2.5)
 end)
 for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
