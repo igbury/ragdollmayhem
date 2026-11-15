@@ -10,7 +10,7 @@
 -- -X bends forward, +Z leans left.
 -- ponytail: built in memory like the other animations here (no upload), so they play in Studio
 -- only; upload them and use the asset ids before publishing.
-local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
+local keyframeId = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KeyframeId"))
 
 local DummyPoses = {}
 
@@ -68,7 +68,7 @@ local function hold(name: string, poses: { [string]: CFrame }): Animation
 	end
 	local animation = Instance.new("Animation")
 	animation.Name = name
-	animation.AnimationId = KeyframeSequenceProvider:RegisterKeyframeSequence(sequence)
+	animation.AnimationId = keyframeId(sequence)
 	return animation
 end
 

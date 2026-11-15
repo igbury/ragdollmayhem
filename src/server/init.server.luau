@@ -8,7 +8,10 @@ local Attacks = require(ReplicatedStorage.Shared.Attacks)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
 local Map = require(script.Map)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
+local Impact = require(ReplicatedStorage.Shared.Impact)
 local Factory = require(script.Factory)
+local City = require(script.City)
 local Looks = require(script.Looks)
 local Anims = require(script.Anims)
 
@@ -16,6 +19,7 @@ local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
 local GRAB_RANGE = 15
 local MAX_THROW_SPEED = 120
+local MAX_SLAM_LOST = 140 -- studs/s a held body can lose in one hit, as its holder reports it (the grab drags at 90)
 local MAX_DUMMIES = 30
 local MAX_HP = 100
 
@@ -87,7 +91,8 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 	end
 end)
 
-local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN }
+local CITY_ENABLED = false -- City Square is in development: not built, not in the menu. Flip to test it.
+local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil }
 remotes.Parent = ReplicatedStorage
 
 local dummyFolder = Instance.new("Folder")
@@ -425,14 +430,18 @@ local function knockDown(d, seconds: number, state: string)
 		Looks.posture(d.model, {})
 	end
 	Ragdoll.set(d.model, true)
-	setOwner(d.model, d.heldBy)
+	setOwner(d.model, d.heldBy or d.looseOwner)
 	d.wakeAt = math.max(d.wakeAt, os.clock() + seconds + legHurt(d) * 2) -- bad legs: slower up
 	if STATE_RANK[state] >= STATE_RANK[d.state] then
 		setState(d, state)
 	end
 end
 
-local function release(d, velocity: Vector3)
+-- `owner`: the player who let go keeps simulating the body (and throws it themself) until it comes
+-- to rest (or LOOSE_MAX), then the Heartbeat loop gives it to the server. Taking it at once snapped it back to the
+-- server's copy, a ping old, and froze it for a moment: the lag spike on every drop.
+local LOOSE_MAX = 4 -- s the releaser keeps it at most
+local function release(d, velocity: Vector3, owner: Player?)
 	if d.grab then
 		d.grab:Destroy()
 		d.grab = nil
@@ -441,25 +450,30 @@ local function release(d, velocity: Vector3)
 		held[d.heldBy] = nil
 		d.heldBy = nil
 	end
-	setOwner(d.model, nil)
-	if velocity.Magnitude > 0 then
-		for _, part in d.model:GetDescendants() do
-			if part:IsA("BasePart") then
-				part.AssemblyLinearVelocity = velocity
+	d.looseOwner, d.looseSince = owner, os.clock()
+	if not owner then
+		setOwner(d.model, nil)
+		if velocity.Magnitude > 0 then
+			for _, part in d.model:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.AssemblyLinearVelocity = velocity
+				end
 			end
 		end
 	end
 	if d.state == "Held" then
 		setState(d, "Knocked down")
 	end
+	d.impactState = Impact.new() -- the server takes the hits again, from fresh speeds
 	d.wakeAt = math.max(d.wakeAt, os.clock() + 2.5)
 end
 
 local spawnDummy
 local tryDodge -- Brain: fighting (the punch and weapon handlers above it ask it)
+local landImpact -- impacts, below (grab "slam" asks it)
 
 local function revive(d)
-	if d.heldBy then
+	if d.heldBy or d.looseOwner then -- the server moves it: it has to own it
 		release(d, Vector3.zero)
 	end
 	if next(d.lost) then -- limbs do not grow back: a whole new body, same name, same spot
@@ -492,8 +506,7 @@ local function revive(d)
 	d.target, d.burying, d.digUntil, d.legless = nil, nil, 0, false
 	d.morale, d.brain = d.baseMorale, nil
 	d.humanoid.AutoRotate = true
-	d.impact = nil
-	table.clear(d.peaks)
+	d.impactState = Impact.new()
 	dropPose(d)
 	d.postureKey = ""
 	Looks.posture(d.model, {})
@@ -859,6 +872,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	local function breakBone()
 		if not p.broken then
 			p.broken = true
+			Sfx.play(Sfx.BONE, point)
 			addInjury(d, info.broken)
 			d.limp = d.limp or info.limb == "leg"
 			if info.limb == "leg" then
@@ -1103,8 +1117,7 @@ function spawnDummy(cf: CFrame, as: string?)
 		baseMorale = MORALE[trait] or 50, -- how much fight it has in it (Brain: fighting)
 		morale = MORALE[trait] or 50,
 		brain = nil :: any, -- the fight it is in (Brain: fighting)
-		peaks = {}, -- [part name] = { speed, dir }: its recent top speed (impacts)
-		impact = nil :: any, -- { lost, part, dir }: a landing still under way (impacts)
+		impactState = Impact.new(), -- recent top speeds and a landing under way (impacts)
 		nextImpact = 0,
 		target = nil :: Player?, -- the player it is going for
 		nextLook = 0, -- next look round for players and the dead (behave)
@@ -1207,6 +1220,7 @@ punchRemote.OnServerEvent:Connect(function(player, part)
 	if tryDodge(d, player) then
 		return -- it slipped the punch
 	end
+	Sfx.play(Sfx.PUNCH, part.Position, player) -- the puncher played it already (punch / kick)
 	hit(d, part, (part.Position - head.Position).Unit, nil, nil, nil, nil, head.Position)
 end)
 
@@ -1246,7 +1260,7 @@ aimRemote.OnServerEvent:Connect(function(player, part)
 	d.nextWander = math.max(d.nextWander, now + 2.5)
 end)
 
-grabRemote.OnServerEvent:Connect(function(player, action, arg)
+grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 	if action == "grab" then
 		if typeof(arg) ~= "Instance" or not arg:IsA("BasePart") or held[player] then
 			return
@@ -1257,6 +1271,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg)
 			return
 		end
 		d.heldBy = player
+		d.looseOwner = nil -- caught again mid-flight: the new holder owns it (knockDown below)
 		held[player] = d
 		local attachment = Instance.new("Attachment")
 		attachment.Name = "GrabAttachment"
@@ -1275,6 +1290,17 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg)
 		if d.state == "Held" then
 			say(d, pick(GRAB_LINES))
 		end
+	elseif action == "slam" then
+		-- the holder swung it into something: arg is the part that struck, then the speed it lost
+		-- and the way it was going (shared/Impact, run on their client, which owns the body)
+		-- (or let go of, while it is still theirs to simulate: release)
+		local d = typeof(arg) == "Instance" and dummyOf(arg)
+		local lost, dir = ...
+		if not d or (d.heldBy ~= player and d.looseOwner ~= player) or arg.Parent ~= d.model or not arg:IsA("BasePart")
+			or typeof(lost) ~= "number" or lost ~= lost or not finite(dir) or dir.Magnitude < 0.5 then
+			return
+		end
+		landImpact(d, arg, dir.Unit, math.min(lost, MAX_SLAM_LOST), player)
 	elseif action == "release" then
 		local d = held[player]
 		if d then
@@ -1282,7 +1308,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg)
 			if velocity.Magnitude > MAX_THROW_SPEED then
 				velocity = velocity.Unit * MAX_THROW_SPEED
 			end
-			release(d, velocity)
+			release(d, velocity, player) -- the thrower applies the velocity: it owns the body
 		end
 	end
 end)
@@ -1405,6 +1431,22 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 end
 
 -- Damage + launch every dummy in range. `radial` pushes away from the centre.
+-- The body part of `d` nearest `position` (what a blow from there lands on first).
+local function nearestPart(d, position: Vector3): BasePart?
+	local best, bestDist = nil, math.huge
+	for name in PARTS do
+		local part = d.model:FindFirstChild(name) :: BasePart?
+		local dist = part and (part.Position - position).Magnitude
+		if dist and dist < bestDist then
+			best, bestDist = part, dist
+		end
+	end
+	return best
+end
+
+-- Everything within `radius` takes `damage` and is flung. Without a `kind` (the 1-6 attacks, the
+-- ground slam and kicks) it is a blunt blow on the part nearest the hit, through hit(): bruises,
+-- broken bones and the body chart, the same HP as before. Fire and blasts keep their own wounds (harm).
 local function smash(position: Vector3, radius: number, damage: number, push: Vector3, radial: number, kind: string?)
 	for _, d in dummies do
 		local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
@@ -1412,10 +1454,17 @@ local function smash(position: Vector3, radius: number, damage: number, push: Ve
 		if not offset or offset.Magnitude > radius then
 			continue
 		end
-		if d.heldBy then
+		if d.heldBy or d.looseOwner then -- the server flings it below: it has to own it for that
 			release(d, Vector3.zero)
 		end
-		harm(d, damage, kind, position)
+		local part = not kind and damage > 0 and nearestPart(d, position)
+		if part then
+			harm(d, 0, nil, position) -- knocks it down; the HP goes through hit
+			local away = part.Position - position
+			hit(d, part, away.Magnitude > 0.1 and away.Unit or UP, damage / ZONES[PARTS[part.Name].zone].damage, 0, "blunt", part.Position)
+		else
+			harm(d, damage, kind, position)
+		end
 		local out = offset * Vector3.new(1, 0, 1)
 		out = out.Magnitude > 0.1 and out.Unit or Vector3.zero
 		local velocity = push + (out + UP * 0.6) * radial
@@ -1544,7 +1593,8 @@ for _, weapon in Weapons do
 	weaponById[weapon.id] = weapon
 end
 
-local function explode(position: Vector3)
+local function explode(position: Vector3, sound: string)
+	Sfx.play({ sound, 1, 1 }, position)
 	fxRemote:FireAllClients("Boom", nil, position, 9)
 	Map.blast(position, 9, 70)
 	smash(position, 13, 45, Vector3.zero, 80, "blast")
@@ -1643,7 +1693,7 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		task.wait(2)
 		local position = p.Position
 		p:Destroy()
-		explode(position)
+		explode(position, Sfx.GRENADE_BOOM)
 		return
 	end
 	-- molotov: breaks on the first thing it touches that is not the thrower
@@ -1655,6 +1705,7 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		broken = true
 		local position = p.Position
 		p:Destroy()
+		Sfx.play(Sfx.SHATTER, position)
 		ignite(position)
 	end
 	p.Touched:Connect(function(other)
@@ -1709,7 +1760,7 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3)
 		tip.CFrame = p.CFrame * CFrame.new(0, 0, -1.3)
 	end
 	p:Destroy()
-	explode(position)
+	explode(position, Sfx.RPG_BOOM)
 end
 
 -- How far the shooter's own idea of their head may sit from ours. Their body is theirs to move, so
@@ -1743,6 +1794,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	if weapon.kind == "melee" then
 		lastSwing[player] = now
 	end
+	local sounds = Sfx.WEAPON[id] or {}
+	if sounds.fire then
+		Sfx.play(sounds.fire, origin, player) -- the shooter heard it already (useWeapon)
+	end
 	if weapon.kind == "rocket" then -- the warhead is in the air for seconds: the handler runs on in its own thread
 		task.spawn(rocket, weapon, char, origin, dir)
 		return
@@ -1772,6 +1827,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 		local target = result and result.Position or origin + aim * weapon.range
 		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil)
 		if not result then
+			if sounds.swing then
+				Sfx.play(sounds.swing, origin, player) -- the swinger predicted it (useWeapon)
+			end
 			continue
 		end
 		if weapon.speed then -- knife flies there first
@@ -1782,6 +1840,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 			return -- ducked under the swing
 		end
 		if d then
+			if sounds.hit then -- a melee swinger predicted it; a knife only lands after its flight
+				Sfx.play(sounds.hit, target, weapon.kind == "melee" and player or nil)
+			end
 			if result.Instance.Parent then
 				hit(d, result.Instance, aim, weapon.dmg, weapon.push, weapon.hurt, target, origin)
 			end
@@ -2298,57 +2359,26 @@ local function behave(d, now: number): boolean
 end
 
 -- Hitting the ground (or a wall) hard: a body part whose speed falls away fast took a blow from
--- whatever stopped it. Falls, throws, slams and being launched by an attack all land through
--- hit(), as blunt damage on the part that struck: a fall of about 12 studs bruises, 25 or more
--- breaks bones, a long fall or a full-power throw knocks it out. Each part keeps its recent top speed, which
--- sinks at IMPACT_FADE: a landing spread over a few frames still counts in full, slowing down by
--- sliding or walking never does.
-local IMPACT_PARTS = { "Head", "UpperTorso", "LowerTorso", "LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" }
-local IMPACT_SPEED = 50 -- studs/s lost before it hurts (calibration knob)
-local IMPACT_PER_POWER = 15 -- every this many more studs/s is one more punch's worth
-local IMPACT_FADE = 400 -- studs/s² the remembered top speed sinks by (gravity is 196)
-local function impacts(d, now: number, dt: number)
-	local peaks = d.peaks
-	local worst, worstLost, worstPart, worstDir = -math.huge, 0, nil, nil
-	for _, name in IMPACT_PARTS do
-		local part = d.model:FindFirstChild(name) :: BasePart?
-		if not part then
-			continue
-		end
-		local v = part.AssemblyLinearVelocity
-		local speed = v.Magnitude
-		local peak = peaks[name]
-		if not peak then
-			peak = { speed = 0, dir = Vector3.yAxis, set = false } -- one table per part, reused every frame
-			peaks[name] = peak
-		end
-		if not peak.set or speed >= peak.speed - IMPACT_FADE * dt then
-			peak.speed, peak.dir, peak.set = speed, speed > 0.1 and v.Unit or Vector3.yAxis, true
-			continue
-		end
-		peak.speed -= IMPACT_FADE * dt
-		local lost = peak.speed - v.Magnitude
-		-- the whole body landing at once (standing): the lowest part is the one that hit
-		local score = lost - part.Position.Y * 0.05
-		if lost > IMPACT_SPEED and score > worst then
-			worst, worstLost, worstPart, worstDir = score, lost, part, peak.dir
-		end
+-- whatever stopped it (shared/Impact). Falls, throws, slams, being launched by an attack and being
+-- swung into things while held all land through hit(), as blunt damage on the part that struck: a
+-- fall of about 12 studs bruises, 25 or more breaks bones, a long fall or a full-power throw knocks it out.
+-- `skip`: the holder who played the thud already.
+function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?)
+	local now = os.clock()
+	if now < d.nextImpact then
+		return
 	end
-	-- a landing takes a few frames: wait until the speed has stopped falling away, then count it all
-	local pending = d.impact
-	if worstPart and (not pending or worstLost > pending.lost) then
-		d.impact = { lost = worstLost, part = worstPart, dir = worstDir }
-	elseif pending then
-		d.impact = nil
-		for _, peak in peaks do
-			peak.set = false
-		end
-		if now >= d.nextImpact and pending.part.Parent == d.model then
-			d.nextImpact = now + 0.3 -- one blow per landing, not one per part
-			local power = 0.5 + (pending.lost - IMPACT_SPEED) / IMPACT_PER_POWER
-			d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
-			hit(d, pending.part, pending.dir, power, 0, "blunt", pending.part.Position)
-		end
+	d.nextImpact = now + 0.3 -- one blow per landing, not one per part
+	local power = Impact.power(lost)
+	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
+	Sfx.play(Sfx.THUD, part.Position, skip)
+	hit(d, part, dir, power, 0, "blunt", part.Position)
+end
+
+local function impacts(d, dt: number)
+	local landed = Impact.step(d.impactState, d.model, dt)
+	if landed then
+		landImpact(d, landed.part, landed.dir, landed.lost)
 	end
 end
 
@@ -2390,8 +2420,17 @@ RunService.Heartbeat:Connect(function(dt)
 			express(d)
 		end
 		local ragdolled = d.model:GetAttribute("Ragdolled")
-		if d.state ~= "Dead" then
-			impacts(d, now, dt)
+		if d.looseOwner then -- let go: back to the server once it lies still (no snap), or after LOOSE_MAX
+			local since = now - d.looseSince
+			if since > LOOSE_MAX or (since > 0.5 and core.AssemblyLinearVelocity.Magnitude < 1.5) or not d.looseOwner.Parent then
+				d.looseOwner = nil
+				setOwner(d.model, nil)
+				d.impactState = Impact.new()
+			end
+		end
+		-- held or just let go: whoever simulates it sees the hits and reports them (grab "slam")
+		if d.state ~= "Dead" and not d.heldBy and not d.looseOwner then
+			impacts(d, dt)
 		end
 		if ragdolled then
 			local down = grounded(d)
@@ -2501,7 +2540,7 @@ end)
 Factory.build(function(model, damage, velocity)
 	local d = dummies[model]
 	if d then
-		if d.heldBy then
+		if d.heldBy or d.looseOwner then -- the server flings it: it has to own it
 			release(d, Vector3.zero)
 		end
 		harm(d, damage)
@@ -2523,6 +2562,12 @@ for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 end
 Map.build()
+if CITY_ENABLED then
+	City.build()
+	for _, spot in City.DUMMY_SPOTS do
+		spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
+	end
+end
 for i = 1, 8 do
 	local angle = i / 8 * math.pi * 2
 	spawnDummy(CFrame.new(math.cos(angle) * 25, 4, math.sin(angle) * 25))

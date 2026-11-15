@@ -4,7 +4,7 @@
 -- standing root (the root is already up, invisible): at the start it lies on the ground.
 -- ponytail: KeyframeSequenceProvider ids only play in Studio, like the other animations here;
 -- upload them and use asset ids before publishing.
-local KeyframeSequenceProvider = game:GetService("KeyframeSequenceProvider")
+local keyframeId = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KeyframeId"))
 
 local Anims = {}
 
@@ -72,7 +72,7 @@ local function build(name: string, keys, loop: boolean, priority: Enum.Animation
 	end
 	local animation = Instance.new("Animation")
 	animation.Name = name
-	animation.AnimationId = KeyframeSequenceProvider:RegisterKeyframeSequence(sequence)
+	animation.AnimationId = keyframeId(sequence)
 	return animation
 end
 

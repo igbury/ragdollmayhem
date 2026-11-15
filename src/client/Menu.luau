@@ -31,7 +31,7 @@ local IDLE = Color3.fromRGB(228, 228, 228) -- panel tint at rest; hover lifts it
 local FONT = Enum.Font.LuckiestGuy
 local BURST_IMAGE = "rbxassetid://121244599706688" -- same starburst as Fx.pop
 local HALFTONE_IMAGE = "rbxassetid://82675619059195" -- assets/fx/halftone.png, 64px tile
-local MAPS = { "ARENA", "FACTORY" } -- keys of SPAWNS on the server
+local MAPS = { "ARENA", "FACTORY" } -- keys of SPAWNS on the server; "CITY SQUARE" hidden while in development (see City.luau)
 local POWS = { "POW!", "BAM!", "ZOOM!", "WHAM!", "BOOM!" }
 local MARGIN = 16 -- px of white page round the panels
 local GAP = 9 -- px, half the white gutter between panels
@@ -584,29 +584,23 @@ local function handOff()
 	gui:Destroy()
 end
 
--- The scene panel grows to fill the screen as the camera starts chasing the avatar.
-local function zoom(): Frame
+-- As the camera starts chasing the avatar the whole screen floods blue with the scene's halftone
+-- and speed lines (over the page), and the avatar's viewport grows from its panel to full screen
+-- on top. It all stays until handOff cuts to the game.
+local function zoom()
 	local c = sceneP.content :: GuiObject
+	local flood = new("CanvasGroup", gui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = BLUE, GroupTransparency = 1, ZIndex = 29 })
+	halftone(flood, Color3.fromRGB(30, 55, 115), 1)
+	rays(flood, 0.5, 0.45, 40, 4, 120, WHITE, 0.45, 0, 160)
+	tween(flood, 0.25, { GroupTransparency = 0 })
 	local stage = new("Frame", gui, {
-		BackgroundColor3 = BLUE,
+		BackgroundTransparency = 1,
 		Position = UDim2.fromOffset(c.AbsolutePosition.X - gui.AbsolutePosition.X, c.AbsolutePosition.Y - gui.AbsolutePosition.Y),
 		Size = UDim2.fromOffset(c.AbsoluteSize.X, c.AbsoluteSize.Y),
-		ClipsDescendants = true,
 		ZIndex = 30,
 	})
-	halftone(stage, Color3.fromRGB(30, 55, 115), 1)
-	rays(stage, 0.5, 0.45, 40, 4, 120, WHITE, 0.45, 0, 160)
 	viewport.Parent = stage
 	tween(stage, 0.8, { Position = UDim2.fromScale(0, 0), Size = UDim2.fromScale(1, 1) }, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut)
-	tween(page, 0.5, { Position = UDim2.fromScale(0.5, 1.7), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-	tween(pageShadow, 0.5, { Position = UDim2.new(0.5, 14, 1.7, 16), Rotation = 6 }, Enum.EasingStyle.Back, Enum.EasingDirection.In)
-	tween(back, 0.6, { BackgroundTransparency = 1 })
-	for _, d in back:GetChildren() do
-		if d:IsA("ImageLabel") then
-			tween(d, 0.4, { ImageTransparency = 1 })
-		end
-	end
-	return stage
 end
 
 -- PLAY: the avatar hops off its chair, turns and walks off; the camera follows him into the game.
@@ -622,22 +616,12 @@ local function play()
 	end
 	puppet:leave()
 	local playAt = os.clock() - start
-	local stage: Frame? = nil
-	local stripesOff = false
+	local zoomed = false
 	table.insert(tickers, function(t: number)
 		local e = t - playAt
-		if not stage and e >= MenuPuppet.ZOOM_AT then
-			stage = zoom()
-		end
-		if stage and not stripesOff and e >= MenuPuppet.STRIPES_OFF_AT then
-			stripesOff = true
-			for _, d in stage:GetDescendants() do
-				if d:IsA("ImageLabel") then
-					tween(d, 0.3, { ImageTransparency = 1 })
-				elseif d:IsA("Frame") then
-					tween(d, 0.3, { BackgroundTransparency = 1 })
-				end
-			end
+		if not zoomed and e >= MenuPuppet.ZOOM_AT then
+			zoomed = true
+			zoom()
 		end
 		if e >= MenuPuppet.LEAVE_TIME and gui.Parent then
 			handOff()

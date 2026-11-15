@@ -18,6 +18,8 @@ local dummyFolder = workspace:WaitForChild("Dummies")
 
 local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Attacks"))
 local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
+local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
+local Impact = require(ReplicatedStorage.Shared:WaitForChild("Impact"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
 local Menu = require(script:WaitForChild("Menu"))
@@ -27,58 +29,49 @@ require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubble
 -- Sprint run cycle (assets/anims/SprintFlail.json), built in memory, no upload.
 -- ponytail: a registered id is session-local, so other players see the default run; upload
 -- assets/anims/SprintFlail.rbxmx from the Animation Editor and use that id if they should see it.
+local keyframeId = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("KeyframeId"))
 local sprintAnim = Instance.new("Animation")
-sprintAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("SprintFlail")))
+sprintAnim.AnimationId = keyframeId(require(script:WaitForChild("SprintFlail")))
 local sprintTrack: AnimationTrack? = nil
 local rollAnim = Instance.new("Animation") -- same deal, see RollForward
-rollAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("RollForward")))
+rollAnim.AnimationId = keyframeId(require(script:WaitForChild("RollForward")))
 local rollTrack: AnimationTrack? = nil
 local diveAnim = Instance.new("Animation") -- slam mode pose, see SupermanDive
-diveAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("SupermanDive")))
+diveAnim.AnimationId = keyframeId(require(script:WaitForChild("SupermanDive")))
 local diveTrack: AnimationTrack? = nil
 -- wall run cycle, one mirror per wall side (1 = wall on the right, -1 = left), see WallRun
 local wallRunAnims = {}
 for _, side in { 1, -1 } do
 	local anim = Instance.new("Animation")
-	anim.AnimationId = game:GetService("KeyframeSequenceProvider")
-		:RegisterKeyframeSequence(require(script:WaitForChild("WallRun"))(side))
+	anim.AnimationId = keyframeId(require(script:WaitForChild("WallRun"))(side))
 	wallRunAnims[side] = anim
 end
 local wallRunTracks: { [number]: AnimationTrack } = {}
 local clingAnim = Instance.new("Animation") -- holding on to the wall, see WallCling
-clingAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("WallCling")))
+clingAnim.AnimationId = keyframeId(require(script:WaitForChild("WallCling")))
 local clingTrack: AnimationTrack? = nil
 local flipAnim = Instance.new("Animation") -- backflip off the wall, see WallFlip
-flipAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("WallFlip")))
+flipAnim.AnimationId = keyframeId(require(script:WaitForChild("WallFlip")))
 local flipTrack: AnimationTrack? = nil
 local kickAnim = Instance.new("Animation") -- left click in third person, see HighKick
-kickAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("HighKick")))
+kickAnim.AnimationId = keyframeId(require(script:WaitForChild("HighKick")))
 local kickTrack: AnimationTrack? = nil
 -- slide pose and crouch shuffle, see SlideCrouch
 local lowAnims, lowTracks = {}, {} :: { [string]: AnimationTrack }
 for _, kind in { "slide", "crouch" } do
 	local anim = Instance.new("Animation")
-	anim.AnimationId = game:GetService("KeyframeSequenceProvider")
-		:RegisterKeyframeSequence(require(script:WaitForChild("SlideCrouch"))(kind))
+	anim.AnimationId = keyframeId(require(script:WaitForChild("SlideCrouch"))(kind))
 	anim.Name = kind
 	lowAnims[kind] = anim
 end
 local dashAnim = Instance.new("Animation") -- the dash burst, see DashBurst
-dashAnim.AnimationId = game:GetService("KeyframeSequenceProvider")
-	:RegisterKeyframeSequence(require(script:WaitForChild("DashBurst")))
+dashAnim.AnimationId = keyframeId(require(script:WaitForChild("DashBurst")))
 local dashTrack: AnimationTrack? = nil
 local flipUntil = 0
 local aimAnims = {} -- third-person aiming poses, see AimPose
 for _, kind in { "gun", "rocket", "throw" } do
 	local anim = Instance.new("Animation")
-	anim.AnimationId = game:GetService("KeyframeSequenceProvider")
-		:RegisterKeyframeSequence(require(script:WaitForChild("AimPose"))(kind))
+	anim.AnimationId = keyframeId(require(script:WaitForChild("AimPose"))(kind))
 	aimAnims[kind] = anim
 end
 local aimTracks: { [string]: AnimationTrack } = {}
@@ -167,7 +160,7 @@ local mv = {
 local rayParams = RaycastParams.new()
 rayParams.FilterType = Enum.RaycastFilterType.Exclude
 
-local holding = nil -- { part, dist, since }
+local holding = nil -- { part, dist, since, impact }: impact tracks hits we swing it into (shared/Impact)
 local punching = false
 local lastPunch = 0
 local lastKick = 0
@@ -806,6 +799,21 @@ local function useWeapon(weapon)
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95)
+	-- our own sounds now, not a round trip later (the server leaves us out of these)
+	local sounds = Sfx.WEAPON[weapon.id] or {}
+	if sounds.fire then
+		Sfx.playLocal(sounds.fire, head.Position)
+	end
+	if weapon.kind == "melee" then -- the server's swing ray, guessed here; ponytail: a dodged swing still rings as a hit for us
+		local params = RaycastParams.new()
+		params.FilterDescendantsInstances = { char }
+		local swing = workspace:Raycast(head.Position, dir * weapon.range, params)
+		local onBody = swing and swing.Instance:IsDescendantOf(dummyFolder)
+		local sound = if not swing then sounds.swing elseif onBody then sounds.hit else nil
+		if sound then
+			Sfx.playLocal(sound, swing and swing.Position or head.Position)
+		end
+	end
 	if weapon.kind == "gun" or weapon.kind == "rocket" then
 		recoil = 1
 	else
@@ -857,6 +865,9 @@ local function punch()
 	if result and (dummyOf(result.Instance) or (result.Instance.Parent and result.Instance.Parent.Name == "Grave")) then
 		punchRemote:FireServer(result.Instance)
 		Fx.hit(result.Position)
+		if dummyOf(result.Instance) then
+			Sfx.playLocal(Sfx.PUNCH, result.Position) -- ponytail: a dodged punch still smacks for us
+		end
 	end
 end
 
@@ -889,12 +900,33 @@ local function kick()
 		if best then
 			punchRemote:FireServer(best)
 			Fx.hit(best.Position)
+			if dummyOf(best) then
+				Sfx.playLocal(Sfx.PUNCH, best.Position)
+			end
 		end
 	end)
 end
 
+-- Let go. The body stays ours to simulate until it lies still (server: release), so the throw and
+-- the grab's end happen here at once, with no wait for the server and no snap back to its copy.
+local loose = nil -- { body, impact, untilTime }: a body we let go of and still simulate
 local function drop(velocity: Vector3)
 	grabRemote:FireServer("release", velocity)
+	local body = holding and dummyOf(holding.part)
+	if body then
+		local grab = holding.part:FindFirstChild("GrabAttachment")
+		if grab then
+			grab:Destroy() -- the server removes it too; until that arrives it would hold the body back
+		end
+		if velocity.Magnitude > 0 then
+			for _, part in body:GetDescendants() do
+				if part:IsA("BasePart") then
+					part.AssemblyLinearVelocity = velocity
+				end
+			end
+		end
+		loose = { body = body, impact = holding.impact, untilTime = os.clock() + 4 } -- server LOOSE_MAX
+	end
 	holding = nil
 end
 
@@ -906,9 +938,10 @@ local function toggleGrab()
 	local result = aim(GRAB_RANGE)
 	if result and dummyOf(result.Instance) then
 		grabRemote:FireServer("grab", result.Instance)
+		loose = nil -- caught: whatever we were still simulating, the hold reports from here on
 		local head = player.Character and player.Character:FindFirstChild("Head")
 		local dist = head and (result.Position - head.Position).Magnitude or 5
-		holding = { part = result.Instance, dist = math.clamp(dist, 3, 8), since = os.clock() }
+		holding = { part = result.Instance, dist = math.clamp(dist, 3, 8), since = os.clock(), impact = Impact.new() }
 	end
 end
 
@@ -1078,6 +1111,7 @@ local function onCharacter(char: Model)
 		sound.SoundId = id ~= "" and "rbxassetid://" .. id or ""
 		sound.Looped = name == "Run"
 		sound.Volume = name == "Run" and 0.4 or 0.7
+		Sfx.prepare(sound)
 		sound.Parent = root
 		sounds[name] = sound
 	end
@@ -2020,8 +2054,25 @@ RunService.RenderStepped:Connect(function(dt)
 		if align and head then
 			local _, ray = aim(0)
 			align.Position = head.Position + ray.Direction.Unit * holding.dist
+			-- swung into the ground or a wall: we own this body, so we see the hit and report it
+			local body = dummyOf(holding.part)
+			local landed = body and Impact.step(holding.impact, body, dt)
+			if landed then
+				Sfx.playLocal(Sfx.THUD, landed.part.Position)
+				grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir)
+			end
 		elseif not holding.part.Parent or os.clock() - holding.since > 1 then
 			holding = nil -- server let go (revive, despawn, rejected grab)
+		end
+	end
+	-- a body we let go of: still ours until it rests, so its landings are ours to report
+	if loose then
+		local landed = loose.body.Parent and os.clock() < loose.untilTime and Impact.step(loose.impact, loose.body, dt)
+		if landed then
+			Sfx.playLocal(Sfx.THUD, landed.part.Position)
+			grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir)
+		elseif not loose.body.Parent or os.clock() >= loose.untilTime then
+			loose = nil
 		end
 	end
 

@@ -6,6 +6,8 @@
 -- ponytail: someone who joins mid-move sees a player's loop from its next change on, not at once;
 -- keep the last loop per player on the server and send it on join if that ever shows.
 
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
+
 local Others = {}
 
 -- looping looks, and the priority each plays at (as on the owner's client)
@@ -38,6 +40,7 @@ function Others.start(remote: RemoteEvent, anims: { [string]: Animation }, sfx: 
 			s.Looped = name == "Run"
 			s.Volume = name == "Run" and 0.4 or 0.7
 			s.RollOffMaxDistance = 120
+			Sfx.prepare(s)
 			s.Parent = root
 		end
 		return s

@@ -243,10 +243,9 @@ end
 
 -- Leaving for the game (PLAY), in seconds since PLAY:
 --   hop off the chair (it fades), camera still -> turn round (headphones fade), walk off ->
---   ZOOM_AT the camera chases him -> STRIPES_OFF_AT the menu drops its speed lines ->
+--   ZOOM_AT the camera chases him and the menu floods blue ->
 --   LEAVE_TIME the camera is at the back of his head and the menu cuts to the game.
 MenuPuppet.ZOOM_AT = 1.5
-MenuPuppet.STRIPES_OFF_AT = 2.6
 MenuPuppet.LEAVE_TIME = 3.2
 local WALK_FROM, WALK_SPEED = 1.15, 7
 local CHASE_FAR = 6 -- studs behind the head the chase settles at before pushing in

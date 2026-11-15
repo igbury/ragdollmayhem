@@ -4,6 +4,7 @@
 local Debris = game:GetService("Debris")
 local PhysicsService = game:GetService("PhysicsService")
 local TweenService = game:GetService("TweenService")
+local Sfx = require(game:GetService("ReplicatedStorage").Shared.Sfx)
 
 local Map = {}
 
@@ -112,7 +113,7 @@ local function hide(cubes: { BasePart })
 	task.delay(REGEN, setHidden, cubes, false)
 end
 
--- Each kind lists its cubes through add(x, y, z, color, material, size?), in cube-grid units
+-- Each kind lists its cubes through add(x, y, z, color, material, size?, whole?), in cube-grid units
 -- relative to the structure's origin on the ground. Other maps (Factory) add their own kinds.
 local KINDS = {}
 Map.KINDS = KINDS
@@ -238,10 +239,11 @@ local function buildStructure(kind: string, origin: CFrame, layered: boolean?)
 	local model = Instance.new("Model")
 	model.Name = kind
 	local bricks = {}
-	KINDS[kind](function(x, y, z, color, material, size)
+	KINDS[kind](function(x, y, z, color, material, size, whole)
 		size = size or CUBE
-		-- every block is built out of small bricks so it shatters instead of tumbling whole
-		local n = math.round(size / BRICK)
+		-- every block is built out of small bricks so it shatters instead of tumbling whole;
+		-- `whole` keeps it one brick (big city buildings, where 2-stud bricks would be 8x the parts)
+		local n = whole and 1 or math.round(size / BRICK)
 		local brick = size / n
 		for bx = 1, n do
 			for by = 1, n do
@@ -409,28 +411,54 @@ local function settle(model: Model)
 	end
 end
 
+-- Break sound by material; anything not listed (slate, cobble, marble, concrete, grass...) sounds like stone.
+local BREAK_SOUND = {
+	[Enum.Material.Brick] = Sfx.BRICK,
+	[Enum.Material.Wood] = Sfx.WOOD,
+	[Enum.Material.WoodPlanks] = Sfx.WOOD,
+	[Enum.Material.Metal] = Sfx.METAL,
+	[Enum.Material.DiamondPlate] = Sfx.METAL,
+	[Enum.Material.CorrodedMetal] = Sfx.METAL,
+	[Enum.Material.Foil] = Sfx.METAL,
+}
+
+-- One sound per material among the broken cubes, at the hit.
+local function breakSounds(cubes: { BasePart }, at: Vector3)
+	local played = {}
+	for _, cube in cubes do
+		local id = BREAK_SOUND[cube.Material] or Sfx.STONE
+		if not played[id] then
+			played[id] = true
+			Sfx.play(id, at)
+		end
+	end
+end
+
 -- Structure bricks among `hits` break off, what they held up falls, then each structure hit is checked for a rebuild.
-local function hitStructures(hits: { BasePart }, from: Vector3, power: number)
-	local models = {}
+-- Returns the bricks knocked out.
+local function hitStructures(hits: { BasePart }, from: Vector3, power: number): { BasePart }
+	local models, knocked = {}, {}
 	for _, cube in hits do
 		local model = cube.Parent
 		if model ~= folder and model and model.Parent == folder then
 			models[model] = true
 			knock(cube, from, power)
+			table.insert(knocked, cube)
 		end
 	end
 	for model in models do
 		settle(model)
 		damaged(model)
 	end
+	return knocked
 end
 
 -- Carve a crater. `inner` leaves an untouched island in the middle (ring crater).
 function Map.blast(position: Vector3, radius: number, power: number, inner: number?)
 	local hits = workspace:GetPartBoundsInRadius(position, radius, params)
-	hitStructures(hits, position, power)
+	local broken = hitStructures(hits, position, power)
 	local chance = math.min(1, MAX_CHUNKS / math.max(#hits, 1))
-	local broken = {}
+	local floor = {}
 	for _, cube in hits do
 		if cube.Parent ~= folder then
 			continue
@@ -439,6 +467,7 @@ function Map.blast(position: Vector3, radius: number, power: number, inner: numb
 		if offset.Magnitude > radius or offset.Magnitude < (inner or 0) then
 			continue
 		end
+		table.insert(floor, cube)
 		table.insert(broken, cube)
 		if math.random() < chance then
 			local out = offset.Magnitude > 0.1 and offset.Unit or Vector3.zero
@@ -446,25 +475,28 @@ function Map.blast(position: Vector3, radius: number, power: number, inner: numb
 			chunk(cube, TILE * (0.7 + math.random() * 0.6), velocity)
 		end
 	end
-	hide(broken)
+	hide(floor)
+	breakSounds(broken, position)
 end
 
 -- Rip a rectangular slab out of the floor and throw it up as cubes.
 function Map.flip(cf: CFrame, size: Vector3, velocity: Vector3)
 	local hits = workspace:GetPartBoundsInBox(cf, size, params)
-	hitStructures(hits, cf.Position, velocity.Magnitude)
+	local broken = hitStructures(hits, cf.Position, velocity.Magnitude)
 	local chance = math.min(1, MAX_CHUNKS * 1.5 / math.max(#hits, 1))
-	local broken = {}
+	local floor = {}
 	for _, cube in hits do
 		if cube.Parent ~= folder then
 			continue
 		end
+		table.insert(floor, cube)
 		table.insert(broken, cube)
 		if math.random() < chance then
 			chunk(cube, TILE * (0.9 + math.random() * 0.5), velocity * (0.7 + math.random() * 0.6))
 		end
 	end
-	hide(broken)
+	hide(floor)
+	breakSounds(broken, cf.Position)
 end
 
 -- Mayhem Park ---------------------------------------------------------------------------------

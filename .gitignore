@@ -14,3 +14,6 @@ rojo.exe
 
 # Obsidian notes
 /Anime/
+
+# Per-animation upload files (regenerate with assets/anims/split.py)
+/assets/anims/upload/

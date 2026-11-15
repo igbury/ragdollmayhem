@@ -83,8 +83,9 @@ function WeaponMeshes.create(id: string): MeshPart?
 	end
 	if live[id] == nil then
 		live[id] = true
-		local mesh = AssetService:CreateEditableMesh()
+		local mesh
 		local ok, part = pcall(function()
+			mesh = AssetService:CreateEditableMesh() -- may be refused in a live game: blocks then
 			fill(mesh, require(data), Vector3.zero)
 			return meshPart(mesh, id)
 		end)
