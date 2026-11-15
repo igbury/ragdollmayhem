@@ -15,7 +15,7 @@ local H = 80 -- roof
 local L1, L2 = 20, 40 -- deck heights
 local RING = 16 -- catwalk width
 local IN = W - RING -- inner edge of the catwalks
-local FLOOR_TILE = 2 -- ponytail: 2x the arena tile, a 240-wide floor of arena tiles is 32k parts
+local FLOOR_TILE = 2 -- ponytail: 1 (split 2x2) made the server ~224k parts at 2 fps; stays 2
 local DECK_TILE = 2
 
 local CONCRETE = { Color3.fromRGB(110, 110, 115), Color3.fromRGB(98, 98, 104) }

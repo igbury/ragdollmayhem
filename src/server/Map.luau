@@ -1,5 +1,5 @@
 -- Destructible arena (Mayhem Park, see Map.build): a floor of anchored cubes over dark bedrock, plus structures built from
--- cubes (pillars, trees, walls, towers, arches, crates, rocks) that collapse when hit.
+-- cubes (pillars, trees, walls, towers, arches, crates, rocks); a hit knocks out only the bricks it reaches.
 -- Broken floor cubes are hidden (not destroyed) and come back after REGEN seconds.
 local Debris = game:GetService("Debris")
 local PhysicsService = game:GetService("PhysicsService")
@@ -8,14 +8,17 @@ local TweenService = game:GetService("TweenService")
 local Map = {}
 
 local CUBE = 4 -- layout unit and floor depth
-local TILE = CUBE / 3 -- floor columns and flying debris
-local BRICK = CUBE / 2 -- structure cubes; ponytail: not TILE, a tower would be ~1300 loose parts when it falls
+local TILE = CUBE / 3 -- floor columns and flying debris; ponytail: CUBE / 6 (split 2x2) is 57k floor parts and the server drops to ~1 fps
+local BRICK = CUBE / 2 -- structure cubes; ponytail: CUBE / 4 puts ~100k parts in the map and the server stops responding
 local HALF = 80 -- arena is 2*HALF studs wide
 local REGEN = 25
-local LOOSE_LIFE = 6 -- fallen structure bricks are swept after this, the structure returns at REGEN
-local MAX_LOOSE = 110 -- bricks kept per falling structure, the rest vanish in the dust
+local LOOSE_LIFE = 6 -- knocked-out structure bricks are swept after this
+local REBUILD_AT = 0.1 -- a structure comes back (REGEN later) only once 90% of its bricks are gone
+local LAYER_DELAY = 0.15 -- rebuilt structures rise one brick layer at a time
+local WAVE = 0.04 -- s per stud along a layer: its bricks slide in one after another, as a wave
+local SLIDE = 8 -- studs a rebuilt brick slides in from
 local MAX_CHUNKS = 140 -- flying cubes per blast
-local MAX_DEBRIS = 250 -- loose cubes alive at once across all blasts, extra ones just aren't spawned
+local MAX_DEBRIS = 250 -- loose cubes alive at once across all blasts, past it the oldest are removed
 local GRASS = { Color3.fromRGB(40, 170, 80), Color3.fromRGB(34, 150, 70) }
 local DIRT = Color3.fromRGB(120, 85, 60)
 local STONE = Color3.fromRGB(190, 182, 170)
@@ -64,18 +67,21 @@ local function block(size: Vector3, position: Vector3, color: Color3, material: 
 	return p
 end
 
-local live = 0
+local loose = {} -- live loose cubes, oldest first
 local function track(p: BasePart)
-	live += 1
+	table.insert(loose, p)
 	p.Destroying:Once(function()
-		live -= 1
+		local i = table.find(loose, p)
+		if i then
+			table.remove(loose, i)
+		end
 	end)
+	if #loose > MAX_DEBRIS then
+		table.remove(loose, 1):Destroy() -- newest always shows, the oldest makes room
+	end
 end
 
 local function chunk(source: BasePart, size: number, velocity: Vector3)
-	if live >= MAX_DEBRIS then
-		return
-	end
 	local p = Instance.new("Part")
 	p.Size = Vector3.one * size
 	p.Color = math.random() < 0.3 and DIRT or source.Color
@@ -178,9 +184,60 @@ function KINDS.Rock(add)
 	add(0.25, 1.4, 0, ROCK, Enum.Material.Slate, 3)
 end
 
-local function buildStructure(kind: string, origin: CFrame)
+-- Which bricks touch face to face, and which stand on the ground: a brick with no path of touching
+-- bricks down to the ground falls (settle). Positions are in `origin` space; structures only turn
+-- in quarter turns, so brick sizes line up with its axes.
+-- Pairs are found through a grid of cells as big as the biggest brick, so only bricks in
+-- neighbouring cells get compared.
+local neighbours = setmetatable({}, { __mode = "k" }) -- [brick] = { touching bricks }
+local grounded = setmetatable({}, { __mode = "k" }) -- [brick] = true when it stands on the ground
+local function link(bricks: { BasePart }, origin: CFrame)
+	local at, cellSize = {}, 0
+	for i, b in bricks do
+		at[i] = origin:PointToObjectSpace(b.Position)
+		neighbours[b] = {}
+		grounded[b] = at[i].Y - b.Size.Y / 2 < 0.1 or nil
+		cellSize = math.max(cellSize, b.Size.X, b.Size.Y, b.Size.Z)
+	end
+	local cells, cellOf = {}, {}
+	for i in bricks do
+		local c = at[i] / cellSize
+		cellOf[i] = { math.floor(c.X), math.floor(c.Y), math.floor(c.Z) }
+		local key = table.concat(cellOf[i], ",")
+		cells[key] = cells[key] or {}
+		table.insert(cells[key], i)
+	end
+	for i, a in bricks do
+		local cx, cy, cz = table.unpack(cellOf[i])
+		for dx = -1, 1 do
+			for dy = -1, 1 do
+				for dz = -1, 1 do
+					for _, j in cells[`{cx + dx},{cy + dy},{cz + dz}`] or {} do
+						if j <= i then
+							continue
+						end
+						local b = bricks[j]
+						local d, h = at[i] - at[j], (a.Size + b.Size) / 2
+						local x, y, z = math.abs(d.X), math.abs(d.Y), math.abs(d.Z)
+						if x <= h.X + 0.05 and y <= h.Y + 0.05 and z <= h.Z + 0.05 then
+							-- overlapping on two axes = sharing a face, not just an edge or a corner
+							local shared = (x < h.X - 0.05 and 1 or 0) + (y < h.Y - 0.05 and 1 or 0) + (z < h.Z - 0.05 and 1 or 0)
+							if shared >= 2 then
+								table.insert(neighbours[a], b)
+								table.insert(neighbours[b], a)
+							end
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function buildStructure(kind: string, origin: CFrame, layered: boolean?)
 	local model = Instance.new("Model")
 	model.Name = kind
+	local bricks = {}
 	KINDS[kind](function(x, y, z, color, material, size)
 		size = size or CUBE
 		-- every block is built out of small bricks so it shatters instead of tumbling whole
@@ -190,14 +247,60 @@ local function buildStructure(kind: string, origin: CFrame)
 			for by = 1, n do
 				for bz = 1, n do
 					local offset = Vector3.new(bx, by, bz) * brick - Vector3.one * (size + brick) / 2
-					local cube = block(Vector3.one * brick, Vector3.zero, color, material, model)
+					local cube = block(Vector3.one * brick, Vector3.zero, color, material, nil)
 					cube.CFrame = origin * CFrame.new(x * CUBE, y * CUBE + size / 2, z * CUBE) * CFrame.new(offset)
+					table.insert(bricks, cube)
 				end
 			end
 		end
 	end)
 	model:SetAttribute("Origin", origin)
+	model:SetAttribute("Total", #bricks)
+	link(bricks, origin)
 	model.Parent = folder
+	if not layered then
+		for _, cube in bricks do
+			cube.Parent = model
+		end
+		return
+	end
+	-- rebuild from the ground up: each layer slides in from the side, as a wave along the structure
+	model:SetAttribute("Rebuilding", true)
+	local layers, lowX = {}, math.huge
+	for _, cube in bricks do
+		local at = origin:PointToObjectSpace(cube.Position)
+		lowX = math.min(lowX, at.X)
+		table.insert(layers, math.round(at.Y * 10))
+	end
+	local ys = {}
+	for _, y in layers do
+		ys[y] = true
+	end
+	local order = {}
+	for y in ys do
+		table.insert(order, y)
+	end
+	table.sort(order)
+	local rank = {}
+	for i, y in order do
+		rank[y] = i - 1
+	end
+	local last = 0
+	for i, cube in bricks do
+		local target = cube.CFrame
+		local delay = rank[layers[i]] * LAYER_DELAY + (origin:PointToObjectSpace(cube.Position).X - lowX) * WAVE
+		last = math.max(last, delay)
+		cube.CFrame = target - origin.RightVector * SLIDE
+		cube.Transparency = 1
+		cube.CanCollide, cube.CanQuery = false, false -- not hit or in the way while still sliding
+		cube.Parent = model
+		local tween = TweenService:Create(cube, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out, 0, false, delay), { CFrame = target, Transparency = 0 })
+		tween.Completed:Once(function()
+			cube.CanCollide, cube.CanQuery = true, true
+		end)
+		tween:Play()
+	end
+	task.delay(last + 0.4, model.SetAttribute, model, "Rebuilding", nil)
 end
 Map.structure = buildStructure
 
@@ -235,6 +338,8 @@ function Map.grave(origin: CFrame, name: string)
 	text.Text = "R.I.P.\n" .. name
 	text.Parent = gui
 	gui.Parent = plate
+	model:SetAttribute("Total", #model:GetChildren())
+	link(model:GetChildren(), origin)
 	model.Parent = folder
 	return model
 end
@@ -244,44 +349,90 @@ function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enu
 	return block(size, position, color, material, folder)
 end
 
-local function collapse(model: Model, from: Vector3, power: number)
-	-- model is nil for a brick this same blast already thinned out of its structure
-	if not model or model:GetAttribute("Fallen") then
+-- Knock one brick out of its structure: only what the hit reaches breaks off.
+local function knock(cube: BasePart, from: Vector3, power: number)
+	local offset = cube.Position - from
+	cube.Parent = workspace -- out of the structure (and out of later blasts)
+	cube.CollisionGroup = "Debris"
+	cube.Anchored = false
+	track(cube)
+	local out = offset.Magnitude > 0.1 and offset.Unit or Vector3.yAxis
+	cube.AssemblyLinearVelocity = out * power * math.clamp(1.2 - offset.Magnitude / 24, 0.2, 1)
+	cube.AssemblyAngularVelocity = Vector3.new(math.random(-6, 6), math.random(-6, 6), math.random(-6, 6))
+	Debris:AddItem(cube, LOOSE_LIFE)
+end
+
+-- Once 90% of a structure is gone the rest falls and it rebuilds REGEN later, bottom up.
+local function damaged(model: Model)
+	if model.Parent ~= folder or model:GetAttribute("Rebuilding") then
 		return
 	end
-	model:SetAttribute("Fallen", true)
-	local bricks = model:GetChildren()
-	local keep = math.max(0, math.min(MAX_LOOSE, MAX_DEBRIS - live)) / #bricks
-	for _, cube in bricks do
-		if math.random() > keep then
-			cube:Destroy()
-			continue
-		end
-		track(cube)
-		cube.CollisionGroup = "Debris"
-		cube.Anchored = false
-		-- cubes next to the blast get thrown, the rest just lose their footing
-		local offset = cube.Position - from
-		cube.AssemblyLinearVelocity = offset.Unit * power * math.clamp(1.2 - offset.Magnitude / 24, 0.1, 1)
-		cube.AssemblyAngularVelocity = Vector3.new(math.random(-6, 6), math.random(-6, 6), math.random(-6, 6))
+	local left = model:GetChildren()
+	if #left > (model:GetAttribute("Total") or 0) * REBUILD_AT then
+		return
 	end
-	task.delay(LOOSE_LIFE, model.ClearAllChildren, model)
+	model.Parent = nil
+	for _, cube in left do
+		if cube:IsA("BasePart") then
+			knock(cube, cube.Position + Vector3.yAxis, 5)
+		end
+	end
 	task.delay(REGEN, function()
 		model:Destroy()
 		if model:GetAttribute("Origin") then -- a grave (Map.grave) stays broken
-			buildStructure(model.Name, model:GetAttribute("Origin"))
+			buildStructure(model.Name, model:GetAttribute("Origin"), true)
 		end
 	end)
+end
+
+-- Gravity: bricks no longer joined to the ground through touching bricks drop, and count as destroyed.
+local function settle(model: Model)
+	local held, stack = {}, {}
+	for _, b in model:GetChildren() do
+		if grounded[b] then
+			held[b] = true
+			table.insert(stack, b)
+		end
+	end
+	while #stack > 0 do
+		for _, n in neighbours[table.remove(stack)] or {} do
+			if not held[n] and n.Parent == model then
+				held[n] = true
+				table.insert(stack, n)
+			end
+		end
+	end
+	for _, b in model:GetChildren() do
+		if not held[b] and b:IsA("BasePart") then
+			knock(b, b.Position, 0)
+		end
+	end
+end
+
+-- Structure bricks among `hits` break off, what they held up falls, then each structure hit is checked for a rebuild.
+local function hitStructures(hits: { BasePart }, from: Vector3, power: number)
+	local models = {}
+	for _, cube in hits do
+		local model = cube.Parent
+		if model ~= folder and model and model.Parent == folder then
+			models[model] = true
+			knock(cube, from, power)
+		end
+	end
+	for model in models do
+		settle(model)
+		damaged(model)
+	end
 end
 
 -- Carve a crater. `inner` leaves an untouched island in the middle (ring crater).
 function Map.blast(position: Vector3, radius: number, power: number, inner: number?)
 	local hits = workspace:GetPartBoundsInRadius(position, radius, params)
+	hitStructures(hits, position, power)
 	local chance = math.min(1, MAX_CHUNKS / math.max(#hits, 1))
 	local broken = {}
 	for _, cube in hits do
 		if cube.Parent ~= folder then
-			collapse(cube.Parent, position, power)
 			continue
 		end
 		local offset = (cube.Position - position) * Vector3.new(1, 0, 1)
@@ -301,11 +452,11 @@ end
 -- Rip a rectangular slab out of the floor and throw it up as cubes.
 function Map.flip(cf: CFrame, size: Vector3, velocity: Vector3)
 	local hits = workspace:GetPartBoundsInBox(cf, size, params)
+	hitStructures(hits, cf.Position, velocity.Magnitude)
 	local chance = math.min(1, MAX_CHUNKS * 1.5 / math.max(#hits, 1))
 	local broken = {}
 	for _, cube in hits do
 		if cube.Parent ~= folder then
-			collapse(cube.Parent, cf.Position, velocity.Magnitude)
 			continue
 		end
 		table.insert(broken, cube)
@@ -662,6 +813,9 @@ function Map.build()
 			local color, material = floorLook(position.X, position.Z, ix, iz)
 			-- nothing under the floor to shade, and 14k shadow casters cost the client every frame
 			block(Vector3.new(TILE, CUBE, TILE), position, color, material, folder).CastShadow = false
+		end
+		if ix % 10 == 0 then
+			task.wait() -- keep the server responsive while ~14k tiles go in
 		end
 	end
 	-- solid grass around the arena, out to the edge of the 512 baseplate

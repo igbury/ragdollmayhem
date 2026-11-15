@@ -2150,14 +2150,14 @@ local function fight(d, root: BasePart, now: number)
 	local to = (other.Position - root.Position) * XZ
 	local dist = to.Magnitude
 	-- close in it squares up to the target; the humanoid alone would turn to where it walks
-	-- (sideways while it circles)
+	-- (sideways while it circles). Turned by spin, not by writing root.CFrame: that write every
+	-- frame cancels the humanoid's walk, and it crept along and hopped "unstuck" in place.
 	local close = dist < 16 and dist > 0.5
 	d.humanoid.AutoRotate = not close
 	if close then
-		local look = (root.CFrame.LookVector * XZ):Lerp(to.Unit, math.min(dt * 10, 1))
-		if look.Magnitude > 0.05 then
-			root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
-		end
+		local look = root.CFrame.LookVector * XZ
+		local turn = math.atan2(look:Cross(to).Y, look:Dot(to)) -- signed yaw to the target, radians
+		root.AssemblyAngularVelocity = Vector3.new(0, math.clamp(turn * 10, -12, 12), 0)
 	end
 	if now < b.busyUntil then
 		return -- mid-blow
