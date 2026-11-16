@@ -234,6 +234,7 @@ local sprint = 0 -- eased 0..1
 local nextLine = 0
 
 player.CameraMode = Enum.CameraMode.LockFirstPerson
+local THIRD_PERSON_DIST = 10 -- studs behind the body in the V view (fixed: the wheel does not zoom)
 
 -- HUD -------------------------------------------------------------------------
 local gui = Instance.new("ScreenGui")
@@ -871,8 +872,26 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	scrollable = function(): boolean
 		return holding == nil
 	end,
+	-- While the wheel is open the mouse picks a weapon, so the view must not turn; it still rides
+	-- along with the body (the camera keeps its offset from the root and its direction).
 	freeze = function(on: boolean)
-		camera.CameraType = on and Enum.CameraType.Scriptable or Enum.CameraType.Custom
+		RunService:UnbindFromRenderStep("WheelCamera")
+		if not on then
+			camera.CameraType = Enum.CameraType.Custom
+			return
+		end
+		camera.CameraType = Enum.CameraType.Scriptable
+		local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if not root then
+			return
+		end
+		local held = camera.CFrame
+		local from = root.Position
+		RunService:BindToRenderStep("WheelCamera", Enum.RenderPriority.Camera.Value + 2, function()
+			if root.Parent then
+				camera.CFrame = held + (root.Position - from)
+			end
+		end)
 	end,
 })
 
@@ -1111,13 +1130,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			Fx.scan(dummy, 4)
 		end
 	elseif input.KeyCode == Enum.KeyCode.V then
+		-- only V changes the view: third person is held at one distance, so the mouse wheel
+		-- (weapon bar, held body) never zooms the camera
 		if player.CameraMode == Enum.CameraMode.LockFirstPerson then
+			player.CameraMaxZoomDistance = THIRD_PERSON_DIST
+			player.CameraMinZoomDistance = THIRD_PERSON_DIST
 			player.CameraMode = Enum.CameraMode.Classic
-			player.CameraMinZoomDistance = 10
-			task.wait()
-			player.CameraMinZoomDistance = 0.5
 		else
 			player.CameraMode = Enum.CameraMode.LockFirstPerson
+			player.CameraMinZoomDistance = 0.5
 		end
 	end
 end)

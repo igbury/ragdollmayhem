@@ -4,7 +4,7 @@
 --    it from the bottom, its name above the bar;
 --  * a weapon wheel (the backpack): hold Q and a segmented ring of 8 weapons a page opens; move the
 --    mouse (or the right stick) toward one and let go of Q to take it; scroll / L1 R1 / the arrows
---    turn the page. The view freezes while it is open.
+--    turn the page. The view stops turning while it is open (it still follows the body).
 --  * tap Q / F for the next / previous one, or turn the mouse wheel.
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
