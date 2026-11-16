@@ -17,3 +17,11 @@ rojo.exe
 
 # Per-animation upload files (regenerate with assets/anims/split.py)
 /assets/anims/upload/
+
+# Reproducible skill-download staging and local machine configuration
+/tools/skill-download-batches/
+/.claude/skills/*/LOCAL.md
+**/__pycache__/
+
+# Reference-only package: no declared redistribution license.
+/.claude/skills/roblox-mesh-vfx/

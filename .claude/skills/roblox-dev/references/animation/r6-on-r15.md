@@ -1,0 +1,123 @@
+# Animate R15 Like R6
+
+"R6 like", "R6-style", "fake R6", "fake R15", "R15 R6 animation" and "R6 on R15" all mean this: the rig stays R15, and it moves the way an R6 does. Solving a limb to a target: [r6-ik.md](r6-ik.md). Roblox's own default clips: [r6-default-set.md](r6-default-set.md).
+
+Keep the actual R15 character, hierarchy and body proportions. Make each arm and leg move as one rigid block by restricting animation to the six joints below, turning about R6's pivots. Do not substitute an R6 model or merge the visible body into six blocks.
+
+Two helpers carry this, both speaking R6's language, with the same pivots:
+
+- **Studio:** [scripts/R6OnR15.luau](../../scripts/R6OnR15.luau): FK, IK, clips, retargeting, checks (`--@use R6OnR15`).
+- **Blender:** [scripts/r6_on_r15.py](../../scripts/r6_on_r15.py): FK and IK controls on an R15 armature, from `HttpService:JSONEncode(R6OnR15.dump(R6OnR15.map(rig)))`.
+
+## Authoring workflow
+
+**Animate R6, then carry it over** *(default)*: the frames an R6 animator would make, on R15. Key the clip on Aeresei's R6 rig in Blender at 60 fps ([blender.md](blender.md)), then `python scripts/clip_import.py rbxanim CLIPS --r15 RIG` reads it onto an R6, retargets it at every frame, plants its feet, checks the policy and audits. A user's R6 clips (a dummy's AnimSaves, ids) go straight to `retarget`. Without Blender, write R6 poses in Studio with `clip` below, at 60 fps (the [Blender-first workflow](animation.md#authoring-workflow-blender-first-studio-fallback) says when).
+
+**Why this route, measured** (26 clips, 14 keyed in Blender with foot IK and 12 of Roblox's, on three R15 bodies): every mapping that keeps R6's turns gives the same rotations and differs only in where each block goes. Turning each block about R15's own joint slid planted feet up to 1.9 studs (median 0.2, against 0.08 about R6's pivots); copying each part's centre or tip CFrame did no better (medians 0.13 and 0.08). Every such copy inherits the R6 rig's rigid-leg sink (to 0.46 studs in a crouch); planting the legs on the clip's IK targets gave contact within 0.001 studs and slides of 0.012 or less on all three bodies. The conversion costs nothing worth saving (5 microseconds a frame, 42 with planting; two clips imported, audited and saved in 1.9 s): the effort belongs in the R6 animation and its review.
+
+**Review the motion once, on R6; check the R15 by numbers** *(default)*. Turns, timing and arm-into-body contacts carry over (the R15's arm-in-torso depth stayed within 0.08 studs of R6's on every clip and body), so run `check`, `verify` and the audit on the R15 rather than a second visual pass. Feet do not carry over: judge them by the IK targets and the R15's audit, not by the R6 rig's soles, which sink where the R15's plant. Plant only clips authored with foot targets: planting Roblox's climb from its own R6 soles turned the legs up to 73 degrees from the source.
+
+`retarget`, `defaults` and `verify` step the engine by hand, which Studio allows only in **Edit**; `map`, `fk`, `reach`, `plant`, `plantFeet`, `settle` and `world` are plain math and work anywhere.
+
+## Joint policy
+
+Discover the target's real joints, controls, rest frames and forward direction before keying. These are standard R15 **child part/bone names**, not guaranteed control names; map them to the imported rig's controls or Motor6D/AnimationConstraint joints. A generated R15 may use AnimationConstraints; `R6OnR15.map` reads either.
+
+| R6 part (its pose's name) | Animated R15 child | Parent |
+|---|---|---|
+| `Torso` (root joint) | `LowerTorso` | `HumanoidRootPart` |
+| `Head` (neck) | `Head` | `UpperTorso` |
+| `Left Arm`, `Right Arm` (shoulders) | `LeftUpperArm`, `RightUpperArm` | `UpperTorso` |
+| `Left Leg`, `Right Leg` (hips) | `LeftUpperLeg`, `RightUpperLeg` | `LowerTorso` |
+
+Keep these nine joints at their rest-relative **identity transform**:
+
+- Waist: `UpperTorso`.
+- Elbows/wrists: `LeftLowerArm`, `LeftHand`, `RightLowerArm`, `RightHand`.
+- Knees/ankles: `LeftLowerLeg`, `LeftFoot`, `RightLowerLeg`, `RightFoot`.
+
+Use zero pose translation, identity pose rotation and unit scale on locked joints, preserving their imported rest matrices and C0/C1. Do not reset their rest orientations or reparent them. Keep `HumanoidRootPart` stationary for in-place clips; character travel and jump height come from game movement or a separately identified preview mover.
+
+Animate the mapped controls/pose bones, never the meshes. Do not unlock a knee or elbow to solve a posing problem.
+
+Key the locks in every clip that moves their limb: omitting a track does not hold a joint when another animation blends underneath. An identity key at a clip's first and last keys holds it throughout; the waist has one at every key, because the arms' poses hang from it. Leave limbs a clip does not touch unkeyed, so what plays beneath keeps moving them, as R6's `toolnone` does over a walk. Poses that only carry the tree down to a limb have `Weight` 0 and override nothing. `R6OnR15.clip` and `retarget` do all of this.
+
+## R6's pivots
+
+R6 and R15 joints are not in the same place, so copying R6's rotations onto R15's joints gives the wrong motion. On a default R15 a raised hand lands about 0.6 studs too high, and a spread leg lifts its foot off the floor, because:
+
+| R6 joint | Where R6 turns the block | The R15 joint |
+|---|---|---|
+| Root | the torso's centre | below the lower torso |
+| Neck | the head's underside | about the same place |
+| Shoulder | the arm's inner face, a quarter of the way down | near the top of the arm |
+| Hip | the leg's **outer** face, at the torso's underside | the leg's centre |
+
+`R6OnR15.map` measures these on the rig in front of it, and each R15 Transform is the same turn about that point (`toR15`, `fromR15`), so the R15 joint also slides a little as it turns. This is deliberate: a shoulder or hip key with a small translation is what R6's pivot looks like on an R15 joint. Slides are scaled by the limb's length, and the torso's by the legs', so a crouch that keeps R6's feet down keeps these down.
+
+## FK
+
+A pose is `{ [R6 part] = R6 Transform }`: the same numbers an R6 clip holds, so R6 knowledge carries over. On a shoulder or hip, turning about Z swings the limb forward (positive on the right side, negative on the left). The root joint's Z points up the body, so `CFrame.new(0, 0, -0.5)` lowers the torso.
+
+```lua
+local map = R6OnR15.map(rig)
+local raise = R6OnR15.clip(map, {
+	{ Frame = 0, Pose = { ["Right Arm"] = CFrame.identity } },
+	{ Frame = 18, Pose = { ["Right Arm"] = CFrame.Angles(0, 0, math.rad(90)) }, Style = Enum.PoseEasingStyle.Cubic },
+}, { Name = "raise", Priority = Enum.AnimationPriority.Action, Parent = game.ServerStorage })
+```
+
+**A pose that touches or points at something is IK, not FK:** a hand at the chin, on the chest or on a prop, or an arm aimed at a target. Author the point and let `R6OnR15.reach(map, limb, point, { Torso })` find the turn ([r6-ik.md](r6-ik.md)); three tries of guessed angles left a hand beside the face and an aimed arm 25 degrees off, and `reach` placed both first time.
+
+**Fingers and hand signs:** an R15 hand is one block. Add fingers as parts welded to the hand and pose each by its weld's `C0` every frame; anchored parts placed from `hand.CFrame` in `RenderStepped` trail the animated hand by a frame. Roll the finger rig about the hand's long axis toward world up, so a sign stays upright whatever the rigid arm's roll, and give an aimed arm `reach`'s `Twist` so the hand block faces the way the sign needs.
+
+Rotation normally supplies the motion. A translation slides the whole rigid block, which is how R6 clips imitate a bend: R6's climb slides its legs 1.5 studs. Sparse keys interpolate the R15 joint, so a limb turning far between two keys strays from R6's arc by up to about 0.1 studs (0.096 at a hand on a four-key slash); add a key where that shows. `retarget` does so by itself.
+
+## Shape the motion
+
+Inspect supplied frames/video ([video.md](../art/video.md)) and the existing animation family before inventing motion. Separate torso yaw, torso pitch and shoulder arcs: a circular arm gesture does not imply a body spin. Keep jump/fall bodies upright unless the reference or request calls for a tilt or turn.
+
+- **Idle:** favor a slow weight shift, small shoulder/head lag and minimal vertical bounce. Keep both feet down unless a fidget is requested. When smoothing an approved loop, remove the unwanted accent without replacing the whole motion.
+- **Walk/run:** the body moves, not only the limbs: the measured shape, tempo, feet and checks are in [r6-walk.md](r6-walk.md). Reduce vertical amplitude and abrupt acceleration when asked for smoother motion.
+- **Jump:** use a compact forward-and-outward shoulder arc when that is what the reference shows. Do not turn a small circular sweep into an overhead 360-degree windmill. Review hand paths and total span from the front and side.
+- **Fall:** follow the reference's held or alternating shoulder motion rather than automatically spreading both arms into a T. Keep it distinct from a new jump or body spin.
+- **Weapon swings, idles and carries:** [r6-weapons.md](r6-weapons.md) (the measured swing, the weapon's own joint, timing, aim and floor checks).
+- **Held poses** (a card pose, a victory stance): plant every key's feet where the final pose puts them (`plant`), anticipation keys included, and breathe with the head only. Settling each key on its own slid the feet 0.5 to 1.4 studs, and a torso breath lifted a planted foot; planted, slides fell to 0.11 studs or less.
+
+New motion uses sparse, deliberately eased Bezier authoring curves with controlled overlap. Loops need matching endpoint poses **and tangents**. Retain a duplicate closing key for checking/export when needed, but omit it from rendered loop playback.
+
+## Contacts and retargeting
+
+Calibrate studs against the actual imported rig. Work through its joint frames: child world pose = parent world pose × C0 × animated transform × inverse(C1). Do not copy Euler angles or part-center offsets between R6 and R15 without accounting for their different pivots and limb proportions: `toR15` does this.
+
+**A clip from the R6 rig carries its feet by its IK targets** (`plantFeet`), not by its baked soles: the rigid legs sink 0.2 to 0.5 studs in a crouch, and a floor fix switched on and off by contact spans popped legs 34 to 51 degrees at every step and landing. Edit a retarget only with `Thin = false`: thinning judges the R6 source alone and dropped a quick step's lifted frame, which planting turned into a 0.65-stud slide.
+
+**Bake on the body the game shows.** Slides and the torso's drop are in studs, so a clip baked on one body and played on another left its feet 0.13 (a blocky body) to 0.38 studs (longer Rthro-like legs) off the floor and slid them 0.25 to 0.75 studs, where each body's own bake planted them. Pass the game's rig (`--r15 PATH`); where players keep their own avatars, bake on the commonest body and check the extremes in Play.
+
+When changing torso lean or bounce on an approved gait, preserve the feet's world paths by solving the hips in the new torso (`reach` or `plant` with `Torso`). Lock the lower-leg/foot joints throughout. A shared root-height solve seats only the lowest foot; a slow idle may need small independent hip corrections to seat both soles without sliding.
+
+Judge in-place locomotion against backward stance travel and its measured ground speed, not stationary-foot rules. Match animation speed to character speed during integration. Check every planted sole, toe and heel for hover/penetration, and inspect shoulder/hip gaps as well as hand/head and arm/torso intersections.
+
+## Verify and deliver
+
+[blender.md](blender.md) covers keying in Blender and the way into Studio, [animation.md](animation.md) the Studio inspection, and this file the restricted-joint policy; generic R15 workflows must not introduce knee, elbow or waist motion.
+
+Before delivery:
+
+1. `R6OnR15.check(map, sequence)` must return no findings: only the six joints move, the nine locks stay at identity, and no pose names a part the rig lacks. Test the evaluated result too when controls or constraints drive the rig (`r6.check_locks` in Blender). Confirm no mesh or in-place root object has animation keys.
+2. For a retarget, `R6OnR15.verify(map, rig, source, sequence)` plays both clips through the engine and reads the R15 back as R6 numbers: expect under 0.5 degrees, 0.01 studs and 0 on `Locked`.
+3. Compare front and side poses/in-betweens on the actual visible R15, with `AnimationInspector.sheet(rig, clip, { Recolour = ColourCode.apply })`: the review colours separate left from right and each upper and lower limb, hand, foot and torso segment, where a default body renders near black and its R15 segments read as R6 blocks.
+4. Audit exported KeyframeSequences with this repo's `AnimationInspector`. Set `Locomotion = true` for in-place walk/run. Exclude ground-contact rules only for genuinely airborne, swimming, climbing or seated clips. Fix errors and assess warnings without hiding them; a retarget is judged against its source's audit.
+5. Verify loop seams, locked joints and blending on the exported target, in Play on the real avatar: read the joints' `Transform` through each state and the track speeds. An Edit-mode track loading successfully does not prove the gameplay path: this is how the tempo problem in [r6-default-set.md](r6-default-set.md) was found. Register clips with `RegisterKeyframeSequence` on the client to test before publishing. A height test cannot tell a planted foot from a swinging one, since a rigid leg swings through floor height: use the audit's ground speed for foot slide.
+6. Render and reopen GIF previews, check timing/frame count and preserve a working-file backup. Report which checks ran and whether gameplay transitions were exercised. Check the controller's jump-to-fall timing: it can cut off a good arm arc before completion. Publishing is a separate requested step.
+
+## Session-derived starting points
+
+These are examples from the reviewed stock-R15 set, not universal limits. Adjust to the reference and body proportions:
+
+- Smooth idle: three soft rocks over 7.1 seconds instead of nine; no leg-lift fidget. The revised root's vertical range was about 0.0075 studs.
+- Smooth walk/run: root vertical ranges about 0.059 / 0.073 studs, reduced from 0.184 / 0.285. Run used about 14° forward torso lean with partial head counter-tilt.
+- Compact jump: forward reach peaked around 0.18 seconds, opening outward by about 0.30 seconds, rather than completing a full shoulder revolution.
+- Reference fall: alternating compact shoulder arcs over a 1.6-second loop, with no torso turn.
+
+Keep approved motion and references with the working project. Do not depend on machine-specific Downloads or temporary scratch paths, and do not assume those timings, axes or amplitudes fit every avatar.

@@ -12,6 +12,7 @@ local grabRemote = remotes:WaitForChild("Grab")
 local actionRemote = remotes:WaitForChild("Action")
 local attackRemote = remotes:WaitForChild("Attack")
 local weaponRemote = remotes:WaitForChild("Weapon")
+local equipRemote = remotes:WaitForChild("EquipWeapon")
 local fxRemote = remotes:WaitForChild("Fx")
 local moveRemote = remotes:WaitForChild("Move")
 local dummyFolder = workspace:WaitForChild("Dummies")
@@ -22,6 +23,9 @@ local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
 local Impact = require(ReplicatedStorage.Shared:WaitForChild("Impact"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
+local WeaponSway = require(script:WaitForChild("WeaponSway"))
+local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
+local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
 require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubbles over dummies
@@ -217,6 +221,7 @@ kickParams.FilterDescendantsInstances = { dummyFolder }
 local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
 local lastWeaponUse = 0
+local weaponVisual = { sway = WeaponSway.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
 local recoil = 0
 local aiming = false -- right mouse / L2 held: aim down the sights (guns) or show the throw arc (thrown)
 local ads = 0 -- eased 0..1
@@ -450,7 +455,7 @@ do
 		cells = cells,
 		status = line(156, 13, Color3.fromRGB(255, 160, 60)),
 		pulse = line(172, 12, Color3.fromRGB(120, 230, 150)),
-		blood = bar(194, "Blood", Color3.fromRGB(150, 90, 255)),
+		blood = bar(194, "Blood", Color3.fromRGB(198, 30, 40)),
 		awake = bar(205, "Awake", Color3.fromRGB(120, 230, 150)),
 		colors = { [0] = Color3.fromRGB(150, 150, 155), Color3.fromRGB(240, 200, 70), Color3.fromRGB(255, 120, 40), Color3.fromRGB(45, 30, 70) },
 	}
@@ -593,6 +598,14 @@ end
 local GREY, DARK, WOOD, STEEL = Color3.fromRGB(70, 72, 78), Color3.fromRGB(25, 25, 28), Color3.fromRGB(150, 100, 60), Color3.fromRGB(200, 205, 215)
 local BLOCK, BALL, CYL = Enum.PartType.Block, Enum.PartType.Ball, Enum.PartType.Cylinder
 local VIEWMODELS = { -- { shape, size, offset, color, transparency? }
+	Bow = {
+		{ BLOCK, Vector3.new(0.18, 0.9, 0.18), CFrame.new(0, 0, 0), WOOD },
+		{ BLOCK, Vector3.new(0.14, 1.4, 0.16), CFrame.new(0, 0.95, -0.22) * CFrame.Angles(-0.32, 0, 0), WOOD },
+		{ BLOCK, Vector3.new(0.14, 1.4, 0.16), CFrame.new(0, -0.95, -0.22) * CFrame.Angles(0.32, 0, 0), WOOD },
+		{ BLOCK, Vector3.new(0.04, 3.1, 0.04), CFrame.new(0, 0, 0.18), Color3.fromRGB(218, 212, 190) },
+		{ BLOCK, Vector3.new(0.07, 0.07, 2), CFrame.new(0, 0, -0.65), WOOD },
+	},
+	BoxingGloves = BoxingGloves.icon(),
 	Bat = { { CYL, Vector3.new(3.6, 0.34, 0.34), CFrame.new(0, 1.5, 0) * CFrame.Angles(0, 0, math.pi / 2), WOOD } },
 	Axe = {
 		{ BLOCK, Vector3.new(0.18, 2.8, 0.18), CFrame.new(0, 1.1, 0), WOOD },
@@ -656,6 +669,10 @@ local VIEWMODELS = { -- { shape, size, offset, color, transparency? }
 	},
 }
 local viewParts = {} -- { part, weaponId, offset, transparency }
+weaponVisual.gloves = {
+	left = BoxingGloves.create(camera, "ViewGlove_Left", -1),
+	right = BoxingGloves.create(camera, "ViewGlove_Right", 1),
+}
 for id, specs in VIEWMODELS do
 	for _, spec in specs do
 		local p = part(spec[1], spec[2])
@@ -675,6 +692,7 @@ end
 --          while aiming: under the barrel / pump / front grip, or round the right hand on a pistol.
 -- hand: where the right hand moves to for this weapon, relative to its fist position (camera space).
 local HOLD = {
+	Bow = { grip = CFrame.new(0, 0, -0.05), hand = Vector3.new(-0.35, 0.2, 0.15) },
 	Handgun = { grip = CFrame.new(0, -0.08, 0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1) },
 	Revolver = { grip = CFrame.new(0, -0.09, -0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1) },
 	Rifle = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.12, -0.9) },
@@ -823,13 +841,17 @@ local function drawArc(weapon)
 end
 
 local function useWeapon(weapon)
+	if gui:GetAttribute("WeaponPickerOpen") then return end
+	weapon = weapon.slash and not aiming and weapon.slash or weapon
 	local now = os.clock()
 	local char = player.Character
 	local head = char and char:FindFirstChild("Head")
-	if now - lastWeaponUse < weapon.cd or not head or char:GetAttribute("Ragdolled") then
+	if char and (char:GetAttribute("ReloadWeapon") or char:GetAttribute("Ammo_" .. weapon.id) == 0) then return end
+	if now - lastWeaponUse < (weaponVisual.lastCooldown or weapon.cd) or not head or char:GetAttribute("Ragdolled") then
 		return
 	end
 	lastWeaponUse = now
+	weaponVisual.lastAction, weaponVisual.lastCooldown = weapon.id, weapon.cd
 	local result, ray = aim(300)
 	local target = result and result.Position or ray.Origin + ray.Direction * 300
 	local dir = (target - head.Position).Unit
@@ -864,8 +886,16 @@ local function useWeapon(weapon)
 	end
 	if weapon.kind == "gun" or weapon.kind == "rocket" then
 		recoil = 1
+		weaponVisual.recoil:fire(weapon.id)
+	elseif weapon.id == "BoxingGloves" then
+		hands[nextHand].t = 0
+		nextHand = nextHand == "right" and "left" or "right"
 	else
 		hands.right.t = 0 -- the punch motion doubles as the swing / throw
+		if weapon.id == "KnifeSlash" then
+			knifeT = 0
+			weaponVisual.slashSide = -weaponVisual.slashSide
+		end
 	end
 end
 
@@ -880,11 +910,26 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 		return weaponIndex
 	end,
 	set = function(i: number)
+		weaponVisual.bowDrawAt = nil
+		if player.Character then player.Character:SetAttribute("LocalBowDrawAt", nil) end
 		weaponIndex = i
 		lastWeaponUse = 0
+		recoil, ads, knifeT = 0, 0, 0
+		hands.left.t, hands.right.t = 1, 1
+		nextHand = "right"
+		weaponVisual.sway:reset()
+		weaponVisual.recoil:reset()
+		weaponVisual.lastAction, weaponVisual.lastCooldown = "", nil
+		equipRemote:FireServer(Weapons[weaponIndex].id)
+		-- Coalesce quick wheel scrolling; the final selected weapon always reaches the server.
+		weaponVisual.equipToken += 1
+		local token = weaponVisual.equipToken
+		task.delay(0.1, function()
+			if token == weaponVisual.equipToken then equipRemote:FireServer(Weapons[weaponIndex].id) end
+		end)
 	end,
 	cooldown = function(): number
-		local cd = Weapons[weaponIndex].cd
+		local cd = weaponVisual.lastCooldown or Weapons[weaponIndex].cd
 		if not cd then
 			return 0
 		end
@@ -1129,7 +1174,7 @@ function mv.armSlam(): boolean
 end
 
 UserInputService.InputBegan:Connect(function(input, processed)
-	if processed or Menu.active then
+	if processed or Menu.active or gui:GetAttribute("WeaponPickerOpen") then
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
@@ -1143,6 +1188,12 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 		punching = true
 		local weapon = Weapons[weaponIndex]
+		if weapon.kind == "bow" then
+			weaponVisual.bowDrawAt = os.clock()
+			if player.Character then player.Character:SetAttribute("LocalBowDrawAt", workspace:GetServerTimeNow()) end
+			actionRemote:FireServer("bowDraw")
+			return
+		end
 		while punching and not holding and Weapons[weaponIndex] == weapon do
 			if not weapon.kind then
 				if mv.diveKick() then
@@ -1155,7 +1206,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			else
 				useWeapon(weapon)
 			end
-			task.wait(weapon.cd or PUNCH_INTERVAL)
+			task.wait((weapon.slash and not aiming and weapon.slash.cd) or weapon.cd or PUNCH_INTERVAL)
 			if weapon.kind and not weapon.auto then
 				break -- one use per click
 			end
@@ -1206,6 +1257,13 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
+		if weaponVisual.bowDrawAt then
+			local elapsed = os.clock() - weaponVisual.bowDrawAt
+			weaponVisual.bowDrawAt = nil
+			if player.Character then player.Character:SetAttribute("LocalBowDrawAt", nil) end
+			if Weapons[weaponIndex].kind == "bow" and not Menu.active and elapsed >= 0.1 then useWeapon(Weapons[weaponIndex])
+			else actionRemote:FireServer("bowCancel") end
+		end
 		if holding then
 			holding.digHeld = false
 		end
@@ -1221,6 +1279,10 @@ UserInputService.InputChanged:Connect(function(input)
 end)
 
 fxRemote.OnClientEvent:Connect(Fx.play)
+require(script:WaitForChild("MythPresentation")).start(gui, remotes, {
+	weapon = function() return Weapons[weaponIndex] end,
+	blocked = function() return Menu.active or gui:GetAttribute("WeaponPickerOpen") == true end,
+})
 -- Sky light (environment diffuse/specular) is not blocked by the factory roof and floods the
 -- inside, so switch it off in there and let the lamps plus a little ambient do the work.
 local Lighting = game:GetService("Lighting")
@@ -1245,6 +1307,12 @@ end)
 local function onCharacter(char: Model)
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	local root = char:WaitForChild("HumanoidRootPart")
+	weaponVisual.sway:reset()
+	weaponVisual.recoil:reset()
+	weaponVisual.lastAction, weaponVisual.lastCooldown = "", nil
+	hands.left.t, hands.right.t = 1, 1
+	recoil, ads, knifeT = 0, 0, 0
+	nextHand = "right"
 	polished.diveToken += 1
 	polished.kickToken += 1
 	polished.sliding = false
@@ -1325,6 +1393,7 @@ local function onCharacter(char: Model)
 		end
 		if player.Character == char then
 			buildArms(char)
+			equipRemote:FireServer(Weapons[weaponIndex].id)
 		end
 	end)
 	char:GetAttributeChangedSignal("Ragdolled"):Connect(function()
@@ -2175,7 +2244,9 @@ RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Valu
 	cleanCamera = nil
 end)
 RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
-	if thirdWeapon then -- after the camera scripts, which would set their own mouse behaviour
+	if gui:GetAttribute("WeaponPickerOpen") then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	elseif thirdWeapon then -- after the camera scripts, which would set their own mouse behaviour
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 	elseif mouseLocked and not isFirstPerson() then -- weapon put away: free the mouse again
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
@@ -2340,9 +2411,9 @@ RunService.RenderStepped:Connect(function(dt)
 	gui.Enabled = not Menu.active
 
 	-- fists
-	local show = isFirstPerson() and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
+	local show = isFirstPerson() and not Menu.active and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
-	UserInputService.MouseIconEnabled = not isFirstPerson() and not thirdWeapon
+	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and not thirdWeapon)
 	crosshair.Visible = isFirstPerson() or thirdWeapon
 
 	-- sprint
@@ -2533,22 +2604,45 @@ RunService.RenderStepped:Connect(function(dt)
 	local bob = math.sin(os.clock() * (9 + 5 * sprint)) * 0.05 * (1 + 1.5 * sprint) * moving
 	local weapon = Weapons[weaponIndex]
 	local hold = HOLD[weapon.id]
+	local viewCF = camera.CFrame * weaponVisual.sway:update(camera.CFrame, dt,
+		show == true and camera.CameraType ~= Enum.CameraType.Scriptable, ads)
+		* weaponVisual.recoil:update(dt, show == true)
+	if char and char:GetAttribute("ReloadWeapon") then
+		local remaining = (char:GetAttribute("ReloadUntil") or now) - workspace:GetServerTimeNow()
+		viewCF *= CFrame.new(0, -0.22, 0.25) * CFrame.Angles(-0.18, 0, 0.2 + math.sin(remaining * 7) * 0.05)
+	end
 	recoil = math.max(recoil - dt / 0.15, 0)
 	local weaponCF = nil
 	for side, h in hands do
 		h.t = math.min(h.t + dt / 0.2, 1)
 		local ext = math.sin(h.t * math.pi)
+		local boxing = weapon.id == "BoxingGloves"
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
-		local move = (side == "right" and hold) and hold.hand + Vector3.new(0, 0, 0.25 * recoil) or Vector3.zero
+		local move = (side == "right" and hold) and hold.hand or Vector3.zero
+		if weapon.kind == "bow" then
+			local draw = weaponVisual.bowDrawAt and math.clamp((os.clock() - weaponVisual.bowDrawAt) / 1.1, 0, 1) or 0
+			if side == "left" then move += Vector3.new(0.75, 0.25, draw * 0.65)
+			else move += Vector3.new(-0.15, 0.12, 0) end
+		end
+		local cutting = weapon.id == "Knife" and weaponVisual.lastAction == "KnifeSlash"
+			and now - lastWeaponUse < 0.28
+		if cutting and side == "right" then
+			ext = math.sin(math.clamp((now - lastWeaponUse) / 0.28, 0, 1) * math.pi)
+			move += Vector3.new(weaponVisual.slashSide * 0.75 * ext, -0.10 * ext, -0.30 * ext)
+		end
+		if boxing then
+			-- Raised guard; the striking fist travels inward and turns over, then returns to guard.
+			move += Vector3.new(-h.x * (0.12 + 0.08 * ext), 0.32 + 0.08 * ext, 0.12 - 0.12 * ext)
+		end
 		if side == "right" and hold and ads > 0 then -- aiming: the gun comes up to the crosshair (adsFix, below)
-			move = move:Lerp(hold.hand + (adsFix[weapon.id] or Vector3.zero) + Vector3.new(0, 0, -0.35 + 0.15 * recoil), ads) -- held out, so both hands show
+			move = move:Lerp(hold.hand + (adsFix[weapon.id] or Vector3.zero) + Vector3.new(0, 0, -0.35), ads) -- held out, so both hands show
 		elseif side == "right" and hold and weapon.kind == "knife" and knifeT > 0 then -- the arm bends back once it's caught
 			move = move:Lerp(KNIFE_COCK, smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1)))
 		elseif side == "left" and ads > 0 and leftGrip[weapon.id] then -- and the left hand takes hold of it
 			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
 			move = move:Lerp(leftGrip[weapon.id] - rest, ads)
 		end
-		local fist = camera.CFrame
+		local fist = viewCF
 			* CFrame.new(h.x * (0.85 - 0.5 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2.35 - 1.2 * ext + move.Z)
 		h.fist.CFrame = fist
 		h.arm.CFrame = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.new(0, 0, 1.3)
@@ -2558,17 +2652,21 @@ RunService.RenderStepped:Connect(function(dt)
 		-- fingers forward, forearm running back, down and outward past the camera
 		local arm = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
 		local hand = arm
+		if boxing then
+			hand = fist * CFrame.Angles(math.rad(80 - 18 * ext), math.rad(-h.x * (10 + 12 * ext)), math.rad(h.x * (8 + 45 * ext)))
+		end
 		if side == "right" and hold then
 			-- The wrist bends so the hand is square to the view whatever the forearm is doing:
 			-- guns point at the crosshair, melee and throwables stand upright and tip forward to swing.
-			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket") and 14 * recoil or -25 - 75 * ext
+			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket" or weapon.kind == "bow") and 0 or -25 - 75 * ext
 			if weapon.kind == "knife" and knifeT > 0 then -- cocked: the wrist tips the upturned knife's handle at the crosshair
 				tilt += (KNIFE_TILT - tilt) * smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1))
 			end
 			local pivot = real and real.wrist or Vector3.zero
 			hand = CFrame.new(arm * pivot)
-				* camera.CFrame.Rotation
-				* CFrame.Angles(math.rad(tilt), 0, 0)
+				* viewCF.Rotation
+				* CFrame.Angles(math.rad(tilt), cutting and math.rad(-weaponVisual.slashSide * 65 * ext) or 0,
+					cutting and math.rad(weaponVisual.slashSide * 45 * ext) or 0)
 				* CFrame.Angles(math.rad(90), 0, 0)
 				* CFrame.new(-pivot)
 			weaponCF = hand * (real and real.grip or DEFAULT_GRIP)
@@ -2576,13 +2674,21 @@ RunService.RenderStepped:Connect(function(dt)
 		if real then
 			for i, piece in real.pieces do
 				piece.part.CFrame = (i == 1 and hand or arm) * piece.offset
-				piece.part.LocalTransparencyModifier = show and 0 or 1
+				piece.part.LocalTransparencyModifier = (show and not (boxing and i == 1)) and 0 or 1
 			end
+		end
+		BoxingGloves.update(weaponVisual.gloves[side], hand * (real and real.grip or DEFAULT_GRIP), show == true and boxing)
+	end
+	-- Hide replicated body gloves locally in first person: the anchored pair above draws instead.
+	local bodyGloves = char and char:FindFirstChild("BoxingGloves")
+	if bodyGloves then
+		for _, padding in bodyGloves:GetDescendants() do
+			if padding:IsA("BasePart") then padding.LocalTransparencyModifier = isFirstPerson() and 1 or 0 end
 		end
 	end
 
 	-- weapon in the right hand
-	local thrown = weapon.kind == "thrown" or weapon.kind == "knife"
+	local thrown = weapon.kind == "thrown" or (weapon.kind == "knife" and weaponVisual.lastAction ~= "KnifeSlash")
 	local inHand = show and weaponCF and not (thrown and os.clock() - lastWeaponUse < weapon.cd) -- it left the hand
 	for _, v in viewParts do
 		local active = v.id == weapon.id and inHand and not viewMeshes[v.id]
@@ -2601,12 +2707,12 @@ RunService.RenderStepped:Connect(function(dt)
 			if active then
 				mesh:PivotTo(weaponCF * (id == "Knife" and knifeT > 0 and knifeFlip(knifeT) or CFrame.identity) * HOLD[id].grip)
 				if HOLD[id].support then -- the fist's centre sits a little under the point the palm grips
-					leftGrip[id] = camera.CFrame:PointToObjectSpace(mesh.CFrame * HOLD[id].support) + Vector3.new(0, -0.2, 0)
+					leftGrip[id] = viewCF:PointToObjectSpace(mesh.CFrame * HOLD[id].support) + Vector3.new(0, -0.2, 0)
 				end
 				if ads > 0.9 and recoil < 0.05 then -- learn only once settled, or the easing / kick skews it
 					local lo, hi = WeaponMeshes.bounds(id)
 					local topCentre = Vector3.new((lo.X + hi.X) / 2, hi.Y, (lo.Z + hi.Z) / 2)
-					local top = camera.CFrame:PointToObjectSpace(mesh.CFrame * topCentre)
+					local top = viewCF:PointToObjectSpace(mesh.CFrame * topCentre)
 					-- the top of the mesh is the sight: the launcher's flip-up sight sits a little higher
 					local want = Vector3.new(0, weapon.kind == "rocket" and -0.04 or -0.12, top.Z)
 					adsFix[id] = (adsFix[id] or Vector3.zero) + (want - top) * math.min(dt * 12, 1)

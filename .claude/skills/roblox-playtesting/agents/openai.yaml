@@ -1,0 +1,13 @@
+interface:
+  display_name: "Roblox Playtesting"
+  short_description: "Plan and analyze Roblox gameplay tests"
+  default_prompt: "Use $roblox-playtesting to plan, run, or analyze an evidence-backed Roblox playtest."
+
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "Roblox_Studio"
+      description: "Roblox Studio MCP server for Play-mode execution, interaction, observation, console evidence, and cleanup"
+
+policy:
+  allow_implicit_invocation: true

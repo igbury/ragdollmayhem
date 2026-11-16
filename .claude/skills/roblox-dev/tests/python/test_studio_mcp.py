@@ -1,0 +1,178 @@
+"""MCP output must survive Windows shell encoding and preserve tool failures."""
+import base64
+import contextlib
+import io
+import json
+from pathlib import Path
+import sys
+import tempfile
+import unittest
+from unittest.mock import patch
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'scripts'))
+import studio_mcp
+
+
+class PlayTests(unittest.TestCase):
+    def test_play_runs_on_the_server_and_always_stops(self):
+        class Fake:
+            def __init__(self):
+                self.calls = []
+
+            def call(self, tool, args, timeout):
+                self.calls.append(tool if tool != 'start_stop_play' else f'play {args["is_start"]}')
+                if tool == 'get_studio_state':
+                    return {'content': [{'type': 'text', 'text': 'Available DataModels: Client, Server'}]}
+                if tool == 'execute_luau':
+                    self.server = args
+                    raise RuntimeError('lost')
+                return {'content': []}
+
+        fake = Fake()
+        with tempfile.TemporaryDirectory() as tmp, patch.object(studio_mcp.time, 'sleep'):
+            script = Path(tmp) / 't.luau'
+            script.write_text('return 1')
+            args = type('A', (), {'target': str(script), 'timeout': 5, 'image': None, 'output': None})
+            with self.assertRaises(RuntimeError):
+                studio_mcp.play(fake, 'id', args)
+        self.assertEqual(fake.calls, ['play True', 'get_studio_state', 'execute_luau', 'play False'])
+        self.assertEqual(fake.server['datamodel_type'], 'Server')
+
+    def test_play_stops_even_when_starting_it_times_out(self):
+        class Slow:
+            calls = []
+
+            def call(self, tool, args, timeout):
+                self.calls.append(args['is_start'])
+                if args['is_start']:
+                    sys.exit('no reply')
+                return {'content': []}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            script = Path(tmp) / 't.luau'
+            script.write_text('return 1')
+            args = type('A', (), {'target': str(script), 'timeout': 5, 'image': None, 'output': None})
+            with self.assertRaises(SystemExit):
+                studio_mcp.play(Slow(), 'id', args)
+        self.assertEqual(Slow.calls, [True, False])
+
+
+class StudioLookupTests(unittest.TestCase):
+    """A Studio window can list with a null name; the lookup must not fail on it."""
+
+    def lookup(self, studios, want):
+        server = studio_mcp.Server.__new__(studio_mcp.Server)
+        reply = {'content': [{'text': json.dumps({'studios': studios})}]}
+        with patch.object(studio_mcp.Server, 'call', return_value=reply), contextlib.redirect_stderr(io.StringIO()):
+            return server.studio(want)
+
+    def test_unnamed_window_does_not_break_a_lookup_by_id_or_name(self):
+        studios = [{'id': 'a', 'name': None}, {'id': 'b', 'name': 'My Place (placeId: 1)'}]
+        self.assertEqual(self.lookup(studios, 'b'), 'b')
+        self.assertEqual(self.lookup(studios, 'my place'), 'b')
+        self.assertEqual(self.lookup(studios, 'a'), 'a')
+
+    def test_a_named_window_is_preferred_when_none_is_asked_for(self):
+        self.assertEqual(self.lookup([{'id': 'a', 'name': None}, {'id': 'b', 'name': 'Place'}], None), 'b')
+        self.assertEqual(self.lookup([{'id': 'a'}], None), 'a')
+
+    def test_no_match_lists_unnamed_windows_by_id(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.lookup([{'id': 'a', 'name': None}], 'other')
+        self.assertIn('a', str(caught.exception.code))
+
+
+class OutputTests(unittest.TestCase):
+    def test_unicode_text_and_image_have_separate_outputs(self):
+        payload = json.dumps({'name': '竜の娘', 'motion': '▂▇█'}, ensure_ascii=False)
+        result = {'content': [{'type': 'text', 'text': payload},
+                              {'type': 'image', 'data': base64.b64encode(b'image bytes').decode()}]}
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            output, image = Path(tmp) / '結果.json', Path(tmp) / 'capture.png'
+            self.assertEqual(studio_mcp.show(result, str(image), str(output)), 0)
+            raw = output.read_bytes()
+            self.assertFalse(raw.startswith(b'\xef\xbb\xbf'))
+            self.assertEqual(json.loads(raw.decode('utf-8')), json.loads(payload))
+            self.assertEqual(image.read_bytes(), b'image bytes')
+
+    def test_error_text_is_saved_and_failure_status_is_preserved(self):
+        result = {'isError': True, 'content': [{'type': 'text', 'text': '失敗'},
+                                              {'type': 'text', 'text': 'second line'}]}
+        with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
+            output = Path(tmp) / 'error.txt'
+            self.assertEqual(studio_mcp.show(result, None, str(output)), 1)
+            self.assertEqual(output.read_bytes(), '失敗\nsecond line'.encode())
+
+    def test_cli_writes_raw_response_text_and_closes_server(self):
+        class Stdout(io.StringIO):
+            def reconfigure(self, **_):
+                pass
+
+        result = {'content': [{'type': 'text', 'text': '{"ok":true,"name":"竜"}'}]}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(studio_mcp, 'Server') as constructor:
+            output = Path(tmp) / 'result.json'
+            server = constructor.return_value
+            server.studio.return_value = 'test-studio'
+            server.call.return_value = result
+            argv = ['studio_mcp.py', 'call', 'get_studio_state', '--output', str(output)]
+            with patch.object(sys, 'argv', argv), contextlib.redirect_stdout(Stdout()):
+                self.assertEqual(studio_mcp.main(), 0)
+            self.assertEqual(json.loads(output.read_text(encoding='utf-8'))['name'], '竜')
+            server.close.assert_called_once()
+
+    def test_list_output_is_machine_readable(self):
+        class Stdout(io.StringIO):
+            def reconfigure(self, **_):
+                pass
+
+        result = {'tools': [{'name': 'execute_luau', 'inputSchema': {'type': 'object'}}]}
+        with tempfile.TemporaryDirectory() as tmp, patch.object(studio_mcp, 'Server') as constructor:
+            output = Path(tmp) / 'tools.json'
+            constructor.return_value.request.return_value = result
+            with patch.object(sys, 'argv', ['studio_mcp.py', 'list', '--output', str(output)]), contextlib.redirect_stdout(Stdout()):
+                self.assertEqual(studio_mcp.main(), 0)
+            self.assertEqual(json.loads(output.read_text(encoding='utf-8')), result)
+
+
+class SaveTests(unittest.TestCase):
+    def test_save_joins_base64_chunks_into_the_file(self):
+        data = bytes(range(256)) * 3
+        calls = []
+
+        class FakeServer:
+            def call(self, tool, args, timeout):
+                at = int(args['code'].split('if ', 1)[1].split(' < 0', 1)[0])
+                calls.append(at)
+                text = str(len(data)) if at < 0 else base64.b64encode(data[at:at + 500]).decode()
+                return {'content': [{'type': 'text', 'text': json.dumps(text)}]}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / 'clip.rbxm'
+            size = studio_mcp.save(FakeServer(), 'studio', 'ServerStorage.Clips.Walk', out, chunk=500)
+            self.assertEqual((size, out.read_bytes()), (len(data), data))
+        self.assertEqual(calls, [-1, 0, 500])
+
+    def test_a_studio_error_is_raised_not_returned(self):
+        with self.assertRaises(RuntimeError):
+            studio_mcp.text_of({'isError': True, 'content': [{'type': 'text', 'text': 'no Walk under ServerStorage.Clips'}]})
+
+    def test_a_bom_does_not_hide_the_use_line(self):
+        class Stdout(io.StringIO):
+            def reconfigure(self, **_):
+                pass
+
+        with tempfile.TemporaryDirectory() as tmp, patch.object(studio_mcp, 'Server') as constructor:
+            script = Path(tmp) / 'audit.luau'
+            script.write_bytes('﻿--@use ZFight\nreturn 1'.encode('utf-8'))
+            server = constructor.return_value
+            server.studio.return_value = 'test-studio'
+            server.call.return_value = {'content': [{'type': 'text', 'text': '1'}]}
+            with patch.object(sys, 'argv', ['studio_mcp.py', 'luau', str(script)]), contextlib.redirect_stdout(Stdout()):
+                self.assertEqual(studio_mcp.main(), 0)
+            code = server.call.call_args[0][1]['code']
+            self.assertIn('local ZFight = assert(loadstring(', code)
+            self.assertNotIn('﻿', code)
+
+
+if __name__ == '__main__':
+    unittest.main()

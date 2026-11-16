@@ -21,12 +21,14 @@ local GROUP = { -- outline colour per weapon group (Weapons `tag`)
 	heavy = Color3.fromRGB(255, 90, 80),
 }
 local ABOUT = {
+	Bow = "Hold attack to draw; release to shoot. Arrows drop.",
 	Fists = "Punches, kicks, dive kicks",
+	BoxingGloves = "Hold to box: alternating left and right punches",
 	Bat = "Huge knockback, breaks bones",
 	Pan = "BONK. Sends them flying",
 	Katana = "Fast slashes, takes limbs off",
 	Axe = "Slow and heavy, takes limbs off",
-	Knife = "Thrown, flies to the crosshair",
+	Knife = "Click to slash; aim + click to throw",
 	Handgun = "Quick, light rounds",
 	Revolver = "Heavy rounds, breaks bones",
 	Shotgun = "8 pellets, brutal up close",
@@ -130,7 +132,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- 5 slots hold a loadout; the 6th is the backpack (the wheel with every weapon). Taking one
 	-- from the backpack that is not on the bar puts it in the slot in hand.
 	local loadout = {}
-	for _, id in { "Fists", "Bat", "Handgun", "Shotgun", "Grenade" } do
+	for _, id in { "Fists", "BoxingGloves", "Handgun", "Shotgun", "Grenade" } do
 		for i, w in weapons do
 			if w.id == id then
 				table.insert(loadout, i)
@@ -355,6 +357,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			return
 		end
 		open = on
+		gui:SetAttribute("WeaponPickerOpen", on)
 		wheel.Visible = on
 		aimAcc = Vector2.zero
 		pick = api.get()
@@ -400,7 +403,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		show(false)
 	end
 
+	openWheel = require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, api, choose, function() show(false) end)
 	UserInputService.InputBegan:Connect(function(input, processed)
+		if gui:GetAttribute("WeaponPickerOpen") and not open then return end
 		if open and input.UserInputType == Enum.UserInputType.MouseButton1 and not processed then
 			choose(pick) -- the backpack opened by a click closes on one (the page arrows are buttons)
 			return

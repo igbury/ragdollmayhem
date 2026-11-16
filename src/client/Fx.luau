@@ -603,21 +603,30 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 	if w.kind == "melee" then
 		MELEE[w.id] = true
 	end
+	if w.slash then MELEE[w.slash.id] = true end
 end
 
-function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean)
+function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?)
 	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
 	-- model however we move (the server's position for us lags a little behind)
 	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
 	local aimCf = CFrame.lookAt(from, to)
 	local distance = (to - from).Magnitude
-	if MELEE[weaponId] then
+	if weaponId == "BoxingGloves" then
+		-- A padded punch gets a compact impact, never a blade's crescent or metal sparks.
+		if landed then
+			Fx.hit(to)
+			Fx.shake(to, 0.22, 0.12)
+		end
+	elseif MELEE[weaponId] then
 		-- swing: a crescent sweeping in front of the attacker; the katana's is a thin, wide,
 		-- steel-blue slash cut at a slant, the others a fat white arc
 		local katana = weaponId == "Katana"
+		local knife = weaponId == "KnifeSlash"
 		local tilt = (weaponId == "Axe" or katana) and rng:NextNumber(1.0, 1.6) * (rng:NextNumber() < 0.5 and -1 or 1) or rng:NextNumber(-0.4, 0.4)
-		Fx.ring(aimCf * CFrame.Angles(0, 0, tilt), katana and 5 or 4.5, katana and 8 or 6, katana and 0.16 or 0.2, katana and SLASH or WHITE,
-			{ arc = katana and 2.8 or 2.2, thick = katana and 0.5 or 1.4, height = 0.3, ink = false })
+		Fx.ring(aimCf * CFrame.Angles(0, 0, knife and -0.65 or tilt), knife and 2.4 or katana and 5 or 4.5,
+			knife and 4 or katana and 8 or 6, knife and 0.12 or katana and 0.16 or 0.2, (katana or knife) and SLASH or WHITE,
+			{ arc = katana and 2.8 or 2.2, thick = (katana or knife) and 0.5 or 1.4, height = 0.3, ink = false })
 		if landed then
 			Fx.hit(to)
 			Fx.sparks(to, 6, weaponId == "Axe" and 5 or 8, TRACER, -aimCf.LookVector, 0.3)
@@ -658,12 +667,41 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 			tracer.CFrame = CFrame.lookAt(muzzle:Lerp(to, 0.5), to)
 			tracer.Transparency = 0.2 + 0.8 * a
 		end)
-		Fx.glint(muzzle, big and 3 or 1.6, TRACER, 0.08)
+		if primary ~= false then
+			Fx.glint(muzzle, (big or pellet) and 3 or 1.6, TRACER, 0.055)
+			local flash = part(Enum.PartType.Ball, WHITE)
+			flash.Name = "MuzzleFlash"
+			flash.Position = muzzle
+			local light = Instance.new("PointLight")
+			light.Color, light.Range, light.Brightness = TRACER, 7, 1.8
+			light.Parent = flash
+			run(0.045, { flash }, function(a)
+				flash.Size = Vector3.one * (1 - a) * ((big or pellet) and 0.28 or 0.16)
+				flash.Transparency = a
+				light.Brightness = 1.8 * (1 - a)
+			end)
+			-- Revolvers retain their cases. Other guns eject one case per trigger, not per pellet.
+			if weaponId ~= "Revolver" then
+				local casing = part(Enum.PartType.Cylinder, Color3.fromRGB(214, 166, 70), Enum.Material.Metal)
+				casing.Name = "ShellCasing"
+				casing.Size = pellet and Vector3.new(0.22, 0.11, 0.11) or Vector3.new(0.15, 0.07, 0.07)
+				local start = muzzle - aimCf.LookVector * (pellet and 1.3 or 0.7)
+				local velocity = aimCf.RightVector * 7 + UP * 4
+				run(0.55, { casing }, function(a)
+					local t = a * 0.55
+					casing.CFrame = CFrame.new(start + velocity * t - UP * 24 * t * t)
+						* CFrame.Angles(t * 17, t * 11, t * 23)
+					casing.Transparency = math.max(0, (a - 0.7) / 0.3)
+				end)
+			end
+		end
 		if landed then
 			Fx.sparks(to, big and 8 or 4, big and 6 or 3, TRACER, -aimCf.LookVector, 0.25)
 			Fx.dust(to, big and 3 or 1, 2, 1)
 		end
-		Fx.shake(from, sniper and 0.7 or big and 0.35 or pellet and 0.08 or 0.12, sniper and 0.2 or 0.12)
+		if primary ~= false then
+			Fx.shake(from, sniper and 0.7 or big and 0.35 or pellet and 0.35 or 0.12, sniper and 0.2 or 0.12)
+		end
 		if sniper and landed then
 			Fx.ring(CFrame.lookAt(to, to - aimCf.LookVector) * CFrame.Angles(math.pi / 2, 0, 0), 0.5, 4, 0.25, WHITE, { thick = 0.3 })
 		end
@@ -724,7 +762,7 @@ end
 -- turns to glass for a moment and shows its bones, the broken ones in orange.
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
-local BLOOD = Color3.fromRGB(96, 34, 214)
+local BLOOD = Color3.fromRGB(178, 22, 32)
 local BONE = Color3.fromRGB(245, 245, 235)
 local BONE_BROKEN = Color3.fromRGB(255, 140, 40)
 local GLASS = Color3.fromRGB(150, 200, 255)

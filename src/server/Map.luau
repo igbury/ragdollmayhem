@@ -826,7 +826,7 @@ local function bowling(laneZ: number, headX: number)
 			pin.part.AssemblyLinearVelocity = Vector3.zero
 			pin.part.AssemblyAngularVelocity = Vector3.zero
 			pin.part.Anchored = false
-			pin.part:SetNetworkOwner(nil)
+			if pin.part:IsDescendantOf(workspace) then pin.part:SetNetworkOwner(nil) end
 		end
 		label.Text = "RAGDOLL BOWLING\nthrow a dummy!"
 		label.TextColor3 = Color3.fromRGB(255, 214, 90)

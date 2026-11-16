@@ -7,6 +7,7 @@ local Debris = game:GetService("Debris")
 local Attacks = require(ReplicatedStorage.Shared.Attacks)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
+local BoxingGloves = require(ReplicatedStorage.Shared.BoxingGloves)
 local Map = require(script.Map)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Impact = require(ReplicatedStorage.Shared.Impact)
@@ -14,6 +15,9 @@ local Factory = require(script.Factory)
 local City = require(script.City)
 local Looks = require(script.Looks)
 local Anims = require(script.Anims)
+local Monsters = require(script.Monsters)
+local MagazineService = require(script.MagazineService)
+local Arrows = require(script.Arrows)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -52,6 +56,9 @@ attackRemote.Parent = remotes
 local weaponRemote = Instance.new("RemoteEvent")
 weaponRemote.Name = "Weapon"
 weaponRemote.Parent = remotes
+local equipRemote = Instance.new("RemoteEvent")
+equipRemote.Name = "EquipWeapon"
+equipRemote.Parent = remotes
 local fxRemote = Instance.new("RemoteEvent")
 fxRemote.Name = "Fx"
 fxRemote.Parent = remotes
@@ -160,9 +167,9 @@ local BLOOD_DROWSY, BLOOD_OUT, BLOOD_DEAD = 60, 48, 40
 local MAX_BLEED = 12 -- % of blood per second, however many holes there are
 local SKIN = Color3.fromRGB(215, 215, 220)
 local BRUISE = Color3.fromRGB(190, 172, 226)
-local STUMP = Color3.fromRGB(24, 16, 62)
-local WOUND = Color3.fromRGB(70, 22, 140)
-local TORN = Color3.fromRGB(120, 52, 226) -- an exit wound: raw, the colour of the blood
+local STUMP = Color3.fromRGB(65, 12, 18)
+local WOUND = Color3.fromRGB(104, 14, 22)
+local TORN = Color3.fromRGB(178, 24, 35) -- an exit wound: raw, the colour of the blood
 local CHAR = Color3.fromRGB(58, 50, 52) -- burnt skin
 local exitParams = RaycastParams.new()
 exitParams.FilterType = Enum.RaycastFilterType.Include
@@ -1342,6 +1349,16 @@ punchRemote.OnServerEvent:Connect(function(player, part)
 		return
 	end
 	if not d then
+		local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if humanoid and humanoid.Health > 0 and not player.Character:GetAttribute("Ragdolled") then
+			local params = RaycastParams.new()
+			params.FilterDescendantsInstances = { player.Character }
+			local delta = part.Position - head.Position
+			local result = delta.Magnitude > 0.01 and workspace:Raycast(head.Position, delta.Unit * (delta.Magnitude + 1), params)
+			if result and result.Instance:IsDescendantOf(part:FindFirstAncestorOfClass("Model")) then
+				if Monsters.damage(result.Instance, 14, delta, player) then return end
+			end
+		end
 		if part.Parent and part.Parent.Name == "Grave" and part:IsDescendantOf(Map.folder) then
 			Map.blast(part.Position, 1.5, 25)
 		end
@@ -1615,6 +1632,7 @@ end
 -- ground slam and kicks) it is a blunt blow on the part nearest the hit, through hit(): bruises,
 -- broken bones and the body chart, the same HP as before. Fire and blasts keep their own wounds (harm).
 local function smash(position: Vector3, radius: number, damage: number, push: Vector3, radial: number, kind: string?)
+	Monsters.blast(position, radius, damage)
 	for _, d in dummies do
 		local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 		local offset = torso and torso.Position - position
@@ -1756,9 +1774,57 @@ end)
 
 -- Weapons ---------------------------------------------------------------------
 local weaponById = {}
+local inventoryIds = {}
 for _, weapon in Weapons do
 	weaponById[weapon.id] = weapon
+	inventoryIds[weapon.id] = true
+	if weapon.slash then weaponById[weapon.slash.id] = weapon.slash end
 end
+
+local boxingState = {}
+local function clearBoxing(player: Player)
+	local state = boxingState[player]
+	if not state then return end
+	boxingState[player] = nil
+	for _, track in state.tracks do
+		track:Stop(0.1)
+		track:Destroy()
+	end
+	state.model:Destroy()
+end
+
+equipRemote.OnServerEvent:Connect(function(player, id)
+	local char = player.Character
+	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+	if typeof(id) ~= "string" or not inventoryIds[id] or not humanoid or humanoid.Health <= 0 then return end
+	if char:GetAttribute("EquippedWeapon") == id then return end
+	if rateLimited(player, 0.05, "equip") then return end
+	MagazineService.cancel(char)
+	char:SetAttribute("BowDrawAt", nil)
+	clearBoxing(player)
+	char:SetAttribute("EquippedWeapon", id)
+	if id ~= "BoxingGloves" then return end
+	local model = BoxingGloves.attach(char)
+	if not model then
+		char:SetAttribute("EquippedWeapon", nil) -- allow a retry when R15 hands finish replicating
+		return
+	end
+	local animator = humanoid:FindFirstChildOfClass("Animator")
+	local state = { character = char, model = model, tracks = {}, nextHand = "right" }
+	boxingState[player] = state
+	-- Reuse the game's authored upper-body boxing clips. The legs remain free to walk/run.
+	for name, animation in { guard = Anims.guard, left = Anims.punch, right = Anims.haymaker } do
+		if animator and animation.AnimationId ~= "" then
+			local ok, track = pcall(animator.LoadAnimation, animator, animation)
+			if ok then
+				track.Priority = name == "guard" and Enum.AnimationPriority.Action or Enum.AnimationPriority.Action3
+				track.Looped = name == "guard"
+				state.tracks[name] = track
+			end
+		end
+	end
+	if state.tracks.guard then state.tracks.guard:Play(0.15) end
+end)
 
 local function explode(position: Vector3, sound: string)
 	Sfx.play({ sound, 1, 1 }, position)
@@ -1943,7 +2009,13 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	if not weapon or not weapon.kind or not head or char:GetAttribute("Ragdolled") then
 		return
 	end
-	if typeof(dir) ~= "Vector3" or dir ~= dir or dir.Magnitude < 0.5 or dir.Magnitude > 2 then
+	local humanoid = char:FindFirstChildOfClass("Humanoid")
+	if not humanoid or humanoid.Health <= 0 then return end
+	if char:GetAttribute("EquippedWeapon") ~= (weapon.equipId or id) then return end
+	if id == "BoxingGloves" and (char:GetAttribute("EquippedWeapon") ~= id
+		or not boxingState[player] or boxingState[player].character ~= char) then return end
+	if weapon.equipId and char:GetAttribute("EquippedWeapon") ~= weapon.equipId then return end
+	if not finite(dir) or dir.Magnitude < 0.5 or dir.Magnitude > 2 then
 		return
 	end
 	dir = dir.Unit
@@ -1954,16 +2026,44 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	local ready = attackReady[player] or {}
 	attackReady[player] = ready
 	local now = os.clock()
-	if now < (ready[id] or 0) then
+	local cooldownId = weapon.cooldownGroup or id
+	if now < (ready[cooldownId] or 0) then
 		return
 	end
-	ready[id] = now + weapon.cd - 0.03
+	if not MagazineService.consume(char, id) then return end
+	local bowCharge = 0
+	if weapon.kind == "bow" then
+		local drawAt = char:GetAttribute("BowDrawAt")
+		char:SetAttribute("BowDrawAt", nil)
+		if not drawAt or now - drawAt < 0.08 then return end
+		bowCharge = math.clamp((now - drawAt) / 1.1, 0, 1)
+	end
+	ready[cooldownId] = now + weapon.cd - 0.03
+	if id == "BoxingGloves" then
+		local state = boxingState[player]
+		local side = state.nextHand
+		state.nextHand = side == "right" and "left" or "right"
+		local previous = state.tracks[state.nextHand]
+		if previous then previous:Stop(0.04) end
+		local track = state.tracks[side]
+		if track then track:Play(0.035, 1, side == "right" and 3.125 or 1.4) end
+	end
 	if weapon.kind == "melee" then
 		lastSwing[player] = now
 	end
 	local sounds = Sfx.WEAPON[id] or {}
 	if sounds.fire then
 		Sfx.play(sounds.fire, origin, player) -- the shooter heard it already (useWeapon)
+	end
+	if weapon.kind == "bow" then
+		Arrows.fire(origin, dir, weapon.speed * (0.4 + 0.6 * bowCharge), char, function(result, direction)
+			local damage = weapon.dmg * (0.25 + 0.75 * bowCharge)
+			if Monsters.damage(result.Instance, damage * 10, direction, player) then return end
+			local d = dummyOf(result.Instance)
+			if d and result.Instance.Parent then hit(d, result.Instance, direction, damage, weapon.push, "blade", result.Position, origin) end
+			fxRemote:FireAllClients("Shot", char, "Knife", result.Position - direction * 0.5, result.Position, true, false)
+		end)
+		return
 	end
 	if weapon.kind == "rocket" then -- the warhead is in the air for seconds: the handler runs on in its own thread
 		task.spawn(rocket, weapon, char, origin, dir)
@@ -1982,6 +2082,13 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	-- one ray, or a shotgun's spray of them (each pellet hits on its own)
 	local rng = Random.new()
 	local cone = (weapon.spread or 0) * (aimed == true and AIMED_PELLETS or 1)
+	if id == "KnifeSlash" then
+		task.wait(0.09) -- the blade reaches the target during the visible cut
+		local humanoid = char:FindFirstChildOfClass("Humanoid")
+		if player.Character ~= char or not head.Parent or char:GetAttribute("Ragdolled")
+			or not humanoid or humanoid.Health <= 0 or char:GetAttribute("EquippedWeapon") ~= "Knife" then return end
+		origin = head.Position
+	end
 	for pellet = 1, weapon.pellets or 1 do
 		local aim = dir
 		if cone > 0 then
@@ -1992,7 +2099,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 		end
 		local result = workspace:Raycast(origin, aim * weapon.range, params)
 		local target = result and result.Position or origin + aim * weapon.range
-		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil)
+		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil, pellet == 1)
 		if not result then
 			if sounds.swing then
 				Sfx.play(sounds.swing, origin, player) -- the swinger predicted it (useWeapon)
@@ -2002,6 +2109,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 		if weapon.speed then -- knife flies there first
 			task.wait((target - origin).Magnitude / weapon.speed)
 		end
+		if Monsters.damage(result.Instance, (weapon.dmg or 1) * 10, aim, player) then continue end
 		local d = dummyOf(result.Instance)
 		if d and weapon.kind == "melee" and tryDodge(d, player) then
 			return -- ducked under the swing
@@ -2025,6 +2133,7 @@ end)
 
 Players.PlayerAdded:Connect(function(player)
 	player.CharacterAdded:Connect(function(char)
+		clearBoxing(player)
 		-- dying or respawning with a dummy in hand used to leave it "Held" for good: hanging in the
 		-- air, owned by a client that no longer drives it
 		if held[player] then
@@ -2032,6 +2141,7 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		local hum = char:WaitForChild("Humanoid") :: Humanoid
 		hum.Died:Connect(function()
+			clearBoxing(player)
 			if held[player] then
 				release(held[player], Vector3.zero)
 			end
@@ -2056,6 +2166,7 @@ Players.PlayerAdded:Connect(function(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
+	clearBoxing(player)
 	if held[player] then
 		release(held[player], Vector3.zero)
 	end
@@ -2171,6 +2282,25 @@ local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3
 	end
 	hazardRemote:FireClient(player, velocity)
 end
+
+actionRemote.OnServerEvent:Connect(function(player, action)
+	if action == "bowCancel" then
+		if player.Character then player.Character:SetAttribute("BowDrawAt", nil) end
+		return
+	end
+	if action == "bowDraw" then
+		if rateLimited(player, 0.15, "bowDraw") then return end
+		local char = player.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and not char:GetAttribute("Ragdolled") and char:GetAttribute("EquippedWeapon") == "Bow" then
+			if not char:GetAttribute("BowDrawAt") then char:SetAttribute("BowDrawAt", os.clock()) end
+		end
+		return
+	end
+	if action ~= "reload" or rateLimited(player, 0.2, "reload") then return end
+	local char = player.Character
+	if char then MagazineService.reload(char, char:GetAttribute("EquippedWeapon")) end
+end)
 
 local function targetRoot(target): BasePart?
 	if typeof(target) == "Instance" then
@@ -2784,6 +2914,7 @@ for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 end
 Map.build()
+Monsters.start(remotes, knockPlayer)
 if CITY_ENABLED then
 	City.build()
 	for _, spot in City.DUMMY_SPOTS do

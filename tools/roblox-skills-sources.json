@@ -1,0 +1,2807 @@
+{
+  "version": 1,
+  "files": [
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "LICENSE",
+      "path": "roblox-vfx-animation/LICENSE",
+      "sha": "ef66a6b3dcbd61dd89ee143fc2353ea8108078be",
+      "size": 1094
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "README.md",
+      "path": "roblox-vfx-animation/README.md",
+      "sha": "8fbed32b35513688e6c556be0f64844d159f3517",
+      "size": 3996
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "SKILL.md",
+      "path": "roblox-vfx-animation/SKILL.md",
+      "sha": "0fd851ba69fcbee3c56449507a08b5baa5da0571",
+      "size": 9674
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "aftman.toml",
+      "path": "roblox-vfx-animation/aftman.toml",
+      "sha": "3027bdfd3423dc1fd658a0a7cdfe6bbbabd36b03",
+      "size": 118
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/asset-library.md",
+      "path": "roblox-vfx-animation/references/asset-library.md",
+      "sha": "a1a2f32dde197463f4ed5028b914903365020dc0",
+      "size": 4762
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/character-animation.md",
+      "path": "roblox-vfx-animation/references/character-animation.md",
+      "sha": "c0392cbcdf8aa221e7cfb3d8d73770d213639169",
+      "size": 32418
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/creature-animation.md",
+      "path": "roblox-vfx-animation/references/creature-animation.md",
+      "sha": "24b8f02fadd6195d378c41964931d50c12fe6857",
+      "size": 22535
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/engine-traps.md",
+      "path": "roblox-vfx-animation/references/engine-traps.md",
+      "sha": "45320fedc297c39dc840e267c272b5225b7121f6",
+      "size": 4205
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/explosion-patterns/README.md",
+      "path": "roblox-vfx-animation/references/explosion-patterns/README.md",
+      "sha": "90b4883462e7d16de5a4689ef46dbc81493ae8f1",
+      "size": 4446
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/explosion-patterns/emitter-samples.json",
+      "path": "roblox-vfx-animation/references/explosion-patterns/emitter-samples.json",
+      "sha": "67aa7c2d447181fb0b33056f3a228acc17f7a23e",
+      "size": 11709
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/full.md",
+      "path": "roblox-vfx-animation/references/full.md",
+      "sha": "8b56dafc74ef5af923e71357178f7b00eb38ec47",
+      "size": 17989
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/hollow-purple/README.md",
+      "path": "roblox-vfx-animation/references/hollow-purple/README.md",
+      "sha": "55620eeaa64e9c5b23827f5de5e2e8b2796ff8bd",
+      "size": 3047
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/hollow-purple/particle-samples.json",
+      "path": "roblox-vfx-animation/references/hollow-purple/particle-samples.json",
+      "sha": "23e6e96e6785905056c3461270a803eb24a0dcdf",
+      "size": 14062
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/lightning-sequence.md",
+      "path": "roblox-vfx-animation/references/lightning-sequence.md",
+      "sha": "4852524cd18df90d2ed7e7ef9df80d79aefa9cce",
+      "size": 2252
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/place1-reference-patterns.md",
+      "path": "roblox-vfx-animation/references/place1-reference-patterns.md",
+      "sha": "41efbb9c1da6d42d84e2f89a3577b4cd6e4e698e",
+      "size": 2410
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/tools.md",
+      "path": "roblox-vfx-animation/references/tools.md",
+      "sha": "14d5d9893786b1ab3c10fb73b2ae68dd73cc816f",
+      "size": 14187
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-camera-world.md",
+      "path": "roblox-vfx-animation/references/vfx-camera-world.md",
+      "sha": "81ea691cb429fdfa7d77c62b673f73a0eeb0056c",
+      "size": 4511
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-craft.md",
+      "path": "roblox-vfx-animation/references/vfx-craft.md",
+      "sha": "d670a3ccf71e287ef8228e88863475dbf62ba3d2",
+      "size": 24463
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-design.md",
+      "path": "roblox-vfx-animation/references/vfx-design.md",
+      "sha": "abaa22722ef7974e894b73396d41b1080f3109fe",
+      "size": 20608
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-ground-rocks.md",
+      "path": "roblox-vfx-animation/references/vfx-ground-rocks.md",
+      "sha": "7043037348d5e12db82d7c021102dddf7c907958",
+      "size": 4492
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-mesh-shapes.md",
+      "path": "roblox-vfx-animation/references/vfx-mesh-shapes.md",
+      "sha": "df810b3986135e3de32714fd2fd43b40e74b2e5e",
+      "size": 10868
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-motion.md",
+      "path": "roblox-vfx-animation/references/vfx-motion.md",
+      "sha": "c7040ed63ecf6d57b752398595b876d9d6251bad",
+      "size": 8982
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-photocraft.md",
+      "path": "roblox-vfx-animation/references/vfx-photocraft.md",
+      "sha": "4a116400cc0f539155f7b3f2a81fd46a69dfcfc8",
+      "size": 12156
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-polish.md",
+      "path": "roblox-vfx-animation/references/vfx-polish.md",
+      "sha": "748904b982e49a4600142502a6d5a6a8e2b94139",
+      "size": 3768
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-rendered-flipbooks.md",
+      "path": "roblox-vfx-animation/references/vfx-rendered-flipbooks.md",
+      "sha": "bc09074ae25f527c329ed4db3b8a85885f0200c7",
+      "size": 2946
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "references/vfx-textures.md",
+      "path": "roblox-vfx-animation/references/vfx-textures.md",
+      "sha": "f441d0100d1fefc78f0f25d1ce3e36aff01dc4bd",
+      "size": 28628
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/animate.mjs",
+      "path": "roblox-vfx-animation/scripts/animate.mjs",
+      "sha": "8e80675ca924f89c25ba058f4d94b70216c0fee2",
+      "size": 173334
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/blender_job.py",
+      "path": "roblox-vfx-animation/scripts/blender_job.py",
+      "sha": "7128c2fdb78e226a8f93e6a2c76854dcd5be157c",
+      "size": 4299
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/inspect-pack.luau",
+      "path": "roblox-vfx-animation/scripts/inspect-pack.luau",
+      "sha": "8228c52a6651444456aaea5cbe76d29565e09095",
+      "size": 12150
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/photocraft/mcp-client.mjs",
+      "path": "roblox-vfx-animation/scripts/photocraft/mcp-client.mjs",
+      "sha": "b8b7d2cb722e86cfdf0433bae5805b230ca40f62",
+      "size": 4053
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/photocraft/sheet-review.mjs",
+      "path": "roblox-vfx-animation/scripts/photocraft/sheet-review.mjs",
+      "sha": "b170c8cf688ed8f610c75af6a427839932bbc73b",
+      "size": 4264
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/photocraft/sheet-verify.mjs",
+      "path": "roblox-vfx-animation/scripts/photocraft/sheet-verify.mjs",
+      "sha": "94405c47e2f1b25dcbc3a20c3e552a986c1d2949",
+      "size": 3485
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/photocraft/slash-gen.mjs",
+      "path": "roblox-vfx-animation/scripts/photocraft/slash-gen.mjs",
+      "sha": "539c6cc330eaec071dc963ce99e48fdeb64b42f6",
+      "size": 17111
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/read_rig.lua",
+      "path": "roblox-vfx-animation/scripts/read_rig.lua",
+      "sha": "3a01ac8d34acebc97deff0582044b318ef895e14",
+      "size": 5705
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/rig_model.lua",
+      "path": "roblox-vfx-animation/scripts/rig_model.lua",
+      "sha": "1ee76511aad848889b57833b7f3fb784ad6085dd",
+      "size": 13287
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/texture-tool.mjs",
+      "path": "roblox-vfx-animation/scripts/texture-tool.mjs",
+      "sha": "5c84dbbb7500383fcb558bcae1d882b5f218af3f",
+      "size": 16765
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/upload.mjs",
+      "path": "roblox-vfx-animation/scripts/upload.mjs",
+      "sha": "f5602ef9707c61f2800f2b1670226f6887cf7ea4",
+      "size": 5802
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "scripts/vfx_blender.py",
+      "path": "roblox-vfx-animation/scripts/vfx_blender.py",
+      "sha": "f94492d93ab94c33317513693ca27184bf52ae7e",
+      "size": 54725
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "templates/npc/ModelAnimate.server.lua",
+      "path": "roblox-vfx-animation/templates/npc/ModelAnimate.server.lua",
+      "sha": "77cc955ec2c059159dfec238eda5f7f3a74c588b",
+      "size": 3400
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "templates/vfx/build.lua",
+      "path": "roblox-vfx-animation/templates/vfx/build.lua",
+      "sha": "ba68dc7febcf69040124d6829b2d57189312639a",
+      "size": 9672
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "templates/vfx/capture.lua",
+      "path": "roblox-vfx-animation/templates/vfx/capture.lua",
+      "sha": "902e91d3ecd15a8333a426b40caa9f06c2b5d97a",
+      "size": 8494
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "templates/vfx/emit.lua",
+      "path": "roblox-vfx-animation/templates/vfx/emit.lua",
+      "sha": "11abd635716d234326c201783645b0bb4d734591",
+      "size": 17772
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "tests/animate-recipes.mjs",
+      "path": "roblox-vfx-animation/tests/animate-recipes.mjs",
+      "sha": "c2775430dcc580c3d264ed3f7064f5403f418ed6",
+      "size": 3141
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "tests/emit-scale.luau",
+      "path": "roblox-vfx-animation/tests/emit-scale.luau",
+      "sha": "08da93c21beb2a16c13a9799218b829c8fa8a3f3",
+      "size": 4058
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "tests/sheet-verify.mjs",
+      "path": "roblox-vfx-animation/tests/sheet-verify.mjs",
+      "sha": "a02bee3408a0294273ec79c080a7d33bc9793e17",
+      "size": 2945
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/LOCAL.template.md",
+      "path": "roblox-animation/LOCAL.template.md",
+      "sha": "44063bc5a63628e8f06e52b4df367fee87e7d8c7",
+      "size": 731
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/SKILL.md",
+      "path": "roblox-animation/SKILL.md",
+      "sha": "d2dc7f39fbec8ed9e13b9702674416c2cb2593b0",
+      "size": 20403
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/example-fk-punch.json",
+      "path": "roblox-animation/references/example-fk-punch.json",
+      "sha": "25ee35472ea67f920462b4f2ea66d70a9336cdfe",
+      "size": 8896
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/example-fk-roundhouse.json",
+      "path": "roblox-animation/references/example-fk-roundhouse.json",
+      "sha": "233c9561a0ed9e4069a5ef7bd3f85b18f544d7e7",
+      "size": 11789
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/example-fk-wave.json",
+      "path": "roblox-animation/references/example-fk-wave.json",
+      "sha": "2c9fc00c1d4eb0652bd002bc5ea86204310e3d1b",
+      "size": 9434
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/example-uppercut.json",
+      "path": "roblox-animation/references/example-uppercut.json",
+      "sha": "30ce99549a245e52e6a328cd40a2371cab7dd409",
+      "size": 5991
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/pose-recipes.md",
+      "path": "roblox-animation/references/pose-recipes.md",
+      "sha": "baa2393bf85a39f3a29dc8f767781b5e754b5754",
+      "size": 4164
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/studio-binder.lua",
+      "path": "roblox-animation/references/studio-binder.lua",
+      "sha": "4dfc8f07a8a6df3a795505cfd552851adbad25bb",
+      "size": 4571
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/references/traps.md",
+      "path": "roblox-animation/references/traps.md",
+      "sha": "dd939c5c868b310cea87402ab7626637ccc12259",
+      "size": 26338
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/anim_render.py",
+      "path": "roblox-animation/scripts/anim_render.py",
+      "sha": "27561c5f1248f52b2d3ee55fe9d7b0415b6164df",
+      "size": 51020
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/calibrate_rig.py",
+      "path": "roblox-animation/scripts/calibrate_rig.py",
+      "sha": "5f1e962d1c70b4e810b8a80e75b85ee0fa1792e2",
+      "size": 6941
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/fk_crouch.py",
+      "path": "roblox-animation/scripts/fk_crouch.py",
+      "sha": "b1deb6d8805766ed2089ae613eca727fc0920091",
+      "size": 3613
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/fk_probe.py",
+      "path": "roblox-animation/scripts/fk_probe.py",
+      "sha": "4132b95d0ef5bf24193869527ff3c5f444187990",
+      "size": 10843
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/luau/dump_kfs.luau",
+      "path": "roblox-animation/scripts/luau/dump_kfs.luau",
+      "sha": "bbcadc7d291c54143ee215fa7a80a614c719c5c9",
+      "size": 1573
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/probe_bone.py",
+      "path": "roblox-animation/scripts/probe_bone.py",
+      "sha": "48f5ef7dee87e61254bf888f3af7b8f74e64379e",
+      "size": 3350
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/r6_clip.py",
+      "path": "roblox-animation/scripts/r6_clip.py",
+      "sha": "d89b515b7cd1d9bca634ad91ebcf9787139a45a9",
+      "size": 15711
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/r6_joint.py",
+      "path": "roblox-animation/scripts/r6_joint.py",
+      "sha": "439d0261b8318f9460187b42fb2eb26a0fa2022a",
+      "size": 4331
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/r6_luau.py",
+      "path": "roblox-animation/scripts/r6_luau.py",
+      "sha": "4cf23803d30cb3111107600bab9b8103613e6b2f",
+      "size": 8993
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/rbx_axis_check.py",
+      "path": "roblox-animation/scripts/rbx_axis_check.py",
+      "sha": "18b8d444918f719bf3756f45c3010c798334744a",
+      "size": 9361
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/sweep_control.py",
+      "path": "roblox-animation/scripts/sweep_control.py",
+      "sha": "cc707798bdee8a0e53aea2a8793126f7222b939d",
+      "size": 6410
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/to_roblox.py",
+      "path": "roblox-animation/scripts/to_roblox.py",
+      "sha": "dce72d67d06077ddc778568de4cd8c4c260c4169",
+      "size": 13172
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-animation/scripts/upload_animation.py",
+      "path": "roblox-animation/scripts/upload_animation.py",
+      "sha": "752a3f84cbf29b2ddab2baa83202553b5be361b3",
+      "size": 9285
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "LICENSE.txt",
+      "path": "roblox-animation/LICENSE.txt",
+      "sha": "f988ad7ee2d870f0df7e1ecd6e87c83d49e50c2a",
+      "size": 728
+    },
+    {
+      "repo": "EL4CTEO/roblox-skills",
+      "revision": "f94b0e499c124c11b30cd2cc0a57267090943049",
+      "source": "skills/roblox-performance/SKILL.md",
+      "path": "roblox-performance/SKILL.md",
+      "sha": "e1f3c66d7b5b8028a0398a84bd9922dc6ef23e2b",
+      "size": 7908
+    },
+    {
+      "repo": "EL4CTEO/roblox-skills",
+      "revision": "f94b0e499c124c11b30cd2cc0a57267090943049",
+      "source": "skills/roblox-performance/references/profiling.md",
+      "path": "roblox-performance/references/profiling.md",
+      "sha": "0ea1879a74c8f184bcaf274568e58115d46f8f3a",
+      "size": 2935
+    },
+    {
+      "repo": "EL4CTEO/roblox-skills",
+      "revision": "f94b0e499c124c11b30cd2cc0a57267090943049",
+      "source": "LICENSE",
+      "path": "roblox-performance/LICENSE",
+      "sha": "3f709c423026e30972b83813fc8a58a71495abf0",
+      "size": 1064
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/SKILL.md",
+      "path": "roblox-mesh-vfx/SKILL.md",
+      "sha": "35db9c34aa71aba61cbb090760fdb7487bda5dab",
+      "size": 9702
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/default.project.json",
+      "path": "roblox-mesh-vfx/default.project.json",
+      "sha": "d4f302b6850d3af6af1b4040271a8ab2fc0ac8c5",
+      "size": 561
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/architecture.md",
+      "path": "roblox-mesh-vfx/references/architecture.md",
+      "sha": "521a172cc34a3c01b950f62017d87b435f86da2e",
+      "size": 4020
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/blender_pipeline.md",
+      "path": "roblox-mesh-vfx/references/blender_pipeline.md",
+      "sha": "85e5a396ff2d9781c5722e7d9acfe094c62adc0f",
+      "size": 2435
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/hitstop_and_camera.md",
+      "path": "roblox-mesh-vfx/references/hitstop_and_camera.md",
+      "sha": "042d3d6a8f578dad43c91a2aea9f66a8184b86e9",
+      "size": 3387
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/mesh_animation_guide.md",
+      "path": "roblox-mesh-vfx/references/mesh_animation_guide.md",
+      "sha": "59e3f85c9f9d2c2b7ce6fb89fb87e4fa2dd0669e",
+      "size": 3800
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/particles_beams_trails.md",
+      "path": "roblox-mesh-vfx/references/particles_beams_trails.md",
+      "sha": "df7f56e15d553a42e508c025a6f66d4a104c2f26",
+      "size": 2615
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/performance.md",
+      "path": "roblox-mesh-vfx/references/performance.md",
+      "sha": "6b20204ecd03793bfcf7a475b208c9bebe4d63ed",
+      "size": 2169
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/references/uv_scrolling_guide.md",
+      "path": "roblox-mesh-vfx/references/uv_scrolling_guide.md",
+      "sha": "f4f1efef3d84fec240c2e10ba6857105199389ff",
+      "size": 2328
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/client/VFXBootstrap.client.luau",
+      "path": "roblox-mesh-vfx/src/client/VFXBootstrap.client.luau",
+      "sha": "de6af55d61baab496d698d26bf137d9c2bb10fcf",
+      "size": 266
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/demo/client/DemoClient.client.luau",
+      "path": "roblox-mesh-vfx/src/demo/client/DemoClient.client.luau",
+      "sha": "00b09310fca6767858fe473281157f15c4dd6d7e",
+      "size": 3335
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/demo/server/DemoServer.server.luau",
+      "path": "roblox-mesh-vfx/src/demo/server/DemoServer.server.luau",
+      "sha": "4bec5442f8bd2ae0d8e598dc5a39d5e49ba2480d",
+      "size": 5134
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/demo/shared/DemoMoves.luau",
+      "path": "roblox-mesh-vfx/src/demo/shared/DemoMoves.luau",
+      "sha": "f6a5b2e47d377ac8834f91bc58716a36de1024fb",
+      "size": 971
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/server/Main.server.luau",
+      "path": "roblox-mesh-vfx/src/server/Main.server.luau",
+      "sha": "b78b11f41c1da5415167d24e1628357024ae7a8b",
+      "size": 185
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/server/VFXService.luau",
+      "path": "roblox-mesh-vfx/src/server/VFXService.luau",
+      "sha": "2166ed722e8390fe5cda2fd4a003d6c2383a0c9d",
+      "size": 7404
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Animator.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Animator.luau",
+      "sha": "df145baebd8e13fc6183335e3e8d6f540629450f",
+      "size": 5912
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Assets.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Assets.luau",
+      "sha": "7465bc88a3b584a46601cd5155a741cdada33ff3",
+      "size": 4064
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/BeamArc.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/BeamArc.luau",
+      "sha": "8a31dd69feebe89326c1c18d68785addb5a50e67",
+      "size": 4444
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/CameraShaker.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/CameraShaker.luau",
+      "sha": "e330dbe099f0a110d4b082dbc92eb8df2e2b7c2c",
+      "size": 6514
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Client.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Client.luau",
+      "sha": "962f810e2b9d6de4a4ade82ad1b8a8ce1d7e5a52",
+      "size": 5071
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Ease.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Ease.luau",
+      "sha": "c57d382c5bccda3a148f799a91b5a8c2f5f72046",
+      "size": 4064
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Effects/CraterRocks.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Effects/CraterRocks.luau",
+      "sha": "1cd8639f4a9764598a7bec0b47c8274f25b26d2f",
+      "size": 7875
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Effects/GroundSlam.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Effects/GroundSlam.luau",
+      "sha": "ff84c1ed6fd29962bab305a66b4b74074806023b",
+      "size": 1880
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Effects/ImpactBurst.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Effects/ImpactBurst.luau",
+      "sha": "5deb6cfecfb09636e4fe6339f945874cc62dad00",
+      "size": 5799
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Effects/Shockwave.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Effects/Shockwave.luau",
+      "sha": "64ccf1f98e3d5a8e83f22342e0d9a5d14e33f052",
+      "size": 5781
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Effects/Slash.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Effects/Slash.luau",
+      "sha": "c828b25b3e00ec37edff119415f7fe09a82c3692",
+      "size": 5654
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Fade.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Fade.luau",
+      "sha": "cbf4ae9b53c7f61c796b2064c66f0da97390a574",
+      "size": 4277
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Hitstop.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Hitstop.luau",
+      "sha": "9069894fbc6318a500b83838a51fe5d26812776c",
+      "size": 3595
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Net.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Net.luau",
+      "sha": "51c0639bf3c28b30bbb88525906be1c6a10409b0",
+      "size": 4785
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Particles.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Particles.luau",
+      "sha": "633b2609baea8fbb89956a6d59a3ddd07e2972ee",
+      "size": 6200
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Pool.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Pool.luau",
+      "sha": "92c74693a5101651a31c11e41c7e4fbc79e82da4",
+      "size": 4376
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Registry.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Registry.luau",
+      "sha": "644fa1ba3dbd4f17cb01137316ba3a46bd92532a",
+      "size": 823
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/ScreenFlash.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/ScreenFlash.luau",
+      "sha": "7d71e2be36e0d4a354389c21a1930fb791d74b4d",
+      "size": 4820
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Spring.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Spring.luau",
+      "sha": "79fdb9fddc8eec45655ccb779c29c8d28ef40453",
+      "size": 3112
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/TextureAnimator.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/TextureAnimator.luau",
+      "sha": "102f4cca69c2431119a32fd978fff4b0178820e3",
+      "size": 4259
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/Types.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/Types.luau",
+      "sha": "0c37173358996f65a1686ffbf6863568bf10d3ee",
+      "size": 1173
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/src/shared/VFX/VFXMath.luau",
+      "path": "roblox-mesh-vfx/src/shared/VFX/VFXMath.luau",
+      "sha": "078d29054b6f43d990b39f27984e7e6470f92c41",
+      "size": 5250
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/tests/math.spec.luau",
+      "path": "roblox-mesh-vfx/tests/math.spec.luau",
+      "sha": "d9ce1b3c76a8acd4968595773374b31921e7f8e0",
+      "size": 5561
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/tests/net.spec.luau",
+      "path": "roblox-mesh-vfx/tests/net.spec.luau",
+      "sha": "2c6ce732a5e57440777834cc5a6c52f00050f31e",
+      "size": 3655
+    },
+    {
+      "repo": "Willikk/Roblox",
+      "revision": "c77902e8f59cc0ca1f3130906ae51c92d9de310e",
+      "source": "skills/roblox-mesh-vfx/tests/runtime.spec.luau",
+      "path": "roblox-mesh-vfx/tests/runtime.spec.luau",
+      "sha": "207167170a86fd0980419d546f6b4b01975fa637",
+      "size": 5148
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/SKILL.md",
+      "path": "scenario-roblox-animation/SKILL.md",
+      "sha": "a82a781e215283188811e8a56e638e138fd144e1",
+      "size": 18604
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/characters.md",
+      "path": "scenario-roblox-animation/references/characters.md",
+      "sha": "d5173c9b606c82916556790af3871429a4f058fa",
+      "size": 33706
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/critique.md",
+      "path": "scenario-roblox-animation/references/critique.md",
+      "sha": "0532718761dcaa330d747f385ee20ecdf93730b7",
+      "size": 10186
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/expert-notes.md",
+      "path": "scenario-roblox-animation/references/expert-notes.md",
+      "sha": "442a38deba0945d1bf918f8f9d041e2319b4cfe3",
+      "size": 14172
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/gui-paths.md",
+      "path": "scenario-roblox-animation/references/gui-paths.md",
+      "sha": "a4f7d42279903efeefbf52c40f68374428eba9f9",
+      "size": 8925
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/procedures.md",
+      "path": "scenario-roblox-animation/references/procedures.md",
+      "sha": "bb9e2ad7f7be64193f909d4354a889d2624307da",
+      "size": 69393
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/references/sources.md",
+      "path": "scenario-roblox-animation/references/sources.md",
+      "sha": "b9bf131a9d99fccf1c9a82e83e919d3af3b58258",
+      "size": 14234
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/agentkit/animation/AnimAudit.luau",
+      "path": "scenario-roblox-animation/scripts/agentkit/animation/AnimAudit.luau",
+      "sha": "902ac6a7d3c561cae3afd5b42e92310b3c069024",
+      "size": 9548
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/agentkit/animation/AnimClip.luau",
+      "path": "scenario-roblox-animation/scripts/agentkit/animation/AnimClip.luau",
+      "sha": "e865fec839b0d859e973a911e2345251740a4cfe",
+      "size": 10375
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/agentkit/animation/AnimFace.luau",
+      "path": "scenario-roblox-animation/scripts/agentkit/animation/AnimFace.luau",
+      "sha": "85f741fdd9202a056f743e141ea4b300ed5a0ab3",
+      "size": 6636
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/agentkit/animation/AnimIK.luau",
+      "path": "scenario-roblox-animation/scripts/agentkit/animation/AnimIK.luau",
+      "sha": "5132cec71f08638994bf1f1c5df674760f269041",
+      "size": 7524
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/agentkit/animation/AnimRig.luau",
+      "path": "scenario-roblox-animation/scripts/agentkit/animation/AnimRig.luau",
+      "sha": "f909903669398e46411719cb36f7c64d817f770b",
+      "size": 13250
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/blender_roblox_anim.py",
+      "path": "scenario-roblox-animation/scripts/blender_roblox_anim.py",
+      "sha": "b0c3c604e90268594e7b442692e4c2115c5511ee",
+      "size": 14421
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-animation/scripts/rbx_animation.py",
+      "path": "scenario-roblox-animation/scripts/rbx_animation.py",
+      "sha": "daefcf150ed60db195e3f26e9fa90f818a42705a",
+      "size": 8771
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "LICENSE",
+      "path": "scenario-roblox-animation/LICENSE",
+      "sha": "05676553d9d10a0effff673b507b4fcfed652c17",
+      "size": 1070
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/SKILL.md",
+      "path": "scenario-roblox-gameplay/SKILL.md",
+      "sha": "7d09411181fb43a9270ee66f7a25352012a75419",
+      "size": 20801
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/references/critique.md",
+      "path": "scenario-roblox-gameplay/references/critique.md",
+      "sha": "d90e5f83e18d1b8dd44572517e0d20d7b37fb17e",
+      "size": 4057
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/references/expert-notes.md",
+      "path": "scenario-roblox-gameplay/references/expert-notes.md",
+      "sha": "2e8a633495f6e278c29c4357a9b9375f1b78e67f",
+      "size": 12479
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/references/gui-paths.md",
+      "path": "scenario-roblox-gameplay/references/gui-paths.md",
+      "sha": "ed3c22f00158cf39cb0b72db951bf43647eccfee",
+      "size": 8564
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/references/procedures.md",
+      "path": "scenario-roblox-gameplay/references/procedures.md",
+      "sha": "e694663382f023d6171f46e632e556ea9fd09df0",
+      "size": 36812
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/references/sources.md",
+      "path": "scenario-roblox-gameplay/references/sources.md",
+      "sha": "2fc65ff6986a379cc99b4c5d1a72c021a7bf1980",
+      "size": 13803
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/Car.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/Car.luau",
+      "sha": "0aff071decb500af047b6122182cd275e456300e",
+      "size": 9852
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/CarSafety.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/CarSafety.luau",
+      "sha": "b85cdd098e4ea7af76eb995869941a25002ff9d1",
+      "size": 3096
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/Combo.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/Combo.luau",
+      "sha": "13eaf12585c3d5e9383930a598fed4467c14e27c",
+      "size": 3519
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/DebugDraw.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/DebugDraw.luau",
+      "sha": "e2e706cd63ffaac655a39bfc7ae227d226166975",
+      "size": 4031
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/GameplayAudit.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/GameplayAudit.luau",
+      "sha": "2b09f4087bfc64670f585ba457b22148d3b87992",
+      "size": 7773
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/GameplayInputs.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/GameplayInputs.luau",
+      "sha": "079d5b9e1dd8a66ee4695f57a5309156ab776235",
+      "size": 2756
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/Hitbox.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/Hitbox.luau",
+      "sha": "a07a9ac91800b83432d94acf3ba3e66ccaa33348",
+      "size": 4707
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcBrain.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcBrain.luau",
+      "sha": "027154d0646622ece25f7521d3ea30f641d2e564",
+      "size": 3241
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcPool.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcPool.luau",
+      "sha": "7c45ed0216bd2a62fc6b7120328a5c5a900ae121",
+      "size": 1727
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcService.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/NpcService.luau",
+      "sha": "618a288fbb1abd7fba02c9b19abd113fc64a92f4",
+      "size": 13444
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/PathGuard.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/PathGuard.luau",
+      "sha": "170cce1e0e03d80babb34d84ccce950dc603bc53",
+      "size": 2917
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/Projectile.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/Projectile.luau",
+      "sha": "c8995300ef81099096bdc96b7e6b0963e09b1ff9",
+      "size": 2766
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/StateMachine.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/StateMachine.luau",
+      "sha": "d26c8e84ddbe7a71cae656d09ce8e09221f54710",
+      "size": 4298
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/boot/GameplayClient.client.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/boot/GameplayClient.client.luau",
+      "sha": "b53053bd306191cb54e904bb61b0b6f3ea58eb52",
+      "size": 1900
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/boot/GameplayServer.server.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/boot/GameplayServer.server.luau",
+      "sha": "75a0f6915e2f81331c012ac6fec53672a60aed81",
+      "size": 6971
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/lune_gameplay_audit.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/lune_gameplay_audit.luau",
+      "sha": "1b3fd5962abb67c3bd658f0112c913e3b9e4efa1",
+      "size": 840
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/agentkit/gameplay/lune_unit.luau",
+      "path": "scenario-roblox-gameplay/scripts/agentkit/gameplay/lune_unit.luau",
+      "sha": "d8b95c461a70b6f1560b64f944fa92ba22faaeca",
+      "size": 15683
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-gameplay/scripts/rbx_gameplay.py",
+      "path": "scenario-roblox-gameplay/scripts/rbx_gameplay.py",
+      "sha": "76e8b95b480e78bbf27511caf4cdff74b6423e67",
+      "size": 14882
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "LICENSE",
+      "path": "scenario-roblox-gameplay/LICENSE",
+      "sha": "05676553d9d10a0effff673b507b4fcfed652c17",
+      "size": 1070
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/SKILL.md",
+      "path": "scenario-roblox-expert/SKILL.md",
+      "sha": "d65c81ecf7402210d30d32abef5c99c12d463a7e",
+      "size": 20793
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/critique.md",
+      "path": "scenario-roblox-expert/references/critique.md",
+      "sha": "dd4a6fe0208c70d4b44087222a0f10a9a6370ff1",
+      "size": 2676
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/expert-notes.md",
+      "path": "scenario-roblox-expert/references/expert-notes.md",
+      "sha": "0ed05a81e2929aff3cbc7b57b29d45de4b901ea0",
+      "size": 5363
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/gui-paths.md",
+      "path": "scenario-roblox-expert/references/gui-paths.md",
+      "sha": "d2a205a6bab5bafd4b77864a9d56a4cff8862a6f",
+      "size": 6197
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/procedures.md",
+      "path": "scenario-roblox-expert/references/procedures.md",
+      "sha": "ebf9d090d65933430a6189368252b68858d0a07e",
+      "size": 26936
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/sources.md",
+      "path": "scenario-roblox-expert/references/sources.md",
+      "sha": "f351b5c23c23ee02c707928e4fa3a82eddd0e34d",
+      "size": 8976
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/references/traps.md",
+      "path": "scenario-roblox-expert/references/traps.md",
+      "sha": "fbda5113548163709852bc67d8fcf105ff8c1ef0",
+      "size": 14045
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/agentkit/Audit.luau",
+      "path": "scenario-roblox-expert/scripts/agentkit/Audit.luau",
+      "sha": "baa11b65ff0a64738e61d7651844722f83663db5",
+      "size": 16671
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/agentkit/Spec.luau",
+      "path": "scenario-roblox-expert/scripts/agentkit/Spec.luau",
+      "sha": "c5c71c1aa7f28ec2753a6ed41d4e9e46876f3408",
+      "size": 3327
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/agentkit/Stats.luau",
+      "path": "scenario-roblox-expert/scripts/agentkit/Stats.luau",
+      "sha": "bf0f700a3117690866e4658346aa0568fb446378",
+      "size": 3539
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/agentkit/lune_audit.luau",
+      "path": "scenario-roblox-expert/scripts/agentkit/lune_audit.luau",
+      "sha": "38d0501d88cd6a34dbd390b35e5e074e385605c7",
+      "size": 719
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_check.py",
+      "path": "scenario-roblox-expert/scripts/rbx_check.py",
+      "sha": "3a2355731eadbadf6867978094df4b86c05adfbb",
+      "size": 8422
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_env.py",
+      "path": "scenario-roblox-expert/scripts/rbx_env.py",
+      "sha": "d59c614fe3a2c6f532e39c623ea1c694e2a79e8e",
+      "size": 14583
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_mcp.py",
+      "path": "scenario-roblox-expert/scripts/rbx_mcp.py",
+      "sha": "ecc4b07cdbfc7a28ea994d0adc7603471c1b286d",
+      "size": 12575
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_play.py",
+      "path": "scenario-roblox-expert/scripts/rbx_play.py",
+      "sha": "f677e0bdac07572f00fb796bbccd0707cdce9a67",
+      "size": 11939
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_review.py",
+      "path": "scenario-roblox-expert/scripts/rbx_review.py",
+      "sha": "dc599fa910d206619f9a8bf0b3493443c19f63de",
+      "size": 9354
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "skills/game-engines/roblox/scenario-roblox-expert/scripts/rbx_run.py",
+      "path": "scenario-roblox-expert/scripts/rbx_run.py",
+      "sha": "497ec0953b24b95d7a0fa5b601c1e0856938b1fa",
+      "size": 9950
+    },
+    {
+      "repo": "scenario-labs/skills",
+      "revision": "94cab3f1da47841f52d4c7b3ea8583aa13dd0eb9",
+      "source": "LICENSE",
+      "path": "scenario-roblox-expert/LICENSE",
+      "sha": "05676553d9d10a0effff673b507b4fcfed652c17",
+      "size": 1070
+    },
+    {
+      "repo": "emiliancristea/roblox-dev-skills",
+      "revision": "835e42c92e1ee1dacab6dd77a6a12140e6291873",
+      "source": ".agents/skills/roblox-playtesting/SKILL.md",
+      "path": "roblox-playtesting/SKILL.md",
+      "sha": "39b556bf1738e4490f652afd19a5ed3c0d2a5289",
+      "size": 6440
+    },
+    {
+      "repo": "emiliancristea/roblox-dev-skills",
+      "revision": "835e42c92e1ee1dacab6dd77a6a12140e6291873",
+      "source": ".agents/skills/roblox-playtesting/agents/openai.yaml",
+      "path": "roblox-playtesting/agents/openai.yaml",
+      "sha": "d6adc4880769414d9e83dccba25f216580809177",
+      "size": 456
+    },
+    {
+      "repo": "emiliancristea/roblox-dev-skills",
+      "revision": "835e42c92e1ee1dacab6dd77a6a12140e6291873",
+      "source": ".agents/skills/roblox-playtesting/references/finding-format.md",
+      "path": "roblox-playtesting/references/finding-format.md",
+      "sha": "d0ca86511b15dd3db075e1f02e9338efdbc58426",
+      "size": 1863
+    },
+    {
+      "repo": "emiliancristea/roblox-dev-skills",
+      "revision": "835e42c92e1ee1dacab6dd77a6a12140e6291873",
+      "source": ".agents/skills/roblox-playtesting/references/test-charter.md",
+      "path": "roblox-playtesting/references/test-charter.md",
+      "sha": "c8cae97d8e5084e8e985d11addb06615c1d42686",
+      "size": 1734
+    },
+    {
+      "repo": "emiliancristea/roblox-dev-skills",
+      "revision": "835e42c92e1ee1dacab6dd77a6a12140e6291873",
+      "source": "LICENSE",
+      "path": "roblox-playtesting/LICENSE",
+      "sha": "bcc8e0627e67410ea869a58e119e21121616d79f",
+      "size": 1087
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "LICENSE",
+      "path": "roblox-dev/LICENSE",
+      "sha": "7aa27a461a6c773e630bc28e8edc9dcd1d02bac8",
+      "size": 1066
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "README.md",
+      "path": "roblox-dev/README.md",
+      "sha": "7360267288b496f651fd3f98410a20368e70deb4",
+      "size": 9267
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "SKILL.md",
+      "path": "roblox-dev/SKILL.md",
+      "sha": "059c1895c8fe0bed82c1db89fdd531a464869a02",
+      "size": 9684
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "THIRD_PARTY_NOTICES.md",
+      "path": "roblox-dev/THIRD_PARTY_NOTICES.md",
+      "sha": "11128efef2fedaa9ed213b795eb8a2d0304936dd",
+      "size": 2335
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/cheer.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/cheer.rbxm",
+      "sha": "0e361b0222a1d030ccbd3e8fbfb8a234151e5a10",
+      "size": 16327
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/climb.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/climb.rbxm",
+      "sha": "6ff80a5f981ddc82f0138fb2c3327fbc0c88fabe",
+      "size": 8691
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance1.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance1.rbxm",
+      "sha": "306bd5ba28b534b1e6e8ac22e86e2e3b36764b60",
+      "size": 13065
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance1b.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance1b.rbxm",
+      "sha": "64d50592cc0e2cb65435d57a78c7fc0e82f1f728",
+      "size": 13094
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance1c.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance1c.rbxm",
+      "sha": "e885f69e238b81fbc67b70fb92ae25a4e1d046bc",
+      "size": 13094
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance2.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance2.rbxm",
+      "sha": "684c37a5ec15046af614d4759ffa8a630cd36260",
+      "size": 18911
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance2b.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance2b.rbxm",
+      "sha": "81c145618abb9c5872eb1b1c9af0871888b28ccd",
+      "size": 18957
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance2c.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance2c.rbxm",
+      "sha": "d534ca073b1480a7a9ee63b95023edc34a917996",
+      "size": 18957
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance3.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance3.rbxm",
+      "sha": "395933b3b7801fc6757602e2bcaaeff737c8241e",
+      "size": 14059
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance3b.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance3b.rbxm",
+      "sha": "45b4d08ae372862e8326dcb19c8399f7788ae0a4",
+      "size": 14080
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/dance3c.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/dance3c.rbxm",
+      "sha": "ba841f07c6dd7ce3a079ad5e2fb6b78b6f4c62e7",
+      "size": 14080
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/fall.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/fall.rbxm",
+      "sha": "eae74b20cce9a321a3f3987de84bdc2e24c3e314",
+      "size": 6436
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/idle.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/idle.rbxm",
+      "sha": "7b44363285b4fb37c7e9bf4885fd079d525270b2",
+      "size": 4029
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/idle2.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/idle2.rbxm",
+      "sha": "84b9d85218ea7a202a87748e9cd9051dcd699d42",
+      "size": 3871
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/jump.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/jump.rbxm",
+      "sha": "11da026cb7b2a64b878a6e49c4dd2e2f873881ae",
+      "size": 9441
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/laugh.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/laugh.rbxm",
+      "sha": "7a950859da6ef6a3170133c65964923de25c23dd",
+      "size": 16297
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/point.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/point.rbxm",
+      "sha": "dca7975a906d859538cc463689ca430c66b103c5",
+      "size": 12316
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/sit.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/sit.rbxm",
+      "sha": "52b7304c950cf337f445d542049ec1bb0c150f8d",
+      "size": 2131
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/toollunge.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/toollunge.rbxm",
+      "sha": "1e3134e03984722eaab41572c8c8f59bbc3c89b6",
+      "size": 2143
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/toolnone.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/toolnone.rbxm",
+      "sha": "c96e13e0f36926bf1542cb2691d85de11099f41a",
+      "size": 2058
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/toolslash.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/toolslash.rbxm",
+      "sha": "f3beec0bd855f18f99c5b2202a8bfd66b6f93db2",
+      "size": 2648
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/walk.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/walk.rbxm",
+      "sha": "0d54acc508ed90b344908b94be319a6f1a6552ba",
+      "size": 11853
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/r6-on-r15/clips/wave.rbxm",
+      "path": "roblox-dev/assets/r6-on-r15/clips/wave.rbxm",
+      "sha": "8e3d4cd74d68c2c9900fd9d98c01f8740c967429",
+      "size": 21312
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/templates/GAME_DESIGN_PLAN.md",
+      "path": "roblox-dev/assets/templates/GAME_DESIGN_PLAN.md",
+      "sha": "7ae9fb11ac4a4412bedec570df4d704900ba81dc",
+      "size": 7657
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "assets/templates/PROJECT_STRUCTURE.md",
+      "path": "roblox-dev/assets/templates/PROJECT_STRUCTURE.md",
+      "sha": "170c1301b9fc2b8f87e1fd8c53d20dad440f8775",
+      "size": 19072
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "docs/checks.md",
+      "path": "roblox-dev/docs/checks.md",
+      "sha": "ea3bab8a756f6eabd69049ba26ac649fb451d700",
+      "size": 81431
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "docs/developing.md",
+      "path": "roblox-dev/docs/developing.md",
+      "sha": "de4b7435016cd70916cdccea4b3fe4504f8cadaa",
+      "size": 4292
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "docs/scripts.md",
+      "path": "roblox-dev/docs/scripts.md",
+      "sha": "f1b478356fd9d0d9cad4d6427918f8901721e245",
+      "size": 19996
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "install/install.ps1",
+      "path": "roblox-dev/install/install.ps1",
+      "sha": "2d1ea1e2809ae62b748bda4ef58891cee878e54b",
+      "size": 11910
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "install/install.sh",
+      "path": "roblox-dev/install/install.sh",
+      "sha": "d58c55132e888679cb5368eae7b7cee220e71595",
+      "size": 8555
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/animation.md",
+      "path": "roblox-dev/references/animation/animation.md",
+      "sha": "f76e36870ddd1003f0ef6378edfc1e63316f2496",
+      "size": 13882
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/blender.md",
+      "path": "roblox-dev/references/animation/blender.md",
+      "sha": "d2be3482771f68446c42002ab8cd872666741963",
+      "size": 12863
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r15-motion.md",
+      "path": "roblox-dev/references/animation/r15-motion.md",
+      "sha": "664add702e5161ce2e41dabad806792d5e4c1d6f",
+      "size": 2623
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r6-default-set.md",
+      "path": "roblox-dev/references/animation/r6-default-set.md",
+      "sha": "9f92c7ac877a5b2a26a640b7a8da04055df1266a",
+      "size": 6700
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r6-ik.md",
+      "path": "roblox-dev/references/animation/r6-ik.md",
+      "sha": "e3cb2e3ed52d9f3a88627053007df00567ccafb8",
+      "size": 3591
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r6-on-r15.md",
+      "path": "roblox-dev/references/animation/r6-on-r15.md",
+      "sha": "7a6f39d7d5407feed7037311bf3a3b7dd910a3d3",
+      "size": 14924
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r6-walk.md",
+      "path": "roblox-dev/references/animation/r6-walk.md",
+      "sha": "2ac6a835257b72d9b3adf03f633e9ba371302345",
+      "size": 3369
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/animation/r6-weapons.md",
+      "path": "roblox-dev/references/animation/r6-weapons.md",
+      "sha": "96cae9b3059d695e5a3908b4d3a16eac65b774d3",
+      "size": 5191
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/audio.md",
+      "path": "roblox-dev/references/art/audio.md",
+      "sha": "ac6461fadd566174621d803bccf94f98e12bbae1",
+      "size": 4648
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/baking.md",
+      "path": "roblox-dev/references/art/baking.md",
+      "sha": "250b19e527e310f81f8472360bdad3bc2f409121",
+      "size": 2060
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/cutscenes.md",
+      "path": "roblox-dev/references/art/cutscenes.md",
+      "sha": "4e37ab76988806e61955478bd9a36628187cae06",
+      "size": 12937
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/environment.md",
+      "path": "roblox-dev/references/art/environment.md",
+      "sha": "80712cd88b91dadd13fbe2e9e7efc6294c6c0f13",
+      "size": 6042
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/hit-vfx.md",
+      "path": "roblox-dev/references/art/hit-vfx.md",
+      "sha": "f15dbb942308a0a40664b21e21520918d734ea38",
+      "size": 3173
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/modeling.md",
+      "path": "roblox-dev/references/art/modeling.md",
+      "sha": "deb264be156d10be410b2bd0cc356a20c9a75633",
+      "size": 17125
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/anime-ink.md",
+      "path": "roblox-dev/references/art/styles/anime-ink.md",
+      "sha": "78ecfc73a9aa8705101a3c6df4465784b0f7644d",
+      "size": 3150
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/hand-painted.md",
+      "path": "roblox-dev/references/art/styles/hand-painted.md",
+      "sha": "9c822b627878597a6c53a1a10b661310e8e5bba3",
+      "size": 1468
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/low-poly.md",
+      "path": "roblox-dev/references/art/styles/low-poly.md",
+      "sha": "8de9e28e153c7f7d8b04eafe5f336f605810a44d",
+      "size": 1246
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/realistic.md",
+      "path": "roblox-dev/references/art/styles/realistic.md",
+      "sha": "84e8beff99b2cae360830283236cbb5420acdc01",
+      "size": 1567
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/simulator-cartoon.md",
+      "path": "roblox-dev/references/art/styles/simulator-cartoon.md",
+      "sha": "1fca7b464cd13d3eca018bc2910d36b196c1784b",
+      "size": 1580
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/styles/stud.md",
+      "path": "roblox-dev/references/art/styles/stud.md",
+      "sha": "91859e80f57d995100976bf8ec7ebe3dd9a2350a",
+      "size": 1450
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/vfx.md",
+      "path": "roblox-dev/references/art/vfx.md",
+      "sha": "eefafb6bc9619204979e05875be758c2b67fd141",
+      "size": 17782
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/video.md",
+      "path": "roblox-dev/references/art/video.md",
+      "sha": "7286a4ab515d62a490e2f2cf0dfce8bb22f66be7",
+      "size": 7478
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/art/visual-style.md",
+      "path": "roblox-dev/references/art/visual-style.md",
+      "sha": "a6b4d256a734e4b6ee30a6e93355dd475b66bdab",
+      "size": 4543
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/code/coding.md",
+      "path": "roblox-dev/references/code/coding.md",
+      "sha": "2f0bbc6edef4b8b849d7d00b1b3ce10de500554b",
+      "size": 11587
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/code/gameplay.md",
+      "path": "roblox-dev/references/code/gameplay.md",
+      "sha": "06f5904ba3cc349f1647f1878e876cccb39eaeff",
+      "size": 6918
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/code/performance.md",
+      "path": "roblox-dev/references/code/performance.md",
+      "sha": "646a3482696b54f8d527cf3e9afca0a910828889",
+      "size": 2933
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/code/rojo-project.md",
+      "path": "roblox-dev/references/code/rojo-project.md",
+      "sha": "399e1583b12d1df710888666cfc3f1b65f17b095",
+      "size": 10708
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/code/studio-testing.md",
+      "path": "roblox-dev/references/code/studio-testing.md",
+      "sha": "61b19914d30f4f3b7762878a9355cdb18d6dde04",
+      "size": 11360
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/codex/handoff.md",
+      "path": "roblox-dev/references/codex/handoff.md",
+      "sha": "ee3cbcc4cb314707bc6cd83dbd8388ad2de99877",
+      "size": 16222
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/design/analytics.md",
+      "path": "roblox-dev/references/design/analytics.md",
+      "sha": "1471a7ee67df84d9b0165ee2ca438bb93be1966f",
+      "size": 15983
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/design/game-design.md",
+      "path": "roblox-dev/references/design/game-design.md",
+      "sha": "aea162260d64507c6998007d70d742029e582659",
+      "size": 23889
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/design/game-economy.md",
+      "path": "roblox-dev/references/design/game-economy.md",
+      "sha": "e76d3b20fd4b341fc97c3e7620e25d358e8aad68",
+      "size": 9494
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/design/journeys.md",
+      "path": "roblox-dev/references/design/journeys.md",
+      "sha": "9493db7e1f0d8157a50158a7e629381052286f22",
+      "size": 5087
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/design/onboarding.md",
+      "path": "roblox-dev/references/design/onboarding.md",
+      "sha": "bcb32e7812790945f8ebcaba7bfc09bb3e9fee03",
+      "size": 3855
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/learning/learning.md",
+      "path": "roblox-dev/references/learning/learning.md",
+      "sha": "a3a9f65fcc760c2e915ed5b4a87b0c073a4d3815",
+      "size": 3427
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/learning/quality-update.md",
+      "path": "roblox-dev/references/learning/quality-update.md",
+      "sha": "6061484763621fd7e924c7224f6079c474b5c0d0",
+      "size": 2739
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/catalog.md",
+      "path": "roblox-dev/references/rigs/catalog.md",
+      "sha": "0841ecc0b075c5336ca0ffe76c28909c4e0508b1",
+      "size": 6933
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/custom-creatures.md",
+      "path": "roblox-dev/references/rigs/custom-creatures.md",
+      "sha": "4785fc3872dd2058f86e5d2f80f1f135a58c7503",
+      "size": 5760
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/gear.md",
+      "path": "roblox-dev/references/rigs/gear.md",
+      "sha": "1662f5129270ad9e2509045cb5b1d028480f1f94",
+      "size": 4804
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/hair.md",
+      "path": "roblox-dev/references/rigs/hair.md",
+      "sha": "ee55dd6f882fd7f678b2945e4b455a6f73c47473",
+      "size": 3706
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/rigs.md",
+      "path": "roblox-dev/references/rigs/rigs.md",
+      "sha": "0408bfcdf1c46c26098e8f4cede4754b6b9e23cc",
+      "size": 15048
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/rigs/skins.md",
+      "path": "roblox-dev/references/rigs/skins.md",
+      "sha": "ff5fb810023d5ed6039a5c4d0887526d825c5b64",
+      "size": 16367
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/safety/assets.md",
+      "path": "roblox-dev/references/safety/assets.md",
+      "sha": "2d9b5e98898d6f4d5993b333f6eade1941db0639",
+      "size": 6983
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/safety/characters.md",
+      "path": "roblox-dev/references/safety/characters.md",
+      "sha": "2db67332b6da402a4df79ecfee8aa5256ab86333",
+      "size": 12536
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/safety/no-gore.md",
+      "path": "roblox-dev/references/safety/no-gore.md",
+      "sha": "60d080f0b74ca3c2555f2738794b8c139a5685ff",
+      "size": 5468
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/safety/stylized-violence.md",
+      "path": "roblox-dev/references/safety/stylized-violence.md",
+      "sha": "32eabd098d9360ab91ed34032a9e167988a87ac2",
+      "size": 3800
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/safety/uploading.md",
+      "path": "roblox-dev/references/safety/uploading.md",
+      "sha": "3315f33988139009d31e02f880c950085aa1b73d",
+      "size": 5712
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/icons.md",
+      "path": "roblox-dev/references/ui/icons.md",
+      "sha": "8f3d97d24847b90338d1b4de92995b3b32db0ac5",
+      "size": 8718
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/lists.md",
+      "path": "roblox-dev/references/ui/lists.md",
+      "sha": "f99164202188a31bb82b646c8b2d20e9a33b6fb8",
+      "size": 2265
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/runtime.md",
+      "path": "roblox-dev/references/ui/runtime.md",
+      "sha": "10ab47b1cc423882735f6e42493f462f3720092f",
+      "size": 5262
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/surface.md",
+      "path": "roblox-dev/references/ui/surface.md",
+      "sha": "b3f1e6e33c975c87b701b61a087d4923141fd193",
+      "size": 2914
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/topbar.md",
+      "path": "roblox-dev/references/ui/topbar.md",
+      "sha": "112a924e062e794890e3c3d093cd1dae14590dd8",
+      "size": 4057
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "references/ui/ui.md",
+      "path": "roblox-dev/references/ui/ui.md",
+      "sha": "eda4fa67387c0659efaada0753bc2f8cc7ad2e5f",
+      "size": 20049
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "rokit.toml",
+      "path": "roblox-dev/rokit.toml",
+      "sha": "0a052a3f7c9bb8e9d4a552eba4e6d7bb4a42b36d",
+      "size": 75
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/AnimationInspector.luau",
+      "path": "roblox-dev/scripts/AnimationInspector.luau",
+      "sha": "b697efaa440734528c55cc3e0eb7b412968a4fcd",
+      "size": 61618
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/AssetAudit.luau",
+      "path": "roblox-dev/scripts/AssetAudit.luau",
+      "sha": "0eef877f287f19d5385b1925a071d6b96b3df5ad",
+      "size": 8673
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/ClipImport.luau",
+      "path": "roblox-dev/scripts/ClipImport.luau",
+      "sha": "722c92f897cb8fa365cdebe4c8b6b21b65d98893",
+      "size": 9571
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/ColourCode.luau",
+      "path": "roblox-dev/scripts/ColourCode.luau",
+      "sha": "f4ea48906d9c002744de963fbf4535ceca546e2c",
+      "size": 4954
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/GameInventory.luau",
+      "path": "roblox-dev/scripts/GameInventory.luau",
+      "sha": "b34526eb3a7c32a3209bd3df049574c6da68ef7c",
+      "size": 9628
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/PacingSim.luau",
+      "path": "roblox-dev/scripts/PacingSim.luau",
+      "sha": "92641e3e7f063efb28e4f3084ffba7be132540eb",
+      "size": 20330
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/ParticlePlayer.luau",
+      "path": "roblox-dev/scripts/ParticlePlayer.luau",
+      "sha": "21150d6bc16ade6d1a99d45670daeb9ca3affa62",
+      "size": 4972
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/R6OnR15.luau",
+      "path": "roblox-dev/scripts/R6OnR15.luau",
+      "sha": "c9e18805f023e71c70217c34fbfcf574758edbe4",
+      "size": 43354
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/RigAudit.luau",
+      "path": "roblox-dev/scripts/RigAudit.luau",
+      "sha": "762216637f675ae3f5e60a840790e29be213f441",
+      "size": 15097
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/RigSkin.luau",
+      "path": "roblox-dev/scripts/RigSkin.luau",
+      "sha": "9576536177d8ad9d68529532dbe68aa23428301d",
+      "size": 40386
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/TutorialGuide.luau",
+      "path": "roblox-dev/scripts/TutorialGuide.luau",
+      "sha": "26b39f3ef97f1f42cde65f41a9e86cfe28272754",
+      "size": 11273
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/UIBounds.luau",
+      "path": "roblox-dev/scripts/UIBounds.luau",
+      "sha": "0f262923bdbc289a47e43c72a3de17b73dfe0818",
+      "size": 12634
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/UIParity.luau",
+      "path": "roblox-dev/scripts/UIParity.luau",
+      "sha": "0485c86372eb8952661f860694bc04cda4faeff9",
+      "size": 9519
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/VFXInspector.luau",
+      "path": "roblox-dev/scripts/VFXInspector.luau",
+      "sha": "70006fd8d913729573781a005e19406f046bc008",
+      "size": 35204
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/ZFight.luau",
+      "path": "roblox-dev/scripts/ZFight.luau",
+      "sha": "dba7c6cdd5899629c71a3115f5662051e7016c87",
+      "size": 28214
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/blender_anim.py",
+      "path": "roblox-dev/scripts/blender_anim.py",
+      "sha": "d89feccbd37dda491343a0aedfaf1dd31e0367ae",
+      "size": 43024
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/clip_import.py",
+      "path": "roblox-dev/scripts/clip_import.py",
+      "sha": "c92d0f0144fbce878e5cd321fd588298c5a4c2a9",
+      "size": 12125
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/cleanup.mjs",
+      "path": "roblox-dev/scripts/codex/cleanup.mjs",
+      "sha": "04b95be4daaca305fd256b8b78d2a3777aebc5b5",
+      "size": 20273
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/handoff.mjs",
+      "path": "roblox-dev/scripts/codex/handoff.mjs",
+      "sha": "a06eda4afa2d2254801625077e4c9e56563be0be",
+      "size": 33170
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/handoff.sh",
+      "path": "roblox-dev/scripts/codex/handoff.sh",
+      "sha": "9fd1e27703ffb58c79433aff68b9ee0d2e90e617",
+      "size": 518
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/install.mjs",
+      "path": "roblox-dev/scripts/codex/install.mjs",
+      "sha": "0bcb75de863a9d5b8f65a46b503df49238707b0a",
+      "size": 4641
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/snapshot.mjs",
+      "path": "roblox-dev/scripts/codex/snapshot.mjs",
+      "sha": "77c9dc8712b770cf3c3387a790541a19777a3a84",
+      "size": 2249
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/state.mjs",
+      "path": "roblox-dev/scripts/codex/state.mjs",
+      "sha": "4dbc5db2c22a96be0b9ef519eec096eb77eab1c7",
+      "size": 7501
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/summarize.mjs",
+      "path": "roblox-dev/scripts/codex/summarize.mjs",
+      "sha": "9a7164b7e920dd06ebeb83e1b33c4d52a68bed97",
+      "size": 18389
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/codex/usage.mjs",
+      "path": "roblox-dev/scripts/codex/usage.mjs",
+      "sha": "1727a121c562c931867180cf27990e04bf84d9ce",
+      "size": 8344
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/export_place.luau",
+      "path": "roblox-dev/scripts/export_place.luau",
+      "sha": "dffc4ee83f29febbf839a0c9af82c51b01ff2bbe",
+      "size": 2069
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/find_blender.py",
+      "path": "roblox-dev/scripts/find_blender.py",
+      "sha": "cd33d7b5dd28f6497152f55c3e052eb635d65c09",
+      "size": 2341
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/gif_preview.py",
+      "path": "roblox-dev/scripts/gif_preview.py",
+      "sha": "0f1b97910610d48db5d94c21c7d729cd74b0e6da",
+      "size": 6182
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/icon_outlines.py",
+      "path": "roblox-dev/scripts/icon_outlines.py",
+      "sha": "c6cb01f2ff0341a0754f81e2d91f8a948e8671ff",
+      "size": 2615
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/learn.py",
+      "path": "roblox-dev/scripts/learn.py",
+      "sha": "170e88a7227124be3a78a25dfc527c30a7477747",
+      "size": 12783
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/publish_r6_clips.py",
+      "path": "roblox-dev/scripts/publish_r6_clips.py",
+      "sha": "b4cbf681b56f6a309946b69e29a1dfd9423e6a32",
+      "size": 9311
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/check_bodies.luau",
+      "path": "roblox-dev/scripts/r15_motion/check_bodies.luau",
+      "sha": "e39d85c080f1b03b4778ebe8d1537cf548215a5f",
+      "size": 2591
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/clips_common.py",
+      "path": "roblox-dev/scripts/r15_motion/clips_common.py",
+      "sha": "d995b503e29f81114bd2e76877f36973894df398",
+      "size": 6424
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/dump_rig.luau",
+      "path": "roblox-dev/scripts/r15_motion/dump_rig.luau",
+      "sha": "dfddc80825ccbe8e59003a9b30e9337b0e9b99b2",
+      "size": 3257
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/example_clips.py",
+      "path": "roblox-dev/scripts/r15_motion/example_clips.py",
+      "sha": "64d820bc68054e63fd9ab883a11d080fe28b8eb9",
+      "size": 2328
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/import_clip.luau",
+      "path": "roblox-dev/scripts/r15_motion/import_clip.luau",
+      "sha": "846e5c8f270722d4cc1feed857ae63b57c1fd5d3",
+      "size": 7237
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/motion.py",
+      "path": "roblox-dev/scripts/r15_motion/motion.py",
+      "sha": "8cbe95c3ad4143ae7154ae14c73c4955c3766092",
+      "size": 44148
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/pipeline.py",
+      "path": "roblox-dev/scripts/r15_motion/pipeline.py",
+      "sha": "0fb06ae05ca238a3d350279707649fe385fbf458",
+      "size": 8762
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r15_motion/r15_rig.py",
+      "path": "roblox-dev/scripts/r15_motion/r15_rig.py",
+      "sha": "c10cca74ee7e8a747e9c4d0c5687765af35479d8",
+      "size": 11237
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r6_on_r15.py",
+      "path": "roblox-dev/scripts/r6_on_r15.py",
+      "sha": "6069f69f51648a477b9e8082e84c2795cffd65f7",
+      "size": 11233
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/r6_rig.py",
+      "path": "roblox-dev/scripts/r6_rig.py",
+      "sha": "4054630176f5872354e9c300be901f3ae0af265f",
+      "size": 21895
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/ref_sheet.py",
+      "path": "roblox-dev/scripts/ref_sheet.py",
+      "sha": "43b90809052ecbf4d407460c95f34c38cd164a05",
+      "size": 1476
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/roblox_rig.py",
+      "path": "roblox-dev/scripts/roblox_rig.py",
+      "sha": "124518884c0047d7c5fadad6b636757539fda388",
+      "size": 14567
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/skin_ink.py",
+      "path": "roblox-dev/scripts/skin_ink.py",
+      "sha": "950f2fd9358abfdfd0a7142d983870f1caa6c2cc",
+      "size": 3684
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/skin_kit.py",
+      "path": "roblox-dev/scripts/skin_kit.py",
+      "sha": "c39633d246e809619886c94672ff057989fdea83",
+      "size": 114609
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/studio_mcp.py",
+      "path": "roblox-dev/scripts/studio_mcp.py",
+      "sha": "b604366c6e8dbab2c384bee5b5b9bc1394aeed8e",
+      "size": 13685
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/upload_asset.py",
+      "path": "roblox-dev/scripts/upload_asset.py",
+      "sha": "0d25e7e504f4a539516a62d6efd52ec4e20f26f4",
+      "size": 11096
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "scripts/watch_video.py",
+      "path": "roblox-dev/scripts/watch_video.py",
+      "sha": "4288bbe381c060438767f6a4b0520590f1f3639a",
+      "size": 48656
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "selene.toml",
+      "path": "roblox-dev/selene.toml",
+      "sha": "c4ddb460db5ca9cffb24c75c01a6fad61966bd16",
+      "size": 15
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/PacingSim.spec.luau",
+      "path": "roblox-dev/tests/PacingSim.spec.luau",
+      "sha": "dba8df57371977f844200c21d4064bb9d31359ea",
+      "size": 15139
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/blender_anim_test.py",
+      "path": "roblox-dev/tests/blender/blender_anim_test.py",
+      "sha": "705af7f419517403ab9edbbcdc911fc1d6c27bdd",
+      "size": 8549
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/r15_motion_test.py",
+      "path": "roblox-dev/tests/blender/r15_motion_test.py",
+      "sha": "86235c5acf46425f33efab2515ca4dd7c3f1b9c3",
+      "size": 2833
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/r15_rig_fixture.json",
+      "path": "roblox-dev/tests/blender/r15_rig_fixture.json",
+      "sha": "36c259de0f62b1a53e3d1112121e36615ff58fbe",
+      "size": 6981
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/r6_on_r15_fixture.json",
+      "path": "roblox-dev/tests/blender/r6_on_r15_fixture.json",
+      "sha": "bad1b6d4e85124fc42e5f2c970425259c495a557",
+      "size": 27030
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/r6_on_r15_test.py",
+      "path": "roblox-dev/tests/blender/r6_on_r15_test.py",
+      "sha": "9345bcc4eaa088c0b09126f7de2117f53bc16b90",
+      "size": 6949
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/r6_rig_test.py",
+      "path": "roblox-dev/tests/blender/r6_rig_test.py",
+      "sha": "56618f5c508c09af217dd5566d19b65d667dcf79",
+      "size": 6593
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/blender/skin_kit_test.py",
+      "path": "roblox-dev/tests/blender/skin_kit_test.py",
+      "sha": "038e7363977b9a479cb20f2d072371929807ac66",
+      "size": 34404
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/codex/fake-codex.mjs",
+      "path": "roblox-dev/tests/codex/fake-codex.mjs",
+      "sha": "919daf857d61da30d7b3c35c408806c544f3318a",
+      "size": 5386
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/codex/handoff.test.mjs",
+      "path": "roblox-dev/tests/codex/handoff.test.mjs",
+      "sha": "4438cf6f2dfd95241540a0a0a4f662228948d900",
+      "size": 47544
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/facts_check.py",
+      "path": "roblox-dev/tests/facts_check.py",
+      "sha": "84aed238e64ad216d7bdea6f1a3da71b066b991f",
+      "size": 2232
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_clip_tools.py",
+      "path": "roblox-dev/tests/python/test_clip_tools.py",
+      "sha": "6371f59c06205250975d52c7d85334f435cf0873",
+      "size": 9715
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_helpers.py",
+      "path": "roblox-dev/tests/python/test_helpers.py",
+      "sha": "c9d50dcb0a0b82873c3ecf37e541ac1a8435515b",
+      "size": 4154
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_install.py",
+      "path": "roblox-dev/tests/python/test_install.py",
+      "sha": "085b054636a0ec452829ab7fd07bee2a101f1000",
+      "size": 13081
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_learn.py",
+      "path": "roblox-dev/tests/python/test_learn.py",
+      "sha": "0debf749fb834869b15343dd8f11968bdee9f6a0",
+      "size": 13484
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_no_dates.py",
+      "path": "roblox-dev/tests/python/test_no_dates.py",
+      "sha": "7390d059ac3d4f95859884055812b9a42f6087fa",
+      "size": 1197
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_publish_r6_clips.py",
+      "path": "roblox-dev/tests/python/test_publish_r6_clips.py",
+      "sha": "3664c93869710de03d6f78e750a63eb6667a719a",
+      "size": 11449
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_r15_pipeline.py",
+      "path": "roblox-dev/tests/python/test_r15_pipeline.py",
+      "sha": "6f8d1d2bf1bc7e29c3ac7d62c5e724d971367acc",
+      "size": 2130
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_skill_shape.py",
+      "path": "roblox-dev/tests/python/test_skill_shape.py",
+      "sha": "1460c540232ce501ed6c1d75afdcab0a3cca86bb",
+      "size": 8222
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_studio_mcp.py",
+      "path": "roblox-dev/tests/python/test_studio_mcp.py",
+      "sha": "93a703a46ec401e6b6abf20754290dfda886874e",
+      "size": 8625
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_upload_asset.py",
+      "path": "roblox-dev/tests/python/test_upload_asset.py",
+      "sha": "7badabc4c31b94f1c7f06df6ea506c0059457367",
+      "size": 6757
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/python/test_watch_video.py",
+      "path": "roblox-dev/tests/python/test_watch_video.py",
+      "sha": "775e39b00c33b0d064cbd1ffc3662064cd5052ae",
+      "size": 19399
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/run.luau",
+      "path": "roblox-dev/tests/run.luau",
+      "sha": "6ef57e722083f3932d1af8286fcdad76d932a65e",
+      "size": 273
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/AnimationInspector.spec.luau",
+      "path": "roblox-dev/tests/studio/AnimationInspector.spec.luau",
+      "sha": "0123ab1e75c6675e73463f5c4398eb6fbdc883e1",
+      "size": 5802
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/ClipImport.spec.luau",
+      "path": "roblox-dev/tests/studio/ClipImport.spec.luau",
+      "sha": "f76ef9227e5200f23fe310b7419cd961f6a6c23a",
+      "size": 12924
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/ColourCode.spec.luau",
+      "path": "roblox-dev/tests/studio/ColourCode.spec.luau",
+      "sha": "3b7ec49bf866622ac378ced66e33c7afb04ac844",
+      "size": 4753
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/R6OnR15.fixture.luau",
+      "path": "roblox-dev/tests/studio/R6OnR15.fixture.luau",
+      "sha": "9351f17a21b2313955bf3738ca898df2fb4d881d",
+      "size": 3077
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/R6OnR15.spec.luau",
+      "path": "roblox-dev/tests/studio/R6OnR15.spec.luau",
+      "sha": "e60d5535d03e8339e3622f895e5afeac8c1b0f49",
+      "size": 17352
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/RigAudit.spec.luau",
+      "path": "roblox-dev/tests/studio/RigAudit.spec.luau",
+      "sha": "bb115319bc994a73928e983d724e8ddc528d31a9",
+      "size": 6111
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/RigSkin.spec.luau",
+      "path": "roblox-dev/tests/studio/RigSkin.spec.luau",
+      "sha": "e1cc04cf01008743fc490d9cb4d77a5fc42e2ad2",
+      "size": 7336
+    },
+    {
+      "repo": "Mystifine/RobloxDevSkill",
+      "revision": "e2f35e1200131dca62e1f110a9dc15531997ad79",
+      "source": "tests/studio/VFXInspector.spec.luau",
+      "path": "roblox-dev/tests/studio/VFXInspector.spec.luau",
+      "sha": "ae1b23b872d77291a3125374588c5f81344ae5e0",
+      "size": 2882
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-skills-setup/SKILL.md",
+      "path": "roblox-skills-setup/SKILL.md",
+      "sha": "a235900ae303cc0886fb9c1e9695ca2bf7133051",
+      "size": 6962
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "skills/roblox-skills-setup/scripts/check_setup.py",
+      "path": "roblox-skills-setup/scripts/check_setup.py",
+      "sha": "2eeb0b814d1b37aa1686f075d4b6a5033045c513",
+      "size": 6487
+    },
+    {
+      "repo": "SyphoDev-yt/roblox-ai-skills",
+      "revision": "5aad881d1e6553cc3671ad549fdf01b8191bdc37",
+      "source": "LICENSE.txt",
+      "path": "roblox-skills-setup/LICENSE.txt",
+      "sha": "f988ad7ee2d870f0df7e1ecd6e87c83d49e50c2a",
+      "size": 728
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "CREDITS.md",
+      "path": "roblox-vfx-animation/CREDITS.md",
+      "sha": "b5ae80ccdd845df3d73d2686225b551ce7562a68",
+      "size": 1106
+    },
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "third_party/roblox-brain-LICENSE.txt",
+      "path": "roblox-vfx-animation/third_party/roblox-brain-LICENSE.txt",
+      "sha": "1dc596ddef0c198efbe00e815bb49bb6fefb31be",
+      "size": 1069
+    }
+  ],
+  "optional_assets": [
+    {
+      "repo": "KanzeroG/roblox-vfx-animation",
+      "revision": "fb46944bfec2b4c4b1f6956d6a941502662550f0",
+      "source": "assets/VFX-Pack-KanzeroGaming.rbxm",
+      "path": "roblox-vfx-animation/assets/VFX-Pack-KanzeroGaming.rbxm",
+      "sha": "b14ad665d9d5760f93e14243de2d0d01011a0301",
+      "size": 1611240
+    }
+  ],
+  "requested_skills": [
+    "roblox-vfx-animation",
+    "roblox-performance",
+    "roblox-mesh-vfx",
+    "roblox-animation",
+    "scenario-roblox-animation",
+    "roblox-physics",
+    "roblox-animation-vfx",
+    "roblox-playtesting",
+    "scenario-roblox-gameplay",
+    "roblox-dev"
+  ],
+  "dependencies": [
+    "scenario-roblox-expert",
+    "roblox-skills-setup"
+  ]
+}

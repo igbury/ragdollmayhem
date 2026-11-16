@@ -37,6 +37,8 @@ Sfx.TRIM = {
 -- Per weapon: fire (as it is used, before anything is hit), hit (on a body), swing (a melee miss).
 -- Each is { id, pitch?, volume? }; weapons without their own clip borrow one at another pitch.
 Sfx.WEAPON = {
+	Bow = { fire = { Sfx.THROW, 1.45, 0.55 } },
+	BoxingGloves = { hit = { Sfx.PUNCH, 0.9, 0.95 }, swing = { Sfx.THROW, 1.35, 0.35 } },
 	Handgun = { fire = { Sfx.HANDGUN } },
 	Revolver = { fire = { Sfx.HANDGUN, 0.8, 1 } },
 	Shotgun = { fire = { Sfx.HANDGUN, 0.6, 1 } },
@@ -47,6 +49,7 @@ Sfx.WEAPON = {
 	Tomato = { fire = { Sfx.THROW, 1.15 } },
 	Molotov = { fire = { Sfx.THROW, 0.9 } },
 	Knife = { fire = { Sfx.KNIFE }, hit = { Sfx.KATANA_HIT, 1.35 } },
+	KnifeSlash = { hit = { Sfx.KATANA_HIT, 1.6, 0.7 }, swing = { Sfx.THROW, 1.3, 0.5 } },
 	Katana = { hit = { Sfx.KATANA_HIT }, swing = { Sfx.THROW } },
 	Pan = { hit = { Sfx.PAN_HIT }, swing = { Sfx.THROW } },
 	Bat = { hit = { Sfx.PAN_HIT, 0.8 }, swing = { Sfx.THROW, 0.85 } },

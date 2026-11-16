@@ -13,12 +13,15 @@
 -- tag: the group on the hotbar and wheel (colour), short: the word on a small slot.
 return {
 	{ id = "Fists", name = "FISTS", tag = "melee", short = "FIST" },
+	{ id = "BoxingGloves", name = "BOXING GLOVES", tag = "melee", short = "BOX", kind = "melee", hurt = "blunt", auto = true, cd = 0.30, range = 9, dmg = 1.6, push = 48 },
 	{ id = "Bat", name = "BASEBALL BAT", tag = "melee", short = "BAT", kind = "melee", hurt = "blunt", cd = 0.55, range = 11, dmg = 2.5, push = 90, chip = 2.5 },
 	{ id = "Pan", name = "FRYING PAN", tag = "melee", short = "PAN", kind = "melee", hurt = "blunt", cd = 0.6, range = 10, dmg = 2, push = 120, chip = 1.5 },
 	{ id = "Katana", name = "KATANA", tag = "melee", short = "KTN", kind = "melee", hurt = "blade", cd = 0.45, range = 12, dmg = 4, push = 40, chip = 2.5 },
 	{ id = "Axe", name = "AXE", tag = "melee", short = "AXE", kind = "melee", hurt = "blade", cd = 0.8, range = 11, dmg = 4, push = 45, chip = 3.5 },
-	{ id = "Knife", name = "THROWING KNIFE", tag = "thrown", short = "KNF", kind = "knife", hurt = "blade", cd = 0.6, range = 140, speed = 160, dmg = 3, push = 30 },
+	{ id = "Knife", name = "KNIFE", tag = "melee", short = "KNF", kind = "knife", hurt = "blade", cd = 0.6, range = 140, speed = 160, dmg = 3, push = 30,
+		slash = { id = "KnifeSlash", equipId = "Knife", cooldownGroup = "Knife", kind = "melee", hurt = "blade", cd = 0.35, range = 9, dmg = 2, push = 24 } },
 	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1, hip = 0.08 },
+	{ id = "Bow", name = "HUNTER BOW", tag = "gun", short = "BOW", kind = "bow", hurt = "blade", cd = 0.7, range = 260, dmg = 4, push = 35, speed = 190 },
 	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2, hip = 0.1 },
 	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09, hip = 0.1 },
 	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1, hip = 0.045 },
