@@ -14,8 +14,14 @@ local WeaponMeshes = {}
 
 local SPACING = 12
 
-local function fill(mesh: EditableMesh, data, offset: Vector3)
+-- noOutline: skip the comic outline shell (the pure black faces), which doubles every weapon's
+-- triangles; the icon atlas holds all weapons in one mesh and must stay under the 20k cap.
+local function fill(mesh: EditableMesh, data, offset: Vector3, noOutline: boolean?)
 	local v, n, c = {}, {}, {}
+	local black = {}
+	for i = 1, #data.c, 3 do
+		black[(i + 2) // 3] = data.c[i] == 0 and data.c[i + 1] == 0 and data.c[i + 2] == 0
+	end
 	for i = 1, #data.v, 3 do
 		table.insert(v, mesh:AddVertex(Vector3.new(data.v[i], data.v[i + 1], data.v[i + 2]) + offset))
 	end
@@ -27,11 +33,35 @@ local function fill(mesh: EditableMesh, data, offset: Vector3)
 	end
 	local f = data.f
 	for i = 1, #f, 7 do
+		if noOutline and black[f[i + 6]] then
+			continue
+		end
 		local face = mesh:AddTriangle(v[f[i]], v[f[i + 1]], v[f[i + 2]])
 		mesh:SetFaceNormals(face, { n[f[i + 3]], n[f[i + 4]], n[f[i + 5]] })
 		local color = c[f[i + 6]]
 		mesh:SetFaceColors(face, { color, color, color })
 	end
+	return v, n
+end
+
+-- The moving pieces of a built mesh: [name] = { verts = {{id, pos}}, normals = {{id, n}}, centre }.
+local function pieces(data, v, n)
+	local out = {}
+	for name, p in data.p or {} do
+		local piece = { verts = {}, normals = {}, centre = Vector3.zero }
+		local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+		for _, i in p.v do
+			local pos = Vector3.new(data.v[i * 3 - 2], data.v[i * 3 - 1], data.v[i * 3])
+			table.insert(piece.verts, { v[i], pos })
+			lo, hi = lo:Min(pos), hi:Max(pos)
+		end
+		for _, i in p.n do
+			table.insert(piece.normals, { n[i], Vector3.new(data.n[i * 3 - 2], data.n[i * 3 - 1], data.n[i * 3]) })
+		end
+		piece.centre = (lo + hi) / 2
+		out[name] = piece
+	end
+	return out
 end
 
 local function bounds(data): (Vector3, Vector3)
@@ -83,10 +113,11 @@ function WeaponMeshes.create(id: string): MeshPart?
 	end
 	if live[id] == nil then
 		live[id] = true
-		local mesh
+		local mesh, moving
 		local ok, part = pcall(function()
 			mesh = AssetService:CreateEditableMesh() -- may be refused in a live game: blocks then
-			fill(mesh, require(data), Vector3.zero)
+			local d = require(data)
+			moving = pieces(d, fill(mesh, d, Vector3.zero))
 			return meshPart(mesh, id)
 		end)
 		if not ok then
@@ -94,7 +125,7 @@ function WeaponMeshes.create(id: string): MeshPart?
 			live[id] = false
 			return nil
 		end
-		live[id] = { part = part, mesh = mesh, users = 0 }
+		live[id] = { part = part, mesh = mesh, users = 0, pieces = moving }
 	end
 	local entry = live[id]
 	if not entry then
@@ -111,6 +142,31 @@ function WeaponMeshes.create(id: string): MeshPart?
 		end
 	end)
 	return clone
+end
+
+-- The centre of a moving piece (mesh space), if the weapon's live mesh has one by that name.
+function WeaponMeshes.pieceCentre(id: string, name: string): Vector3?
+	local entry = live[id]
+	local piece = type(entry) == "table" and entry.pieces[name]
+	return piece and piece.centre or nil
+end
+
+-- Moves a piece of the weapon's live mesh (every part made from it) to off * rest, mesh space;
+-- CFrame.identity puts it back. Cheap to call every frame: an unchanged pose writes nothing.
+function WeaponMeshes.pose(id: string, name: string, off: CFrame)
+	local entry = live[id]
+	local piece = type(entry) == "table" and entry.pieces[name]
+	if not piece or (piece.off and piece.off:FuzzyEq(off, 1e-4)) then
+		return
+	end
+	piece.off = off
+	local mesh = entry.mesh
+	for _, pair in piece.verts do
+		mesh:SetPosition(pair[1], off * pair[2])
+	end
+	for _, pair in piece.normals do
+		mesh:SetNormal(pair[1], off:VectorToWorldSpace(pair[2]))
+	end
 end
 
 local atlas -- { part, at = { [id] = { centre, size } } } | true (being built) | false (failed)
@@ -130,7 +186,7 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 				local d = require(data)
 				local offset = Vector3.new(0, k * SPACING, 0)
 				local lo, hi = bounds(d)
-				fill(mesh, d, offset)
+				fill(mesh, d, offset, true)
 				at[data.Name] = { centre = offset + (lo + hi) / 2, size = hi - lo }
 			end
 			return { part = meshPart(mesh, "WeaponAtlas"), at = at }

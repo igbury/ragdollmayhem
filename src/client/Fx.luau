@@ -440,13 +440,13 @@ end
 -- Attack timelines. Delays must match server/init.server.luau.
 local TIMELINES = {}
 
-function TIMELINES.Barrage(root: BasePart, _, color: Color3)
+function TIMELINES.Barrage(root: BasePart, aim: CFrame, color: Color3)
 	for i = 1, 18 do
 		task.delay(i * 0.045, function()
 			if not root.Parent then
 				return
 			end
-			local cf = root.CFrame * CFrame.new(rng:NextNumber(-2.2, 2.2), rng:NextNumber(-1, 2), -2)
+			local cf = (aim.Rotation + root.Position) * CFrame.new(rng:NextNumber(-2.2, 2.2), rng:NextNumber(-1, 2), -2)
 			local fist = part(Enum.PartType.Block, SKIN, Enum.Material.SmoothPlastic)
 			local streak = part(Enum.PartType.Block, i % 2 == 0 and WHITE or color)
 			run(0.1, { fist, streak }, function(a)
@@ -464,7 +464,7 @@ function TIMELINES.Barrage(root: BasePart, _, color: Color3)
 	end
 	task.delay(0.84, function()
 		if root.Parent then
-			local target = root.Position + root.CFrame.LookVector * 8
+			local target = root.Position + aim.LookVector * 8
 			Fx.boom(Vector3.new(target.X, 0.5, target.Z), 6, color, "BAM!", 3)
 		end
 	end)

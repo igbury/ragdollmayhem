@@ -128,6 +128,31 @@ end
 -- while no picking may happen (menu, dead), scrollable() -> true when the mouse wheel is free
 -- (not holding a body), freeze(on) stops / restores the camera while the wheel is open.
 function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
+	-- Entries: weapons by index, then the abilities (api.attacks) from a wheel page of their own,
+	-- ability k at attackFrom + k. An ability goes on the hotbar like a weapon; taking it puts the
+	-- fists in hand (api.ability) and the next click casts it.
+	local PER = 8 -- segments on a wheel page
+	local attacks = api.attacks or {}
+	local attackFrom = math.ceil(#weapons / PER) * PER
+	local function entry(at: number)
+		return weapons[at] or (at > attackFrom and attacks[at - attackFrom]) or nil
+	end
+	local function inHand(): number
+		local a = api.held and api.held()
+		local k = a and table.find(attacks, a)
+		return k and attackFrom + k or api.get()
+	end
+	local function take(i: number)
+		if i > #weapons then
+			if api.get() ~= 1 then
+				api.set(1) -- Weapons[1], the fists
+			end
+			api.ability(entry(i))
+		else
+			api.set(i)
+		end
+	end
+
 	-- Hotbar -------------------------------------------------------------------------------
 	-- 5 slots hold a loadout; the 6th is the backpack (the wheel with every weapon). Taking one
 	-- from the backpack that is not on the bar puts it in the slot in hand.
@@ -157,12 +182,28 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	local slots = {}
 	local function fill(k: number)
 		local s = slots[k]
-		local w = weapons[loadout[k]]
+		local w = entry(loadout[k])
 		if s.vp then
 			s.vp:Destroy()
 		end
-		s.vp, s.place = icon(viewmodels[w.id] or fistSpec, s.frame, w.id)
-		s.stroke.Color = GROUP[w.tag] or GROUP.melee
+		if loadout[k] > #weapons then -- an ability: an orb in its colour
+			local orb = Instance.new("Frame")
+			orb.AnchorPoint = Vector2.new(0.5, 0.5)
+			orb.Position = UDim2.fromScale(0.5, 0.42)
+			orb.Size = UDim2.fromScale(0.42, 0.42)
+			orb.BackgroundColor3 = w.color
+			orb.ZIndex = 2
+			corner(orb, 100)
+			local ring = Instance.new("UIStroke")
+			ring.Color, ring.Thickness, ring.Transparency = w.color, 3, 0.5
+			ring.Parent = orb
+			orb.Parent = s.frame
+			s.vp = orb
+			s.place = function() end
+		else
+			s.vp, s.place = icon(viewmodels[w.id] or fistSpec, s.frame, w.id)
+		end
+		s.stroke.Color = w.color or GROUP[w.tag] or GROUP.melee
 		s.short.Text = w.short or w.id:upper()
 	end
 	local openWheel: () -> ()
@@ -199,7 +240,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		fill(k)
 		slot.Activated:Connect(function()
 			if not api.blocked() then
-				api.set(loadout[k])
+				take(loadout[k])
 			end
 		end)
 	end
@@ -241,8 +282,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	wheel.Parent = gui
 	-- a grey ring cut into PER segments, one weapon each, the pointed one lit blue, the one in
 	-- hand with a blue rim; more weapons than segments go on further pages (< 1 / 2 >).
-	local PER, R_OUT, R_IN, SLICES = 8, 260, 165, 10
-	local pages = math.ceil(#weapons / PER)
+	local R_OUT, R_IN, SLICES = 260, 165, 10
+	local pages = math.ceil((attackFrom + #attacks) / PER)
 	local ring = Instance.new("Frame")
 	ring.AnchorPoint = Vector2.new(0.5, 0.5)
 	ring.Position = UDim2.fromScale(0.5, 0.5)
@@ -318,6 +359,24 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		})
 		petals[i] = { holder = holder, place = place, page = math.ceil(i / PER), seg = (i - 1) % PER + 1 }
 	end
+	for k, a in attacks do
+		local i = attackFrom + k
+		local seg = segs[(i - 1) % PER + 1]
+		local r = (R_IN + R_OUT) / 2
+		local holder = Instance.new("Frame")
+		holder.AnchorPoint = Vector2.new(0.5, 0.5)
+		holder.Position = UDim2.new(0.5, math.cos(seg.angle) * r, 0.5, math.sin(seg.angle) * r)
+		holder.Size = UDim2.fromOffset(110, 50)
+		holder.BackgroundTransparency = 1
+		holder.ZIndex = 24
+		holder.Parent = ring
+		local name = text(holder, {
+			Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Font = Enum.Font.GothamBlack,
+			Text = a.name, TextColor3 = a.color, TextStrokeTransparency = 0.2, ZIndex = 25,
+		})
+		petals[i] = { holder = holder, page = math.ceil(i / PER), seg = (i - 1) % PER + 1,
+			place = function() name.TextTransparency = os.clock() < (a.readyAt or 0) and 0.6 or 0 end }
+	end
 	local hub = Instance.new("Frame")
 	hub.AnchorPoint = Vector2.new(0.5, 0.5)
 	hub.Position = UDim2.fromScale(0.5, 0.5)
@@ -347,7 +406,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 
 	local open = false
-	local pick: number? = api.get()
+	local pick: number? = inHand()
 	local page = 1
 	local aimAcc = Vector2.zero
 	local stick = Vector2.zero
@@ -360,7 +419,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		gui:SetAttribute("WeaponPickerOpen", on)
 		wheel.Visible = on
 		aimAcc = Vector2.zero
-		pick = api.get()
+		pick = inHand()
 		page = petals[pick].page
 		api.freeze(on)
 		TweenService:Create(wheel, TweenInfo.new(0.12), { BackgroundTransparency = on and 0.45 or 1 }):Play()
@@ -373,13 +432,13 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		show(true)
 	end
 	local function step(by: number)
-		local k = table.find(loadout, api.get()) or 1
-		api.set(loadout[(k - 1 + by) % #loadout + 1])
+		local k = table.find(loadout, inHand()) or 1
+		take(loadout[(k - 1 + by) % #loadout + 1])
 	end
 	local function flip(by: number)
 		page = (page - 1 + by) % pages + 1
 		local at = pick and (page - 1) * PER + petals[pick].seg
-		pick = at and weapons[at] and at or nil -- same segment on the new page, if it holds one
+		pick = at and entry(at) and at or nil -- same segment on the new page, if it holds one
 	end
 	for dirn, b in arrows do
 		b.Activated:Connect(function()
@@ -393,12 +452,12 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			return
 		end
 		if not table.find(loadout, i) then
-			local k = table.find(loadout, api.get()) or 1
+			local k = table.find(loadout, inHand()) or 1
 			loadout[k] = i
 			fill(k)
 		end
-		if i ~= api.get() then
-			api.set(i)
+		if i ~= inHand() then
+			take(i)
 		end
 		show(false)
 	end
@@ -429,6 +488,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			if not (api.drag and api.drag()) then -- on a dummy in reach F drags it instead
 				step(-1)
 			end
+		elseif input.KeyCode.Value >= Enum.KeyCode.One.Value and input.KeyCode.Value < Enum.KeyCode.One.Value + #loadout then
+			take(loadout[input.KeyCode.Value - Enum.KeyCode.One.Value + 1]) -- 1-5: that hotbar slot
 		elseif input.KeyCode == Enum.KeyCode.ButtonL1 then
 			step(-1)
 		elseif input.KeyCode == Enum.KeyCode.ButtonR1 then
@@ -457,7 +518,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end)
 
 	RunService.RenderStepped:Connect(function(dt)
-		local current = api.get()
+		local current = inHand()
 		local cooldown = api.cooldown()
 		packStroke.Transparency = open and 0 or 0.55
 		for k, s in slots do
@@ -499,7 +560,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 				end
 			end
 			local at = (page - 1) * PER + best
-			pick = weapons[at] and at or nil
+			pick = entry(at) and at or nil
 		end
 		for k, seg in segs do
 			local at = (page - 1) * PER + k
@@ -512,13 +573,18 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 		for i, p in petals do
 			p.holder.Visible = p.page == page
-			if i == pick then
+			if i == pick or i > #weapons then -- attacks dim while cooling down
 				p.place(dt)
 			end
 		end
-		local chosen = pick and weapons[pick]
+		local chosen = pick and entry(pick)
 		hubName.Text = chosen and chosen.name or ""
-		hubAbout.Text = chosen and ABOUT[chosen.id] or ""
+		if chosen and pick > #weapons then
+			local wait = (chosen.readyAt or 0) - os.clock()
+			hubAbout.Text = wait > 0 and string.format("Ready in %.1f s", wait) or `Ability · click to use · {chosen.cd} s cooldown`
+		else
+			hubAbout.Text = chosen and ABOUT[chosen.id] or ""
+		end
 		hubPage.Text = page .. " / " .. pages
 	end)
 end

@@ -23,6 +23,7 @@ local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
 local Impact = require(ReplicatedStorage.Shared:WaitForChild("Impact"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
+local Inspect = require(script:WaitForChild("Inspect"))
 local WeaponSway = require(script:WaitForChild("WeaponSway"))
 local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
@@ -220,6 +221,7 @@ kickParams.FilterType = Enum.RaycastFilterType.Include
 kickParams.FilterDescendantsInstances = { dummyFolder }
 local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
+local heldAbility = nil -- an Attacks entry taken from the hotbar: the hands glow its colour, a click casts it
 local lastWeaponUse = 0
 local weaponVisual = { sway = WeaponSway.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
 local recoil = 0
@@ -251,6 +253,33 @@ local KNIFE_TILT = -60 -- wrist tilt when cocked (melee rests at -25; -90 lays t
 local knifeT = 0
 local function smooth(t: number): number
 	return t * t * (3 - 2 * t)
+end
+-- Y: look the held weapon over (first person, timelines in Inspect); any action cancels it.
+local inspect = nil :: { id: string, at: number }?
+local inspectLeft = nil :: Vector3? -- camera-space point the left fist reaches for (pose.leftAt), last frame's
+-- Puts the held weapon's moving pieces where the inspect pose wants them (pose nil: back in place).
+-- meshCF: the mesh's CFrame this frame; fists: this frame's fist CFrames, for a piece handed over.
+local function posePieces(id: string, pose, viewCF: CFrame, fists, meshCF: CFrame?)
+	local names = Inspect.pieces[id]
+	if not names then
+		return
+	end
+	for _, name in names do
+		local off = pose and pose.pieces and pose.pieces[name] or CFrame.identity
+		local attach = pose and pose.attach
+		if meshCF and attach and attach.piece == name and attach.w > 0 and fists.left then
+			local c = WeaponMeshes.pieceCentre(id, name)
+			if c then -- the piece in the left fist, expressed in the mesh's own space
+				off = off:Lerp(meshCF:Inverse() * fists.left * attach.at * CFrame.new(-c), attach.w)
+			end
+		end
+		WeaponMeshes.pose(id, name, off)
+	end
+	local reach = pose and pose.leftAt
+	if meshCF and reach then -- the fist's centre sits a little under the point the palm grips
+		local off = reach.piece and pose.pieces and pose.pieces[reach.piece] or CFrame.identity
+		inspectLeft = viewCF:PointToObjectSpace(meshCF * (off * reach.point)) + Vector3.new(0, -0.2, 0)
+	end
 end
 -- The knife relative to its normal place in the hand at toss progress t: lifted on an arc, spun
 -- one and a half turns (ends upside down), sliding down so the blade ends up in the palm.
@@ -313,13 +342,13 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon (hold: weapon wheel)\nF / scroll  Previous / switch weapon\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\n1-5  Hotbar slot\nQ  Next weapon (hold: weapon wheel, last page: abilities)\nClick with an ability in hand  Use it\nF / scroll  Previous / switch weapon\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 16, 1, -16),
-	Size = UDim2.fromOffset(320, 280),
+	Size = UDim2.fromOffset(320, 320),
 })
 local controlsHint = label({
 	Text = "H  Controls",
@@ -343,12 +372,10 @@ local weaponLabel = label({
 	Position = UDim2.new(0.5, 0, 0, 84),
 	Size = UDim2.fromOffset(300, 22),
 })
-local attackByKey = {}
-for i, attack in Attacks do
-	attackByKey[attack.key] = attack
+for i, attack in Attacks do -- cast from the weapon wheel (WeaponBar); these show their cooldowns
 	attack.readyAt = 0
 	attack.label = label({
-		Text = `{i}  {attack.name}`,
+		Text = attack.name,
 		TextSize = 15,
 		TextColor3 = attack.color,
 		TextXAlignment = Enum.TextXAlignment.Right,
@@ -512,6 +539,45 @@ for _, side in { "left", "right" } do
 		t = 1,
 		x = side == "left" and -1 or 1,
 	}
+end
+
+-- A hand glowing the colour of the ability in hand: tinted (Highlight), a light and sparks on the
+-- part, built once, then switched. `color` nil or `on` false puts it out.
+local glows = setmetatable({}, { __mode = "k" }) -- [part] = { tint, light, sparks }
+local function handGlow(p: BasePart?, color: Color3?, on: boolean)
+	local g = p and glows[p]
+	if not p or (not g and not (color and on)) then
+		return
+	end
+	if not g then
+		local light = Instance.new("PointLight")
+		light.Range, light.Brightness, light.Shadows = 6, 3, false
+		light.Parent = p
+		local sparks = Instance.new("ParticleEmitter")
+		sparks.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+		sparks.LightEmission = 1
+		sparks.Rate = 30
+		sparks.Lifetime = NumberRange.new(0.2, 0.4)
+		sparks.Speed = NumberRange.new(0.3, 1.2)
+		sparks.SpreadAngle = Vector2.new(180, 180)
+		sparks.Size = NumberSequence.new(0.18, 0)
+		sparks.Transparency = NumberSequence.new(0.1, 1)
+		sparks.Parent = p
+		local tint = Instance.new("Highlight")
+		tint.DepthMode = Enum.HighlightDepthMode.Occluded
+		tint.FillTransparency = 0.35
+		tint.OutlineTransparency = 0.2
+		tint.Parent = p
+		g = { tint = tint, light = light, sparks = sparks }
+		glows[p] = g
+	end
+	local lit = color ~= nil and on
+	g.tint.Enabled, g.light.Enabled, g.sparks.Enabled = lit, lit, lit
+	if lit then
+		g.tint.FillColor, g.tint.OutlineColor = color, color
+		g.light.Color = color
+		g.sparks.Color = ColorSequence.new(color)
+	end
 end
 
 -- First-person arms are clones of the character's own hand / lower arm / upper arm, so they carry
@@ -901,7 +967,14 @@ end
 
 local toggleDrag: () -> boolean -- F on a dummy (Grabbing, below); the weapon bar asks it first
 
--- Hotbar (bottom centre) + weapon wheel (hold Q); Q tap / F / L1 R1 / the mouse wheel step through.
+local function castAbility(attack)
+	if os.clock() >= attack.readyAt and not holding then
+		attack.readyAt = os.clock() + attack.cd
+		attackRemote:FireServer(attack.id, camera.CFrame.LookVector) -- cast where the player looks
+	end
+end
+
+-- Hotbar (bottom centre) + weapon wheel (hold Q); 1-5 / Q tap / F / L1 R1 / the mouse wheel step through.
 require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
 	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
@@ -910,6 +983,7 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 		return weaponIndex
 	end,
 	set = function(i: number)
+		heldAbility = nil
 		weaponVisual.bowDrawAt = nil
 		if player.Character then player.Character:SetAttribute("LocalBowDrawAt", nil) end
 		weaponIndex = i
@@ -929,6 +1003,9 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 		end)
 	end,
 	cooldown = function(): number
+		if heldAbility then
+			return math.clamp((heldAbility.readyAt - os.clock()) / heldAbility.cd, 0, 1)
+		end
 		local cd = weaponVisual.lastCooldown or Weapons[weaponIndex].cd
 		if not cd then
 			return 0
@@ -941,6 +1018,15 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	end,
 	scrollable = function(): boolean
 		return holding == nil
+	end,
+	-- the special attacks: their own page of the wheel, and onto the hotbar like a weapon; taking
+	-- one puts the fists in hand with the hands glowing its colour, and a click casts it
+	attacks = Attacks,
+	held = function()
+		return heldAbility
+	end,
+	ability = function(attack) -- WeaponBar puts the fists (Weapons[1]) in hand first
+		heldAbility = attack
 	end,
 	-- F: true when it grabbed a dummy to drag (or let go of one), so F does not also change weapon
 	drag = function(): boolean
@@ -1186,6 +1272,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			drop(camera.CFrame.LookVector * THROW_SPEED)
 			return
 		end
+		if heldAbility then
+			castAbility(heldAbility)
+			return
+		end
 		punching = true
 		local weapon = Weapons[weaponIndex]
 		if weapon.kind == "bow" then
@@ -1213,11 +1303,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
 		aiming = true
-	elseif attackByKey[input.KeyCode] then
-		local attack = attackByKey[input.KeyCode]
-		if os.clock() >= attack.readyAt and not holding then
-			attack.readyAt = os.clock() + attack.cd
-			attackRemote:FireServer(attack.id)
+	elseif input.KeyCode == Enum.KeyCode.Y or input.KeyCode == Enum.KeyCode.DPadUp then
+		local weapon = Weapons[weaponIndex]
+		if (HOLD[weapon.id] or weapon.id == "BoxingGloves") and isFirstPerson() and not holding then
+			inspect = { id = weapon.id, at = os.clock() }
 		end
 	elseif input.KeyCode == Enum.KeyCode.E then
 		toggleGrab()
@@ -2503,7 +2592,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	local turnFree = wall == nil and os.clock() > flipUntil
 	local out = Weapons[weaponIndex]
-	thirdWeapon = out.kind ~= nil and not isFirstPerson() and not holding and not Menu.active
+	thirdWeapon = (out.kind ~= nil or heldAbility ~= nil) and not isFirstPerson() and not holding and not Menu.active
 		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
 		local look = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
@@ -2612,7 +2701,17 @@ RunService.RenderStepped:Connect(function(dt)
 		viewCF *= CFrame.new(0, -0.22, 0.25) * CFrame.Angles(-0.18, 0, 0.2 + math.sin(remaining * 7) * 0.05)
 	end
 	recoil = math.max(recoil - dt / 0.15, 0)
+	local pose = inspect and Inspect.pose(inspect.id, now - inspect.at)
+	if inspect and (not pose or inspect.id ~= weapon.id or punching or aiming or not show or knifeT > 0
+		or (char and char:GetAttribute("ReloadWeapon"))) then
+		inspect, pose = nil, nil
+	end
+	if not (pose and pose.leftAt) then
+		inspectLeft = nil
+	end
+	local inspectRot = pose and pose.rightRot or CFrame.identity
 	local weaponCF = nil
+	local fists = {} -- this frame's fist CFrames, for a piece handed to the left fist
 	for side, h in hands do
 		h.t = math.min(h.t + dt / 0.2, 1)
 		local ext = math.sin(h.t * math.pi)
@@ -2642,9 +2741,17 @@ RunService.RenderStepped:Connect(function(dt)
 			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
 			move = move:Lerp(leftGrip[weapon.id] - rest, ads)
 		end
+		if pose then
+			move += (side == "right" and pose.right or pose.left) or Vector3.zero
+			if side == "left" and pose.leftAt and inspectLeft then -- reaching for a point on the weapon
+				local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
+				move = move:Lerp(inspectLeft - rest, pose.leftAt.w)
+			end
+		end
 		local fist = viewCF
 			* CFrame.new(h.x * (0.85 - 0.5 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2.35 - 1.2 * ext + move.Z)
 		h.fist.CFrame = fist
+		fists[side] = fist
 		h.arm.CFrame = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.new(0, 0, 1.3)
 		local real = arms[side]
 		h.fist.Transparency = (show and not real) and 0 or 1
@@ -2665,6 +2772,7 @@ RunService.RenderStepped:Connect(function(dt)
 			local pivot = real and real.wrist or Vector3.zero
 			hand = CFrame.new(arm * pivot)
 				* viewCF.Rotation
+				* inspectRot
 				* CFrame.Angles(math.rad(tilt), cutting and math.rad(-weaponVisual.slashSide * 65 * ext) or 0,
 					cutting and math.rad(weaponVisual.slashSide * 45 * ext) or 0)
 				* CFrame.Angles(math.rad(90), 0, 0)
@@ -2704,8 +2812,19 @@ RunService.RenderStepped:Connect(function(dt)
 		local active = id == weapon.id and inHand
 		if mesh then
 			mesh.Transparency = active and 0 or 1
-			if active then
-				mesh:PivotTo(weaponCF * (id == "Knife" and knifeT > 0 and knifeFlip(knifeT) or CFrame.identity) * HOLD[id].grip)
+			if not active then
+				posePieces(id, nil, viewCF, fists)
+			else
+				local meshCF = weaponCF * (id == "Knife" and knifeT > 0 and knifeFlip(knifeT) or CFrame.identity) * HOLD[id].grip
+				if pose and pose.weapon then -- tossed or spun about its own centre, camera space
+					local lo, hi = WeaponMeshes.bounds(id)
+					local c = meshCF * ((lo + hi) / 2)
+					meshCF = CFrame.new(c + viewCF:VectorToWorldSpace(pose.weapon.Position))
+						* (viewCF.Rotation * pose.weapon.Rotation * viewCF.Rotation:Inverse())
+						* CFrame.new(-c) * meshCF
+				end
+				mesh:PivotTo(meshCF)
+				posePieces(id, pose, viewCF, fists, mesh.CFrame)
 				if HOLD[id].support then -- the fist's centre sits a little under the point the palm grips
 					leftGrip[id] = viewCF:PointToObjectSpace(mesh.CFrame * HOLD[id].support) + Vector3.new(0, -0.2, 0)
 				end
@@ -2764,6 +2883,15 @@ RunService.RenderStepped:Connect(function(dt)
 	for _, attack in Attacks do
 		attack.label.TextTransparency = os.clock() < attack.readyAt and 0.65 or 0
 	end
+	-- an ability in hand: the viewmodel hands glow in first person, the body's own in third
+	local glowColor = heldAbility and heldAbility.color
+	local firstPerson = isFirstPerson()
+	for side, h in hands do
+		local real = arms[side] -- the cloned avatar hand when there is one, else the ball fist
+		handGlow(real and real.pieces[1].part or h.fist, glowColor, firstPerson)
+	end
+	handGlow(char and char:FindFirstChild("LeftHand") :: BasePart?, glowColor, not firstPerson)
+	handGlow(char and char:FindFirstChild("RightHand") :: BasePart?, glowColor, not firstPerson)
 
 	-- hints + target info
 	local result = aim(60)

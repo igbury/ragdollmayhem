@@ -102,6 +102,8 @@ end)
 
 local CITY_ENABLED = false -- City Square is in development: not built, not in the menu. Flip to test it.
 local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil }
+-- Until PLAY picks a map the character waits here, anchored, away from every map (they lie on X).
+local MENU_HOLD = CFrame.new(0, 50, 3000)
 remotes.Parent = ReplicatedStorage
 
 local dummyFolder = Instance.new("Folder")
@@ -884,7 +886,7 @@ local function flee(d, from: Vector3, distance: number)
 end
 
 -- Personalities ------------------------------------------------------------------------------
--- Every dummy is born with one: Berserk goes for the nearest player or dummy on sight, Tough hits back and
+-- Every dummy is born with one: Berserk goes for the nearest dummy on sight (a player only once hit), Tough hits back and
 -- keeps at it however badly it is hurt, Hothead hits back but gives up once something is broken
 -- or it bleeds hard, Mourner buries the dead, Coward runs at the very sight of a player.
 local TRAITS = { { "Berserk", 5 }, { "Tough", 20 }, { "Hothead", 20 }, { "Mourner", 50 }, { "Coward", 5 } }
@@ -1507,8 +1509,13 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 		-- the maps are far apart and only what is near streams in: load the new one first, or the
 		-- character lands in the void
 		pcall(player.RequestStreamAroundAsync, player, SPAWNS[arg].Position, 5)
-		if player.Character then
-			player.Character:PivotTo(SPAWNS[arg])
+		local char = player.Character
+		if char then
+			char:PivotTo(SPAWNS[arg])
+			local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root then
+				root.Anchored = false
+			end
 		end
 		return
 	end
@@ -1556,8 +1563,8 @@ local function ground(position: Vector3): Vector3
 	return hit and hit.Position or Vector3.new(position.X, position.Y - 3, position.Z)
 end
 
-local function flat(root: BasePart): CFrame
-	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+local function flat(root: BasePart, dir: Vector3?): CFrame
+	local look = (dir or root.CFrame.LookVector) * Vector3.new(1, 0, 1)
 	look = look.Magnitude > 0.01 and look.Unit or Vector3.zAxis
 	return CFrame.lookAt(root.Position, root.Position + look)
 end
@@ -1668,16 +1675,16 @@ end
 
 local ATTACKS = {}
 
-function ATTACKS.Barrage(root: BasePart)
+function ATTACKS.Barrage(root: BasePart, aim: CFrame)
 	for _ = 1, 12 do
 		if not root.Parent then
 			return
 		end
-		local cf = flat(root)
+		local cf = flat(root, aim.LookVector) -- follows the body, keeps the aimed direction
 		smash(cf.Position + cf.LookVector * 6, 7, 3, cf.LookVector * 14 + UP * 8, 0)
 		task.wait(0.07)
 	end
-	local cf = flat(root)
+	local cf = flat(root, aim.LookVector)
 	local target = ground(cf.Position + cf.LookVector * 8)
 	Map.blast(target, 6, 60)
 	smash(target, 9, 12, cf.LookVector * 85 + UP * 35, 0)
@@ -1720,8 +1727,12 @@ function ATTACKS.Ult(_, cf: CFrame)
 	smash(target, 36, 100, cf.LookVector * 40, 130)
 end
 
-attackRemote.OnServerEvent:Connect(function(player, id)
+attackRemote.OnServerEvent:Connect(function(player, id, look)
 	local run = typeof(id) == "string" and ATTACKS[id]
+	-- where the player is looking (the camera); anything odd falls back to the body's facing
+	if typeof(look) ~= "Vector3" or look ~= look or look.Magnitude < 0.5 or look.Magnitude > 2 then
+		look = nil
+	end
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not run or not root or char:GetAttribute("Ragdolled") then
@@ -1734,7 +1745,7 @@ attackRemote.OnServerEvent:Connect(function(player, id)
 		return
 	end
 	ready[id] = now + cooldownOf[id] - 0.1
-	local cf = flat(root)
+	local cf = flat(root, look)
 	fxRemote:FireAllClients(id, char, cf)
 	run(root, cf)
 end)
@@ -2161,6 +2172,12 @@ Players.PlayerAdded:Connect(function(player)
 		if map then
 			pcall(player.RequestStreamAroundAsync, player, SPAWNS[map].Position, 5)
 			char:PivotTo(SPAWNS[map])
+		else -- still in the menu: off the map, where nobody can hit it and it cannot fall
+			char:PivotTo(MENU_HOLD)
+			local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root then
+				root.Anchored = true
+			end
 		end
 	end)
 end)
@@ -2628,10 +2645,10 @@ local function behave(d, now: number): boolean
 	if d.trait == "Berserk" or (d.trait == "Coward" and d.calmAt == 0) then
 		local player, other = nearestPlayer(d, root)
 		if d.trait == "Berserk" then
-			local victim, _, victimDist = nearestDummy(d, root)
-			local target = if victim and (not other or victimDist < (other.Position - root.Position).Magnitude) then victim else player
-			if target then
-				d.target = target
+			-- never starts on a player by itself: players only get hit back
+			local victim = nearestDummy(d, root)
+			if victim then
+				d.target = victim
 				say(d, pick(BERSERK_LINES))
 				return true
 			end

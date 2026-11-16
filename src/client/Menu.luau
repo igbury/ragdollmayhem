@@ -5,9 +5,11 @@
 -- Shading: gradient fills, a tiled halftone (assets/fx/make_halftone.py), drop shadows, 3D lettering.
 -- Motion: one render step drives spinning / streaming rays, bobbing titles, hover and the PLAY burst.
 -- Menu.active is true until Play is pressed; the rest of the client ignores input while it is.
+-- STATS and SHOP are their own pages under the menu: the menu page turns off by its corner (turn()).
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
+local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
@@ -45,17 +47,37 @@ local SEAMS = {
 	VS = { Vector2.new(0.6, 0), Vector2.new(0.6, 1) }, -- STATS / PLAY | scene
 	V1 = { Vector2.new(0.52, 0), Vector2.new(0.42, 0.29) }, -- MAP | LOADOUT
 	H2 = { Vector2.new(0, 0.66), Vector2.new(0.6, 0.74) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
-	TOP = { Vector2.new(0, 0), Vector2.new(1, 0) },
-	BOTTOM = { Vector2.new(0, 1), Vector2.new(1, 1) },
-	LEFT = { Vector2.new(0, 0), Vector2.new(0, 1) },
-	RIGHT = { Vector2.new(1, 0), Vector2.new(1, 1) },
 }
+-- The shop page: two slanted rows of panels round a big red one, like a blank comic page.
+local SHOP_SEAMS = {
+	R1 = { Vector2.new(0, 0.27), Vector2.new(1, 0.35) }, -- under the top row
+	V1 = { Vector2.new(0.63, 0), Vector2.new(0.58, 0.31) }, -- top row: blue | yellow
+	V2 = { Vector2.new(0.3, 0.3), Vector2.new(0.34, 0.8) }, -- tall green | red
+	R2 = { Vector2.new(0, 0.8), Vector2.new(1, 0.72) }, -- over the bottom row
+	V3 = { Vector2.new(0.27, 0), Vector2.new(0.27, 1) }, -- bottom row: blue | yellow (upright: one cut fewer)
+	V4 = { Vector2.new(0.67, 0.75), Vector2.new(0.71, 1) }, -- bottom row: yellow | green
+}
+-- The stats page: three columns between a slanted top and bottom row, tilted the other way.
+local STATS_SEAMS = {
+	R1 = { Vector2.new(0, 0.3), Vector2.new(1, 0.24) }, -- under the top row
+	V1 = { Vector2.new(0.42, 0), Vector2.new(0.46, 0.27) }, -- top row: left | right
+	V2 = { Vector2.new(0.33, 0.27), Vector2.new(0.3, 0.72) }, -- middle: left | centre
+	V3 = { Vector2.new(0.66, 0.25), Vector2.new(0.7, 0.75) }, -- middle: centre | right
+	R2 = { Vector2.new(0, 0.7), Vector2.new(1, 0.76) }, -- over the bottom row
+	V4 = { Vector2.new(0.55, 0.7), Vector2.new(0.5, 1) }, -- bottom row: left | right
+}
+for _, seams in { SEAMS, SHOP_SEAMS, STATS_SEAMS } do
+	seams.TOP = { Vector2.new(0, 0), Vector2.new(1, 0) }
+	seams.BOTTOM = { Vector2.new(0, 1), Vector2.new(1, 1) }
+	seams.LEFT = { Vector2.new(0, 0), Vector2.new(0, 1) }
+	seams.RIGHT = { Vector2.new(1, 0), Vector2.new(1, 1) }
+end
 local OUTER = { TOP = true, BOTTOM = true, LEFT = true, RIGHT = true }
 
 -- A horizontal or vertical edge of a convex panel lies on its bounding box, so it needs no cut.
 -- (Fewer CanvasGroups matters: over the texture budget, effects inside them stop rendering.)
-local function slanted(name: string): boolean
-	local a, b = SEAMS[name][1], SEAMS[name][2]
+local function slanted(seams, name: string): boolean
+	local a, b = seams[name][1], seams[name][2]
 	return a.X ~= b.X and a.Y ~= b.Y
 end
 
@@ -187,8 +209,8 @@ end
 
 -- Polygon geometry (page pixels) ---------------------------------------------------------------
 -- A seam moved `off` px along its normal toward `inside`: returns a point, direction, inward normal.
-local function offsetLine(name: string, size: Vector2, inside: Vector2, off: number): (Vector2, Vector2, Vector2)
-	local a, b = SEAMS[name][1] * size, SEAMS[name][2] * size
+local function offsetLine(seams, name: string, size: Vector2, inside: Vector2, off: number): (Vector2, Vector2, Vector2)
+	local a, b = seams[name][1] * size, seams[name][2] * size
 	local d = (b - a).Unit
 	local n = Vector2.new(-d.Y, d.X)
 	if (inside - a):Dot(n) < 0 then
@@ -249,7 +271,30 @@ local back = new("Frame", gui, { Size = UDim2.fromScale(1, 1), BackgroundColor3 
 shade(back, NAVY, 70)
 halftone(back, BLACK, 1).ImageTransparency = 0.6
 local PAGE_HOME = UDim2.fromScale(0.5, 0.5)
-local pageShadow = new("Frame", back, {
+-- Each page lies on its own full-screen sheet; the menu's inner frame moves into a cutting
+-- CanvasGroup while the page turns (turn()).
+local function sheet(z: number): (Frame, Frame)
+	local s = new("Frame", back, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = z })
+	return s, new("Frame", s, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1) })
+end
+local menuSheet, menuInner = sheet(3)
+-- A page under the menu (shop, stats), shown only while the menu turns off it or back onto it.
+local function underPage(): (Frame, Frame)
+	local s, inner = sheet(2)
+	s.Visible = false
+	new("Frame", inner, {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.new(0.5, 14, 0.5, 16),
+		Size = UDim2.fromScale(0.97, 0.95),
+		BackgroundColor3 = BLACK,
+		BackgroundTransparency = 0.5,
+		ZIndex = 2,
+	})
+	return s, new("Frame", inner, { AnchorPoint = Vector2.new(0.5, 0.5), Position = PAGE_HOME, Size = UDim2.fromScale(0.97, 0.95), BackgroundColor3 = WHITE, ZIndex = 3 })
+end
+local shopSheet, shopPage = underPage()
+local statsSheet, statsPage = underPage()
+local pageShadow = new("Frame", menuInner, {
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.new(0.5, 14, 1.6, 16),
 	Size = UDim2.fromScale(0.97, 0.95),
@@ -257,7 +302,7 @@ local pageShadow = new("Frame", back, {
 	BackgroundTransparency = 0.5,
 	ZIndex = 2,
 })
-local page = new("Frame", back, {
+local page = new("Frame", menuInner, {
 	AnchorPoint = Vector2.new(0.5, 0.5),
 	Position = UDim2.fromScale(0.5, 1.6), -- slides up
 	Size = UDim2.fromScale(0.97, 0.95),
@@ -287,6 +332,9 @@ type Panel = {
 	words: { TextLabel }?,
 	wordScales: { UIScale }?,
 	onClick: (() -> ())?,
+	word: string?, -- what the click's POW says (random when nil)
+	page: Frame?,
+	seams: any,
 }
 local PANELS: { Panel } = {
 	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) },
@@ -295,47 +343,73 @@ local PANELS: { Panel } = {
 	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
 	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
 }
+local SKY = Color3.fromRGB(60, 140, 225)
+local LIME = Color3.fromRGB(110, 190, 60)
+local SHOP_PANELS: { Panel } = {
+	{ edges = { "TOP", "V1", "R1", "LEFT" }, inside = Vector2.new(0.3, 0.12), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "TOP", "RIGHT", "R1", "V1" }, inside = Vector2.new(0.8, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "R1", "V2", "R2", "LEFT" }, inside = Vector2.new(0.15, 0.55), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
+	{ edges = { "R1", "RIGHT", "R2", "V2" }, inside = Vector2.new(0.65, 0.52), color = RED, ink = Color3.fromRGB(140, 15, 30) },
+	{ edges = { "R2", "V3", "BOTTOM", "LEFT" }, inside = Vector2.new(0.13, 0.9), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "R2", "V4", "BOTTOM", "V3" }, inside = Vector2.new(0.48, 0.9), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "R2", "RIGHT", "BOTTOM", "V4" }, inside = Vector2.new(0.85, 0.88), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
+}
+local STATS_PANELS: { Panel } = {
+	{ edges = { "TOP", "V1", "R1", "LEFT" }, inside = Vector2.new(0.2, 0.12), color = RED, ink = Color3.fromRGB(140, 15, 30) },
+	{ edges = { "TOP", "RIGHT", "R1", "V1" }, inside = Vector2.new(0.75, 0.1), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "R1", "V2", "R2", "LEFT" }, inside = Vector2.new(0.15, 0.5), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "R1", "V3", "R2", "V2" }, inside = Vector2.new(0.5, 0.5), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
+	{ edges = { "R1", "RIGHT", "R2", "V3" }, inside = Vector2.new(0.85, 0.5), color = RED, ink = Color3.fromRGB(140, 15, 30) },
+	{ edges = { "R2", "V4", "BOTTOM", "LEFT" }, inside = Vector2.new(0.25, 0.88), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "R2", "RIGHT", "BOTTOM", "V4" }, inside = Vector2.new(0.8, 0.88), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+}
 
-for _, p in PANELS do
-	-- A clipping frame the size of the bounding box does the straight edges; inside it, one nested
-	-- CanvasGroup per slanted edge does the cuts. The groups are a square as wide as the box's
-	-- diagonal: a UIGradient only reaches min(W/|cos|, H/|sin|) round its centre and clamps past
-	-- that, so on a long flat box a seam through a corner (V1 on STATS) was out of its reach and the
-	-- cut fell short, leaving a white strip. A panel with no slanted edge is just the clipping frame
-	-- (the scene's ViewportFrame stays out of CanvasGroups that way).
-	-- Only a group whose cut needs it is that big square (layout() checks); the rest are the bare
-	-- box. Steep cuts go outermost, so the square wraps the box and not the other way round. All
-	-- squares made the menu ~8 Mpx of group textures: over the budget, and STATS / SHOP flashed white.
-	local clip = new("Frame", page, { BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 2 })
-	local cuts = {}
-	for _, edge in p.edges do
-		if slanted(edge) then
-			table.insert(cuts, edge)
+local function build(pg: Frame, seams, panels: { Panel })
+	for _, p in panels do
+		p.page, p.seams = pg, seams
+		-- A clipping frame the size of the bounding box does the straight edges; inside it, one nested
+		-- CanvasGroup per slanted edge does the cuts. The groups are a square as wide as the box's
+		-- diagonal: a UIGradient only reaches min(W/|cos|, H/|sin|) round its centre and clamps past
+		-- that, so on a long flat box a seam through a corner (V1 on STATS) was out of its reach and the
+		-- cut fell short, leaving a white strip. A panel with no slanted edge is just the clipping frame
+		-- (the scene's ViewportFrame stays out of CanvasGroups that way).
+		-- Only a group whose cut needs it is that big square (layout() checks); the rest are the bare
+		-- box. Steep cuts go outermost, so the square wraps the box and not the other way round. All
+		-- squares made the menu ~8 Mpx of group textures: over the budget, and STATS / SHOP flashed white.
+		local clip = new("Frame", pg, { BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 2 })
+		local cuts = {}
+		for _, edge in p.edges do
+			if slanted(seams, edge) then
+				table.insert(cuts, edge)
+			end
 		end
+		local function steep(edge: string): number
+			local d = seams[edge][2] - seams[edge][1]
+			return math.abs(d.Y / d.X)
+		end
+		table.sort(cuts, function(a, b)
+			return steep(a) > steep(b)
+		end)
+		local groups, parent = {}, clip
+		for _ in cuts do
+			local g = new("CanvasGroup", parent, { BackgroundTransparency = 1, GroupColor3 = #groups == 0 and IDLE or WHITE, ZIndex = 2 })
+			new("UIGradient", g, {})
+			table.insert(groups, g)
+			parent = g
+		end
+		p.clip, p.groups, p.cuts, p.content, p.outer = clip, groups, cuts, parent, groups[1] or clip
+		local fill = new("Frame", parent, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE })
+		p.gradients = { shade(fill, p.color, 60, p.color:Lerp(p.ink, 0.5)), halftone(parent, p.ink, 3):FindFirstChildOfClass("UIGradient") :: UIGradient }
+		p.lines = {}
+		for i = 1, #p.edges do
+			p.lines[i] = new("Frame", pg, { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = BLACK, ZIndex = 4 })
+		end
+		p.overlay = new("Frame", pg, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 }) -- placed by layout()
 	end
-	local function steep(edge: string): number
-		local d = SEAMS[edge][2] - SEAMS[edge][1]
-		return math.abs(d.Y / d.X)
-	end
-	table.sort(cuts, function(a, b)
-		return steep(a) > steep(b)
-	end)
-	local groups, parent = {}, clip
-	for _ in cuts do
-		local g = new("CanvasGroup", parent, { BackgroundTransparency = 1, GroupColor3 = #groups == 0 and IDLE or WHITE, ZIndex = 2 })
-		new("UIGradient", g, {})
-		table.insert(groups, g)
-		parent = g
-	end
-	p.clip, p.groups, p.cuts, p.content, p.outer = clip, groups, cuts, parent, groups[1] or clip
-	local fill = new("Frame", parent, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE })
-	p.gradients = { shade(fill, p.color, 60, p.color:Lerp(p.ink, 0.5)), halftone(parent, p.ink, 3):FindFirstChildOfClass("UIGradient") :: UIGradient }
-	p.lines = {}
-	for i = 1, #p.edges do
-		p.lines[i] = new("Frame", page, { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = BLACK, ZIndex = 4 })
-	end
-	p.overlay = new("Frame", page, { BackgroundTransparency = 1, AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 5 }) -- placed by layout()
 end
+build(page, SEAMS, PANELS)
+build(shopPage, SHOP_SEAMS, SHOP_PANELS)
+build(statsPage, STATS_SEAMS, STATS_PANELS)
 
 -- Engine quirk: a UIGradient deep in nested CanvasGroups can render stale (a blue panel came out
 -- grey) until it changes; flicking Enabled once makes the group redraw it.
@@ -351,16 +425,16 @@ local function kick(p: Panel)
 end
 
 -- Recompute every polygon from the page's pixel size (on open and on any resize).
-local function layout()
-	local size = page.AbsoluteSize
+local function layoutPage(pg: Frame, panels: { Panel })
+	local size = pg.AbsoluteSize
 	if size.X < 1 or size.Y < 1 then
 		return
 	end
-	for _, p in PANELS do
+	for _, p in panels do
 		local inner = p.inside * size
 		local lines = {}
 		for i, edge in p.edges do
-			local a, d, n = offsetLine(edge, size, inner, OUTER[edge] and MARGIN or GAP)
+			local a, d, n = offsetLine(p.seams, edge, size, inner, OUTER[edge] and MARGIN or GAP)
 			lines[i] = { a = a, d = d, n = n, edge = edge }
 		end
 		local poly = {}
@@ -427,8 +501,19 @@ local function layout()
 		kick(p)
 	end
 end
+local function layout()
+	layoutPage(page, PANELS)
+	layoutPage(shopPage, SHOP_PANELS)
+	layoutPage(statsPage, STATS_PANELS)
+end
 page:GetPropertyChangedSignal("AbsoluteSize"):Connect(layout)
 layout()
+
+-- The page facing the player: the menu, or the shop once the page has turned.
+local current = { frame = page, panels = PANELS }
+local MENU_FACE = current
+local SHOP_FACE = { frame = shopPage, panels = SHOP_PANELS, sheet = shopSheet }
+local STATS_FACE = { frame = statsPage, panels = STATS_PANELS, sheet = statsSheet }
 
 -- Click feedback: a comic word in a starburst at the mouse, and the page jolts.
 local function pow(word: string?)
@@ -444,58 +529,10 @@ local function pow(word: string?)
 		task.wait(0.16)
 		holder:Destroy()
 	end)
-	page.Position = PAGE_HOME + UDim2.fromOffset(math.random(-9, 9), math.random(-7, 7))
-	tween(page, 0.4, { Position = PAGE_HOME }, Enum.EasingStyle.Elastic)
+	local pg = current.frame
+	pg.Position = PAGE_HOME + UDim2.fromOffset(math.random(-9, 9), math.random(-7, 7))
+	tween(pg, 0.4, { Position = PAGE_HOME }, Enum.EasingStyle.Elastic)
 end
-
--- Popup for STATS / SHOP: a white caption box over the page, click anywhere to close.
-local dim = new("TextButton", gui, { Text = "", AutoButtonColor = false, Size = UDim2.fromScale(1, 1), BackgroundColor3 = BLACK, BackgroundTransparency = 0.45, Visible = false, ZIndex = 50 })
-local popup = new("Frame", dim, {
-	AnchorPoint = Vector2.new(0.5, 0.5),
-	Position = UDim2.fromScale(0.5, 0.5),
-	Size = UDim2.fromScale(0.42, 0.62),
-	BackgroundColor3 = WHITE,
-	Rotation = -2,
-	ZIndex = 51,
-})
-new("UISizeConstraint", popup, { MinSize = Vector2.new(320, 300) })
-stroke(popup, 5)
-halftone(popup, Color3.fromRGB(200, 205, 220), 51)
-local popScale = new("UIScale", popup, {})
-local popTitle, popTitleBack = bigLetters(popup, "", YELLOW, { Position = UDim2.new(0, 24, 0, 16), Size = UDim2.new(1, -48, 0.16, 0), TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 52 })
-local popBody = new("TextLabel", popup, {
-	BackgroundTransparency = 1,
-	Position = UDim2.new(0, 28, 0.2, 10),
-	Size = UDim2.new(1, -56, 0.8, -30),
-	Font = Enum.Font.GothamBold,
-	TextSize = 22,
-	TextColor3 = BLACK,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	TextYAlignment = Enum.TextYAlignment.Top,
-	ZIndex = 52,
-})
-
-local POPUPS = {
-	-- ponytail: no stats are tracked yet; wire real numbers in here once the server keeps them
-	STATS = "No stats yet.\n\nGo throw some dummies around!",
-	-- ponytail: no shop yet; this is where its items go once there is something to sell
-	SHOP = "The shop is closed.\n\nCome back later!",
-}
-
-local function openPopup(name: string)
-	popTitle.Text = name
-	popTitleBack.Text = name
-	popBody.Text = POPUPS[name]
-	dim.Visible = true
-	popScale.Scale = 0.4
-	popup.Rotation = -12
-	tween(popScale, 0.4, { Scale = 1 }, Enum.EasingStyle.Back)
-	tween(popup, 0.5, { Rotation = -2 }, Enum.EasingStyle.Elastic)
-end
-dim.Activated:Connect(function()
-	tween(popScale, 0.15, { Scale = 0 }, Enum.EasingStyle.Back, Enum.EasingDirection.In).Completed:Wait()
-	dim.Visible = false
-end)
 
 -- Panel contents -------------------------------------------------------------------------------
 local titles = {} -- { word, shadow, phase } bobbing in the render step
@@ -538,6 +575,60 @@ local burst = new("ImageLabel", playO, {
 local burstScale = new("UIScale", burst, {})
 local playText, playTextBack = bigLetters(playO, "PLAY!", YELLOW, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromScale(0.55, 0.5), Rotation = -4, ZIndex = 2 })
 playP.words = { playText, playTextBack }
+
+-- Shop page: one item per panel, the big red one featured, BACK in the corner.
+-- ponytail: template items; put real developer product ids in `product` (0 = not on sale yet, the
+-- click just says SOON!) and grant them in a server MarketplaceService.ProcessReceipt.
+local SHOP_ITEMS = {
+	{ name = "DOUBLE CASH", price = 149, product = 0, color = YELLOW },
+	{ name = "VIP", price = 399, product = 0, color = RED },
+	{ name = "GOLD BAT", price = 99, product = 0, color = YELLOW },
+	{ name = "STARTER PACK", price = 199, product = 0, color = YELLOW },
+	"BACK",
+	{ name = "FIRE FISTS", price = 75, product = 0, color = RED },
+	{ name = "1000 COINS", price = 49, product = 0, color = YELLOW },
+}
+for i, item in SHOP_ITEMS do
+	local p = SHOP_PANELS[i]
+	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, i == 4 and 30 or 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, i % 2 == 0 and 14 or -14)
+	if item == "BACK" then
+		title(p, i, "< BACK", WHITE, false)
+		p.word = "BACK!"
+		continue
+	end
+	local price = title(p, i, item.name, item.color, true) :: TextLabel
+	price.Text = "R$ " .. item.price
+	p.word = if item.product > 0 then nil else "SOON!"
+	p.onClick = function()
+		if item.product > 0 then
+			MarketplaceService:PromptProductPurchase(player, item.product)
+		end
+	end
+end
+
+-- Stats page: one number per panel, BACK bottom-left like on the shop.
+-- ponytail: template numbers; nothing is tracked yet. Fill them from the server (attributes or
+-- leaderstats) once it keeps them.
+local STATS = {
+	{ name = "KNOCKOUTS", value = "0", color = YELLOW },
+	{ name = "BONES BROKEN", value = "0", color = YELLOW },
+	{ name = "DUMMIES THROWN", value = "0", color = RED },
+	{ name = "BEST COMBO", value = "0x", color = YELLOW },
+	{ name = "LONGEST FALL", value = "0 m", color = YELLOW },
+	"BACK",
+	{ name = "PLAYTIME", value = "0 min", color = RED },
+}
+for i, stat in STATS do
+	local p = STATS_PANELS[i]
+	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, i % 2 == 0 and -14 or 14)
+	if stat == "BACK" then
+		title(p, i, "< BACK", WHITE, false)
+		p.word = "BACK!"
+		continue
+	end
+	local value = title(p, i, stat.name, stat.color, true) :: TextLabel
+	value.Text = stat.value
+end
 
 layout() -- again, now the bursts exist
 
@@ -657,8 +748,6 @@ mapP.onClick = function()
 	refresh()
 	squash(mapValue)
 end
-shopP.onClick = function() openPopup("SHOP") end
-statP.onClick = function() openPopup("STATS") end
 playP.onClick = play
 sceneP.onClick = function()
 	if puppet then
@@ -669,8 +758,8 @@ end
 -- One invisible button over the page; the polygon under the mouse decides hover and click.
 local hovered: Panel? = nil
 local function panelAt(screen: Vector2): Panel?
-	local at = screen - GuiService:GetGuiInset() - page.AbsolutePosition -- mouse counts the top bar, AbsolutePosition does not
-	for _, p in PANELS do
+	local at = screen - GuiService:GetGuiInset() - current.frame.AbsolutePosition -- mouse counts the top bar, AbsolutePosition does not
+	for _, p in current.panels do
 		if p.poly and inside(p.poly, at) then
 			return p
 		end
@@ -691,16 +780,97 @@ local function hover(p: Panel, on: boolean)
 		tween(s, 0.2, { Scale = on and 1.15 or 1 }, Enum.EasingStyle.Back)
 	end
 end
-local hit = new("TextButton", page, { Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 10 })
+
+-- Turning the page: the hand grabs the menu's bottom-right corner and carries it over to the top-left.
+-- The fold is the line halfway between where the corner was and where it is now; the menu stays on
+-- the far side of it (cut by a gradient on a CanvasGroup it is moved into for the turn), the part
+-- past it shows its back, mirrored over the fold, and the shop underneath gets a shadow along it.
+-- Back to the menu is the same run backwards: the corner comes back down onto the shop.
+local turning = false
+local turnGroup = new("CanvasGroup", back, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 4 })
+local turnCut = new("UIGradient", turnGroup, {})
+local flapGroup = new("CanvasGroup", back, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Visible = false, ZIndex = 5 })
+local flapCut = new("UIGradient", flapGroup, {})
+local flap = new("Frame", flapGroup, { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.fromRGB(235, 236, 242) })
+stroke(flap, 3)
+halftone(flap, Color3.fromRGB(170, 175, 195), 1)
+local fall = new("Frame", back, { AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = BLACK, Visible = false, ZIndex = 3 })
+new("UIGradient", fall, { Transparency = NumberSequence.new(0.4, 1) })
+
+-- Keep the side of a full-screen group that n points to; hide it all once the line has left it.
+local function fold(group: CanvasGroup, gradient: UIGradient, a: Vector2, n: Vector2)
+	local size = back.AbsoluteSize
+	local t, soft = reach(size, a, n)
+	group.GroupTransparency = if t > 1 - soft * 2 then 1 else 0
+	cut(gradient, size, a, n)
+end
+
+local function turnTo(v: number) -- 0 = menu on top, 1 = turned all the way to the shop
+	local lo = page.AbsolutePosition - back.AbsolutePosition
+	local size = page.AbsoluteSize
+	local corner = lo + size -- bottom-right
+	local grab = corner - size * 2.05 * math.max(v, 0.001) -- carried past the top-left, so the menu is all gone
+	local mid = (corner + grab) / 2
+	local n = (corner - grab).Unit -- points into the turned-over part
+	fold(turnGroup, turnCut, mid, -n)
+	fold(flapGroup, flapCut, mid, -n) -- the flap lies over what is left of the menu
+	local centre = lo + size / 2
+	centre -= 2 * (centre - mid):Dot(n) * n -- the page mirrored over the fold
+	local x = Vector2.new(1, 0) - 2 * n.X * n
+	flap.Position = UDim2.fromOffset(centre.X, centre.Y)
+	flap.Size = UDim2.fromOffset(size.X, size.Y)
+	flap.Rotation = math.deg(math.atan2(x.Y, x.X))
+	local shadow = 40 * math.sin(math.pi * v)
+	local at = mid + n * shadow / 2
+	fall.Position = UDim2.fromOffset(at.X, at.Y)
+	fall.Size = UDim2.fromOffset(shadow, 4000)
+	fall.Rotation = math.deg(math.atan2(n.Y, n.X))
+end
+local function turn(to)
+	local forward = to ~= MENU_FACE -- the menu turns off onto `to`; back: it comes down over the current page
+	local under = (if forward then to else current).sheet
+	turning = true
+	if hovered then
+		hover(hovered, false)
+		hovered = nil
+	end
+	menuInner.Parent = turnGroup
+	turnGroup.Visible, flapGroup.Visible, fall.Visible, under.Visible = true, true, true, true
+	layout() -- also kicks the gradients: a group that was hidden can come back grey
+	turnTo(forward and 0 or 1)
+	local value = new("NumberValue", nil, { Value = forward and 0 or 1 })
+	value.Changed:Connect(turnTo)
+	tween(value, 0.9, { Value = forward and 1 or 0 }, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut).Completed:Wait()
+	value:Destroy()
+	menuInner.Parent = menuSheet
+	turnGroup.Visible, flapGroup.Visible, fall.Visible = false, false, false
+	-- only the page facing up renders: both at once is a lot of CanvasGroup texture
+	menuSheet.Visible, under.Visible = not forward, forward
+	current = to
+	turning = false
+end
+shopP.onClick = function()
+	task.spawn(turn, SHOP_FACE)
+end
+statP.onClick = function()
+	task.spawn(turn, STATS_FACE)
+end
+local function backToMenu()
+	task.spawn(turn, MENU_FACE)
+end
+SHOP_PANELS[5].onClick = backToMenu
+STATS_PANELS[6].onClick = backToMenu
+
+local hit = new("TextButton", back, { Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 10 })
 hit.Activated:Connect(function()
 	local p = panelAt(UserInputService:GetMouseLocation())
-	if p and p.onClick and Menu.active and not leaving and not dim.Visible then
-		pow()
+	if p and p.onClick and Menu.active and not leaving and not turning then
+		pow(p.word)
 		;(p.onClick :: () -> ())()
 	end
 end)
 table.insert(tickers, function()
-	local p = if dim.Visible then nil else panelAt(UserInputService:GetMouseLocation())
+	local p = if turning then nil else panelAt(UserInputService:GetMouseLocation())
 	if p and not p.onClick then
 		p = nil -- the scene is not a button
 	end
