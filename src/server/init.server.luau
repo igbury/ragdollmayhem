@@ -756,6 +756,101 @@ local function reactToHit(d, direction: Vector3?)
 	playTrack(d, Anims.staggers[side]):Play(0.035)
 end
 
+-- Walking round walls ---------------------------------------------------------------------------
+-- Every walk goes through walkTo: the dummy keeps the goal and, a few times a second (steer, from
+-- the Heartbeat), feels ahead at waist height. A clear line walks straight at the goal; a wall in
+-- the way turns it off to the open side, and it keeps to that side for a while, so it follows the
+-- wall round instead of swinging back and forth, until the goal is in the clear again. Low things
+-- (a kerb, a step) pass under the feeler: the humanoid steps or jumps them as before.
+local FEEL_AHEAD = 7 -- studs it looks ahead
+local FEEL_RADIUS = 1.4 -- about half the body's width
+local FEEL_HEIGHT = 0.5 -- above the root: the waist
+local GOAL_TIME = 8 -- a walk gives up after this, like Humanoid:MoveTo
+local STEER_EVERY = 0.15
+local SIDE_TIME = 1.5 -- how long it keeps to the side it picked
+local TURNS = { 25, 50, 75, 100, 125, 150 } -- degrees off the line to the goal, tried on each side
+local FLAT = Vector3.new(1, 0, 1)
+local wallParams = RaycastParams.new()
+wallParams.FilterType = Enum.RaycastFilterType.Exclude
+wallParams.RespectCanCollide = true -- only what would actually stop it
+local wallFilterAt = -1
+
+local function clearWay(from: Vector3, dir: Vector3, length: number): boolean
+	local now = os.clock()
+	if now ~= wallFilterAt then -- once a frame: bodies are not walls, they get pushed past
+		wallFilterAt = now
+		local list: { Instance } = { dummyFolder }
+		for _, player in Players:GetPlayers() do
+			if player.Character then
+				table.insert(list, player.Character)
+			end
+		end
+		wallParams.FilterDescendantsInstances = list
+	end
+	return workspace:Spherecast(from, FEEL_RADIUS, dir * length, wallParams) == nil
+end
+
+local function steer(d, now: number)
+	local goal = d.goal
+	if not goal or now < d.steerAt then
+		return
+	end
+	d.steerAt = now + STEER_EVERY
+	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local to = root and (goal - root.Position) * FLAT
+	if not root or not to or now > d.goalUntil or to.Magnitude < 1.5 then
+		d.goal = nil
+		return
+	end
+	local dist = to.Magnitude
+	local dir = to / dist
+	local from = root.Position + Vector3.yAxis * FEEL_HEIGHT
+	local ahead = math.min(dist - FEEL_RADIUS, FEEL_AHEAD) -- a wall just behind the goal is not in the way
+	if ahead < 0.5 or clearWay(from, dir, ahead) then
+		d.humanoid:MoveTo(goal)
+		return
+	end
+	-- the order turns are tried in: on a side it already keeps to, every angle on that side before
+	-- the other (else it hops across whenever the far side opens a little sooner); fresh, the
+	-- smallest turn either way
+	local tries = {}
+	if now < (d.sideUntil or 0) then
+		for _, side in { d.avoidSide, -d.avoidSide } do
+			for _, deg in TURNS do
+				table.insert(tries, deg * side)
+			end
+		end
+	else
+		local first = math.random() < 0.5 and 1 or -1
+		for _, deg in TURNS do
+			table.insert(tries, deg * first)
+			table.insert(tries, -deg * first)
+		end
+	end
+	for _, deg in tries do
+		local turned = CFrame.Angles(0, math.rad(deg), 0):VectorToWorldSpace(dir)
+		if clearWay(from, turned, FEEL_AHEAD) then
+			d.avoidSide, d.sideUntil = math.sign(deg), now + SIDE_TIME
+			d.humanoid:MoveTo(root.Position + turned * FEEL_AHEAD)
+			return
+		end
+	end
+	d.humanoid:MoveTo(root.Position - dir * FEEL_AHEAD) -- boxed in: back out
+end
+
+-- Walk to `goal`, round any wall on the way.
+local function walkTo(d, goal: Vector3)
+	d.goal, d.goalUntil, d.steerAt = goal, os.clock() + GOAL_TIME, 0
+	steer(d, os.clock())
+end
+
+-- Straight to `at` with no steering: a path waypoint (already round the walls), or its own spot
+-- to stand still.
+local function walkStraight(d, at: Vector3)
+	d.goal = nil
+	d.humanoid:MoveTo(at)
+end
+
 -- Run from `from`, carrying what hurts: a hand stays on a wound that still bleeds, a broken leg
 -- drags (the Heartbeat).
 local function flee(d, from: Vector3, distance: number)
@@ -767,7 +862,7 @@ local function flee(d, from: Vector3, distance: number)
 	local away = (root.Position - from) * Vector3.new(1, 0, 1)
 	away = away.Magnitude > 0.1 and away.Unit or Vector3.xAxis
 	d.speed = pace(d) * 1.7
-	d.humanoid:MoveTo(root.Position + away * distance)
+	walkTo(d, root.Position + away * distance)
 	d.nextWander, d.calmAt = now + 4, now + 4
 	local wound = d.lastWound
 	if d.bleed > 0 and wound and wound.part.Parent == d.model then
@@ -851,7 +946,7 @@ local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 		if victim and victim.state ~= "Dead" and kind ~= "shot" and not d.limp and math.random() < 0.2 then
 			say(d, "Hang on, I'm coming!")
 			d.speed = 12
-			d.humanoid:MoveTo(position)
+			walkTo(d, position)
 			continue
 		end
 		if math.random() < 0.7 then
@@ -1277,7 +1372,7 @@ aimRemote.OnServerEvent:Connect(function(player, part)
 	end
 	if now >= d.scaredUntil then
 		say(d, pick(bleeding and BLEEDING_LINES or SCARED_LINES))
-		d.humanoid:MoveTo(d.model:GetPivot().Position) -- stand still
+		walkStraight(d, d.model:GetPivot().Position) -- stand still
 		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local to = (head.Position - d.model:GetPivot().Position) * Vector3.new(1, 0, 1)
 		if root and to.Magnitude > 1 then -- turns to face the gun
@@ -2173,7 +2268,7 @@ local function chase(d, b, root: BasePart, goal: Vector3, now: number)
 			if wp.Action == Enum.PathWaypointAction.Jump then
 				d.humanoid.Jump = true
 			end
-			d.humanoid:MoveTo(wp.Position)
+			walkStraight(d, wp.Position)
 		end
 		return
 	end
@@ -2181,7 +2276,7 @@ local function chase(d, b, root: BasePart, goal: Vector3, now: number)
 	if now >= d.nextLook then
 		d.nextLook = now + 0.25
 		local to = (goal - root.Position) * XZ
-		d.humanoid:MoveTo(goal - (to.Magnitude > 0.1 and to.Unit * 2.8 or Vector3.zero))
+		walkTo(d, goal - (to.Magnitude > 0.1 and to.Unit * 2.8 or Vector3.zero))
 	end
 end
 
@@ -2274,7 +2369,7 @@ local function fight(d, root: BasePart, now: number)
 		d.speed = pace(d) * 1.1
 		if now >= d.nextLook then
 			d.nextLook = now + 0.3
-			d.humanoid:MoveTo(other.Position + Vector3.new(math.cos(b.angle), 0, math.sin(b.angle)) * CIRCLE_RADIUS)
+			walkTo(d, other.Position + Vector3.new(math.cos(b.angle), 0, math.sin(b.angle)) * CIRCLE_RADIUS)
 		end
 		if now >= b.nextTaunt and dist < 20 then
 			b.nextTaunt = now + 4 + math.random() * 4
@@ -2291,7 +2386,7 @@ local function fight(d, root: BasePart, now: number)
 		chase(d, b, root, other.Position, now)
 	elseif now >= d.nextLook then
 		d.nextLook = now + 0.3
-		d.humanoid:MoveTo(root.Position) -- in range: plant the feet
+		walkStraight(d, root.Position) -- in range: plant the feet
 		b.lastPos, b.movedAt = root.Position, now
 	end
 	if dist < 5.5 and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= b.swingAt then
@@ -2317,11 +2412,11 @@ local function bury(d, root: BasePart, now: number)
 		if to.Magnitude > 4 then
 			if now >= d.nextLook then
 				d.nextLook = now + 0.5
-				d.humanoid:MoveTo(torso.Position - (to.Magnitude > 0.1 and to.Unit * 3 or Vector3.zero))
+				walkTo(d, torso.Position - (to.Magnitude > 0.1 and to.Unit * 3 or Vector3.zero))
 			end
 			return
 		end
-		d.humanoid:MoveTo(root.Position)
+		walkStraight(d, root.Position)
 		if to.Magnitude > 0.1 then
 			root.CFrame = CFrame.lookAt(root.Position, root.Position + to)
 		end
@@ -2561,7 +2656,10 @@ RunService.Heartbeat:Connect(function(dt)
 		if now >= d.nextWander and not rising and not busy then
 			d.nextWander = now + math.random(4, 9)
 			local offset = Vector3.new(math.random(-20, 20), 0, math.random(-20, 20))
-			d.humanoid:MoveTo(d.home + offset)
+			walkTo(d, d.home + offset)
+		end
+		if not rising then
+			steer(d, now)
 		end
 		if now >= d.nextTalk then
 			d.nextTalk = now + math.random(20, 45)
