@@ -171,6 +171,7 @@ exitParams.FilterType = Enum.RaycastFilterType.Include
 -- breakAt (blunt damage that turns the bruise full colour; the bone takes BONE_TOUGH times that),
 -- broken (what the break is called)
 local BONE_TOUGH = 2 -- bones broke so often the X-ray was on every other hit
+local BONE_TOUGH_WEAPON = 0.8 -- a bat or a pan is what breaks them: one bat swing takes an arm or a leg
 local SHOT_BREAK = 6 -- trauma a part takes from light bullets before its bone goes (was 3)
 local PARTS = {
 	Head = { zone = "Head", area = "head", label = "head", breakAt = 5, broken = "cracked skull" },
@@ -1098,7 +1099,9 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		addInjury(d, "bruised " .. info.area)
 		p.bruise = (p.bruise or 0) + power
 		paint(d, part)
-		if p.trauma >= info.breakAt * BONE_TOUGH then
+		-- a blunt weapon comes with someone swinging it (`from`); a fall or a throw has nobody
+		local weapon = kind == "blunt" and from ~= nil
+		if p.trauma >= info.breakAt * (weapon and BONE_TOUGH_WEAPON or BONE_TOUGH) then
 			breakBone()
 		end
 	end
