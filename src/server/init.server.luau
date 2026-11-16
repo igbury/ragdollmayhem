@@ -168,7 +168,10 @@ local exitParams = RaycastParams.new()
 exitParams.FilterType = Enum.RaycastFilterType.Include
 
 -- [part name] = zone (ZONES), area (what a bruise is called), label (the part itself),
--- breakAt (blunt damage the bone takes), broken (what the break is called)
+-- breakAt (blunt damage that turns the bruise full colour; the bone takes BONE_TOUGH times that),
+-- broken (what the break is called)
+local BONE_TOUGH = 2 -- bones broke so often the X-ray was on every other hit
+local SHOT_BREAK = 6 -- trauma a part takes from light bullets before its bone goes (was 3)
 local PARTS = {
 	Head = { zone = "Head", area = "head", label = "head", breakAt = 5, broken = "cracked skull" },
 	UpperTorso = { zone = "Chest", area = "chest", label = "ribs", breakAt = 3, broken = "broken ribs" },
@@ -1002,8 +1005,8 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 				d.limpSide = d.limpSide or info.side -- the leg it drags (Anims.limp)
 			end
 			line = part.Name == "UpperTorso" and "Right in the ribs!" or nil
+			bone = "broken" -- the X-ray and the CRACK! only when it goes, not on every later hit to it
 		end
-		bone = "broken"
 	end
 	-- the mark a bullet or a blade leaves; the blood comes out of it. A few per part, then the
 	-- part itself stands in (a rifle would cover it in discs).
@@ -1057,7 +1060,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 				addInjury(d, info.label .. " wound")
 				bleed(d, hole(), 0.8)
 			end
-			if heavy or p.trauma >= 3 then
+			if heavy or p.trauma >= SHOT_BREAK then
 				addInjury(d, info.label .. " bone")
 				breakBone()
 			else
@@ -1066,7 +1069,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		else
 			addInjury(d, info.label)
 			bleed(d, hole(), heavy and 2 or 1)
-			if heavy or p.trauma >= 3 then
+			if heavy or p.trauma >= SHOT_BREAK then
 				breakBone()
 			else
 				bone = "ok"
@@ -1095,7 +1098,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		addInjury(d, "bruised " .. info.area)
 		p.bruise = (p.bruise or 0) + power
 		paint(d, part)
-		if p.trauma >= info.breakAt then
+		if p.trauma >= info.breakAt * BONE_TOUGH then
 			breakBone()
 		end
 	end
