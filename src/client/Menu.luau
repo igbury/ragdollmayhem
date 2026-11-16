@@ -44,7 +44,7 @@ local SEAMS = {
 	HS = { Vector2.new(0, 0.31), Vector2.new(1, 0.31) }, -- under LOADOUT, over the scene
 	VS = { Vector2.new(0.6, 0), Vector2.new(0.6, 1) }, -- STATS / PLAY | scene
 	V1 = { Vector2.new(0.52, 0), Vector2.new(0.42, 0.29) }, -- MAP | LOADOUT
-	H2 = { Vector2.new(0, 0.53), Vector2.new(0.6, 0.61) }, -- STATS over PLAY
+	H2 = { Vector2.new(0, 0.66), Vector2.new(0.6, 0.74) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
 	TOP = { Vector2.new(0, 0), Vector2.new(1, 0) },
 	BOTTOM = { Vector2.new(0, 1), Vector2.new(1, 1) },
 	LEFT = { Vector2.new(0, 0), Vector2.new(0, 1) },
@@ -206,12 +206,20 @@ end
 -- Cut a CanvasGroup of the given pixel size along a line (point a, inward normal n, both local):
 -- the side n points to stays. UIGradient runs in pixels from the box centre, its 0..1 spanning
 -- 2 * min(W / |cos r|, H / |sin r|) (measured in Studio).
-local function cut(gradient: UIGradient, size: Vector2, a: Vector2, n: Vector2)
+-- Where the cut falls on the gradient (unclamped) and its antialiasing step; t outside
+-- [soft, 1 - 2 * soft] means the gradient cannot reach the line from a box this size.
+local function reach(size: Vector2, a: Vector2, n: Vector2): (number, number)
 	local r = math.atan2(n.Y, n.X)
 	local c, s = math.abs(math.cos(r)), math.abs(math.sin(r))
 	local span = math.min(c > 1e-4 and size.X / c or math.huge, s > 1e-4 and size.Y / s or math.huge)
 	local soft = 1.2 / span -- about a pixel of antialiasing
-	local t0 = math.clamp(0.5 + (a - size / 2):Dot(n) / span, soft, 1 - soft * 2)
+	return 0.5 + (a - size / 2):Dot(n) / span, soft
+end
+
+local function cut(gradient: UIGradient, size: Vector2, a: Vector2, n: Vector2)
+	local r = math.atan2(n.Y, n.X)
+	local t, soft = reach(size, a, n)
+	local t0 = math.clamp(t, soft, 1 - soft * 2)
 	gradient.Rotation = math.deg(r)
 	gradient.Transparency = NumberSequence.new({
 		NumberSequenceKeypoint.new(0, 1),
@@ -270,6 +278,7 @@ type Panel = {
 	outer: GuiObject?,
 	clip: Frame?,
 	groups: { CanvasGroup }?,
+	cuts: { string }?, -- the slanted edge each group cuts, steepest first
 	gradients: { UIGradient }?,
 	content: CanvasGroup?,
 	lines: { Frame }?,
@@ -282,8 +291,8 @@ type Panel = {
 local PANELS: { Panel } = {
 	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) },
 	{ edges = { "TOP", "RIGHT", "HS", "H1", "V1" }, inside = Vector2.new(0.75, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
-	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = RED, ink = Color3.fromRGB(140, 15, 30) },
-	{ edges = { "H2", "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.3, 0.88), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "H2", "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.3, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, at the bottom
+	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
 	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
 }
 
@@ -294,17 +303,31 @@ for _, p in PANELS do
 	-- that, so on a long flat box a seam through a corner (V1 on STATS) was out of its reach and the
 	-- cut fell short, leaving a white strip. A panel with no slanted edge is just the clipping frame
 	-- (the scene's ViewportFrame stays out of CanvasGroups that way).
+	-- Only a group whose cut needs it is that big square (layout() checks); the rest are the bare
+	-- box. Steep cuts go outermost, so the square wraps the box and not the other way round. All
+	-- squares made the menu ~8 Mpx of group textures: over the budget, and STATS / SHOP flashed white.
 	local clip = new("Frame", page, { BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 2 })
-	local groups, parent = {}, clip
+	local cuts = {}
 	for _, edge in p.edges do
 		if slanted(edge) then
-			local g = new("CanvasGroup", parent, { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), GroupColor3 = #groups == 0 and IDLE or WHITE, ZIndex = 2 })
-			new("UIGradient", g, {})
-			table.insert(groups, g)
-			parent = g
+			table.insert(cuts, edge)
 		end
 	end
-	p.clip, p.groups, p.content, p.outer = clip, groups, parent, groups[1] or clip
+	local function steep(edge: string): number
+		local d = SEAMS[edge][2] - SEAMS[edge][1]
+		return math.abs(d.Y / d.X)
+	end
+	table.sort(cuts, function(a, b)
+		return steep(a) > steep(b)
+	end)
+	local groups, parent = {}, clip
+	for _ in cuts do
+		local g = new("CanvasGroup", parent, { BackgroundTransparency = 1, GroupColor3 = #groups == 0 and IDLE or WHITE, ZIndex = 2 })
+		new("UIGradient", g, {})
+		table.insert(groups, g)
+		parent = g
+	end
+	p.clip, p.groups, p.cuts, p.content, p.outer = clip, groups, cuts, parent, groups[1] or clip
 	local fill = new("Frame", parent, { Size = UDim2.fromScale(1, 1), BackgroundColor3 = WHITE })
 	p.gradients = { shade(fill, p.color, 60, p.color:Lerp(p.ink, 0.5)), halftone(parent, p.ink, 3):FindFirstChildOfClass("UIGradient") :: UIGradient }
 	p.lines = {}
@@ -355,14 +378,25 @@ local function layout()
 		local clip = p.clip :: Frame
 		clip.Position = UDim2.fromOffset(lo.X, lo.Y)
 		clip.Size = UDim2.fromOffset(box.X, box.Y)
-		local origin, cutSize = lo, box -- page position and size of the content's frame
-		local groups = p.groups :: { CanvasGroup }
-		if #groups > 0 then
-			local side = math.ceil(box.Magnitude)
-			local offset = Vector2.new(math.floor((box.X - side) / 2), math.floor((box.Y - side) / 2))
-			groups[1].Position = UDim2.fromOffset(offset.X, offset.Y)
-			groups[1].Size = UDim2.fromOffset(side, side)
-			origin, cutSize = lo + offset, Vector2.new(side, side)
+		-- each group: the bare box if its gradient reaches its cut from there, else the square
+		local byEdge = {}
+		for _, line in lines do
+			byEdge[line.edge] = line
+		end
+		local side = math.ceil(box.Magnitude)
+		local squareAt = lo + Vector2.new(math.floor((box.X - side) / 2), math.floor((box.Y - side) / 2))
+		local origin = lo -- page position of the content's frame
+		for i, g in p.groups :: { CanvasGroup } do
+			local line = byEdge[(p.cuts :: { string })[i]]
+			local at, size = lo, box
+			local t, soft = reach(box, line.a - lo, line.n)
+			if t < soft or t > 1 - soft * 2 then
+				at, size = squareAt, Vector2.new(side, side)
+			end
+			g.Position = UDim2.fromOffset(at.X - origin.X, at.Y - origin.Y)
+			g.Size = UDim2.fromOffset(size.X, size.Y)
+			cut(g:FindFirstChildOfClass("UIGradient") :: UIGradient, size, line.a - at, line.n)
+			origin = at
 		end
 		-- titles sit on the polygon's area centroid (a plain mean of the corners leans toward
 		-- corners that bunch up, like SHOP's two at the bottom-left)
@@ -379,13 +413,6 @@ local function layout()
 		overlay.Size = UDim2.fromOffset(box.X * (p.inset or 0.72), box.Y * (p.inset or 0.72))
 		if p.burst then
 			p.burst.Position = UDim2.fromOffset(centre.X - origin.X, centre.Y - origin.Y)
-		end
-		local g = 1
-		for _, line in lines do
-			if slanted(line.edge) then
-				cut(groups[g]:FindFirstChildOfClass("UIGradient") :: UIGradient, cutSize, line.a - origin, line.n)
-				g += 1
-			end
 		end
 		-- outlines run corner to corner plus half a stroke past each end, so corners close up
 		for i, a in poly do
@@ -511,7 +538,6 @@ local burst = new("ImageLabel", playO, {
 local burstScale = new("UIScale", burst, {})
 local playText, playTextBack = bigLetters(playO, "PLAY!", YELLOW, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromScale(0.55, 0.5), Rotation = -4, ZIndex = 2 })
 playP.words = { playText, playTextBack }
-local playInfo = letters(playO, "", { AnchorPoint = Vector2.new(1, 1), Position = UDim2.new(1, -8, 1, -6), Size = UDim2.fromScale(0.5, 0.14), TextXAlignment = Enum.TextXAlignment.Right, ZIndex = 2 })
 
 layout() -- again, now the bursts exist
 
@@ -546,8 +572,6 @@ table.insert(tickers, function(t: number)
 		puppet:step(t)
 	end
 end)
-shade(playInfo, WHITE)
-
 local function squash(label: TextLabel)
 	local scale = (label.Parent :: Instance):FindFirstChildOfClass("UIScale")
 	if scale then
@@ -558,7 +582,6 @@ end
 
 local function refresh()
 	mapValue.Text = "< " .. MAPS[mapIndex] .. " >"
-	playInfo.Text = MAPS[mapIndex]
 end
 refresh()
 
