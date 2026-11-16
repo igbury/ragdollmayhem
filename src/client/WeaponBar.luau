@@ -421,7 +421,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 				end
 			end)
 		elseif input.KeyCode == Enum.KeyCode.F then
-			step(-1)
+			if not (api.drag and api.drag()) then -- on a dummy in reach F drags it instead
+				step(-1)
+			end
 		elseif input.KeyCode == Enum.KeyCode.ButtonL1 then
 			step(-1)
 		elseif input.KeyCode == Enum.KeyCode.ButtonR1 then

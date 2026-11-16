@@ -96,6 +96,13 @@ for _, kind in { "gun", "rocket", "throw" } do
 	aimAnims[kind] = anim
 end
 local aimTracks: { [string]: AnimationTrack } = {}
+local dragAnims = {} -- holding a dummy in one hand (F): at your side / pressing it down, see DragPose
+for _, kind in { "hold", "press" } do
+	local anim = Instance.new("Animation")
+	anim.AnimationId = keyframeId(require(script:WaitForChild("DragPose"))(kind))
+	dragAnims[kind] = anim
+end
+local dragTracks: { [string]: AnimationTrack } = {}
 
 -- Sounds (assets/sfx/*.wav, uploaded as Audio). An empty id stays silent.
 -- ponytail: played locally, so only you hear your own; add a remote if others should.
@@ -120,6 +127,22 @@ local PUNCH_RANGE = 9
 local PUNCH_INTERVAL = 0.28
 local KICK_INTERVAL = 0.7
 local GRAB_RANGE = 13
+-- F: a dummy held by the chest in one hand at your right side (root space: right, up, forward)
+local DRAG_HOLD = Vector3.new(2.4, 0.3, -0.8)
+-- sprinting with it you bend over and grind it into the ground: the hand goes down to here (up
+-- counted from the floor)
+local DRAG_PRESS = Vector3.new(2.4, 0.9, -1.6)
+local DRAG_BELOW_HAND = 0.7 -- the gripped chest's centre under the fist
+-- held with F, looking down (camera look below DIG_LOOK) with the left button held: you pound it
+-- into the ground DIG_POUND times a second - heaved up DIG_LIFT over most of the beat, then slammed
+-- down to DIG_DEPTH above the bottom of the hole in the last DIG_SLAM of it. Each slam tells the
+-- server (the hole, the blow) and every client (the burst, Fx "Pound").
+local DIG_LOOK = -0.45
+local DIG_POUND = 2.2
+local DIG_LIFT = 2.6
+local DIG_SLAM = 0.18
+local DIG_DEPTH = 0.4
+local DIG_SINK = 1.6
 local THROW_SPEED = 90
 local SKIN = Color3.fromRGB(240, 240, 240)
 local WALK_SPEED = 16
@@ -285,7 +308,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon (hold: weapon wheel)\nF / scroll  Previous / switch weapon\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\nQ  Next weapon (hold: weapon wheel)\nF / scroll  Previous / switch weapon\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -846,6 +869,8 @@ local function useWeapon(weapon)
 	end
 end
 
+local toggleDrag: () -> boolean -- F on a dummy (Grabbing, below); the weapon bar asks it first
+
 -- Hotbar (bottom centre) + weapon wheel (hold Q); Q tap / F / L1 R1 / the mouse wheel step through.
 require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
@@ -871,6 +896,10 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	end,
 	scrollable = function(): boolean
 		return holding == nil
+	end,
+	-- F: true when it grabbed a dummy to drag (or let go of one), so F does not also change weapon
+	drag = function(): boolean
+		return toggleDrag()
 	end,
 	-- While the wheel is open the mouse picks a weapon, so the view must not turn; it still rides
 	-- along with the body (the camera keeps its offset from the root and its direction).
@@ -1012,6 +1041,33 @@ local function toggleGrab()
 	end
 end
 
+-- F on a dummy you are looking at: take it by the chest in one hand and hold it at your side;
+-- sprint and you bend over and grind it into the ground (the per-frame block). F again lets go.
+-- False when F was not for this (no dummy in reach), so it changes weapon as usual.
+function toggleDrag(): boolean
+	if holding then
+		if not holding.drag then
+			return false
+		end
+		drop(Vector3.zero)
+		return true
+	end
+	local result = aim(GRAB_RANGE)
+	local body = result and dummyOf(result.Instance)
+	local head = player.Character and player.Character:FindFirstChild("Head") :: BasePart?
+	if not body or not head then
+		return false
+	end
+	-- by the chest, like grabbing the collar (the legs trail behind); the part looked at if the
+	-- chest is out of reach
+	local chest = body:FindFirstChild("UpperTorso") :: BasePart?
+	local part = if chest and (chest.Position - head.Position).Magnitude < GRAB_RANGE then chest else result.Instance
+	grabRemote:FireServer("grab", part, "drag")
+	loose = nil
+	holding = { part = part, dist = 0, since = os.clock(), impact = Impact.new(), drag = true, press = 0 }
+	return true
+end
+
 -- Ground slam: R in the air arms it; the landing hits the ground with both hands, harder the
 -- faster you were falling (see updateLanding).
 local slamming = false
@@ -1077,6 +1133,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		if holding and holding.drag and camera.CFrame.LookVector.Y < DIG_LOOK then
+			holding.digHeld = true -- held in one hand, looking down: pound it into the ground while held
+			return
+		end
 		if holding then
 			drop(camera.CFrame.LookVector * THROW_SPEED)
 			return
@@ -1146,6 +1206,9 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
+		if holding then
+			holding.digHeld = false
+		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
 		aiming = false
 	end
@@ -1234,6 +1297,12 @@ local function onCharacter(char: Model)
 		track.Priority = Enum.AnimationPriority.Action2 -- over the walk, run and wall cycles
 		track.Looped = true
 		aimTracks[kind] = track
+	end
+	for kind, anim in dragAnims do
+		local track = humanoid.Animator:LoadAnimation(anim)
+		track.Priority = Enum.AnimationPriority.Action2 -- over the walk and the sprint cycle
+		track.Looped = true
+		dragTracks[kind] = track
 	end
 	flipTrack = humanoid.Animator:LoadAnimation(flipAnim)
 	flipTrack.Priority = Enum.AnimationPriority.Action4
@@ -2150,6 +2219,22 @@ end)
 -- Per frame -------------------------------------------------------------------
 local bounceParams = RaycastParams.new()
 bounceParams.FilterType = Enum.RaycastFilterType.Exclude
+
+-- `to`, or as far toward it from `from` as a ball of `radius` gets before it touches something
+-- (bodies and loose debris aside): where a held body can be pulled without going into the wall.
+local clearParams = RaycastParams.new()
+clearParams.FilterType = Enum.RaycastFilterType.Exclude
+clearParams.RespectCanCollide = true
+local function clearOf(from: Vector3, to: Vector3, radius: number, char: Model): Vector3
+	local way = to - from
+	if way.Magnitude < 0.05 then
+		return to
+	end
+	clearParams.FilterDescendantsInstances = { char, dummyFolder }
+	clearParams.CollisionGroup = "Debris" -- passes through loose cubes (Debris does not hit Debris), stops on the rest
+	local hit = workspace:Spherecast(from, radius, way, clearParams)
+	return hit and from + way.Unit * hit.Distance or to
+end
 RunService.RenderStepped:Connect(function(dt)
 	local char = player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
@@ -2158,9 +2243,78 @@ RunService.RenderStepped:Connect(function(dt)
 	-- drive the held body part (we own its physics while holding)
 	if holding then
 		local align = holding.part:FindFirstChild("GrabAlign", true) :: AlignPosition?
-		if align and head then
+		local dragRoot = holding.drag and char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if align and dragRoot and humanoid then
+			-- held in one hand at your side; sprinting, you bend over and press it down onto the
+			-- ground beside you, so it grinds along as you run (eased, so the hand swoops down)
+			local pressing = ((mv.sprintHeld or mv.sprintToggle) and humanoid.MoveDirection.Magnitude > 0)
+				or (holding.digHeld and camera.CFrame.LookVector.Y < DIG_LOOK)
+			holding.press = (holding.press or 0) + ((pressing and 1 or 0) - (holding.press or 0)) * math.min(dt * 8, 1)
+			local look = dragRoot.CFrame.LookVector * XZ
+			look = look.Magnitude > 0.1 and look.Unit or Vector3.zAxis
+			local right = look:Cross(Vector3.yAxis)
+			local floor = dragRoot.Position.Y - dragRoot.Size.Y / 2 - humanoid.HipHeight
+			local function at(offset: Vector3, base: number): Vector3
+				return Vector3.new(dragRoot.Position.X, base + offset.Y, dragRoot.Position.Z) + right * offset.X - look * offset.Z
+			end
+			-- looking down with the mouse held: pounding it into the ground (it digs a trail, server)
+			local digging = holding.digHeld and camera.CFrame.LookVector.Y < DIG_LOOK
+			local lift = 0 -- 0..1: how high it is heaved this beat
+			if digging then
+				holding.press = math.min(1, holding.press + dt * 8) -- straight down into it, sprint or not
+				holding.digT = (holding.digT or 0) + dt * DIG_POUND
+				local beat = holding.digT % 1
+				if beat < 1 - DIG_SLAM then
+					lift = math.sin(beat / (1 - DIG_SLAM) * math.pi / 2) -- heaving it up
+				else
+					lift = 1 - (beat - (1 - DIG_SLAM)) / DIG_SLAM -- and down, hard
+				end
+				local count = math.floor(holding.digT)
+				if count ~= holding.digCount then -- the beat wrapped: it just hit the ground
+					holding.digCount = count
+					grabRemote:FireServer("dig")
+				end
+			else
+				holding.digT, holding.digCount = 0.6, nil -- start the next round mid-heave
+			end
+			holding.lift = lift
+			local target = at(DRAG_HOLD, dragRoot.Position.Y):Lerp(at(DRAG_PRESS, floor), holding.press)
+			-- the body hangs from the fist (DragPose puts the arm there): across the ground it
+			-- follows the hand, in height it goes from hanging below it down to the floor
+			local hand = char:FindFirstChild("RightHand") :: BasePart?
+			if hand and (hand.Position - target).Magnitude < 4 then
+				local hung = hand.Position.Y - DRAG_BELOW_HAND
+				target = Vector3.new(hand.Position.X, hung + (target.Y - hung) * holding.press, hand.Position.Z)
+			end
+			-- never below the ground actually under it: the grip is strong enough to push a body
+			-- through a thin floor (or the edge of a wall) and lose it under the map
+			bounceParams.FilterDescendantsInstances = { char, dummyFolder }
+			local ground = workspace:Raycast(target + Vector3.yAxis * 3, Vector3.yAxis * -8, bounceParams)
+			if digging and ground then
+				-- pounding: slammed down into the hole it is digging, lifted, slammed again
+				-- into the hole, but no deeper than DIG_SINK under your feet: it stays in sight
+				local bottom = math.max(ground.Position.Y, floor - DIG_SINK)
+				target = Vector3.new(target.X, bottom + DIG_DEPTH + lift * DIG_LIFT, target.Z)
+			elseif ground then
+				target = Vector3.new(target.X, math.max(target.Y, ground.Position.Y + DRAG_PRESS.Y), target.Z)
+			end
+			-- and not into a wall: it stops against it and slides along, instead of being forced in
+			-- (pounding goes into the floor on purpose: the ground ray above already keeps it in the hole)
+			if not digging then
+				target = clearOf(dragRoot.Position + Vector3.yAxis, target, 0.9, char)
+			end
+			align.Position = target
+			local body = dummyOf(holding.part)
+			local landed = body and Impact.step(holding.impact, body, dt)
+			if landed and not digging then -- pounding: each slam is already one blow ("dig"), not two
+				Sfx.playLocal(Sfx.THUD, landed.part.Position)
+				grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir)
+			end
+		elseif align and head then
 			local _, ray = aim(0)
-			align.Position = head.Position + ray.Direction.Unit * holding.dist
+			-- held out in front: up against a wall or the floor it stops there and slides, instead of
+			-- being shoved into it (and jammed, or out the other side)
+			align.Position = clearOf(head.Position, head.Position + ray.Direction.Unit * holding.dist, 1, char)
 			-- swung into the ground or a wall: we own this body, so we see the hit and report it
 			local body = dummyOf(holding.part)
 			local landed = body and Impact.step(holding.impact, body, dt)
@@ -2196,7 +2350,7 @@ RunService.RenderStepped:Connect(function(dt)
 	if moving == 0 then
 		mv.sprintToggle = false
 	end
-	local sprinting = (mv.sprintHeld or mv.sprintToggle) and moving == 1 and not holding and root and not mv.low
+	local sprinting = (mv.sprintHeld or mv.sprintToggle) and moving == 1 and (not holding or holding.drag) and root and not mv.low -- you can run dragging one
 		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if humanoid then
 		humanoid.WalkSpeed = mv.low and MOVE.CROUCH_SPEED or sprinting and SPRINT_SPEED or WALK_SPEED
@@ -2301,6 +2455,19 @@ RunService.RenderStepped:Connect(function(dt)
 			else
 				track:Stop(0.2)
 			end
+		end
+	end
+	-- holding one with F: the "hold" pose, blended into "press" as the sprint pushes it down
+	local press = holding and holding.drag and (holding.press or 0) * (1 - 0.7 * (holding.lift or 0)) or nil -- pounding: the arm comes up with it, then down
+	for kind, track in dragTracks do
+		local weight = if press then (kind == "press" and press or 1 - press) else 0
+		if weight > 0.02 then
+			if not track.IsPlaying then
+				track:Play(0.15, weight)
+			end
+			track:AdjustWeight(weight, 0.05)
+		elseif track.IsPlaying then
+			track:Stop(0.2)
 		end
 	end
 	local running = sprinting and humanoid.FloorMaterial ~= Enum.Material.Air

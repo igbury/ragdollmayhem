@@ -456,6 +456,7 @@ local function release(d, velocity: Vector3, owner: Player?)
 		held[d.heldBy] = nil
 		d.heldBy = nil
 	end
+	d.dragging = nil
 	d.looseOwner, d.looseSince = owner, os.clock()
 	if not owner then
 		setOwner(d.model, nil)
@@ -1389,6 +1390,17 @@ aimRemote.OnServerEvent:Connect(function(player, part)
 	d.nextWander = math.max(d.nextWander, now + 2.5)
 end)
 
+-- Pounding a held body into the ground ("dig", one per slam the holder sees): a hole DIG_RADIUS
+-- wide that throws its floor up as chunks (DIG_POWER), a burst every client sees (Fx "Pound"), and
+-- a DIG_HURT blunt blow (no attacker: bones as tough as against a fall). DIG_EVERY caps the rate.
+local DIG_EVERY = 0.3
+local DIG_RADIUS = 2.2
+local DIG_POWER = 45
+local DIG_HURT = 0.4
+local digParams = RaycastParams.new()
+digParams.FilterType = Enum.RaycastFilterType.Include
+digParams.FilterDescendantsInstances = { Map.folder }
+
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 	if action == "grab" then
 		if typeof(arg) ~= "Instance" or not arg:IsA("BasePart") or held[player] then
@@ -1400,6 +1412,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 			return
 		end
 		d.heldBy = player
+		d.dragging = (...) == "drag" -- F: by the chest in one hand, ground into the floor on a sprint (scrape)
 		d.looseOwner = nil -- caught again mid-flight: the new holder owns it (knockDown below)
 		held[player] = d
 		local attachment = Instance.new("Attachment")
@@ -1409,9 +1422,11 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		align.Mode = Enum.PositionAlignmentMode.OneAttachment
 		align.Attachment0 = attachment
 		align.Position = arg.Position
-		align.MaxForce = 40000
-		align.MaxVelocity = 90
-		align.Responsiveness = 40
+		-- held in one hand (F) it is gripped hard: it stays at your side and is pressed down where
+		-- you push it, instead of swinging along after you
+		align.MaxForce = d.dragging and 90000 or 40000
+		align.MaxVelocity = d.dragging and 200 or 90
+		align.Responsiveness = d.dragging and 90 or 40
 		align.Parent = attachment
 		attachment.Parent = arg
 		d.grab = attachment
@@ -1430,6 +1445,29 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 			return
 		end
 		landImpact(d, arg, dir.Unit, math.min(lost, MAX_SLAM_LOST), player)
+	elseif action == "dig" then
+		-- held in one hand and pounded into the ground (the holder looks down with the mouse held):
+		-- a small hole where it is slammed, so moving leaves a trail of them (the floor grows back,
+		-- Map REGEN); every few slams it hurts
+		local d = held[player]
+		local torso = d and d.dragging and d.model:FindFirstChild("UpperTorso") :: BasePart?
+		local head = headOf(player)
+		local now = os.clock()
+		if not torso or not head or now < (d.nextDig or 0) or (torso.Position - head.Position).Magnitude > 12 then
+			return
+		end
+		d.nextDig = now + DIG_EVERY
+		-- the breakable floor under it gets a hole; down to the bedrock (nothing left to break) the
+		-- slam still lands, bursts and hurts
+		local floor = workspace:Raycast(torso.Position + Vector3.yAxis * 2, Vector3.yAxis * -8, digParams)
+		local point = floor and floor.Position or torso.Position - Vector3.yAxis * 0.8
+		if floor then
+			Map.blast(point, DIG_RADIUS, DIG_POWER)
+		end
+		d.digs = (d.digs or 0) + 1
+		fxRemote:FireAllClients("Pound", nil, point, d.digs)
+		Sfx.play(Sfx.THUD, point)
+		hit(d, torso, -Vector3.yAxis, DIG_HURT, 0, "blunt", point)
 	elseif action == "release" then
 		local d = held[player]
 		if d then
@@ -2514,6 +2552,48 @@ local function impacts(d, dt: number)
 	end
 end
 
+-- Held by the chest (F) and ground into the floor on a sprint: it scrapes along the ground. Dust and a grind where it
+-- rubs, and the skin there goes raw (a bruise that builds up, "road rash") - no HP, no broken bones.
+local SCRAPE_SPEED = 6 -- studs/s the body has to be going
+local SCRAPE_EVERY = 0.2
+local scrapeParams = RaycastParams.new()
+scrapeParams.FilterType = Enum.RaycastFilterType.Exclude
+local function scrape(d, now: number)
+	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+	if not torso or now < (d.nextScrape or 0) then
+		return
+	end
+	local velocity = torso.AssemblyLinearVelocity * XZ
+	if velocity.Magnitude < SCRAPE_SPEED then
+		return
+	end
+	scrapeParams.FilterDescendantsInstances = { dummyFolder, gibFolder, d.heldBy and d.heldBy.Character }
+	local floor = workspace:Raycast(torso.Position, -UP * 2, scrapeParams) -- pressed down, not just carried
+	if not floor then
+		return -- off the ground (swung up, over a drop): nothing to rub on
+	end
+	d.nextScrape = now + SCRAPE_EVERY
+	fxRemote:FireAllClients("Scrape", nil, floor.Position, velocity.Unit)
+	if now >= (d.nextScrapeSound or 0) then
+		d.nextScrapeSound = now + 0.45
+		Sfx.play(Sfx.SCRAPE, floor.Position)
+	end
+	-- pushed down chest first: the chest and the face take it
+	for _, name in { "UpperTorso", "Head" } do
+		local part = d.model:FindFirstChild(name) :: BasePart?
+		if part then
+			local p = d.parts[name]
+			if not p then
+				p = { trauma = 0, broken = false }
+				d.parts[name] = p
+			end
+			p.bruise = (p.bruise or 0) + 0.06
+			paint(d, part)
+		end
+	end
+	addInjury(d, "road rash")
+end
+
 local nextSync = 0
 RunService.Heartbeat:Connect(function(dt)
 	local now = os.clock()
@@ -2529,6 +2609,9 @@ RunService.Heartbeat:Connect(function(dt)
 		if not core or not d.model:FindFirstChild("HumanoidRootPart") or core.Position.Y < workspace.FallenPartsDestroyHeight + 40 then
 			d.model:Destroy()
 			continue
+		end
+		if d.dragging and d.heldBy then
+			scrape(d, now)
 		end
 		if d.bleed > 0 then
 			-- a hand pressed on the wound halves the loss

@@ -1005,6 +1005,23 @@ function EVENTS.Wound(_, target: BasePart?, position: Vector3, dir: Vector3, blo
 	end
 end
 
+-- A held body slammed into the ground (F, looking down, mouse held): an earth-coloured burst with
+-- its star and ring on the ground, chunks and dust thrown up, the camera jolted; every other slam
+-- shouts a word. `count` is how many slams in a row (the words take turns).
+local POUND_WORDS = { "WHAM!", "CRUNCH!", "THUD!", "SMASH!", "KRAK!" }
+local EARTH = Color3.fromRGB(150, 105, 70)
+function EVENTS.Pound(_, position: Vector3, count: number)
+	Fx.boom(position, 3.2, EARTH, count % 2 == 1 and POUND_WORDS[(count // 2) % #POUND_WORDS + 1] or nil, 5)
+	Fx.dust(position, 10, 4.5, 1.3)
+	Fx.sparks(position, 14, 6, DUST, Vector3.yAxis)
+	Fx.shake(position, 0.55, 0.22)
+end
+
+-- A body dragged along the ground (F): a low puff of dust kicked up behind where it rubs.
+function EVENTS.Scrape(_, position: Vector3, dir: Vector3)
+	Fx.dust(position - dir * 0.8, 3, 1.6, 0.5)
+end
+
 -- A tomato bursting: red pulp sprayed back off what it hit, a "SPLAT!", and a stain stuck to the
 -- surface (it rides along on a moving body) that fades out after a while.
 local TOMATO = Color3.fromRGB(215, 30, 25)

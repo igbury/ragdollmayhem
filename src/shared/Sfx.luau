@@ -54,6 +54,7 @@ Sfx.WEAPON = {
 }
 Sfx.SHATTER = { Sfx.METAL, 1.7, 0.6 } -- a molotov bottle breaking
 Sfx.THUD = { Sfx.PUNCH, 0.7, 1 } -- a body hitting the ground or a wall hard (impacts)
+Sfx.SCRAPE = { Sfx.STONE, 0.45, 0.35 } -- a dragged body grinding along the ground (F)
 
 -- Skip a clip's leading silence (also on every loop).
 function Sfx.prepare(sound: Sound)
