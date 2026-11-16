@@ -15,6 +15,7 @@ local HALF = 80 -- arena is 2*HALF studs wide
 local REGEN = 25
 local LOOSE_LIFE = 6 -- knocked-out structure bricks are swept after this
 local REBUILD_AT = 0.1 -- a structure comes back (REGEN later) only once 90% of its bricks are gone
+local IDLE_REPAIR = 45 -- or, damaged at all, once nothing has hit it for this long: the missing bricks slide back
 local LAYER_DELAY = 0.15 -- rebuilt structures rise one brick layer at a time
 local WAVE = 0.04 -- s per stud along a layer: its bricks slide in one after another, as a wave
 local SLIDE = 8 -- studs a rebuilt brick slides in from
@@ -235,7 +236,15 @@ local function link(bricks: { BasePart }, origin: CFrame)
 	end
 end
 
-local function buildStructure(kind: string, origin: CFrame, layered: boolean?)
+-- A brick's place in its structure (origin space, to a tenth of a stud): finds the same brick again.
+local function slot(origin: CFrame, position: Vector3): string
+	local at = origin:PointToObjectSpace(position)
+	return `{math.round(at.X * 10)},{math.round(at.Y * 10)},{math.round(at.Z * 10)}`
+end
+
+-- `keep` (a repair): bricks in these slots are still standing, so they are put straight back and
+-- only the rest slide in.
+local function buildStructure(kind: string, origin: CFrame, layered: boolean?, keep: { [string]: boolean }?)
 	local model = Instance.new("Model")
 	model.Name = kind
 	local bricks = {}
@@ -268,6 +277,17 @@ local function buildStructure(kind: string, origin: CFrame, layered: boolean?)
 	end
 	-- rebuild from the ground up: each layer slides in from the side, as a wave along the structure
 	model:SetAttribute("Rebuilding", true)
+	if keep then
+		local missing = {}
+		for _, cube in bricks do
+			if keep[slot(origin, cube.Position)] then
+				cube.Parent = model
+			else
+				table.insert(missing, cube)
+			end
+		end
+		bricks = missing
+	end
 	local layers, lowX = {}, math.huge
 	for _, cube in bricks do
 		local at = origin:PointToObjectSpace(cube.Position)
@@ -434,6 +454,34 @@ local function breakSounds(cubes: { BasePart }, at: Vector3)
 	end
 end
 
+-- Put back what is missing from a structure that is still standing (the bricks left stay as they are).
+local function repair(model: Model)
+	local origin = model:GetAttribute("Origin")
+	local keep = {}
+	for _, b in model:GetChildren() do
+		if b:IsA("BasePart") then
+			keep[slot(origin, b.Position)] = true
+		end
+	end
+	buildStructure(model.Name, origin, true, keep)
+	model:Destroy() -- same frame as the new one appears: the bricks that stayed never blink
+end
+
+-- Each hit restarts the structure's clock; IDLE_REPAIR after the last one it mends itself.
+local lastHit = setmetatable({}, { __mode = "k" }) -- [model] = os.clock() of its latest hit
+local function idleCheck(model: Model, stamp: number)
+	if lastHit[model] ~= stamp or model.Parent ~= folder or not model:GetAttribute("Origin") then
+		return -- hit again since, fell down whole (it rebuilds on its own), or a grave (stays broken)
+	end
+	if model:GetAttribute("Rebuilding") then
+		task.delay(1, idleCheck, model, stamp)
+		return
+	end
+	if #model:GetChildren() < (model:GetAttribute("Total") or 0) then
+		repair(model)
+	end
+end
+
 -- Structure bricks among `hits` break off, what they held up falls, then each structure hit is checked for a rebuild.
 -- Returns the bricks knocked out.
 local function hitStructures(hits: { BasePart }, from: Vector3, power: number): { BasePart }
@@ -446,9 +494,12 @@ local function hitStructures(hits: { BasePart }, from: Vector3, power: number): 
 			table.insert(knocked, cube)
 		end
 	end
+	local now = os.clock()
 	for model in models do
 		settle(model)
 		damaged(model)
+		lastHit[model] = now
+		task.delay(IDLE_REPAIR, idleCheck, model, now)
 	end
 	return knocked
 end
