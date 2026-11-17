@@ -595,9 +595,12 @@ end
 -- weapons hang off, and as the fallback for a rig without R15 arms.
 -- Where a tool sits in an R15 hand: in the palm, turned so the tool's -Z runs out along the fingers.
 local DEFAULT_GRIP = CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0)
--- Forearm angle off the view direction (smaller = arms point straight ahead) and how much the
--- cloned lower / upper arm is stretched along its length.
-local ARM_PITCH, ARM_YAW = 12, 24
+-- Forearm angle off the view direction and how much the cloned lower / upper arm is stretched along
+-- its length. Pitch tips the fingers up: a little reads as a natural guard; much more (12) and the
+-- arms look raised, below zero they reach out like a zombie. Yaw splays the forearms outward.
+local ARM_PITCH, ARM_YAW = 0, 30
+-- bare fists sit this much further apart and nearer the camera (a weapon's hand keeps its tuned spot)
+local FIST_SPREAD, FIST_PULL = 0.3, 0.3
 local ARM_STRETCH = 1.15
 local armModel: Model? = nil
 local arms = {} -- [side] = { pieces = { { part, offset from the hand } }, wrist = Vector3, grip = CFrame }
@@ -2816,8 +2819,10 @@ RunService.RenderStepped:Connect(function(dt)
 				move = move:Lerp(inspectLeft - rest, pose.leftAt.w)
 			end
 		end
+		local bare = hold and 0 or 1 - ext -- a punch still reaches all the way out
 		local fist = viewCF
-			* CFrame.new(h.x * (0.85 - 0.5 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2.35 - 1.2 * ext + move.Z)
+			* CFrame.new(h.x * (0.85 - 0.5 * ext + FIST_SPREAD * bare) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y,
+				-2.35 - 1.2 * ext + FIST_PULL * bare + move.Z)
 		local grab = dragView and side == "right" and holding and holding.part:FindFirstChild("GrabAttachment") :: Attachment?
 		if grab then
 			-- the fist reaches out toward the dummy's collar, the forearm coming up from the bottom
