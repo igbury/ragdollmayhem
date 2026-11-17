@@ -23,8 +23,10 @@ local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
 local Impact = require(ReplicatedStorage.Shared:WaitForChild("Impact"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
+local GloveMeshes = require(script:WaitForChild("GloveMeshes"))
 local Inspect = require(script:WaitForChild("Inspect"))
 local WeaponSway = require(script:WaitForChild("WeaponSway"))
+local WeaponBob = require(script:WaitForChild("WeaponBob"))
 local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
 local Menu = require(script:WaitForChild("Menu"))
@@ -238,10 +240,13 @@ local nextHand = "right"
 local weaponIndex = 1 -- Weapons[1] is fists
 local heldAbility = nil -- an Attacks entry taken from the hotbar: the hands glow its colour, a click casts it
 local lastWeaponUse = 0
-local weaponVisual = { sway = WeaponSway.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
+local weaponVisual = { sway = WeaponSway.new(), bob = WeaponBob.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
 local recoil = 0
 local aiming = false -- right mouse / L2 held: aim down the sights (guns) or show the throw arc (thrown)
 local ads = 0 -- eased 0..1
+-- boxing block (right mouse / L2 with the gloves): sent to the server, which then blocks every
+-- attack (knockPlayer); guardT eases the first-person gloves up to the face
+local guarding, guardT = false, 0
 -- [weaponId] = camera-space nudge of the right hand while aiming, learnt frame by frame so the
 -- top of the held mesh ends up just under the crosshair whatever the wrist / grip offsets are
 local adsFix = {}
@@ -328,6 +333,55 @@ local function label(props)
 end
 
 local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20) })
+-- Aimed swing (weapons with aimSwing): hold the attack button, a circle comes up round the crosshair
+-- and the mouse or right stick (the camera keeps turning with it) draws a line from its centre. Direction = where
+-- the blow goes, length = power. Released, it swings.
+-- (one table: the script is at Luau's 200-local limit)
+local swingUi = { R = 70, aim = nil :: { weapon: any, x: number, y: number }? } -- aim: x right, y up, pixels (0..R)
+do
+	local ring = Instance.new("Frame")
+	ring.AnchorPoint = Vector2.new(0.5, 0.5)
+	ring.Position = UDim2.fromScale(0.5, 0.5)
+	ring.Size = UDim2.fromOffset(swingUi.R * 2, swingUi.R * 2)
+	ring.BackgroundTransparency = 0.85
+	ring.BackgroundColor3 = Color3.new(0, 0, 0)
+	ring.Visible = false
+	ring.Parent = gui
+	Instance.new("UICorner", ring).CornerRadius = UDim.new(0.5, 0)
+	local stroke = Instance.new("UIStroke", ring)
+	stroke.Color, stroke.Thickness, stroke.Transparency = Color3.new(1, 1, 1), 2, 0.3
+	-- centred halfway to the dot: Rotation turns a frame about its own centre whatever its AnchorPoint
+	local line = Instance.new("Frame")
+	line.AnchorPoint = Vector2.new(0.5, 0.5)
+	line.BorderSizePixel = 0
+	line.Parent = ring
+	local tip = Instance.new("Frame")
+	tip.AnchorPoint = Vector2.new(0.5, 0.5)
+	tip.Size = UDim2.fromOffset(10, 10)
+	tip.BorderSizePixel = 0
+	tip.Parent = ring
+	Instance.new("UICorner", tip).CornerRadius = UDim.new(0.5, 0)
+	function swingUi.draw()
+		local a = swingUi.aim
+		ring.Visible = a ~= nil
+		if not a then return end
+		local len = math.sqrt(a.x * a.x + a.y * a.y)
+		local colour = Color3.new(1, 1, 1):Lerp(Color3.fromRGB(255, 70, 40), len / swingUi.R) -- white weak, red full
+		line.Size = UDim2.fromOffset(len, 4)
+		line.Position = UDim2.new(0.5, a.x / 2, 0.5, -a.y / 2)
+		line.Rotation = math.deg(math.atan2(-a.y, a.x))
+		line.BackgroundColor3, tip.BackgroundColor3, stroke.Color = colour, colour, colour
+		tip.Position = UDim2.new(0.5, a.x, 0.5, -a.y)
+	end
+	-- The line as (side, up, power): side/up the unit direction (0, 0 if barely moved), power 0..1;
+	-- an unmoved line is a plain swing (0.5).
+	function swingUi.value(): Vector3
+		local a = swingUi.aim :: any
+		local len = math.sqrt(a.x * a.x + a.y * a.y)
+		if len < 4 then return Vector3.new(0, 0, 0.5) end
+		return Vector3.new(a.x / len, a.y / len, len / swingUi.R)
+	end
+end
 -- sniper scope: a clear circle (a huge black stroke round a round frame blacks out the rest) and a cross
 local scope = Instance.new("Frame")
 scope.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -757,6 +811,11 @@ weaponVisual.gloves = {
 	left = BoxingGloves.create(camera, "ViewGlove_Left", -1),
 	right = BoxingGloves.create(camera, "ViewGlove_Right", 1),
 }
+task.spawn(GloveMeshes.dress, weaponVisual.gloves.left, -1, camera)
+task.spawn(GloveMeshes.dress, weaponVisual.gloves.right, 1, camera)
+GloveMeshes.watch(camera, function(character)
+	return character == player.Character and isFirstPerson() -- the viewmodel pair draws instead
+end)
 for id, specs in VIEWMODELS do
 	for _, spec in specs do
 		local p = part(spec[1], spec[2])
@@ -924,9 +983,9 @@ local function drawArc(weapon)
 	end
 end
 
-local function useWeapon(weapon)
+local function useWeapon(weapon, swing: Vector3?)
 	if gui:GetAttribute("WeaponPickerOpen") then return end
-	weapon = weapon.slash and not aiming and weapon.slash or weapon
+	weapon = weapon.slash and not aiming and weapon.slash or weapon.heavy and aiming and weapon.heavy or weapon
 	local now = os.clock()
 	local char = player.Character
 	local head = char and char:FindFirstChild("Head")
@@ -952,7 +1011,8 @@ local function useWeapon(weapon)
 			* CFrame.Angles(spread * math.sqrt(math.random()), 0, 0)).LookVector -- sqrt: even over the cone, not bunched in the middle
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
-	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95)
+	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)
+	weaponVisual.swing = swing
 	-- our own sounds now, not a round trip later (the server leaves us out of these)
 	local sounds = Sfx.WEAPON[weapon.id] or {}
 	if sounds.fire then
@@ -972,8 +1032,11 @@ local function useWeapon(weapon)
 		recoil = 1
 		weaponVisual.recoil:fire(weapon.id)
 	elseif weapon.id == "BoxingGloves" then
-		hands[nextHand].t = 0
+		hands[nextHand].t, hands[nextHand].heavy = 0, false
 		nextHand = nextHand == "right" and "left" or "right"
+	elseif weapon.id == "BoxingHeavy" then -- the lead hand straight out of the block
+		hands.left.t, hands.left.heavy = 0, true
+		nextHand = "right"
 	else
 		hands.right.t = 0 -- the punch motion doubles as the swing / throw
 		if weapon.id == "KnifeSlash" then
@@ -1347,6 +1410,26 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			actionRemote:FireServer("bowDraw")
 			return
 		end
+		if weapon.aimSwing then -- the swing comes on release (InputEnded); meanwhile the mouse draws it
+			swingUi.aim = { weapon = weapon, x = 0, y = 0 }
+			swingUi.draw()
+			-- reads the mouse/stick and passes it on, so the camera still turns while the line is drawn
+			ContextActionService:BindActionAtPriority("SwingAim", function(_, _, inp)
+				local a = swingUi.aim
+				if not a then return Enum.ContextActionResult.Pass end
+				if inp.UserInputType == Enum.UserInputType.MouseMovement then
+					a.x += inp.Delta.X
+					a.y -= inp.Delta.Y
+				else -- right stick: where it points is the line
+					a.x, a.y = inp.Position.X * swingUi.R, inp.Position.Y * swingUi.R
+				end
+				local len = math.sqrt(a.x * a.x + a.y * a.y)
+				if len > swingUi.R then a.x, a.y = a.x / len * swingUi.R, a.y / len * swingUi.R end
+				swingUi.draw()
+				return Enum.ContextActionResult.Pass
+			end, false, Enum.ContextActionPriority.High.Value, Enum.UserInputType.MouseMovement, Enum.KeyCode.Thumbstick2)
+			return
+		end
 		while punching and not holding and Weapons[weaponIndex] == weapon do
 			if not weapon.kind then
 				if mv.diveKick() then
@@ -1357,11 +1440,11 @@ UserInputService.InputBegan:Connect(function(input, processed)
 					kick()
 				end
 			else
-				useWeapon(weapon)
+				useWeapon(weapon) -- with the block up the gloves throw the heavy left instead (useWeapon)
 			end
 			task.wait((weapon.slash and not aiming and weapon.slash.cd) or weapon.cd or PUNCH_INTERVAL)
-			if weapon.kind and not weapon.auto then
-				break -- one use per click
+			if weapon.kind and (not weapon.auto or (weapon.heavy and aiming)) then
+				break -- one use per click (and one heavy left per click out of the block)
 			end
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
@@ -1409,6 +1492,13 @@ end)
 UserInputService.InputEnded:Connect(function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
+		if swingUi.aim then
+			local weapon, swing = swingUi.aim.weapon, swingUi.value()
+			swingUi.aim = nil
+			swingUi.draw()
+			ContextActionService:UnbindAction("SwingAim")
+			if Weapons[weaponIndex] == weapon and not Menu.active and not holding then useWeapon(weapon, swing) end
+		end
 		if weaponVisual.bowDrawAt then
 			local elapsed = os.clock() - weaponVisual.bowDrawAt
 			weaponVisual.bowDrawAt = nil
@@ -2763,6 +2853,12 @@ RunService.RenderStepped:Connect(function(dt)
 	-- knife aim: 0 -> 1 plays the toss and catch by the blade, 1 -> 0 (letting go) plays it back
 	local wantKnife = aiming and show and held.kind == "knife"
 	knifeT = math.clamp(knifeT + (wantKnife and dt or -dt) / KNIFE_FLIP, 0, 1)
+	local wantGuard = aiming and held.id == "BoxingGloves" and humanoid ~= nil and humanoid.Health > 0 and not holding
+	if wantGuard ~= guarding then
+		guarding = wantGuard
+		actionRemote:FireServer("guard", wantGuard)
+	end
+	guardT += ((wantGuard and 1 or 0) - guardT) * math.min(dt * 14, 1)
 	Fx.fovBoost -= 8 * knifeT
 	local now = os.clock()
 	-- tell the other clients what this body is doing, so they can show it too (see Others)
@@ -2785,11 +2881,12 @@ RunService.RenderStepped:Connect(function(dt)
 		Fx.speedLine()
 	end
 
-	local bob = math.sin(os.clock() * (9 + 5 * sprint)) * 0.05 * (1 + 1.5 * sprint) * moving
 	local weapon = Weapons[weaponIndex]
 	local hold = not dragView and HOLD[weapon.id] or nil -- holding one with F: no weapon in hand
 	local viewCF = camera.CFrame * weaponVisual.sway:update(camera.CFrame, dt,
 		show == true and camera.CameraType ~= Enum.CameraType.Scriptable, ads)
+		* weaponVisual.bob:update(dt, show == true and root ~= nil, root and root.AssemblyLinearVelocity or Vector3.zero,
+			not airborne, sprint, ads)
 		* weaponVisual.recoil:update(dt, show == true)
 	if char and char:GetAttribute("ReloadWeapon") then
 		local remaining = (char:GetAttribute("ReloadUntil") or now) - workspace:GetServerTimeNow()
@@ -2807,10 +2904,13 @@ RunService.RenderStepped:Connect(function(dt)
 	local inspectRot = pose and pose.rightRot or CFrame.identity
 	local weaponCF = nil
 	local fists = {} -- this frame's fist CFrames, for a piece handed to the left fist
+	local gloveCFs = {} -- this frame's glove grip CFrames, placed after both are known
 	for side, h in hands do
-		h.t = math.min(h.t + dt / 0.2, 1)
+		h.t = math.min(h.t + dt / (h.heavy and 0.34 or 0.2), 1)
 		local ext = math.sin(h.t * math.pi)
 		local boxing = weapon.id == "BoxingGloves" and not dragView
+		-- the block holds the gloves up, except the hand throwing the heavy left out of it
+		local guard = guardT * (h.heavy and 1 - ext or 1)
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
 		local move = (side == "right" and hold) and hold.hand or Vector3.zero
 		if dragView and side == "left" then
@@ -2829,28 +2929,53 @@ RunService.RenderStepped:Connect(function(dt)
 			ext = math.sin(math.clamp((now - lastWeaponUse) / 0.28, 0, 1) * math.pi)
 			move += Vector3.new(weaponVisual.slashSide * 0.75 * ext, -0.10 * ext, -0.30 * ext)
 		end
+		-- aimed swing: drawn back against the line while it is drawn, then swept through along it.
+		-- sweep: -power while drawing (cocked back), -> +1 (follow-through) -> 0 (rest) over the swing,
+		-- so the release picks up exactly where the draw left it. An unmoved line is the plain chop.
+		local drawing = side == "right" and swingUi.aim ~= nil and swingUi.aim.weapon == weapon
+		local aimed = drawing and swingUi.value() or side == "right" and weapon.aimSwing
+			and weaponVisual.lastAction == weapon.id and h.t < 1 and weaponVisual.swing or nil
+		if aimed and aimed.X == 0 and aimed.Y == 0 then aimed = nil end
+		local sweep = 0
+		if aimed then
+			if drawing then
+				sweep = -aimed.Z
+			elseif h.t < 0.55 then
+				sweep = -aimed.Z + (1 + aimed.Z) * smooth(h.t / 0.55)
+			else
+				sweep = 1 - smooth((h.t - 0.55) / 0.45)
+			end
+			move += Vector3.new(aimed.X, aimed.Y, 0) * 0.8 * sweep
+				+ Vector3.new(0, 0, drawing and 0.15 * aimed.Z or 0.15 * aimed.Z * (1 - smooth(h.t)) - 0.35 * ext)
+		end
 		if boxing then
 			-- Raised guard; the striking fist travels inward and turns over, then returns to guard.
-			move += Vector3.new(-h.x * (0.12 + 0.08 * ext), 0.32 + 0.08 * ext, 0.12 - 0.12 * ext)
+			move += Vector3.new(h.x * (0.12 - 0.32 * ext), 0.32 + 0.08 * ext, 0.12 - 0.12 * ext)
+			-- the block: both gloves up in front of the face, pressed together (kept apart below)
+			move = move:Lerp(Vector3.new(-h.x * 0.6, 0.8, 0.5), guard)
+			if h.heavy then
+				move += Vector3.new(0, 0.1, -0.5) * ext -- reaches further than a jab
+			end
 		end
 		if side == "right" and hold and ads > 0 then -- aiming: the gun comes up to the crosshair (adsFix, below)
 			move = move:Lerp(hold.hand + (adsFix[weapon.id] or Vector3.zero) + Vector3.new(0, 0, -0.35), ads) -- held out, so both hands show
 		elseif side == "right" and hold and weapon.kind == "knife" and knifeT > 0 then -- the arm bends back once it's caught
 			move = move:Lerp(KNIFE_COCK, smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1)))
 		elseif side == "left" and ads > 0 and leftGrip[weapon.id] then -- and the left hand takes hold of it
-			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
+			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext, -2.35 - 1.2 * ext)
 			move = move:Lerp(leftGrip[weapon.id] - rest, ads)
 		end
 		if pose then
 			move += (side == "right" and pose.right or pose.left) or Vector3.zero
 			if side == "left" and pose.leftAt and inspectLeft then -- reaching for a point on the weapon
-				local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext + bob * h.x, -2.35 - 1.2 * ext)
+				local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext, -2.35 - 1.2 * ext)
 				move = move:Lerp(inspectLeft - rest, pose.leftAt.w)
 			end
 		end
+		move += weaponVisual.bob:hand(h.x) * (1 - ads) -- arms swing in opposition while walking; aiming steadies them
 		local bare = hold and 0 or 1 - ext -- a punch still reaches all the way out
 		local fist = viewCF
-			* CFrame.new(h.x * (0.85 - 0.5 * ext + FIST_SPREAD * bare) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y,
+			* CFrame.new(h.x * (0.85 - 0.5 * ext + FIST_SPREAD * bare) + move.X, -0.85 + 0.35 * ext + move.Y,
 				-2.35 - 1.2 * ext + FIST_PULL * bare + move.Z)
 		local grab = dragView and side == "right" and holding and holding.part:FindFirstChild("GrabAttachment") :: Attachment?
 		if grab then
@@ -2865,7 +2990,7 @@ RunService.RenderStepped:Connect(function(dt)
 				x, y = at.X * z / at.Z, at.Y * z / at.Z
 			end
 			x, y = math.clamp(x, 0.45, 1.25), math.clamp(y, -1.0, -0.4)
-			local spot = viewCF * Vector3.new(x, y + bob * 0.5, z)
+			local spot = viewCF * Vector3.new(x, y, z)
 			-- knuckles along the line from your eye through the fist (the collar itself may be off
 			-- screen): the forearm then runs back out of the bottom right corner, never across the view
 			fist = CFrame.lookAt(spot, viewCF * (Vector3.new(x, y, z) * 2), viewCF.UpVector)
@@ -2877,15 +3002,25 @@ RunService.RenderStepped:Connect(function(dt)
 		h.fist.Transparency = (show and not real) and 0 or 1
 		h.arm.Transparency = (show and not real) and 0 or 1
 		-- fingers forward, forearm running back, down and outward past the camera
-		local arm = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
+		local pitch = ARM_PITCH + (boxing and 30 * guard or 0) -- blocking: forearms up, gloves upright
+		local arm = fist * CFrame.Angles(math.rad(pitch), math.rad(ARM_YAW * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
 		local hand = arm
 		if boxing then
-			hand = fist * CFrame.Angles(math.rad(80 - 18 * ext), math.rad(-h.x * (10 + 12 * ext)), math.rad(h.x * (8 + 45 * ext)))
+			-- The glove stays on the forearm's axis (so it sits on the hand) and only turns over along it.
+			hand = arm * CFrame.Angles(0, math.rad(-h.x * 45 * ext), 0)
 		end
 		if side == "right" and hold then
 			-- The wrist bends so the hand is square to the view whatever the forearm is doing:
 			-- guns point at the crosshair, melee and throwables stand upright and tip forward to swing.
 			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket" or weapon.kind == "bow") and 0 or -25 - 75 * ext
+			local yaw, roll = 0, 0
+			if aimed then -- the head leads along the line: down chops, up comes from below, sideways sweeps flat
+				local sx, sy = aimed.X, aimed.Y
+				tilt = -25 + sy * 85 * sweep - 50 * math.abs(sx * sweep)
+				yaw, roll = math.rad(-sx * 30 * sweep), math.rad(-sx * 70 * sweep)
+			elseif cutting then
+				yaw, roll = math.rad(-weaponVisual.slashSide * 65 * ext), math.rad(weaponVisual.slashSide * 45 * ext)
+			end
 			if weapon.kind == "knife" and knifeT > 0 then -- cocked: the wrist tips the upturned knife's handle at the crosshair
 				tilt += (KNIFE_TILT - tilt) * smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1))
 			end
@@ -2893,8 +3028,7 @@ RunService.RenderStepped:Connect(function(dt)
 			hand = CFrame.new(arm * pivot)
 				* viewCF.Rotation
 				* inspectRot
-				* CFrame.Angles(math.rad(tilt), cutting and math.rad(-weaponVisual.slashSide * 65 * ext) or 0,
-					cutting and math.rad(weaponVisual.slashSide * 45 * ext) or 0)
+				* CFrame.Angles(math.rad(tilt), yaw, roll)
 				* CFrame.Angles(math.rad(90), 0, 0)
 				* CFrame.new(-pivot)
 			weaponCF = hand * (real and real.grip or DEFAULT_GRIP)
@@ -2905,7 +3039,34 @@ RunService.RenderStepped:Connect(function(dt)
 				piece.part.LocalTransparencyModifier = (show and not (boxing and i == 1)) and 0 or 1
 			end
 		end
-		BoxingGloves.update(weaponVisual.gloves[side], hand * (real and real.grip or DEFAULT_GRIP), show == true and boxing)
+		local glove = weaponVisual.gloves[side]
+		local gloveCF = hand * (real and real.grip or DEFAULT_GRIP)
+		if boxing then -- guard: thumbs up, backs of the gloves turned out, rolled about the forearm
+			gloveCF *= glove.origin * CFrame.Angles(0, 0, math.rad(-90 * h.x)) * glove.origin:Inverse()
+		end
+		gloveCFs[side] = gloveCF
+	end
+	-- The gloves never pass through each other: each one stays on its own side of the middle of the
+	-- view (they are mirror images), measured on the glove's own vertices; one that reaches over is
+	-- slid back out with its forearm.
+	local boxingNow = weapon.id == "BoxingGloves"
+	for side, h in hands do
+		local glove = weaponVisual.gloves[side]
+		local gloveCF = gloveCFs[side]
+		if boxingNow and show then
+			local inward = viewCF.RightVector * -h.x
+			local over = GloveMeshes.reach(h.x, gloveCF * glove.origin, inward) - inward:Dot(viewCF.Position) + 0.02
+			if over > 0 then
+				local shift = -inward * over
+				gloveCF += shift
+				h.fist.CFrame += shift
+				h.arm.CFrame += shift
+				for _, piece in (arms[side] or { pieces = {} }).pieces do
+					piece.part.CFrame += shift
+				end
+			end
+		end
+		BoxingGloves.update(glove, gloveCF, show == true and boxingNow)
 	end
 	-- Hide replicated body gloves locally in first person: the anchored pair above draws instead.
 	local bodyGloves = char and char:FindFirstChild("BoxingGloves")

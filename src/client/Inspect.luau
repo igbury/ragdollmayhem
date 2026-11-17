@@ -141,31 +141,32 @@ function SPECS.Knife.extra(p, t, spec)
 	p.weapon = CFrame.new(track(spec.toss, t)) * angles(track(spec.flip, t))
 end
 
--- Turn the wrist left and lay the heavy end on the left palm, then toss it off the palm a few times:
--- the left hand flicks up, the head flies higher (the weapon turns in the right fist) and lands back.
+-- Turn the wrist left and lay the heavy end on the left palm, then pop it off the palm a few times
+-- as a lever: the right fist dips and the wrist turns, the head lifts and lands back. The left palm
+-- stays put the whole time.
 local function rest()
-	local hold = V(-0.2, 0.3, -0.2)
-	local palm, flick = V(-0.5, 0.55, -0.2), V(-0.5, 0.68, -0.2)
+	local hold, press = V(-0.2, 0.3, -0.2), V(-0.2, 0.25, -0.2)
+	local palm = V(-0.5, 0.55, -0.2)
 	local lying, flying = V(0, 10, 80), V(0, 10, 58)
-	local left, roll = { { 0, Z }, { 0.45, palm } }, { { 0, Z }, { 0.4, lying } }
+	local right, roll = { { 0, Z }, { 0.4, hold } }, { { 0, Z }, { 0.4, lying } }
 	for i, at in { 0.8, 1.35, 1.9 } do
 		local high = i == 3 and V(0, 10, 48) or flying -- the last toss goes higher
-		table.insert(left, { at, palm })
-		table.insert(left, { at + 0.07, flick }) -- the flick that throws it
-		table.insert(left, { at + 0.17, palm }) -- back down before it lands, so it leaves the palm
+		table.insert(right, { at, hold })
+		table.insert(right, { at + 0.07, press }) -- the handle pushed down pops the head up
+		table.insert(right, { at + 0.24, hold })
 		table.insert(roll, { at + 0.04, lying })
 		table.insert(roll, { at + 0.24, high })
 		table.insert(roll, { at + 0.42, lying + V(0, 0, 3) }) -- lands a touch low...
 		table.insert(roll, { at + 0.5, lying }) -- ...and settles
 	end
-	table.insert(left, { 2.9, palm })
-	table.insert(left, { 3.6, Z })
+	table.insert(right, { 2.9, hold })
+	table.insert(right, { 3.6, Z })
 	table.insert(roll, { 2.9, lying })
 	table.insert(roll, { 3.6, Z })
 	return {
 		time = 3.6,
-		right = { { 0, Z }, { 0.4, hold }, { 2.9, hold }, { 3.6, Z } },
-		left = left,
+		right = right,
+		left = { { 0, Z }, { 0.45, palm }, { 2.9, palm }, { 3.6, Z } },
 		rightRot = roll,
 	}
 end

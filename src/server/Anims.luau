@@ -153,6 +153,15 @@ Anims.guard = build("DummyGuard", {
 	{ 0.8, GUARD },
 }, true, Enum.AnimationPriority.Action, true)
 
+-- the block (boxing gloves, right mouse): a high guard, both gloves up in front of the face, elbows
+-- tucked in front of the ribs, chin down. Above the guard loop, under the blows.
+local BLOCK = {
+	UpperTorso = rx(-14), Head = rx(12),
+	LeftUpperArm = rxy(70, -12, 8), LeftLowerArm = rx(140),
+	RightUpperArm = rxy(70, 12, -8), RightLowerArm = rx(140),
+}
+Anims.block = build("BoxingBlock", { { 0, BLOCK }, { 1, BLOCK } }, true, Enum.AnimationPriority.Action2, true)
+
 -- the jab: the lead (left) hand straight out and back, quick, the shoulder turning into it
 Anims.PUNCH_HIT = 0.14 -- when the fist lands
 Anims.punch = build("DummyJab", {

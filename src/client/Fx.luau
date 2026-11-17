@@ -612,11 +612,16 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
 	local aimCf = CFrame.lookAt(from, to)
 	local distance = (to - from).Magnitude
-	if weaponId == "BoxingGloves" then
+	if weaponId == "BoxingGloves" or weaponId == "BoxingHeavy" then
 		-- A padded punch gets a compact impact, never a blade's crescent or metal sparks.
 		if landed then
 			Fx.hit(to)
-			Fx.shake(to, 0.22, 0.12)
+			if weaponId == "BoxingHeavy" then -- the heavy left out of the block
+				Fx.shake(to, 0.55, 0.2)
+				Fx.text(to + UP * 2, "POW!", Color3.fromRGB(255, 220, 60), 2.4)
+			else
+				Fx.shake(to, 0.22, 0.12)
+			end
 		end
 	elseif MELEE[weaponId] then
 		-- swing: a crescent sweeping in front of the attacker; the katana's is a thin, wide,
