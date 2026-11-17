@@ -158,6 +158,11 @@ local PUNT_SPEED = 150
 local PUNT_LIFT = 18
 local PUNT_APEX = Vector3.new(0.7, 2.6, -2.3) -- root space (right, up, back): over your head, just in front
 local PUNT_FOOT = Vector3.new(0.5, -0.5, -3.2) -- where the foot meets it
+-- first person, the view follows it: up as it is heaved overhead, down to the kick, then back
+-- (degrees, + looks up). The legs show for the whole punt, and no weapon is out until it ends.
+local PUNT_LOOK_UP, PUNT_LOOK_DOWN = 12, -32
+local puntUntil = 0 -- os.clock() the punt animation ends (it plays on after the body has gone)
+local PUNT_SHOWN = { "LowerTorso", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
 local THROW_SPEED = 90
 local SKIN = Color3.fromRGB(240, 240, 240)
 local WALK_SPEED = 16
@@ -1227,6 +1232,7 @@ local function startPunt()
 	end
 	local start = os.clock()
 	holding.punt, holding.digHeld = start, false
+	puntUntil = start + PUNT_LENGTH
 	local look = camera.CFrame.LookVector * XZ
 	look = look.Magnitude > 0.1 and look.Unit or root.CFrame.LookVector
 	root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
@@ -1312,6 +1318,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		if os.clock() < puntUntil then
+			return -- mid-punt: no swing, shot or throw until the kick is done
+		end
 		if holding and holding.drag then
 			if holding.punt then
 				return -- already on its way
@@ -2415,6 +2424,26 @@ RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, 
 	if wallTilt ~= 0 then
 		cf *= CFrame.Angles(0, 0, wallTilt)
 	end
+	local punting = PUNT_LENGTH - (puntUntil - os.clock())
+	if punting < PUNT_LENGTH and isFirstPerson() then
+		-- the punt from your own eyes: follow it up overhead, down into the kick, back level...
+		local function ease(a: number): number
+			a = math.clamp(a, 0, 1)
+			return a * a * (3 - 2 * a)
+		end
+		local look = if punting < PUNT_RELEASE then PUNT_LOOK_UP * ease(punting / PUNT_RELEASE)
+			elseif punting < PUNT_KICK then PUNT_LOOK_UP + (PUNT_LOOK_DOWN - PUNT_LOOK_UP) * ease((punting - PUNT_RELEASE) / (PUNT_KICK - PUNT_RELEASE))
+			else PUNT_LOOK_DOWN * (1 - ease((punting - PUNT_KICK) / (PUNT_LENGTH - PUNT_KICK)))
+		cf *= CFrame.Angles(math.rad(look), 0, 0)
+		-- ...with your legs drawn (the camera hides the whole body in first person), so you see the kick
+		local char = player.Character
+		for _, name in PUNT_SHOWN do
+			local part = char and char:FindFirstChild(name) :: BasePart?
+			if part then
+				part.LocalTransparencyModifier = 0
+			end
+		end
+	end
 	if cf ~= camera.CFrame then
 		cleanCamera = camera.CFrame
 		camera.CFrame = cf
@@ -2554,7 +2583,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- fists
 	-- holding one with F the arms still show: the left pumping as you run, the right reaching for
 	-- the dummy's collar (see the fists loop)
-	local dragView = holding ~= nil and holding.drag == true
+	local dragView = (holding ~= nil and holding.drag == true) or os.clock() < puntUntil
 	local show = isFirstPerson() and not Menu.active and (not holding or dragView) and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
 	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and not thirdWeapon)
@@ -2931,7 +2960,9 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	-- the same weapon in the body's own right hand, for the pulled-back camera
+	-- (none while a dummy is held with F or being punted: the right hand is busy with it)
 	local bodyId = not isFirstPerson() and humanoid and humanoid.Health > 0 and HOLD[weapon.id]
+		and not (holding and holding.drag) and os.clock() >= puntUntil
 		and not (thrown and os.clock() - lastWeaponUse < weapon.cd) and weapon.id or nil
 	if bodyWeapon.id ~= bodyId then
 		if bodyWeapon.part then

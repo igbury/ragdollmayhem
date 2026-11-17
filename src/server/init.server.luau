@@ -1440,7 +1440,8 @@ end)
 local PUNT_HURT = 1.1
 local PUNT_TIME = 3
 local PUNT_POWER = 1.8
-local PUNT_BLAST = 2.6
+local PUNT_BLAST = 3.4 -- radius it smashes where it lands (Map.blast, PUNT_BLAST_POWER)
+local PUNT_BLAST_POWER = 90
 local MAX_PUNT_SPEED = 200
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
@@ -2737,7 +2738,7 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 		power = math.max(power, 1) * PUNT_POWER
 		d.daze += 25
 		fxRemote:FireAllClients("PuntHit", nil, part.Position, dir)
-		Map.blast(part.Position + dir * 0.8, PUNT_BLAST, 70)
+		Map.blast(part.Position + dir * 0.8, PUNT_BLAST, PUNT_BLAST_POWER)
 	end
 	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)

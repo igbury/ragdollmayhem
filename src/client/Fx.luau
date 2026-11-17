@@ -1097,11 +1097,9 @@ function EVENTS.Furrow(_, from: Vector3, to: Vector3, normal: Vector3, speed: nu
 	Fx.shake(to, 0.12 * fury, 0.12)
 end
 
--- The punt's kick landing on the body: a burst at its chest along the kick, "POW!" and a jolt.
-local KICK = Color3.fromRGB(255, 220, 90)
+-- The punt's kick landing on the body: no comic burst, just the jolt and a puff of dust off it.
 function EVENTS.Punt(_, position: Vector3, dir: Vector3)
-	Fx.boom(position, 2.4, KICK, "POW!", 6)
-	Fx.sparks(position, 12, 4, WHITE, dir, 0.4)
+	Fx.dust(position, 4, 1.5, 0.7)
 	Fx.shake(position, 0.6, 0.2)
 end
 
