@@ -163,7 +163,15 @@ local PUNT_FOOT = Vector3.new(0.5, 0.35, -2.9) -- where the foot meets it
 -- first person, the view follows it: up as it is heaved overhead, down to the kick, then back
 -- (degrees, + looks up). The legs show for the whole punt, and no weapon is out until it ends.
 local PUNT_LOOK_UP, PUNT_LOOK_DOWN = 12, -40
-local PUNT_EYE = Vector3.new(0, 0.35, 1) -- first person: the eye draws back (Z) and up (Y) for the kick
+-- the kicked body ploughing into things (see the loose body below): from PUNT_ARM s after the kick
+-- (just let go, the limbs still settle), PUNT_HITS hits at most, PUNT_GAP s apart (not under the
+-- server's 0.3 s per landing), for PUNT_TIME (the server's PUNT_HITS / PUNT_TIME)
+local PUNT_ARM, PUNT_HITS, PUNT_GAP, PUNT_TIME = 0.25, 3, 0.3, 3
+local PUNT_NEAR, PUNT_LOOKAHEAD = 2, 0.05 -- studs past the chest and s of travel looked ahead for a wall
+local PUNT_WALL = 0.6 -- |normal.Y| below this is something standing (a wall); above, floor or a ledge top
+local PUNT_MIN_SPEED = 30 -- studs/s it still needs to break anything
+local PUNT_KEEP = 0.5 -- of its speed it keeps after smashing through
+local PUNT_EYE =Vector3.new(0, 0.35, 1) -- first person: the eye draws back (Z) and up (Y) for the kick
 local puntUntil = 0 -- os.clock() the punt animation ends (it plays on after the body has gone)
 local PUNT_SHOWN = { "LowerTorso", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
 local THROW_SPEED = 90
@@ -1303,6 +1311,46 @@ end
 -- up over your head and front-kick it away as it drops (the body's path: the per-frame block). At
 -- the kick the server hears "punt" first (the blow, and the mark that makes its landing hit harder),
 -- then the usual release with the kick's speed.
+-- Raking: the furrow is laid here, where the body is this frame (we simulate it), so it opens right
+-- under it; waiting for the server's copy left it trailing. The server lays it for everyone else.
+-- Same stretches as the server's (Fx "Furrow"): from the last point, joined, a new start after a gap.
+local FURROW_EVERY, FURROW_MIN_SPEED = 0.05, 2
+local furrowParams = RaycastParams.new()
+furrowParams.FilterType = Enum.RaycastFilterType.Exclude
+local function furrowStep(held, char: Model)
+	local now = os.clock()
+	if now < (held.nextFurrow or 0) then
+		return
+	end
+	local body = dummyOf(held.part)
+	local torso = body and body:FindFirstChild("UpperTorso") :: BasePart?
+	if not torso then
+		return
+	end
+	held.nextFurrow = now + FURROW_EVERY
+	local last, lastAt = held.furrowFrom, held.furrowFromAt
+	held.furrowFrom, held.furrowFromAt = torso.Position, now
+	if not last or now - lastAt > 0.3 then
+		return
+	end
+	local velocity = (torso.Position - last) * XZ / (now - lastAt)
+	if velocity.Magnitude < FURROW_MIN_SPEED then
+		return
+	end
+	furrowParams.FilterDescendantsInstances = { body, char }
+	local floor = workspace:Raycast(torso.Position, Vector3.yAxis * -3.5, furrowParams)
+	if not floor or dummyOf(floor.Instance) then
+		held.furrowAt = nil
+		return
+	end
+	local from = held.furrowAt
+	if not from or (from - floor.Position).Magnitude > 5 then
+		from = floor.Position - velocity.Unit * 0.6
+	end
+	held.furrowAt = floor.Position
+	Fx.play("Furrow", nil, from, floor.Position, floor.Normal, velocity.Magnitude)
+end
+
 local function startPunt()
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -1329,6 +1377,9 @@ local function startPunt()
 			sounds.Kick:Play()
 		end
 		drop(dir)
+		if loose then
+			loose.punt = os.clock() -- its first hit is the punt's landing (see below)
+		end
 	end)
 end
 
@@ -2612,6 +2663,11 @@ RunService.RenderStepped:Connect(function(dt)
 				holding.raking = raking
 				grabRemote:FireServer("rake", raking)
 			end
+			if raking then
+				furrowStep(holding, char)
+			else
+				holding.furrowAt, holding.furrowFrom = nil, nil
+			end
 			holding.rake = (holding.rake or 0) + ((raking and 1 or 0) - (holding.rake or 0)) * math.min(dt * 7, 1)
 			local look = dragRoot.CFrame.LookVector * XZ
 			look = look.Magnitude > 0.1 and look.Unit or Vector3.zAxis
@@ -2680,10 +2736,38 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	-- a body we let go of: still ours until it rests, so its landings are ours to report
 	if loose then
-		local landed = loose.body.Parent and os.clock() < loose.untilTime and Impact.step(loose.impact, loose.body, dt)
+		-- just kicked: the launch itself (every limb's speed jumping) is no landing, or the punt's one
+		-- hard hit would go off at your feet; it starts counting afresh once PUNT_ARM has passed
+		local arming = loose.punt and os.clock() < loose.punt + PUNT_ARM
+		if arming then
+			loose.impact = Impact.new()
+		end
+		local landed = not arming and loose.body.Parent and os.clock() < loose.untilTime and Impact.step(loose.impact, loose.body, dt)
+		-- kicked: what it flies into - a pillar, a wall, anything standing in its way, never the floor
+		-- it skids along - is a hit. Looked for just ahead of the chest each frame, so it is caught
+		-- going in: that spot breaks (server, at the point we saw: its copy of the body lags) and the
+		-- body loses PUNT_KEEP of its speed as it ploughs through. PUNT_HITS such hits, PUNT_GAP apart.
+		local now = os.clock()
+		local punting = loose.punt and now < loose.punt + PUNT_TIME and (loose.puntHits or 0) < PUNT_HITS
+		-- (from the kick on: at its speed it covers a wall's distance before any settling is over)
+		local torso = punting and now > (loose.puntNext or 0)
+			and loose.body:FindFirstChild("UpperTorso") :: BasePart?
+		local v = torso and torso.AssemblyLinearVelocity
+		if v and v.Magnitude > PUNT_MIN_SPEED then
+			furrowParams.FilterDescendantsInstances = { loose.body, player.Character }
+			local ahead = workspace:Raycast(torso.Position, v * (dt + PUNT_LOOKAHEAD) + v.Unit * PUNT_NEAR, furrowParams)			if ahead and math.abs(ahead.Normal.Y) < PUNT_WALL and not dummyOf(ahead.Instance) then
+				landed = { part = torso, lost = Impact.SPEED + Impact.PER_POWER, dir = v.Unit, at = ahead.Position }
+				loose.puntHits, loose.puntNext = (loose.puntHits or 0) + 1, now + PUNT_GAP
+				for _, part in loose.body:GetDescendants() do
+					if part:IsA("BasePart") then
+						part.AssemblyLinearVelocity *= PUNT_KEEP
+					end
+				end
+			end
+		end
 		if landed then
 			Sfx.playLocal(Sfx.THUD, landed.part.Position)
-			grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir)
+			grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir, landed.at)
 		elseif not loose.body.Parent or os.clock() >= loose.untilTime then
 			loose = nil
 		end

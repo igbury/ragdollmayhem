@@ -23,6 +23,9 @@ local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
 local GRAB_RANGE = 15
 local MAX_THROW_SPEED = 120
+-- studs a reported point of impact may lie from our copy of the body: a kicked one flies at up to
+-- MAX_PUNT_SPEED and our copy trails the kicker's by a ping or so, plus their look-ahead
+local MAX_STRUCK_GAP = 80
 local MAX_SLAM_LOST = 140 -- studs/s a held body can lose in one hit, as its holder reports it (the grab drags at 90)
 local MAX_DUMMIES = 30
 local MAX_HP = 100
@@ -1530,12 +1533,13 @@ end)
 -- The punt (held with F, looking ahead, one click: the holder heaves it up and front-kicks it away):
 -- the kick itself is a PUNT_HURT blunt blow, and for PUNT_TIME after it the body is marked, so the
 -- first thing it hits takes a blow PUNT_POWER times harder than a throw would give, breaks the floor
--- or wall there (PUNT_BLAST) and bursts on every client (Fx "PuntHit").
+-- or wall there a little (PUNT_BLAST): chunks, no burst effect.
 local PUNT_HURT = 1.1
 local PUNT_TIME = 3
 local PUNT_POWER = 1.8
-local PUNT_BLAST = 3.4 -- radius it smashes where it lands (Map.blast, PUNT_BLAST_POWER)
-local PUNT_BLAST_POWER = 90
+local PUNT_BLAST = 2.4 -- radius it smashes where it lands (Map.blast, PUNT_BLAST_POWER)
+local PUNT_BLAST_POWER = 55
+local PUNT_HITS = 3 -- hits that break the map while it is marked (the client's PUNT_HITS)
 local MAX_PUNT_SPEED = 200
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
@@ -1595,12 +1599,16 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		-- and the way it was going (shared/Impact, run on their client, which owns the body)
 		-- (or let go of, while it is still theirs to simulate: release)
 		local d = typeof(arg) == "Instance" and dummyOf(arg)
-		local lost, dir = ...
+		-- and, kicked, the point it struck as they see it (our copy of the body lags behind theirs)
+		local lost, dir, at = ...
 		if not d or (d.heldBy ~= player and d.looseOwner ~= player) or arg.Parent ~= d.model or not arg:IsA("BasePart")
 			or typeof(lost) ~= "number" or lost ~= lost or not finite(dir) or dir.Magnitude < 0.5 then
 			return
 		end
-		landImpact(d, arg, dir.Unit, math.min(lost, MAX_SLAM_LOST), player)
+		if not finite(at) or (at - arg.Position).Magnitude > MAX_STRUCK_GAP then
+			at = nil
+		end
+		landImpact(d, arg, dir.Unit, math.min(lost, MAX_SLAM_LOST), player, at)
 	elseif action == "rake" then
 		-- held in one hand and raked through the ground (the holder looks down with the mouse held):
 		-- scrape() below ploughs a furrow while it is on
@@ -2935,20 +2943,30 @@ end
 -- swung into things while held all land through hit(), as blunt damage on the part that struck: a
 -- fall of about 12 studs bruises, 25 or more breaks bones, a long fall or a full-power throw knocks it out.
 -- `skip`: the holder who played the thud already.
-function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?)
+function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?, at: Vector3?)
 	local now = os.clock()
-	if now < d.nextImpact then
+	if now < d.nextImpact and not (at and d.punt) then -- a kicked body ploughing into a wall always lands
 		return
 	end
 	d.nextImpact = now + 0.3 -- one blow per landing, not one per part
 	local power = Impact.power(lost)
 	if d.punt and now < d.punt.untilTime then
-		-- punted: the first thing it hits takes the kick's full force (see PUNT_POWER)
-		d.punt = nil
-		power = math.max(power, 1) * PUNT_POWER
-		d.daze += 25
-		fxRemote:FireAllClients("PuntHit", nil, part.Position, dir)
-		Map.blast(part.Position + dir * 0.8, PUNT_BLAST, PUNT_BLAST_POWER)
+		-- punted: the first thing it ploughs into takes the kick's full force (see PUNT_POWER), and each of
+		-- its first PUNT_HITS hits breaks a little where it struck.
+		-- `at`: where the kicker saw it plough into something standing (a wall, a pillar - never the
+		-- floor it skids on; our copy of their body lags behind, often still in the air). Any other
+		-- landing is just a landing.
+		if at then
+			d.punt.hits = (d.punt.hits or 0) + 1
+			if d.punt.hits == 1 then
+				power = math.max(power, 1) * PUNT_POWER
+				d.daze += 25
+			end
+			if d.punt.hits >= PUNT_HITS then
+				d.punt = nil
+			end
+			Map.blast(at, PUNT_BLAST, PUNT_BLAST_POWER, nil, true) -- the wall, not the floor at its foot
+		end
 	end
 	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)
@@ -3004,7 +3022,12 @@ local function scrape(d, now: number)
 			from = floor.Position - velocity.Unit * 0.6
 		end
 		d.furrowAt = floor.Position
-		fxRemote:FireAllClients("Furrow", nil, from, floor.Position, floor.Normal, velocity.Magnitude)
+		-- the holder lays their own (see furrowStep, client): theirs is where the body really is
+		for _, other in Players:GetPlayers() do
+			if other ~= d.heldBy then
+				fxRemote:FireClient(other, "Furrow", nil, from, floor.Position, floor.Normal, velocity.Magnitude)
+			end
+		end
 	else
 		fxRemote:FireAllClients("Scrape", nil, floor.Position, velocity.Unit)
 	end
