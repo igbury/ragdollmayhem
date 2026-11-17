@@ -159,7 +159,7 @@ local function setState(d, state: string)
 end
 
 -- Injuries --------------------------------------------------------------------
--- Every body part keeps its own damage. Blunt hits bruise it (the skin goes lilac) and then break
+-- Every body part keeps its own damage. Hard blunt hits leave a bruise where they land and then break
 -- the bone under it, bullets and blades open wounds that bleed, the axe takes limbs off. Blood
 -- runs out through the wounds: under BLOOD_DROWSY the dummy slows down, under BLOOD_OUT it
 -- passes out, under BLOOD_DEAD it has bled out. The client draws all of it (client/Fx.luau: blood,
@@ -168,7 +168,14 @@ end
 local BLOOD_DROWSY, BLOOD_OUT, BLOOD_DEAD = 60, 48, 40
 local MAX_BLEED = 12 -- % of blood per second, however many holes there are
 local SKIN = Color3.fromRGB(215, 215, 220)
-local BRUISE = Color3.fromRGB(190, 172, 226)
+-- Bruises laid on the skin by markAt, each one blotch in a padded 1024 tile (assets/fx/make_bruise.py).
+-- No blood in uploaded images: Roblox moderation strikes the account for it.
+local BRUISE_IMAGES = { "rbxassetid://94993582040943", "rbxassetid://109249822084070", "rbxassetid://103002851312300" }
+local BRUISE_PAD = 6.4 -- a tile is this many times wider than its blotch (PAD in make_bruise.py)
+local BRUISE_RECT = Vector2.new(432, 160) -- where the blotch sits in the 1024 tile: offset, size (px)
+local RASH = Color3.fromRGB(206, 146, 146) -- skin scraped raw along the ground
+local BRUISE_AT = 1.5 -- blunt power that leaves a mark: a jab or a light punch does not, a haymaker, kick or bat does
+local MAX_MARKS = 6 -- bruises per part
 local STUMP = Color3.fromRGB(65, 12, 18)
 local WOUND = Color3.fromRGB(104, 14, 22)
 local TORN = Color3.fromRGB(178, 24, 35) -- an exit wound: raw, the colour of the blood
@@ -313,15 +320,100 @@ local function gash(on: BasePart, position: Vector3, facing: Vector3, length: nu
 	return cut
 end
 
--- A part's skin colour from what it has been through: bruises turn it lilac, fire chars it.
+-- A mark (a bruise, one of `images`) laid straight onto the skin of `part` as a Texture: on the face of
+-- the part that looks toward `toward` (the point the blow landed), or the side the blow came from
+-- (`dir` is the way it travels), centred on the hit, `size` studs across. A Texture on a MeshPart
+-- is projected onto the mesh itself, so it follows the body's curves. Each image is one blotch in a
+-- big transparent tile (assets/fx/make_bruise.py), tiled so large that only that one copy shows.
+-- A face's texture is centred on the face's middle, seen from outside: U to the right, V down, where
+-- "up" is +Y on the sides and +Z on the top and bottom; the offset slides the image toward -U / -V
+-- (measured in Studio on a block and on an R15 torso).
+local function markAt(p, part: BasePart, toward: Vector3, dir: Vector3, size: number, images: { string })
+	local out = toward - part.Position
+	if out.Magnitude < 0.05 then
+		out = -dir -- no contact point (fists): the side the blow came from
+	end
+	if out.Magnitude < 0.05 or (p.marks or 0) >= MAX_MARKS then
+		return
+	end
+	exitParams.FilterDescendantsInstances = { part }
+	local surface = workspace:Raycast(part.Position + out.Unit * 6, -out.Unit * 6, exitParams)
+	if not surface then
+		return
+	end
+	-- the face: the local axis the surface normal points along most
+	local n = part.CFrame:VectorToObjectSpace(surface.Normal)
+	local ax, ay, az = math.abs(n.X), math.abs(n.Y), math.abs(n.Z)
+	local normal, face
+	if ax >= ay and ax >= az then
+		normal, face = Vector3.new(math.sign(n.X), 0, 0), n.X > 0 and Enum.NormalId.Right or Enum.NormalId.Left
+	elseif ay >= az then
+		normal, face = Vector3.new(0, math.sign(n.Y), 0), n.Y > 0 and Enum.NormalId.Top or Enum.NormalId.Bottom
+	else
+		normal, face = Vector3.new(0, 0, math.sign(n.Z)), n.Z > 0 and Enum.NormalId.Back or Enum.NormalId.Front
+	end
+	local head = part.Name == "Head"
+	if head and face == Enum.NormalId.Bottom then
+		return -- under the chin, against the neck: nothing shows
+	end
+	p.marks = (p.marks or 0) + 1
+	local up = normal.Y ~= 0 and Vector3.zAxis or Vector3.yAxis
+	local right = (-normal):Cross(up)
+	local half = part.Size / 2
+	local width, height = math.abs(right:Dot(half)) * 2, math.abs(up:Dot(half)) * 2
+	local at = part.CFrame:PointToObjectSpace(surface.Position)
+	-- never so small the next copy of the tile reaches the face
+	size = math.clamp(size, math.max(width, height) / (BRUISE_PAD * 0.8 - 0.7), math.max(width, height) * 0.9)
+	local stretchU, stretchV = 0.8 + math.random() * 0.4, 0.8 + math.random() * 0.4 -- a little longer one way
+	local image = images[math.random(#images)]
+	if head then
+		-- the dynamic head's mesh draws no Texture, so the bruise goes on a SurfaceGui like the face
+		-- (Looks.buildFace), cropped to the blotch. A SurfaceGui's canvas runs from its top-left seen
+		-- from outside, +Y up on the sides; on the top its x runs along -Z and its y along +X.
+		local across, down = right, -up
+		if face == Enum.NormalId.Top then
+			across, down = -Vector3.zAxis, Vector3.xAxis
+		end
+		local gui = Instance.new("SurfaceGui")
+		gui.Name = "Bruise"
+		gui.Face = face
+		gui.SizingMode = Enum.SurfaceGuiSizingMode.PixelsPerStud
+		gui.PixelsPerStud = 100
+		gui.LightInfluence = 1
+		gui.ZOffset = -1 -- under the drawn face
+		local w, h = math.abs(across:Dot(half)) * 2, math.abs(down:Dot(half)) * 2
+		local label = Instance.new("ImageLabel")
+		label.BackgroundTransparency = 1
+		label.Image = image
+		label.ImageRectOffset = Vector2.one * BRUISE_RECT.X
+		label.ImageRectSize = Vector2.one * BRUISE_RECT.Y
+		label.AnchorPoint = Vector2.new(0.5, 0.5)
+		label.Position = UDim2.fromScale(at:Dot(across) / w + 0.5, at:Dot(down) / h + 0.5)
+		label.Size = UDim2.fromScale(size * stretchU / w, size * stretchV / h)
+		label.Rotation = math.random(0, 359)
+		label.Parent = gui
+		gui.Parent = part
+		return
+	end
+	local tileU, tileV = size * BRUISE_PAD * stretchU, size * BRUISE_PAD * stretchV
+	local mark = Instance.new("Texture")
+	mark.Name = "Bruise"
+	mark.Texture = image
+	mark.Face = face
+	mark.StudsPerTileU, mark.StudsPerTileV = tileU, tileV
+	mark.OffsetStudsU, mark.OffsetStudsV = tileU / 2 - at:Dot(right), tileV / 2 + at:Dot(up)
+	mark.Parent = part
+end
+
+-- A part's skin colour from what it has been through: scraping rubs it raw, fire chars it.
 local function paint(d, part: BasePart)
 	local info, p = PARTS[part.Name], d.parts[part.Name]
 	if not info then
 		return
 	end
 	local skin = SKIN
-	if p and p.bruise then
-		skin = skin:Lerp(BRUISE, math.min(p.bruise / info.breakAt, 1))
+	if p and p.rash then
+		skin = skin:Lerp(RASH, math.min(p.rash / info.breakAt, 1))
 	end
 	if d.burn > 0 then
 		skin = skin:Lerp(CHAR, math.min(d.burn / 8, 0.85))
@@ -512,7 +604,7 @@ local function revive(d)
 	end
 	d.wound, d.lastWound, d.scaredUntil, d.attackerAt = nil, nil, 0, nil
 	for _, mark in d.model:GetDescendants() do
-		if mark.Name == "Wound" then
+		if mark.Name == "Wound" or mark.Name == "Bruise" then
 			mark:Destroy()
 		end
 	end
@@ -1107,12 +1199,14 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		end
 	else
 		addInjury(d, "bruised " .. info.area)
-		p.bruise = (p.bruise or 0) + power
-		paint(d, part)
 		-- a blunt weapon comes with someone swinging it (`from`); a fall or a throw has nobody
 		local weapon = kind == "blunt" and from ~= nil
 		if p.trauma >= info.breakAt * (weapon and BONE_TOUGH_WEAPON or BONE_TOUGH) then
 			breakBone()
+		end
+		if power >= BRUISE_AT then
+			-- from a small knock to a big blotch
+			markAt(p, part, point, dir, (0.3 + math.random() * 0.45) * (0.7 + power * 0.25), BRUISE_IMAGES)
 		end
 	end
 
@@ -1653,7 +1747,7 @@ local function smash(position: Vector3, radius: number, damage: number, push: Ve
 		if part then
 			harm(d, 0, nil, position) -- knocks it down; the HP goes through hit
 			local away = part.Position - position
-			hit(d, part, away.Magnitude > 0.1 and away.Unit or UP, damage / ZONES[PARTS[part.Name].zone].damage, 0, "blunt", part.Position)
+			hit(d, part, away.Magnitude > 0.1 and away.Unit or UP, damage / ZONES[PARTS[part.Name].zone].damage, 0, "blunt", position + away * 0.9) -- the side facing the blast
 		else
 			harm(d, damage, kind, position)
 		end
@@ -1790,6 +1884,7 @@ for _, weapon in Weapons do
 	weaponById[weapon.id] = weapon
 	inventoryIds[weapon.id] = true
 	if weapon.slash then weaponById[weapon.slash.id] = weapon.slash end
+	if weapon.heavy then weaponById[weapon.heavy.id] = weapon.heavy end
 end
 
 local boxingState = {}
@@ -1797,6 +1892,9 @@ local function clearBoxing(player: Player)
 	local state = boxingState[player]
 	if not state then return end
 	boxingState[player] = nil
+	if state.character.Parent then
+		state.character:SetAttribute("Guarding", nil)
+	end
 	for _, track in state.tracks do
 		track:Stop(0.1)
 		track:Destroy()
@@ -1824,7 +1922,7 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	local state = { character = char, model = model, tracks = {}, nextHand = "right" }
 	boxingState[player] = state
 	-- Reuse the game's authored upper-body boxing clips. The legs remain free to walk/run.
-	for name, animation in { guard = Anims.guard, left = Anims.punch, right = Anims.haymaker } do
+	for name, animation in { guard = Anims.guard, left = Anims.punch, right = Anims.haymaker, block = Anims.block } do
 		if animator and animation.AnimationId ~= "" then
 			local ok, track = pcall(animator.LoadAnimation, animator, animation)
 			if ok then
@@ -2013,7 +2111,83 @@ local MAX_ORIGIN_DRIFT = 8 -- ponytail: trusted within this; tighten (or rewind 
 
 local AIMED_PELLETS = 0.3 -- an aimed shotgun throws its pellets in this share of the hip cone
 
-weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
+-- An aimed swing (aimSwing weapons): swing = (side, up, power) from the client's circle. Power 0..1
+-- scales damage 0.6..1.4x and knockback 0.5..1.5x (0.5 = the plain swing); the knockback leans the
+-- way the line points. The hit ray itself stays on the crosshair.
+local function aimedSwing(weapon, swing, dir: Vector3): (number, number, Vector3)
+	if not weapon.aimSwing or typeof(swing) ~= "Vector3" or not finite(swing) then return 1, 1, dir end
+	local p = math.clamp(swing.Z, 0, 1)
+	local side = Vector3.new(swing.X, swing.Y, 0)
+	side = side.Magnitude > 1 and side.Unit or side
+	local right = dir:Cross(Vector3.yAxis)
+	right = right.Magnitude > 0.01 and right.Unit or Vector3.xAxis
+	local up = right:Cross(dir).Unit
+	return 0.6 + 0.8 * p, 0.5 + p, (dir + (right * side.X + up * side.Y) * 0.9).Unit
+end
+
+-- The bat aimed mostly down hammers the body into the ground like a nail: upright, sunk to the
+-- waist..chest (harder = deeper), stuck there a few seconds, then it pops out and flops. Aimed mostly
+-- up it launches it. Runs after hit() (the same frame, so the limbs still hold the pose they had),
+-- and wins over hit's own shove.
+local BURY_SINK, BURY_HOLD = 1.5, 2.5 -- studs and seconds at no power; full power adds as much again (sink) / 2 s
+local function batBlow(d, swing)
+	if typeof(swing) ~= "Vector3" or not finite(swing) or math.abs(swing.Y) < 0.6 then return end
+	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then return end
+	local p = math.clamp(swing.Z, 0, 1)
+	if d.heldBy or d.looseOwner then -- the server moves it below: it has to own it for that
+		release(d, Vector3.zero)
+	end
+	local parts = {}
+	for _, part in d.model:GetDescendants() do
+		if part:IsA("BasePart") then table.insert(parts, part) end
+	end
+	if swing.Y > 0 then
+		knockDown(d, 2 + 2 * p, "Knocked down")
+		local velocity, spin = Vector3.yAxis * (45 + 55 * p), Random.new():NextUnitVector() * 10
+		for _, part in parts do
+			part.AssemblyLinearVelocity, part.AssemblyAngularVelocity = velocity, spin
+		end
+		return
+	end
+	local hold = BURY_HOLD + 2 * p
+	knockDown(d, hold + 1.5, "Knocked down")
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = { d.model, dummyFolder }
+	local floor = workspace:Raycast(root.Position + Vector3.yAxis * 2, Vector3.yAxis * -10, params)
+	local point = floor and floor.Position or root.Position - Vector3.yAxis * 3
+	if floor and floor.Instance:IsDescendantOf(Map.folder) then
+		Map.blast(point, DIG_RADIUS * (0.6 + 0.4 * p), DIG_POWER * 0.5) -- breakable floor cracks round it
+	end
+	d.digs = (d.digs or 0) + 1
+	fxRemote:FireAllClients("Pound", nil, point, d.digs)
+	Sfx.play(Sfx.THUD, point)
+	-- stood up straight where it was (facing kept), feet at the floor, then pushed down into it
+	local sink = BURY_SINK * (1 + p)
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	look = look.Magnitude > 0.1 and look.Unit or Vector3.zAxis
+	local standing = root.Position.Y - point.Y -- the root's height over the floor while standing (~3)
+	local upright = CFrame.lookAt(point, point + look) + Vector3.yAxis * (math.clamp(standing, 2.5, 3.5) - sink)
+	local move = upright * root.CFrame:Inverse()
+	for _, part in parts do
+		part.Anchored = true
+		part.CFrame = move * part.CFrame
+	end
+	local token = {}
+	d.buried = token -- a second blow while it is stuck restarts the clock
+	task.delay(hold, function()
+		if d.buried ~= token then return end
+		d.buried = nil
+		for _, part in parts do
+			if part.Parent then
+				part.CFrame += Vector3.yAxis * (sink + 0.3) -- out of the hole before physics takes it back
+				part.Anchored = false
+			end
+		end
+	end)
+end
+
+weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	local weapon = typeof(id) == "string" and weaponById[id]
 	local char = player.Character
 	local head = headOf(player)
@@ -2023,8 +2197,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	local humanoid = char:FindFirstChildOfClass("Humanoid")
 	if not humanoid or humanoid.Health <= 0 then return end
 	if char:GetAttribute("EquippedWeapon") ~= (weapon.equipId or id) then return end
-	if id == "BoxingGloves" and (char:GetAttribute("EquippedWeapon") ~= id
+	if id == "BoxingGloves" and (char:GetAttribute("EquippedWeapon") ~= id or char:GetAttribute("Guarding")
 		or not boxingState[player] or boxingState[player].character ~= char) then return end
+	if id == "BoxingHeavy" and (not char:GetAttribute("Guarding")
+		or not boxingState[player] or boxingState[player].character ~= char) then return end -- only out of the block
 	if weapon.equipId and char:GetAttribute("EquippedWeapon") ~= weapon.equipId then return end
 	if not finite(dir) or dir.Magnitude < 0.5 or dir.Magnitude > 2 then
 		return
@@ -2058,6 +2234,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 		if previous then previous:Stop(0.04) end
 		local track = state.tracks[side]
 		if track then track:Play(0.035, 1, side == "right" and 3.125 or 1.4) end
+	elseif id == "BoxingHeavy" then -- the lead (left) hand, slower and heavier than a jab
+		local track = boxingState[player].tracks.left
+		if track then track:Play(0.05, 1, 1) end
 	end
 	if weapon.kind == "melee" then
 		lastSwing[player] = now
@@ -2093,6 +2272,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 	-- one ray, or a shotgun's spray of them (each pellet hits on its own)
 	local rng = Random.new()
 	local cone = (weapon.spread or 0) * (aimed == true and AIMED_PELLETS or 1)
+	local dmgScale, pushScale, blowDir = aimedSwing(weapon, swing, dir)
 	if id == "KnifeSlash" then
 		task.wait(0.09) -- the blade reaches the target during the visible cut
 		local humanoid = char:FindFirstChildOfClass("Humanoid")
@@ -2120,9 +2300,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 		if weapon.speed then -- knife flies there first
 			task.wait((target - origin).Magnitude / weapon.speed)
 		end
-		if Monsters.damage(result.Instance, (weapon.dmg or 1) * 10, aim, player) then continue end
+		local blow = weapon.aimSwing and blowDir or aim -- which way it knocks things
+		if Monsters.damage(result.Instance, (weapon.dmg or 1) * dmgScale * 10, blow, player) then continue end
 		local d = dummyOf(result.Instance)
-		if d and weapon.kind == "melee" and tryDodge(d, player) then
+		if d and weapon.kind == "melee" and not weapon.knockdown and tryDodge(d, player) then
 			return -- ducked under the swing
 		end
 		if d then
@@ -2130,12 +2311,18 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed)
 				Sfx.play(sounds.hit, target, weapon.kind == "melee" and player or nil)
 			end
 			if result.Instance.Parent then
-				hit(d, result.Instance, aim, weapon.dmg, weapon.push, weapon.hurt, target, origin)
+				hit(d, result.Instance, blow, weapon.dmg and weapon.dmg * dmgScale, weapon.push and weapon.push * pushScale, weapon.hurt, target, origin)
+			end
+			if id == "Bat" and d.model.Parent then
+				batBlow(d, swing)
+			end
+			if weapon.knockdown and d.state ~= "Dead" then -- the heavy left: down every time it lands
+				knockDown(d, weapon.knockdown, "Knocked down")
 			end
 		elseif result.Instance:IsDescendantOf(gibFolder) then -- a loose limb: just knock it about
-			result.Instance:ApplyImpulse(aim * result.Instance.AssemblyMass * weapon.push)
+			result.Instance:ApplyImpulse(blow * result.Instance.AssemblyMass * weapon.push * pushScale)
 		elseif result.Instance.Name == "Pin" and not result.Instance.Anchored then -- bowling pins (Map)
-			result.Instance:ApplyImpulse(aim * result.Instance.AssemblyMass * weapon.push)
+			result.Instance:ApplyImpulse(blow * result.Instance.AssemblyMass * weapon.push * pushScale)
 		elseif weapon.chip and pellet == 1 then
 			Map.blast(target, weapon.chip, 30)
 		end
@@ -2284,9 +2471,19 @@ local WHIFF_LINES = { "Hold still!", "Where'd you go?", "Get back here!" }
 local playerWake = setmetatable({}, { __mode = "k" }) -- [character] = token of its latest knock-down
 -- Hurt a player and throw them. Their client owns their physics, so it does the flinging (Hazard);
 -- `down` seconds > 0 also ragdolls them and stands them back up after (the latest knock-down wins).
-local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number)
-	humanoid:TakeDamage(damage)
+-- A player with the boxing guard up (right mouse, "Guarding") blocks it: no damage, no knock-down,
+-- only a shove and the thud on the gloves; `unblockable` (machines, not attacks) goes through.
+local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number, unblockable: boolean?)
 	local char = player.Character
+	if not unblockable and char and char:GetAttribute("Guarding") and not char:GetAttribute("Ragdolled") then
+		local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root then
+			Sfx.play(Sfx.WEAPON.BoxingGloves.hit, root.Position)
+		end
+		hazardRemote:FireClient(player, velocity * 0.2)
+		return
+	end
+	humanoid:TakeDamage(damage)
 	if down > 0 and char and humanoid.Health > 0 then
 		Ragdoll.set(char, true)
 		local token = {}
@@ -2300,7 +2497,20 @@ local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3
 	hazardRemote:FireClient(player, velocity)
 end
 
-actionRemote.OnServerEvent:Connect(function(player, action)
+actionRemote.OnServerEvent:Connect(function(player, action, arg)
+	if action == "guard" then -- the boxing block: held while the right mouse is (knockPlayer)
+		local char = player.Character
+		local state = boxingState[player]
+		local up = arg == true and state ~= nil and state.character == char and not char:GetAttribute("Ragdolled")
+		if char and (char:GetAttribute("Guarding") == true) ~= up then
+			char:SetAttribute("Guarding", up or nil)
+			local block = state and state.tracks.block
+			if block then
+				if up then block:Play(0.1) else block:Stop(0.15) end
+			end
+		end
+		return
+	end
 	if action == "bowCancel" then
 		if player.Character then player.Character:SetAttribute("BowDrawAt", nil) end
 		return
@@ -2689,7 +2899,7 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 	local power = Impact.power(lost)
 	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)
-	hit(d, part, dir, power, 0, "blunt", part.Position)
+	hit(d, part, dir, power, 0, "blunt", part.Position + dir * 0.5) -- the side that struck the ground
 end
 
 local function impacts(d, dt: number)
@@ -2734,7 +2944,7 @@ local function scrape(d, now: number)
 				p = { trauma = 0, broken = false }
 				d.parts[name] = p
 			end
-			p.bruise = (p.bruise or 0) + 0.06
+			p.rash = (p.rash or 0) + 0.06
 			paint(d, part)
 		end
 	end
@@ -2925,7 +3135,7 @@ Factory.build(function(model, damage, velocity)
 	if not player or humanoid.Health <= 0 then
 		return
 	end
-	knockPlayer(player, humanoid, velocity, damage, 2.5)
+	knockPlayer(player, humanoid, velocity, damage, 2.5, true)
 end)
 for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))

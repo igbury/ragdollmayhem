@@ -39,6 +39,7 @@ Sfx.TRIM = {
 Sfx.WEAPON = {
 	Bow = { fire = { Sfx.THROW, 1.45, 0.55 } },
 	BoxingGloves = { hit = { Sfx.PUNCH, 0.9, 0.95 }, swing = { Sfx.THROW, 1.35, 0.35 } },
+	BoxingHeavy = { hit = { Sfx.PUNCH, 0.65, 1 }, swing = { Sfx.THROW, 1, 0.5 } },
 	Handgun = { fire = { Sfx.HANDGUN } },
 	Revolver = { fire = { Sfx.HANDGUN, 0.8, 1 } },
 	Shotgun = { fire = { Sfx.HANDGUN, 0.6, 1 } },
