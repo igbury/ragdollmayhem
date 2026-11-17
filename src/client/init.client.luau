@@ -157,12 +157,13 @@ local PUNT_RELEASE = 0.3
 local PUNT_KICK = 0.52
 local PUNT_LENGTH = 0.95
 local PUNT_SPEED = 150
-local PUNT_LIFT = 18
+local PUNT_LIFT = 50 -- launched ~18 degrees up: it leaves from the foot, low, so less noses into the ground
 local PUNT_APEX = Vector3.new(0.7, 2.6, -2.3) -- root space (right, up, back): over your head, just in front
-local PUNT_FOOT = Vector3.new(0.5, -0.5, -3.2) -- where the foot meets it
+local PUNT_FOOT = Vector3.new(0.5, 0.35, -2.9) -- where the foot meets it
 -- first person, the view follows it: up as it is heaved overhead, down to the kick, then back
 -- (degrees, + looks up). The legs show for the whole punt, and no weapon is out until it ends.
-local PUNT_LOOK_UP, PUNT_LOOK_DOWN = 12, -32
+local PUNT_LOOK_UP, PUNT_LOOK_DOWN = 12, -40
+local PUNT_EYE = Vector3.new(0, 0.35, 1) -- first person: the eye draws back (Z) and up (Y) for the kick
 local puntUntil = 0 -- os.clock() the punt animation ends (it plays on after the body has gone)
 local PUNT_SHOWN = { "LowerTorso", "LeftUpperLeg", "LeftLowerLeg", "LeftFoot", "RightUpperLeg", "RightLowerLeg", "RightFoot" }
 local THROW_SPEED = 90
@@ -826,7 +827,10 @@ for side, x in { left = -1, right = 1 } do
 	end)
 end
 GloveMeshes.watch(camera, function(character)
-	return character == player.Character and isFirstPerson() -- the viewmodel pair draws instead
+	-- our own: the viewmodel pair draws instead in first person, and holding one with F (or kicking it)
+	-- the hands are bare
+	return character == player.Character
+		and (isFirstPerson() or (holding ~= nil and holding.drag == true) or os.clock() < puntUntil)
 end)
 for id, specs in VIEWMODELS do
 	for _, spec in specs do
@@ -2536,7 +2540,12 @@ RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, 
 		local look = if punting < PUNT_RELEASE then PUNT_LOOK_UP * ease(punting / PUNT_RELEASE)
 			elseif punting < PUNT_KICK then PUNT_LOOK_UP + (PUNT_LOOK_DOWN - PUNT_LOOK_UP) * ease((punting - PUNT_RELEASE) / (PUNT_KICK - PUNT_RELEASE))
 			else PUNT_LOOK_DOWN * (1 - ease((punting - PUNT_KICK) / (PUNT_LENGTH - PUNT_KICK)))
-		cf *= CFrame.Angles(math.rad(look), 0, 0)
+		-- ...the eye drawn back and up out of your own body for it, so the whole kicking leg and the dummy
+		-- are in view rather than the inside of your hip...
+		local back = if punting < PUNT_RELEASE then ease(punting / PUNT_RELEASE)
+			elseif punting < PUNT_KICK + 0.12 then 1
+			else 1 - ease((punting - PUNT_KICK - 0.12) / (PUNT_LENGTH - PUNT_KICK - 0.12))
+		cf *= CFrame.new(0, PUNT_EYE.Y * back, PUNT_EYE.Z * back) * CFrame.Angles(math.rad(look), 0, 0)
 		-- ...with your legs drawn (the camera hides the whole body in first person), so you see the kick
 		local char = player.Character
 		for _, name in PUNT_SHOWN do
@@ -3069,7 +3078,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- The gloves never pass through each other: each one stays on its own side of the middle of the
 	-- view (they are mirror images), measured on the glove's own vertices; one that reaches over is
 	-- slid back out with its forearm.
-	local boxingNow = weapon.id == "BoxingGloves"
+	local boxingNow = weapon.id == "BoxingGloves" and not dragView -- holding one with F: bare hands
 	for side, h in hands do
 		local glove = weaponVisual.gloves[side]
 		local gloveCF = gloveCFs[side]
@@ -3088,11 +3097,13 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		BoxingGloves.update(glove, gloveCF, show == true and boxingNow)
 	end
-	-- Hide replicated body gloves locally in first person: the anchored pair above draws instead.
+	-- Hide replicated body gloves locally in first person (the anchored pair above draws instead) and
+	-- while holding one with F or kicking it, when the hands are bare
 	local bodyGloves = char and char:FindFirstChild("BoxingGloves")
 	if bodyGloves then
+		local hidden = isFirstPerson() or dragView
 		for _, padding in bodyGloves:GetDescendants() do
-			if padding:IsA("BasePart") then padding.LocalTransparencyModifier = isFirstPerson() and 1 or 0 end
+			if padding:IsA("BasePart") then padding.LocalTransparencyModifier = hidden and 1 or 0 end
 		end
 	end
 
