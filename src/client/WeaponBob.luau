@@ -37,12 +37,8 @@ function WeaponBob:update(dt: number, active: boolean, velocity: Vector3, ground
 	-- arm swing, contralateral like a walking person: +1 = right hand forward, left back
 	self.swing = math.sin(self.phase) * a
 	local run = self.run * (1 - math.clamp(ads, 0, 1))
-	return CFrame.new(0.08 * run, self.lift - 0.1 * run, 0.05 * run)
-		* CFrame.Angles(
-			-0.18 * run + self.lift * 0.6, -- running carries it lower
-			0.25 * run, -- running turns the muzzle inward, off the line of travel
-			0.12 * run
-		)
+	-- running carries it lower; no yaw or roll: turning the whole view slid both hands off to the left
+	return CFrame.new(0, self.lift - 0.1 * run, 0.05 * run) * CFrame.Angles(-0.18 * run + self.lift * 0.6, 0, 0)
 end
 
 -- this hand's pendulum offset (side: +1 right, -1 left); forward hands ride a little higher on the arc
