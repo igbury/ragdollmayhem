@@ -37,6 +37,43 @@ local function frame(parent: Instance, name: string, round: boolean): Frame
 	return f
 end
 
+local FACE_LIFT = 1.14
+-- Swap a new-avatar dynamic head (modelled eyes that blink on their own, FaceControls) for the
+-- classic smooth head: plain skin, so the only eyes are the drawn ones below. Its attachments move
+-- over, so the neck joint and the ragdoll's socket keep working. Returns the new head.
+function Looks.plainHead(model: Model): BasePart
+	local old = model:FindFirstChild("Head") :: BasePart
+	if not old:IsA("MeshPart") then
+		return old
+	end
+	local head = Instance.new("Part")
+	head.Name = "Head"
+	-- the part a touch deeper than the mesh in it: the drawn face (a SurfaceGui on the part's front)
+	-- then sits just in front of the rounded skin instead of inside it
+	head.Size = old.Size * Vector3.new(1, 1, FACE_LIFT)
+	head.Color = old.Color
+	head.Material = Enum.Material.SmoothPlastic
+	head.CFrame = old.CFrame
+	local mesh = Instance.new("SpecialMesh")
+	mesh.MeshType = Enum.MeshType.Head -- the rounded classic head, filling the part
+	mesh.Scale = Vector3.new(1, 1, 1 / FACE_LIFT)
+	mesh.Parent = head
+	for _, child in old:GetChildren() do
+		if child:IsA("Attachment") or child:IsA("Constraint") or child:IsA("Vector3Value") then
+			child.Parent = head
+		end
+	end
+	for _, c in model:GetDescendants() do
+		if c:IsA("NoCollisionConstraint") then
+			if c.Part0 == old then c.Part0 = head end
+			if c.Part1 == old then c.Part1 = head end
+		end
+	end
+	old:Destroy()
+	head.Parent = model
+	return head
+end
+
 -- Replace the head's stock face with the drawn one.
 function Looks.buildFace(head: BasePart)
 	for _, child in head:GetChildren() do

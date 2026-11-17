@@ -1043,16 +1043,76 @@ function EVENTS.Wound(_, target: BasePart?, position: Vector3, dir: Vector3, blo
 	end
 end
 
--- A held body slammed into the ground (F, looking down, mouse held): an earth-coloured burst with
--- its star and ring on the ground, chunks and dust thrown up, the camera jolted; every other slam
--- shouts a word. `count` is how many slams in a row (the words take turns).
-local POUND_WORDS = { "WHAM!", "CRUNCH!", "THUD!", "SMASH!", "KRAK!" }
+-- A held body raked through the ground (F, looking down, mouse held): one stretch of the furrow it
+-- ploughs, from `from` to `to`. A dark trough with the earth heaped up along both sides; each stretch
+-- overlaps the last, so the furrow reads as one unbroken track. Clods and dust fly off the front.
 local EARTH = Color3.fromRGB(150, 105, 70)
-function EVENTS.Pound(_, position: Vector3, count: number)
-	Fx.boom(position, 3.2, EARTH, count % 2 == 1 and POUND_WORDS[(count // 2) % #POUND_WORDS + 1] or nil, 5)
-	Fx.dust(position, 10, 4.5, 1.3)
-	Fx.sparks(position, 14, 6, DUST, Vector3.yAxis)
-	Fx.shake(position, 0.55, 0.22)
+local SOIL = Color3.fromRGB(78, 54, 36)
+local FURROW_WIDTH = 1.8
+local MAX_FURROW = 240 -- stretches kept (3 parts each); the oldest go first
+local furrows = {}
+function EVENTS.Furrow(_, from: Vector3, to: Vector3, normal: Vector3, speed: number?)
+	local along = to - from
+	if along.Magnitude < 0.05 then
+		return
+	end
+	local length = along.Magnitude + FURROW_WIDTH * 0.5 -- overlapping the next stretch: no seams
+	local mid = (from + to) / 2 + normal * 0.03
+	local frame = CFrame.lookAt(mid, mid + along, normal)
+	local trough = part(Enum.PartType.Block, SOIL, Enum.Material.Ground)
+	trough.CFrame = frame
+	trough.Size = Vector3.new(FURROW_WIDTH, 0.06, length)
+	local parts = { trough }
+	for _, side in { -1, 1 } do
+		local heap = part(Enum.PartType.Block, EARTH, Enum.Material.Ground)
+		heap.CFrame = frame * CFrame.new(side * (FURROW_WIDTH / 2 + 0.15), 0.1, 0) * CFrame.Angles(0, 0, side * math.rad(18))
+		heap.Size = Vector3.new(0.45, 0.25, length)
+		table.insert(parts, heap)
+	end
+	table.insert(furrows, parts)
+	if #furrows > MAX_FURROW then
+		for _, p in table.remove(furrows, 1) do
+			p:Destroy()
+		end
+	end
+	for _, p in parts do
+		Debris:AddItem(p, 45)
+	end
+	-- thrown up off the front: clods on arcs out both sides and back, a spray of grit, a dust trail,
+	-- the ground rumbling under you - all of it more the faster it is dragged
+	local fury = math.clamp((speed or 10) / 20, 0.4, 1.6)
+	for _ = 1, math.round(2 * fury) do
+		local clod = part(Enum.PartType.Block, rng:NextNumber() < 0.5 and SOIL or EARTH, Enum.Material.Ground)
+		clod.Size = Vector3.one * rng:NextNumber(0.25, 0.55)
+		local side = along.Unit:Cross(normal) * rng:NextNumber(-1, 1)
+		local v = (side * 7 - along.Unit * rng:NextNumber(2, 6) + normal * rng:NextNumber(8, 15)) * fury
+		local spin = CFrame.Angles(rng:NextNumber(-8, 8), rng:NextNumber(-8, 8), 0)
+		run(0.7, { clod }, function(a)
+			local t = a * 0.7
+			clod.CFrame = CFrame.new(to + v * t - Vector3.yAxis * (45 * t * t)) * CFrame.Angles(spin.X * t, spin.Y * t, 0)
+		end)
+	end
+	Fx.sparks(to, math.round(6 * fury), 3 * fury, EARTH, normal + along.Unit * 0.6, 0.55)
+	Fx.dust(to - along.Unit * 0.5, math.round(3 * fury), 1.8 * fury, 0.8)
+	Fx.shake(to, 0.12 * fury, 0.12)
+end
+
+-- The punt's kick landing on the body: a burst at its chest along the kick, "POW!" and a jolt.
+local KICK = Color3.fromRGB(255, 220, 90)
+function EVENTS.Punt(_, position: Vector3, dir: Vector3)
+	Fx.boom(position, 2.4, KICK, "POW!", 6)
+	Fx.sparks(position, 12, 4, WHITE, dir, 0.4)
+	Fx.shake(position, 0.6, 0.2)
+end
+
+-- A punted body hitting the first thing in its way: far bigger than a throw's thud - a burst of
+-- earth with a word, chunks and dust, and a hard jolt for anyone near.
+local PUNT_WORDS = { "KABOOM!", "WHAM!", "CRUNCH!", "SMASH!" }
+function EVENTS.PuntHit(_, position: Vector3, dir: Vector3)
+	Fx.boom(position, 4.5, EARTH, PUNT_WORDS[rng:NextInteger(1, #PUNT_WORDS)], 7)
+	Fx.dust(position, 14, 5, 1.6)
+	Fx.sparks(position, 20, 7, DUST, -dir + Vector3.yAxis)
+	Fx.shake(position, 1.1, 0.35)
 end
 
 -- A body dragged along the ground (F): a low puff of dust kicked up behind where it rubs.

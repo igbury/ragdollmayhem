@@ -456,7 +456,31 @@ end
 -- to rest (or LOOSE_MAX), then the Heartbeat loop gives it to the server. Taking it at once snapped it back to the
 -- server's copy, a ping old, and froze it for a moment: the lag spike on every drop.
 local LOOSE_MAX = 4 -- s the releaser keeps it at most
+
+-- A body held with F does not collide with players: pressed against your legs it used to lift you
+-- onto it and walk you up into the air. It goes back to colliding UNHELD_AFTER after it is let go,
+-- once it is clear of you.
+local PhysicsService = game:GetService("PhysicsService")
+PhysicsService:RegisterCollisionGroup("Players")
+PhysicsService:RegisterCollisionGroup("Held")
+PhysicsService:CollisionGroupSetCollidable("Held", "Players", false)
+local UNHELD_AFTER = 0.6
+local function setGroup(model: Instance, group: string)
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then
+			part.CollisionGroup = group
+		end
+	end
+end
+
 local function release(d, velocity: Vector3, owner: Player?)
+	if d.dragging then
+		task.delay(UNHELD_AFTER, function()
+			if not d.dragging and d.model.Parent then
+				setGroup(d.model, "Default")
+			end
+		end)
+	end
 	if d.grab then
 		d.grab:Destroy()
 		d.grab = nil
@@ -465,7 +489,7 @@ local function release(d, velocity: Vector3, owner: Player?)
 		held[d.heldBy] = nil
 		d.heldBy = nil
 	end
-	d.dragging = nil
+	d.dragging, d.raking, d.furrowAt = nil, nil, nil
 	d.looseOwner, d.looseSince = owner, os.clock()
 	if not owner then
 		setOwner(d.model, nil)
@@ -1199,7 +1223,7 @@ function spawnDummy(cf: CFrame, as: string?)
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.WalkSpeed = 8
 
-	Looks.buildFace(model:FindFirstChild("Head") :: BasePart)
+	Looks.buildFace(Looks.plainHead(model))
 
 	model:PivotTo(cf)
 	model.Parent = dummyFolder
@@ -1409,16 +1433,15 @@ aimRemote.OnServerEvent:Connect(function(player, part)
 	d.nextWander = math.max(d.nextWander, now + 2.5)
 end)
 
--- Pounding a held body into the ground ("dig", one per slam the holder sees): a hole DIG_RADIUS
--- wide that throws its floor up as chunks (DIG_POWER), a burst every client sees (Fx "Pound"), and
--- a DIG_HURT blunt blow (no attacker: bones as tough as against a fall). DIG_EVERY caps the rate.
-local DIG_EVERY = 0.3
-local DIG_RADIUS = 2.2
-local DIG_POWER = 45
-local DIG_HURT = 0.4
-local digParams = RaycastParams.new()
-digParams.FilterType = Enum.RaycastFilterType.Include
-digParams.FilterDescendantsInstances = { Map.folder }
+-- The punt (held with F, looking ahead, one click: the holder heaves it up and front-kicks it away):
+-- the kick itself is a PUNT_HURT blunt blow, and for PUNT_TIME after it the body is marked, so the
+-- first thing it hits takes a blow PUNT_POWER times harder than a throw would give, breaks the floor
+-- or wall there (PUNT_BLAST) and bursts on every client (Fx "PuntHit").
+local PUNT_HURT = 1.1
+local PUNT_TIME = 3
+local PUNT_POWER = 1.8
+local PUNT_BLAST = 2.6
+local MAX_PUNT_SPEED = 200
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 	if action == "grab" then
@@ -1427,7 +1450,9 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		end
 		local d = dummyOf(arg)
 		local head = headOf(player)
-		if not d or d.heldBy or not head or (arg.Position - head.Position).Magnitude > GRAB_RANGE then
+		-- F reaches a little further for the chest (by the collar), see DRAG_CHEST_REACH on the client
+		local reach = GRAB_RANGE + (((...) == "drag" and arg.Name == "UpperTorso") and 4 or 0)
+		if not d or d.heldBy or not head or (arg.Position - head.Position).Magnitude > reach then
 			return
 		end
 		d.heldBy = player
@@ -1447,6 +1472,23 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		align.MaxVelocity = d.dragging and 200 or 90
 		align.Responsiveness = d.dragging and 90 or 40
 		align.Parent = attachment
+		if d.dragging then
+			setGroup(d.model, "Held")
+			-- F: gripped by the clothes at the collar and held rigid in the fist - the chest goes where
+			-- the hand goes and stays turned the way the holder turns it (they set CFrame each frame);
+			-- only the limbs swing
+			align.RigidityEnabled = true
+			if arg.Name == "UpperTorso" then
+				attachment.Position = Vector3.new(0, arg.Size.Y * 0.4, -arg.Size.Z * 0.3)
+			end
+			local turn = Instance.new("AlignOrientation")
+			turn.Name = "GrabTurn"
+			turn.Mode = Enum.OrientationAlignmentMode.OneAttachment
+			turn.Attachment0 = attachment
+			turn.RigidityEnabled = true
+			turn.CFrame = arg.CFrame.Rotation
+			turn.Parent = attachment
+		end
 		attachment.Parent = arg
 		d.grab = attachment
 		knockDown(d, 0, "Held")
@@ -1464,35 +1506,31 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 			return
 		end
 		landImpact(d, arg, dir.Unit, math.min(lost, MAX_SLAM_LOST), player)
-	elseif action == "dig" then
-		-- held in one hand and pounded into the ground (the holder looks down with the mouse held):
-		-- a small hole where it is slammed, so moving leaves a trail of them (the floor grows back,
-		-- Map REGEN); every few slams it hurts
+	elseif action == "rake" then
+		-- held in one hand and raked through the ground (the holder looks down with the mouse held):
+		-- scrape() below ploughs a furrow while it is on
+		local d = held[player]
+		if d and d.dragging then
+			d.raking = arg == true
+			d.furrowAt = nil
+		end
+	elseif action == "punt" then
 		local d = held[player]
 		local torso = d and d.dragging and d.model:FindFirstChild("UpperTorso") :: BasePart?
 		local head = headOf(player)
-		local now = os.clock()
-		if not torso or not head or now < (d.nextDig or 0) or (torso.Position - head.Position).Magnitude > 12 then
+		if not torso or not head or not finite(arg) or arg.Magnitude < 1 or (torso.Position - head.Position).Magnitude > 14 then
 			return
 		end
-		d.nextDig = now + DIG_EVERY
-		-- the breakable floor under it gets a hole; down to the bedrock (nothing left to break) the
-		-- slam still lands, bursts and hurts
-		local floor = workspace:Raycast(torso.Position + Vector3.yAxis * 2, Vector3.yAxis * -8, digParams)
-		local point = floor and floor.Position or torso.Position - Vector3.yAxis * 0.8
-		if floor then
-			Map.blast(point, DIG_RADIUS, DIG_POWER)
-		end
-		d.digs = (d.digs or 0) + 1
-		fxRemote:FireAllClients("Pound", nil, point, d.digs)
-		Sfx.play(Sfx.THUD, point)
-		hit(d, torso, -Vector3.yAxis, DIG_HURT, 0, "blunt", point)
+		d.punt = { by = player, untilTime = os.clock() + PUNT_TIME }
+		fxRemote:FireAllClients("Punt", nil, torso.Position, arg.Unit)
+		hit(d, torso, arg.Unit, PUNT_HURT, 0, "blunt", torso.Position, head.Position)
 	elseif action == "release" then
 		local d = held[player]
 		if d then
 			local velocity = finite(arg) and arg or Vector3.zero
-			if velocity.Magnitude > MAX_THROW_SPEED then
-				velocity = velocity.Unit * MAX_THROW_SPEED
+			local cap = d.punt and os.clock() < d.punt.untilTime and MAX_PUNT_SPEED or MAX_THROW_SPEED
+			if velocity.Magnitude > cap then
+				velocity = velocity.Unit * cap
 			end
 			release(d, velocity, player) -- the thrower applies the velocity: it owns the body
 		end
@@ -2160,6 +2198,12 @@ Players.PlayerAdded:Connect(function(player)
 		char:WaitForChild("RightAnkle", 5) -- wait for the rig to finish loading
 		task.wait()
 		Ragdoll.setup(char)
+		setGroup(char, "Players")
+		char.DescendantAdded:Connect(function(part)
+			if part:IsA("BasePart") then
+				part.CollisionGroup = "Players"
+			end
+		end)
 		-- Ragdoll.setup turns RequiresNeck off, so losing the body to the void no longer kills on its
 		-- own: without this, running off the edge leaves the player with no character for good.
 		char.ChildRemoved:Connect(function(child)
@@ -2687,6 +2731,14 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 	end
 	d.nextImpact = now + 0.3 -- one blow per landing, not one per part
 	local power = Impact.power(lost)
+	if d.punt and now < d.punt.untilTime then
+		-- punted: the first thing it hits takes the kick's full force (see PUNT_POWER)
+		d.punt = nil
+		power = math.max(power, 1) * PUNT_POWER
+		d.daze += 25
+		fxRemote:FireAllClients("PuntHit", nil, part.Position, dir)
+		Map.blast(part.Position + dir * 0.8, PUNT_BLAST, 70)
+	end
 	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)
 	hit(d, part, dir, power, 0, "blunt", part.Position)
@@ -2703,6 +2755,10 @@ end
 -- rubs, and the skin there goes raw (a bruise that builds up, "road rash") - no HP, no broken bones.
 local SCRAPE_SPEED = 6 -- studs/s the body has to be going
 local SCRAPE_EVERY = 0.2
+-- raked (the holder looks down with the mouse held): it ploughs from a slower walk, more often, and
+-- the furrow is laid in stretches that join up (Fx "Furrow")
+local RAKE_MIN_SPEED = 2
+local RAKE_EVERY = 0.1
 local scrapeParams = RaycastParams.new()
 scrapeParams.FilterType = Enum.RaycastFilterType.Exclude
 local function scrape(d, now: number)
@@ -2710,19 +2766,39 @@ local function scrape(d, now: number)
 	if not torso or now < (d.nextScrape or 0) then
 		return
 	end
-	local velocity = torso.AssemblyLinearVelocity * XZ
-	if velocity.Magnitude < SCRAPE_SPEED then
+	-- how fast it goes, from where it was last time: the holder simulates it, and the server's copy of
+	-- a client-owned body reads no velocity
+	local last, lastAt = d.scrapeFrom, d.scrapeFromAt
+	d.scrapeFrom, d.scrapeFromAt = torso.Position, now
+	if not last or now - lastAt > 0.5 then
+		return
+	end
+	local velocity = (torso.Position - last) * XZ / math.max(now - lastAt, 1 / 60)
+	if velocity.Magnitude < (d.raking and RAKE_MIN_SPEED or SCRAPE_SPEED) then
 		return
 	end
 	scrapeParams.FilterDescendantsInstances = { dummyFolder, gibFolder, d.heldBy and d.heldBy.Character }
-	local floor = workspace:Raycast(torso.Position, -UP * 2, scrapeParams) -- pressed down, not just carried
+	-- pressed down, not just carried (raked, it is held by the collar with its back and legs in the
+	-- ground: the chest itself rides higher)
+	local floor = workspace:Raycast(torso.Position, -UP * (d.raking and 3.5 or 2), scrapeParams)
 	if not floor then
+		d.furrowAt = nil
 		return -- off the ground (swung up, over a drop): nothing to rub on
 	end
-	d.nextScrape = now + SCRAPE_EVERY
-	fxRemote:FireAllClients("Scrape", nil, floor.Position, velocity.Unit)
+	d.nextScrape = now + (d.raking and RAKE_EVERY or SCRAPE_EVERY)
+	if d.raking then
+		-- raked: one unbroken furrow, each stretch joined to the last (a new one after a gap)
+		local from = d.furrowAt
+		if not from or (from - floor.Position).Magnitude > 5 then
+			from = floor.Position - velocity.Unit * 0.6
+		end
+		d.furrowAt = floor.Position
+		fxRemote:FireAllClients("Furrow", nil, from, floor.Position, floor.Normal, velocity.Magnitude)
+	else
+		fxRemote:FireAllClients("Scrape", nil, floor.Position, velocity.Unit)
+	end
 	if now >= (d.nextScrapeSound or 0) then
-		d.nextScrapeSound = now + 0.45
+		d.nextScrapeSound = now + (d.raking and 0.25 or 0.45)
 		Sfx.play(Sfx.SCRAPE, floor.Position)
 	end
 	-- pushed down chest first: the chest and the face take it
@@ -2734,7 +2810,7 @@ local function scrape(d, now: number)
 				p = { trauma = 0, broken = false }
 				d.parts[name] = p
 			end
-			p.bruise = (p.bruise or 0) + 0.06
+			p.bruise = (p.bruise or 0) + (d.raking and 0.08 or 0.06)
 			paint(d, part)
 		end
 	end

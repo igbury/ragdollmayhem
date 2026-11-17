@@ -101,8 +101,8 @@ for _, kind in { "gun", "rocket", "throw" } do
 	aimAnims[kind] = anim
 end
 local aimTracks: { [string]: AnimationTrack } = {}
-local dragAnims = {} -- holding a dummy in one hand (F): at your side / pressing it down, see DragPose
-for _, kind in { "hold", "press" } do
+local dragAnims = {} -- holding a dummy in one hand (F): at your side / pressing it down / raking it / the punt, see DragPose
+for _, kind in { "hold", "scrape", "punt" } do
 	local anim = Instance.new("Animation")
 	anim.AnimationId = keyframeId(require(script:WaitForChild("DragPose"))(kind))
 	dragAnims[kind] = anim
@@ -132,22 +132,32 @@ local PUNCH_RANGE = 9
 local PUNCH_INTERVAL = 0.28
 local KICK_INTERVAL = 0.7
 local GRAB_RANGE = 13
--- F: a dummy held by the chest in one hand at your right side (root space: right, up, forward)
+-- F: a dummy gripped by the clothes at its collar in your right fist, held rigid (the hand's anim:
+-- DragPose "hold"); DRAG_HOLD (root space: right, up, forward) only when the rig has no right hand
 local DRAG_HOLD = Vector3.new(2.4, 0.3, -0.8)
--- sprinting with it you bend over and grind it into the ground: the hand goes down to here (up
--- counted from the floor)
-local DRAG_PRESS = Vector3.new(2.4, 0.9, -1.6)
-local DRAG_BELOW_HAND = 0.7 -- the gripped chest's centre under the fist
--- held with F, looking down (camera look below DIG_LOOK) with the left button held: you pound it
--- into the ground DIG_POUND times a second - heaved up DIG_LIFT over most of the beat, then slammed
--- down to DIG_DEPTH above the bottom of the hole in the last DIG_SLAM of it. Each slam tells the
--- server (the hole, the blow) and every client (the burst, Fx "Pound").
-local DIG_LOOK = -0.45
-local DIG_POUND = 2.2
-local DIG_LIFT = 2.6
-local DIG_SLAM = 0.18
-local DIG_DEPTH = 0.4
-local DIG_SINK = 1.6
+local DRAG_FIST = CFrame.new(0, -0.25, 0) -- the collar in the fist, from the hand's centre
+local DRAG_TILT = 25 -- degrees it leans back off the fist, heels dragging
+local DRAG_COLLAR_MIN = 1.2 -- the collar never comes lower than this above the ground under it
+local DRAG_CHEST_REACH = 4 -- F takes the chest even this much past GRAB_RANGE (server: the same)
+local DRAG_VIEW_REACH = 2.3 -- first person: how far out toward the collar the right fist is drawn
+-- held with F, looking a little down (camera look below RAKE_LOOK) with the left button held: you
+-- lean into it and drive it down and back into the ground beside you as you run (DragPose "scrape"),
+-- laid back RAKE_TILT so it ploughs on its back, one unbroken furrow behind it (the server lays
+-- it, Fx "Furrow"). Full speed: the faster you go the more it throws up. RAKE_SPEED only paces the
+-- scrape animation's judder.
+local RAKE_LOOK = -0.2
+local RAKE_TILT = 62
+local RAKE_SPEED = 20
+-- looking ahead, one click: the punt (DragPose "punt"). Swung back and heaved up over your head, it
+-- leaves the hand at PUNT_RELEASE, falls into a front kick that meets it at PUNT_KICK and flies off
+-- at PUNT_SPEED: a launch the server marks, so what it hits takes a far harder blow than a throw.
+local PUNT_RELEASE = 0.3
+local PUNT_KICK = 0.52
+local PUNT_LENGTH = 0.95
+local PUNT_SPEED = 150
+local PUNT_LIFT = 18
+local PUNT_APEX = Vector3.new(0.7, 2.6, -2.3) -- root space (right, up, back): over your head, just in front
+local PUNT_FOOT = Vector3.new(0.5, -0.5, -3.2) -- where the foot meets it
 local THROW_SPEED = 90
 local SKIN = Color3.fromRGB(240, 240, 240)
 local WALK_SPEED = 16
@@ -1140,6 +1150,9 @@ local loose = nil -- { body, impact, untilTime }: a body we let go of and still 
 local function drop(velocity: Vector3)
 	grabRemote:FireServer("release", velocity)
 	local body = holding and dummyOf(holding.part)
+	if holding and holding.raking then
+		grabRemote:FireServer("rake", false)
+	end
 	if body then
 		local grab = holding.part:FindFirstChild("GrabAttachment")
 		if grab then
@@ -1192,11 +1205,43 @@ function toggleDrag(): boolean
 	-- by the chest, like grabbing the collar (the legs trail behind); the part looked at if the
 	-- chest is out of reach
 	local chest = body:FindFirstChild("UpperTorso") :: BasePart?
-	local part = if chest and (chest.Position - head.Position).Magnitude < GRAB_RANGE then chest else result.Instance
+	local part = if chest and (chest.Position - head.Position).Magnitude < GRAB_RANGE + DRAG_CHEST_REACH then chest else result.Instance
 	grabRemote:FireServer("grab", part, "drag")
 	loose = nil
-	holding = { part = part, dist = 0, since = os.clock(), impact = Impact.new(), drag = true, press = 0 }
+	holding = { part = part, dist = 0, since = os.clock(), impact = Impact.new(), drag = true, rake = 0 }
 	return true
+end
+
+-- Held with F, looking ahead, one click: the punt. You turn to where you look, swing it back, heave it
+-- up over your head and front-kick it away as it drops (the body's path: the per-frame block). At
+-- the kick the server hears "punt" first (the blow, and the mark that makes its landing hit harder),
+-- then the usual release with the kick's speed.
+local function startPunt()
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not holding or not root then
+		return
+	end
+	local start = os.clock()
+	holding.punt, holding.digHeld = start, false
+	local look = camera.CFrame.LookVector * XZ
+	look = look.Magnitude > 0.1 and look.Unit or root.CFrame.LookVector
+	root.CFrame = CFrame.lookAt(root.Position, root.Position + look)
+	if dragTracks.punt then
+		dragTracks.punt:Play(0.08)
+	end
+	task.delay(PUNT_KICK, function()
+		if not holding or holding.punt ~= start then
+			return -- let go or lost it on the way
+		end
+		local aimed = camera.CFrame.LookVector
+		local dir = ((aimed * XZ).Magnitude > 0.1 and (aimed * XZ).Unit or look) * PUNT_SPEED + Vector3.yAxis * (PUNT_LIFT + math.max(aimed.Y, 0) * PUNT_SPEED)
+		grabRemote:FireServer("punt", dir)
+		if sounds.Kick then
+			sounds.Kick:Play()
+		end
+		drop(dir)
+	end)
 end
 
 -- Ground slam: R in the air arms it; the landing hits the ground with both hands, harder the
@@ -1264,8 +1309,14 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
-		if holding and holding.drag and camera.CFrame.LookVector.Y < DIG_LOOK then
-			holding.digHeld = true -- held in one hand, looking down: pound it into the ground while held
+		if holding and holding.drag then
+			if holding.punt then
+				return -- already on its way
+			elseif camera.CFrame.LookVector.Y < RAKE_LOOK then
+				holding.digHeld = true -- held in one hand, looking down: rake it through the ground while held
+			else
+				startPunt()
+			end
 			return
 		end
 		if holding then
@@ -1458,7 +1509,10 @@ local function onCharacter(char: Model)
 	for kind, anim in dragAnims do
 		local track = humanoid.Animator:LoadAnimation(anim)
 		track.Priority = Enum.AnimationPriority.Action2 -- over the walk and the sprint cycle
-		track.Looped = true
+		track.Looped = kind ~= "punt"
+		if kind == "punt" then
+			track.Priority = Enum.AnimationPriority.Action4 -- the whole body, over everything
+		end
 		dragTracks[kind] = track
 	end
 	flipTrack = humanoid.Animator:LoadAnimation(flipAnim)
@@ -2405,68 +2459,63 @@ RunService.RenderStepped:Connect(function(dt)
 		local align = holding.part:FindFirstChild("GrabAlign", true) :: AlignPosition?
 		local dragRoot = holding.drag and char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if align and dragRoot and humanoid then
-			-- held in one hand at your side; sprinting, you bend over and press it down onto the
-			-- ground beside you, so it grinds along as you run (eased, so the hand swoops down)
-			local pressing = ((mv.sprintHeld or mv.sprintToggle) and humanoid.MoveDirection.Magnitude > 0)
-				or (holding.digHeld and camera.CFrame.LookVector.Y < DIG_LOOK)
-			holding.press = (holding.press or 0) + ((pressing and 1 or 0) - (holding.press or 0)) * math.min(dt * 8, 1)
+			-- gripped by the clothes at the collar (the server put the grab attachment there) and held
+			-- rigid in the fist: the collar goes where the fist is this frame, the chest is turned the way
+			-- you hold it, and only the limbs flop. Leaning back off the fist with the heels dragging
+			-- (DRAG_TILT); raking, laid back further so it ploughs on its back (RAKE_TILT).
+			-- looking a little down with the mouse held: raking it through the ground (a furrow, server)
+			local raking = holding.digHeld == true and not holding.punt and camera.CFrame.LookVector.Y < RAKE_LOOK
+			if raking ~= (holding.raking or false) then
+				holding.raking = raking
+				grabRemote:FireServer("rake", raking)
+			end
+			holding.rake = (holding.rake or 0) + ((raking and 1 or 0) - (holding.rake or 0)) * math.min(dt * 7, 1)
 			local look = dragRoot.CFrame.LookVector * XZ
 			look = look.Magnitude > 0.1 and look.Unit or Vector3.zAxis
 			local right = look:Cross(Vector3.yAxis)
-			local floor = dragRoot.Position.Y - dragRoot.Size.Y / 2 - humanoid.HipHeight
-			local function at(offset: Vector3, base: number): Vector3
-				return Vector3.new(dragRoot.Position.X, base + offset.Y, dragRoot.Position.Z) + right * offset.X - look * offset.Z
-			end
-			-- looking down with the mouse held: pounding it into the ground (it digs a trail, server)
-			local digging = holding.digHeld and camera.CFrame.LookVector.Y < DIG_LOOK
-			local lift = 0 -- 0..1: how high it is heaved this beat
-			if digging then
-				holding.press = math.min(1, holding.press + dt * 8) -- straight down into it, sprint or not
-				holding.digT = (holding.digT or 0) + dt * DIG_POUND
-				local beat = holding.digT % 1
-				if beat < 1 - DIG_SLAM then
-					lift = math.sin(beat / (1 - DIG_SLAM) * math.pi / 2) -- heaving it up
-				else
-					lift = 1 - (beat - (1 - DIG_SLAM)) / DIG_SLAM -- and down, hard
-				end
-				local count = math.floor(holding.digT)
-				if count ~= holding.digCount then -- the beat wrapped: it just hit the ground
-					holding.digCount = count
-					grabRemote:FireServer("dig")
-				end
-			else
-				holding.digT, holding.digCount = 0.6, nil -- start the next round mid-heave
-			end
-			holding.lift = lift
-			local target = at(DRAG_HOLD, dragRoot.Position.Y):Lerp(at(DRAG_PRESS, floor), holding.press)
-			-- the body hangs from the fist (DragPose puts the arm there): across the ground it
-			-- follows the hand, in height it goes from hanging below it down to the floor
 			local hand = char:FindFirstChild("RightHand") :: BasePart?
-			if hand and (hand.Position - target).Magnitude < 4 then
-				local hung = hand.Position.Y - DRAG_BELOW_HAND
-				target = Vector3.new(hand.Position.X, hung + (target.Y - hung) * holding.press, hand.Position.Z)
+			local target = hand and (hand.CFrame * DRAG_FIST).Position
+				or Vector3.new(dragRoot.Position.X, dragRoot.Position.Y + DRAG_HOLD.Y, dragRoot.Position.Z) + right * DRAG_HOLD.X - look * DRAG_HOLD.Z
+			local tilt = math.rad(DRAG_TILT + (RAKE_TILT - DRAG_TILT) * holding.rake)
+			local up = Vector3.yAxis * math.cos(tilt) + look * math.sin(tilt) -- head leaning forward, toward the fist
+			local front = Vector3.yAxis * math.sin(tilt) - look * math.cos(tilt) -- face up and back
+			local turn = holding.part:FindFirstChild("GrabTurn", true) :: AlignOrientation?
+			if turn then
+				turn.CFrame = CFrame.fromMatrix(Vector3.zero, up:Cross(-front), up, -front)
+			end
+			local punting = holding.punt and os.clock() - holding.punt
+			if punting and hand then
+				local flat = CFrame.lookAt(dragRoot.Position, dragRoot.Position + look)
+				if punting < PUNT_RELEASE then
+					holding.puntFrom = target -- swung back and up in the fist
+				else
+					-- thrown up over your head, dropping into the kick: a curve from where it left the hand
+					-- through over your head to the foot, turning over freely
+					if turn then
+						turn.Enabled = false
+					end
+					local s = math.clamp((punting - PUNT_RELEASE) / (PUNT_KICK - PUNT_RELEASE), 0, 1)
+					local from = holding.puntFrom or target
+					local over = flat:PointToWorldSpace(PUNT_APEX + Vector3.yAxis * 1.5)
+					local foot = flat:PointToWorldSpace(PUNT_FOOT)
+					target = from * (1 - s) ^ 2 + over * (2 * s * (1 - s)) + foot * s ^ 2
+				end
 			end
 			-- never below the ground actually under it: the grip is strong enough to push a body
 			-- through a thin floor (or the edge of a wall) and lose it under the map
 			bounceParams.FilterDescendantsInstances = { char, dummyFolder }
 			local ground = workspace:Raycast(target + Vector3.yAxis * 3, Vector3.yAxis * -8, bounceParams)
-			if digging and ground then
-				-- pounding: slammed down into the hole it is digging, lifted, slammed again
-				-- into the hole, but no deeper than DIG_SINK under your feet: it stays in sight
-				local bottom = math.max(ground.Position.Y, floor - DIG_SINK)
-				target = Vector3.new(target.X, bottom + DIG_DEPTH + lift * DIG_LIFT, target.Z)
-			elseif ground then
-				target = Vector3.new(target.X, math.max(target.Y, ground.Position.Y + DRAG_PRESS.Y), target.Z)
+			if ground and not punting then
+				target = Vector3.new(target.X, math.max(target.Y, ground.Position.Y + DRAG_COLLAR_MIN), target.Z)
 			end
 			-- and not into a wall: it stops against it and slides along, instead of being forced in
-			-- (pounding goes into the floor on purpose: the ground ray above already keeps it in the hole)
-			if not digging then
+			if not punting then
 				target = clearOf(dragRoot.Position + Vector3.yAxis, target, 0.9, char)
 			end
 			align.Position = target
 			local body = dummyOf(holding.part)
 			local landed = body and Impact.step(holding.impact, body, dt)
-			if landed and not digging then -- pounding: each slam is already one blow ("dig"), not two
+			if landed and not punting and not raking then -- raking: one long scrape, not a thud a frame
 				Sfx.playLocal(Sfx.THUD, landed.part.Position)
 				grabRemote:FireServer("slam", landed.part, landed.lost, landed.dir)
 			end
@@ -2500,7 +2549,10 @@ RunService.RenderStepped:Connect(function(dt)
 	gui.Enabled = not Menu.active
 
 	-- fists
-	local show = isFirstPerson() and not Menu.active and not holding and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
+	-- holding one with F the arms still show: the left pumping as you run, the right reaching for
+	-- the dummy's collar (see the fists loop)
+	local dragView = holding ~= nil and holding.drag == true
+	local show = isFirstPerson() and not Menu.active and (not holding or dragView) and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
 	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and not thirdWeapon)
 	crosshair.Visible = isFirstPerson() or thirdWeapon
@@ -2513,7 +2565,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local sprinting = (mv.sprintHeld or mv.sprintToggle) and moving == 1 and (not holding or holding.drag) and root and not mv.low -- you can run dragging one
 		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if humanoid then
-		humanoid.WalkSpeed = mv.low and MOVE.CROUCH_SPEED or sprinting and SPRINT_SPEED or WALK_SPEED
+		humanoid.WalkSpeed = (holding and holding.punt and 4)
+			or mv.low and MOVE.CROUCH_SPEED or sprinting and SPRINT_SPEED or WALK_SPEED
 	end
 	if humanoid and root and not Menu.active then
 		local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
@@ -2617,10 +2670,20 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 		end
 	end
-	-- holding one with F: the "hold" pose, blended into "press" as the sprint pushes it down
-	local press = holding and holding.drag and (holding.press or 0) * (1 - 0.7 * (holding.lift or 0)) or nil -- pounding: the arm comes up with it, then down
+	-- holding one with F: the "hold" pose, blended into "scrape" as you rake it; the punt plays on
+	-- its own (to its end, after the body is gone)
+	local gripping = holding and holding.drag and not holding.punt
+	local rake = gripping and holding.rake or 0
+	local weights = { hold = gripping and 1 - rake or 0, scrape = rake }
+	if dragTracks.scrape and dragTracks.scrape.IsPlaying and root then
+		-- the arm judders with the drag: faster the faster you run
+		dragTracks.scrape:AdjustSpeed(math.clamp((root.AssemblyLinearVelocity * XZ).Magnitude / RAKE_SPEED, 0.3, 1.6))
+	end
 	for kind, track in dragTracks do
-		local weight = if press then (kind == "press" and press or 1 - press) else 0
+		if kind == "punt" then
+			continue
+		end
+		local weight = weights[kind] or 0
 		if weight > 0.02 then
 			if not track.IsPlaying then
 				track:Play(0.15, weight)
@@ -2692,7 +2755,7 @@ RunService.RenderStepped:Connect(function(dt)
 
 	local bob = math.sin(os.clock() * (9 + 5 * sprint)) * 0.05 * (1 + 1.5 * sprint) * moving
 	local weapon = Weapons[weaponIndex]
-	local hold = HOLD[weapon.id]
+	local hold = not dragView and HOLD[weapon.id] or nil -- holding one with F: no weapon in hand
 	local viewCF = camera.CFrame * weaponVisual.sway:update(camera.CFrame, dt,
 		show == true and camera.CameraType ~= Enum.CameraType.Scriptable, ads)
 		* weaponVisual.recoil:update(dt, show == true)
@@ -2715,10 +2778,15 @@ RunService.RenderStepped:Connect(function(dt)
 	for side, h in hands do
 		h.t = math.min(h.t + dt / 0.2, 1)
 		local ext = math.sin(h.t * math.pi)
-		local boxing = weapon.id == "BoxingGloves"
+		local boxing = weapon.id == "BoxingGloves" and not dragView
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
 		local move = (side == "right" and hold) and hold.hand or Vector3.zero
-		if weapon.kind == "bow" then
+		if dragView and side == "left" then
+			-- the free arm pumps with your stride, as in any run
+			local pump = math.sin(os.clock() * (8 + 6 * sprint)) * moving
+			move += Vector3.new(0.05 * pump, 0.12 * pump, -0.55 * pump) * (0.4 + 0.6 * sprint)
+		end
+		if weapon.kind == "bow" and not dragView then
 			local draw = weaponVisual.bowDrawAt and math.clamp((os.clock() - weaponVisual.bowDrawAt) / 1.1, 0, 1) or 0
 			if side == "left" then move += Vector3.new(0.75, 0.25, draw * 0.65)
 			else move += Vector3.new(-0.15, 0.12, 0) end
@@ -2750,6 +2818,24 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		local fist = viewCF
 			* CFrame.new(h.x * (0.85 - 0.5 * ext) + move.X, -0.85 + 0.35 * ext + bob * h.x + move.Y, -2.35 - 1.2 * ext + move.Z)
+		local grab = dragView and side == "right" and holding and holding.part:FindFirstChild("GrabAttachment") :: Attachment?
+		if grab then
+			-- the fist reaches out toward the dummy's collar, the forearm coming up from the bottom
+			-- right of the screen: on screen it is the hand that holds it, not a shoulder in your face
+			-- on the plane DRAG_VIEW_REACH ahead, where the collar is seen through it, kept inside the
+			-- bottom right of the screen (the collar is often beside or behind you: then the corner)
+			local at = viewCF:PointToObjectSpace(grab.WorldPosition)
+			local z = -DRAG_VIEW_REACH
+			local x, y = 0.95, -0.8
+			if at.Z < -0.2 then
+				x, y = at.X * z / at.Z, at.Y * z / at.Z
+			end
+			x, y = math.clamp(x, 0.45, 1.25), math.clamp(y, -1.0, -0.4)
+			local spot = viewCF * Vector3.new(x, y + bob * 0.5, z)
+			-- knuckles along the line from your eye through the fist (the collar itself may be off
+			-- screen): the forearm then runs back out of the bottom right corner, never across the view
+			fist = CFrame.lookAt(spot, viewCF * (Vector3.new(x, y, z) * 2), viewCF.UpVector)
+		end
 		h.fist.CFrame = fist
 		fists[side] = fist
 		h.arm.CFrame = fist * CFrame.Angles(math.rad(ARM_PITCH), math.rad(ARM_YAW * h.x), 0) * CFrame.new(0, 0, 1.3)
