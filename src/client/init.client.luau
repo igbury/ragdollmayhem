@@ -658,7 +658,10 @@ local DEFAULT_GRIP = CFrame.new(0, -0.15, 0) * CFrame.Angles(math.rad(-90), 0, 0
 -- its length. Pitch tips the fingers up: a little reads as a natural guard; much more (12) and the
 -- arms look raised, below zero they reach out like a zombie. Yaw splays the forearms outward.
 local ARM_PITCH, ARM_YAW = 0, 30
-local GLOVE_PITCH, GLOVE_YAW = 15, 12 -- boxing gloves: on top of ARM_PITCH, in place of ARM_YAW
+local GLOVE_REST = Vector3.new(0.35, 0.25, -0.3) -- boxing: arm offset (x outward) so gloves sit at the fists
+-- boxing: the glove's front tipped up GLOVE_TIP degrees about the wrist, GLOVE_WRIST studs back from
+-- the fist, so the cuff and forearm stay where they are
+local GLOVE_TIP, GLOVE_WRIST = 25, 0.6
 -- bare fists sit this much further apart and nearer the camera (a weapon's hand keeps its tuned spot)
 local FIST_SPREAD, FIST_PULL = 0.3, 0.3
 local ARM_STRETCH = 1.15
@@ -812,8 +815,16 @@ weaponVisual.gloves = {
 	left = BoxingGloves.create(camera, "ViewGlove_Left", -1),
 	right = BoxingGloves.create(camera, "ViewGlove_Right", 1),
 }
-task.spawn(GloveMeshes.dress, weaponVisual.gloves.left, -1, camera)
-task.spawn(GloveMeshes.dress, weaponVisual.gloves.right, 1, camera)
+local VIEW_GLOVE_SCALE = 0.8 -- the first-person pair, down to about the size of the bare fists
+for side, x in { left = -1, right = 1 } do
+	task.spawn(function()
+		local glove = weaponVisual.gloves[side]
+		GloveMeshes.dress(glove, x, camera)
+		if glove.mesh then
+			glove.mesh.Size *= VIEW_GLOVE_SCALE
+		end
+	end)
+end
 GloveMeshes.watch(camera, function(character)
 	return character == player.Character and isFirstPerson() -- the viewmodel pair draws instead
 end)
@@ -2950,8 +2961,9 @@ RunService.RenderStepped:Connect(function(dt)
 				+ Vector3.new(0, 0, drawing and 0.15 * aimed.Z or 0.15 * aimed.Z * (1 - smooth(h.t)) - 0.35 * ext)
 		end
 		if boxing then
-			-- Raised guard; the striking fist travels inward and turns over, then returns to guard.
-			move += Vector3.new(h.x * (0.12 - 0.32 * ext), 0.32 + 0.08 * ext, 0.12 - 0.12 * ext)
+			-- At rest the gloves land where the bare fists are (a glove sits back on the forearm, so the
+			-- arm goes up, out and away to put it there); the striking fist travels inward and turns over.
+			move += GLOVE_REST * Vector3.new(h.x, 1, 1) + Vector3.new(-h.x * 0.32 * ext, 0.08 * ext, 0)
 			-- the block: both gloves up in front of the face, pressed together (kept apart below)
 			move = move:Lerp(Vector3.new(-h.x * 0.6, 0.8, 0.5), guard)
 			if h.heavy then
@@ -3006,15 +3018,16 @@ RunService.RenderStepped:Connect(function(dt)
 		h.fist.Transparency = (show and not real) and 0 or 1
 		h.arm.Transparency = (show and not real) and 0 or 1
 		-- fingers forward, forearm running back, down and outward past the camera
-		-- gloves: tipped up a little and turned in less, so each glove runs straight on out of its forearm;
-		-- blocking: forearms up, gloves upright
-		local pitch = ARM_PITCH + (boxing and GLOVE_PITCH + 30 * guard or 0)
-		local yaw = boxing and GLOVE_YAW or ARM_YAW
-		local arm = fist * CFrame.Angles(math.rad(pitch), math.rad(yaw * h.x), 0) * CFrame.Angles(math.rad(90), 0, 0)
+		local pitch = ARM_PITCH + (boxing and 30 * guard or 0) -- blocking: forearms up, gloves upright
+		local yawed = fist * CFrame.Angles(math.rad(pitch), math.rad(ARM_YAW * h.x), 0)
+		local arm = yawed * CFrame.Angles(math.rad(90), 0, 0)
 		local hand = arm
 		if boxing then
-			-- The glove stays on the forearm's axis (so it sits on the hand) and only turns over along it.
-			hand = arm * CFrame.Angles(0, math.rad(-h.x * 45 * ext), 0)
+			-- The glove tips its front up at the wrist (the cuff and forearm stay put) and turns over
+			-- along the forearm's axis as it punches.
+			hand = yawed * CFrame.new(0, 0, GLOVE_WRIST) * CFrame.Angles(math.rad(GLOVE_TIP), 0, 0)
+				* CFrame.new(0, 0, -GLOVE_WRIST) * CFrame.Angles(math.rad(90), 0, 0)
+				* CFrame.Angles(0, math.rad(-h.x * 45 * ext), 0)
 		end
 		if side == "right" and hold then
 			-- The wrist bends so the hand is square to the view whatever the forearm is doing:
@@ -3048,8 +3061,8 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		local glove = weaponVisual.gloves[side]
 		local gloveCF = hand * (real and real.grip or DEFAULT_GRIP)
-		if boxing then -- guard: thumbs up, backs of the gloves turned out, rolled about the forearm
-			gloveCF *= glove.origin * CFrame.Angles(0, 0, math.rad(-90 * h.x)) * glove.origin:Inverse()
+		if boxing then -- blocking: thumbs up, backs of the gloves turned out, rolled about the forearm
+			gloveCF *= glove.origin * CFrame.Angles(0, 0, math.rad(-90 * h.x * guard)) * glove.origin:Inverse()
 		end
 		gloveCFs[side] = gloveCF
 	end
