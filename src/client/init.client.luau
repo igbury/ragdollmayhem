@@ -250,6 +250,19 @@ local weaponIndex = 1 -- Weapons[1] is fists
 local heldAbility = nil -- an Attacks entry taken from the hotbar: the hands glow its colour, a click casts it
 local lastWeaponUse = 0
 local weaponVisual = { sway = WeaponSway.new(), bob = WeaponBob.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
+-- A first-person hand pressed flat on a wall (normal n) at `at`, fingers along `fingers`, the
+-- forearm bent back from the wrist toward the shoulder; blended in over hand / arm by w.
+-- x: 1 right hand, -1 left; wrist: the wrist point in hand space.
+function weaponVisual.palm(hand: CFrame, arm: CFrame, at: Vector3, n: Vector3, fingers: Vector3, x: number,
+	wrist: Vector3, view: CFrame, w: number): (CFrame, CFrame)
+	local palmOut = n * x -- an R15 hand's palm faces -X on the right hand, +X on the left
+	local flat = CFrame.fromMatrix(at + n * 0.12, palmOut, -fingers) -- fingers at the hand's -Y
+	local wristAt = flat * wrist
+	local toShoulder = (view * Vector3.new(x, -1.5, 0.8) - wristAt).Unit
+	local armX = (palmOut - toShoulder * palmOut:Dot(toShoulder)).Unit
+	local bent = CFrame.fromMatrix(wristAt, armX, toShoulder) * CFrame.new(-wrist)
+	return hand:Lerp(flat, w), arm:Lerp(bent, w)
+end
 local recoil = 0
 local aiming = false -- right mouse / L2 held: aim down the sights (guns) or show the throw arc (thrown)
 local ads = 0 -- eased 0..1
@@ -420,7 +433,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "Shift  Sprint\nCtrl  Slide / crouch\nX  Dash\nSpace  Double jump (in the air)\nA / D  Wall run (in the air, at a wall)\nW  Grab a wall / climb a ledge\nS  Backflip (hanging on a wall)\nClick  Dive kick (in the air)\n1-5  Hotbar slot\nQ  Next weapon (hold: weapon wheel, last page: abilities)\nClick with an ability in hand  Use it\nF / scroll  Previous / switch weapon\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "X  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -2314,6 +2327,7 @@ function mv.wallFlip()
 	regrabAt = now + 0.6
 	doubleJumpFrom, doubleJumpUntil = now + 0.3, now + DOUBLE_JUMP_WINDOW
 	flipUntil = now + WALL_FLIP_TIME
+	weaponVisual.flipAt = now
 	if flipTrack then
 		flipTrack:Play(0.05)
 	end
@@ -2566,7 +2580,8 @@ RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, 
 	mouseLocked = thirdWeapon
 	local target = 0
 	if wall then
-		target = math.rad(10) * (wall.normal:Dot(camera.CFrame.RightVector) > 0 and 1 or -1)
+		-- head away from the wall, as the third-person body leans (WallRun); +Z tips it left
+		target = math.rad(14) * (wall.normal:Dot(camera.CFrame.RightVector) > 0 and -1 or 1)
 	end
 	wallTilt += (target - wallTilt) * math.min(dt * 6, 1)
 	local cf = camera.CFrame
@@ -3010,6 +3025,45 @@ RunService.RenderStepped:Connect(function(dt)
 	local weaponCF = nil
 	local fists = {} -- this frame's fist CFrames, for a piece handed to the left fist
 	local gloveCFs = {} -- this frame's glove grip CFrames, placed after both are known
+	-- wall run: the hand on the wall's side is planted flat on it (the near arm in WallRun).
+	-- The last contact is kept in view space, so a hand easing off a wall you jump away from stays
+	-- with you instead of stretching after it.
+	local function contact(hit: RaycastResult)
+		return { point = viewCF:PointToObjectSpace(hit.Position), normal = viewCF:VectorToObjectSpace(hit.Normal) }
+	end
+	local function world(c)
+		return c and { side = c.side, point = viewCF * c.point, normal = viewCF:VectorToWorldSpace(c.normal) }
+	end
+	local touching = false
+	if wall and not wall.clinging and show and not dragView then
+		local hit = workspace:Raycast(viewCF.Position, -wall.normal * 4, wallParams)
+		if hit then
+			touching = true
+			weaponVisual.wallHand = contact(hit)
+			weaponVisual.wallHand.side = hit.Normal:Dot(viewCF.RightVector) > 0 and "left" or "right"
+		end
+	end
+	local wallHand = world(weaponVisual.wallHand)
+	weaponVisual.wallT = (weaponVisual.wallT or 0) + ((touching and 1 or 0) - (weaponVisual.wallT or 0)) * math.min(dt * 10, 1)
+	-- hanging on a wall: both palms on it either side of the view (kept, like wallHand, to ease off)
+	local holdingOn = false
+	if wall and wall.clinging and show and not dragView then
+		local hit = workspace:Raycast(viewCF.Position, -wall.normal * 4, wallParams)
+		if hit then
+			holdingOn = true
+			weaponVisual.cling = contact(hit)
+		end
+	end
+	local cling = world(weaponVisual.cling)
+	weaponVisual.clingT = (weaponVisual.clingT or 0) + ((holdingOn and 1 or 0) - (weaponVisual.clingT or 0)) * math.min(dt * 10, 1)
+	-- the kick off the wall (mv.wallFlip): 0 -> 1 over the flip, nil when not flipping
+	local flipT = weaponVisual.flipAt and (now - weaponVisual.flipAt) / WALL_FLIP_TIME
+	flipT = flipT and flipT < 1 and flipT or nil
+	-- a jump: the hands swing up while you rise and come back down as it tops out (not on a wall,
+	-- where the hands have their own poses, nor in the flip)
+	local rise = root and airborne and not wall and not flipT and math.clamp(root.AssemblyLinearVelocity.Y / 12, 0, 1) or 0
+	local jumpT = weaponVisual.jumpT or 0
+	weaponVisual.jumpT = jumpT + (rise - jumpT) * math.min(dt * (rise > jumpT and 25 or 5), 1) -- snap up, settle slowly
 	for side, h in hands do
 		h.t = math.min(h.t + dt / (h.heavy and 0.34 or 0.2), 1)
 		local ext = math.sin(h.t * math.pi)
@@ -3079,6 +3133,23 @@ RunService.RenderStepped:Connect(function(dt)
 			end
 		end
 		move += weaponVisual.bob:hand(h.x) * (1 - ads) -- arms swing in opposition while walking; aiming steadies them
+		-- wall run: the free hand (away from the wall) flails out for balance with the stride, as the
+		-- far arm in WallRun does; one swing each way per 0.5 s cycle
+		if flipT and not (side == "right" and hold) then
+			-- the kick: both hands shove off the wall, then are thrown up and out overhead (mostly off
+			-- the top of the screen) and come back down for the landing, as in WallFlip
+			local shove = math.sin(math.clamp(flipT / 0.2, 0, 1) * math.pi)
+			local throw = math.sin(math.clamp((flipT - 0.08) / 0.8, 0, 1) * math.pi)
+			move += Vector3.new(h.x * 0.5 * throw, 1.6 * throw, -0.6 * shove + 0.3 * throw)
+		end
+		if weaponVisual.jumpT > 0.01 and not (side == "right" and hold) then
+			move += Vector3.new(h.x * 0.3, 1.0, -0.25) * weaponVisual.jumpT * (1 - ext) -- up and a little out
+		end
+		local flail = wallHand and wallHand.side ~= side and weaponVisual.wallT * (1 - ext) or 0
+		if flail > 0.01 and not (side == "right" and hold) then
+			local s = math.sin(now * math.pi * 4)
+			move += Vector3.new(h.x * (0.5 + 0.2 * s), -0.1 + 0.25 * s, 0.3 - 0.6 * s) * flail
+		end
 		-- the same wide, near rest for bare fists and anything held; a punch still reaches all the way
 		-- out, and aiming, the drawn bow and a hand reaching for the weapon go exactly where they're put
 		local bare = (1 - ext) * (1 - ads) * (weapon.kind == "bow" and 0 or 1)
@@ -3145,6 +3216,31 @@ RunService.RenderStepped:Connect(function(dt)
 				* CFrame.Angles(math.rad(90), 0, 0)
 				* CFrame.new(-pivot)
 			weaponCF = hand * (real and real.grip or DEFAULT_GRIP)
+		end
+		local free = not (side == "right" and hold)
+		local wrist = real and real.wrist or Vector3.zero
+		local planted = wallHand and wallHand.side == side and weaponVisual.wallT * (1 - ext) or 0
+		if planted > 0.01 and free then
+			-- wall run: a little ahead of and below the eye, fingers up and forward along the wall
+			local n = wallHand.normal
+			local up = (Vector3.yAxis - n * n.Y).Unit
+			local along = viewCF.LookVector - n * viewCF.LookVector:Dot(n)
+			along = along.Magnitude > 0.01 and along.Unit or up:Cross(n)
+			local at = viewCF.Position + along * 1.6 - up * 0.3
+			at += n * (wallHand.point - at):Dot(n)
+			hand, arm = weaponVisual.palm(hand, arm, at, n, (up + along * 0.6).Unit, h.x, wrist, viewCF, planted)
+		end
+		local clung = cling and weaponVisual.clingT * (1 - ext) or 0
+		if clung > 0.01 and free then
+			-- hanging: shoulder width apart just below the eye, fingers up and a little outward
+			local n = cling.normal
+			local up = (Vector3.yAxis - n * n.Y).Unit
+			local across = n:Cross(up).Unit
+			if across:Dot(viewCF.RightVector) < 0 then
+				across = -across
+			end
+			local at = cling.point + across * (h.x * 0.6) - up * 0.15
+			hand, arm = weaponVisual.palm(hand, arm, at, n, (up + across * h.x * 0.3).Unit, h.x, wrist, viewCF, clung)
 		end
 		if real then
 			for i, piece in real.pieces do
