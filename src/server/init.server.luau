@@ -16,8 +16,9 @@ local City = require(script.City)
 local Looks = require(script.Looks)
 local Anims = require(script.Anims)
 local Monsters = require(script.Monsters)
-local MagazineService = require(script.MagazineService)
 local Arrows = require(script.Arrows)
+local Wanted = require(script.Wanted)
+local Outfits = require(script.Outfits)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -131,6 +132,45 @@ description.RightLeg = 376531703
 
 local function pick(list)
 	return list[math.random(#list)]
+end
+
+-- Kinds of dummy, picked at random by weight: the catalog Shirt / Pants / Hat it wears, the
+-- weapon it holds (`gear`, a Weapons id; DummyGear draws it, fight() uses it) and the traits it
+-- may be born with (nil: any, rollTrait). Armed ones always hit back, so never a Mourner or Coward.
+-- A hooligan is always Berserk: it goes for the Normal ones (nearestDummy), and the cops who see
+-- it (alarm) shoot it, and then it goes for the cop that shot it (hit).
+local KINDS = {
+	Normal = { weight = 80, shirt = 14542273245, pants = 8020998573, -- green T-shirt, jeans
+		brave = 0.3 }, -- share that stand up to a hooligan whatever their trait (weakly: WEAK)
+	-- law: hunts a wanted player (Wanted); a cop carries the baton until 3 stars, then its handgun
+	Cop = { weight = 15, shirt = 8166622899, pants = 4944607821, hat = "15752686682", gear = "Baton", traits = { "Tough" }, law = true },
+	Hooligan = { weight = 5, shirt = 9672050492, pants = 4944607821, hat = "8268195375", gear = "Bat", -- black shirt, ski mask
+		traits = { "Berserk" } },
+	-- weight 0: only ever sent by Wanted (4 and 5 stars). `outfit`: the uniform Outfits welds on,
+	-- `colors`: body colours under it (torso and arms, legs), `armor`: what a blow is worth on them.
+	Soldier = { weight = 0, gear = "Rifle", traits = { "Tough" }, law = true, outfit = "Soldier", armor = 0.6,
+		colors = { Color3.fromRGB(96, 108, 70), Color3.fromRGB(120, 110, 80) } },
+	Heavy = { weight = 0, gear = "Rocket", traits = { "Tough" }, law = true, outfit = "Heavy", armor = 0.3,
+		colors = { Color3.fromRGB(34, 36, 42), Color3.fromRGB(34, 36, 42) } },
+}
+for _, kind in KINDS do
+	local look = description:Clone()
+	look.Shirt, look.Pants, look.HatAccessory = kind.shirt or 0, kind.pants or 0, kind.hat or ""
+	if kind.colors then
+		look.TorsoColor, look.LeftArmColor, look.RightArmColor = kind.colors[1], kind.colors[1], kind.colors[1]
+		look.LeftLegColor, look.RightLegColor = kind.colors[2], kind.colors[2]
+	end
+	kind.description = look
+end
+local function rollKind(): string
+	local roll = math.random() * 100
+	for name, kind in KINDS do
+		roll -= kind.weight
+		if roll <= 0 then
+			return name
+		end
+	end
+	return "Normal"
 end
 
 local function setOwner(model: Model, player: Player?)
@@ -569,6 +609,10 @@ local function setGroup(model: Instance, group: string)
 end
 
 local function release(d, velocity: Vector3, owner: Player?)
+	local by = owner or d.heldBy -- thrown, dropped or carried into a machine: theirs (Wanted)
+	if by then
+		d.blame, d.blameAt = by, os.clock()
+	end
 	if d.dragging then
 		task.delay(UNHELD_AFTER, function()
 			if not d.dragging and d.model.Parent then
@@ -604,6 +648,7 @@ local function release(d, velocity: Vector3, owner: Player?)
 end
 
 local spawnDummy
+local knockPlayer -- below (Brain); a soldier's rocket (rocket) also throws players
 local tryDodge -- Brain: fighting (the punch and weapon handlers above it ask it)
 local landImpact -- impacts, below (grab "slam" asks it)
 
@@ -639,6 +684,7 @@ local function revive(d)
 	-- a fresh start for the mind too: it used to come back still fighting, still digging a grave,
 	-- or bent over a wound it no longer has
 	d.target, d.burying, d.digUntil, d.legless = nil, nil, 0, false
+	d.blame, d.blameAt = nil, nil
 	d.morale, d.brain = d.baseMorale, nil
 	d.humanoid.AutoRotate = true
 	d.impactState = Impact.new()
@@ -666,7 +712,21 @@ local function limp(d, key: string, seconds: number)
 	setOwner(d.model, nil) -- the loose limb is its own assembly now; keep it on the server
 end
 
+local BLAME_FOR = 300 -- seconds a player answers for a death they set going (shot, thrown, set on fire: Wanted)
 local function kill(d, cause: string)
+	if d.state ~= "Dead" then
+		-- who did it: whoever's action this thread is running (Wanted.act: their attack, their rocket,
+		-- their grenade's fuse, their molotov's fire, their arrow; false for a soldier's rocket), else
+		-- the last one who hurt, threw, dropped or carried it (a landing, a bleed-out, a machine it was
+		-- thrown into). Nobody: no stars (a dummy's own fight, a fall it took by itself).
+		local by = Wanted.culprit()
+		if by == nil and d.blameAt and os.clock() - d.blameAt < BLAME_FOR then
+			by = d.blame
+		end
+		if by then
+			Wanted.crime(by, d.model:GetAttribute("Kind"))
+		end
+	end
 	d.cause = cause
 	d.deadSynced = false -- one last HUD update (the Heartbeat), then it rests
 	knockDown(d, math.huge, "Dead")
@@ -985,10 +1045,10 @@ local function walkStraight(d, at: Vector3)
 end
 
 -- Run from `from`, carrying what hurts: a hand stays on a wound that still bleeds, a broken leg
--- drags (the Heartbeat).
+-- drags (the Heartbeat). A hooligan never runs, however badly it is hurt.
 local function flee(d, from: Vector3, distance: number)
 	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not root then
+	if not root or d.gear == "Bat" then
 		return
 	end
 	local now = os.clock()
@@ -1005,7 +1065,8 @@ local function flee(d, from: Vector3, distance: number)
 end
 
 -- Personalities ------------------------------------------------------------------------------
--- Every dummy is born with one: Berserk goes for the nearest dummy on sight (a player only once hit), Tough hits back and
+-- Every dummy is born with one. None ever starts on a player: a player only gets hit back by the dummy it hit.
+-- Berserk goes for the nearest dummy on sight, Tough hits back and
 -- keeps at it however badly it is hurt, Hothead hits back but gives up once something is broken
 -- or it bleeds hard, Mourner buries the dead, Coward runs at the very sight of a player.
 local TRAITS = { { "Berserk", 5 }, { "Tough", 20 }, { "Hothead", 20 }, { "Mourner", 50 }, { "Coward", 5 } }
@@ -1053,14 +1114,24 @@ local function dummyAt(from: Vector3, victim): any
 	return nil
 end
 
-local JOIN_LINES = { "Hey! Pick on someone your own size!", "Get that one!", "Nobody touches my friend!", "Oh, it's on now!" }
+local COP_SIGHT = 70 -- a cop this close to a hooligan beating someone up goes after it
+local COP_LINES = { "Freeze!", "Police! Drop it!", "You're under arrest!", "Hands where I can see them!" }
 local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 	local now = os.clock()
+	local culprit = victim and from and dummyAt(from, victim)
+	local thug = culprit and culprit.gear == "Bat" and not victim.gear and culprit or nil
 	for _, d in dummies do
+		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if thug and d.law and d.state == "Awake" and d.target ~= thug
+			and not (d.target and typeof(d.target) == "Instance") -- a player it is fighting comes first
+			and root and (root.Position - position).Magnitude < COP_SIGHT then
+			d.target = thug
+			say(d, pick(COP_LINES), "shout")
+			continue
+		end
 		if d == victim or d.state ~= "Awake" or now < d.nextReact or d.target then
 			continue
 		end
-		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if not root or (root.Position - position).Magnitude > 45 then
 			continue
 		end
@@ -1068,13 +1139,7 @@ local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 		if kind == "death" then
 			d.morale -= 15 -- seeing one of its own drop shakes it
 		end
-		-- the fighters among them pile in on whoever is beating up one of their own
-		local culprit = kind == "hit" and from and playerAt(from)
-		if culprit and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.4)) then
-			d.target = culprit
-			say(d, pick(JOIN_LINES))
-			continue
-		end
+		-- never piles in on a player: a dummy only fights a player who hit it
 		d.nextWander, d.calmAt = now + 4, now + 4
 		if victim and victim.state ~= "Dead" and kind ~= "shot" and not d.limp and math.random() < 0.2 then
 			say(d, "Hang on, I'm coming!")
@@ -1103,8 +1168,20 @@ local SHOT_LINES = { "I felt that in my teeth.", "Is it meant to move like that?
 -- `kind` is the weapon's `hurt` (blunt when left out), `pos` the point that was hit.
 -- `from` is where the attacker stands: the dummy and the ones watching run from there.
 local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number?, kind: string?, pos: Vector3?, from: Vector3?)
-	local power = scale or 1
+	local power = (scale or 1) * d.armor
 	d.attackerAt = from or d.attackerAt -- the ground hitting it (impacts) is nobody to run from
+	local attacker = from and (playerAt(from) or dummyAt(from, d))
+	-- for the wanted level (kill): a player, or false when a dummy did it. A dummy only counts if it
+	-- is armed or fighting this one: a blast (smash) hits from a point by the victim, and whoever
+	-- stands there is not the culprit.
+	local culprit = Wanted.culprit()
+	if culprit ~= nil then
+		d.blame, d.blameAt = culprit, os.clock()
+	elseif typeof(attacker) == "Instance" then
+		d.blame, d.blameAt = attacker, os.clock()
+	elseif attacker and (attacker.gear or attacker.target == d) then
+		d.blame, d.blameAt = false, os.clock()
+	end
 	if not PARTS[part.Name] then -- the root box: count it as the torso
 		part = d.model:FindFirstChild("UpperTorso") or d.model:FindFirstChild("LowerTorso")
 		if not part then
@@ -1296,9 +1373,9 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	end
 	syncAttributes(d)
 	alarm(d, point, (not dead and d.state == "Dead") and "death" or cutOff and "cut" or kind == "bullet" and "shot" or "hit", from)
-	local attacker = from and (playerAt(from) or dummyAt(from, d))
+	local hooligan = attacker and typeof(attacker) ~= "Instance" and attacker.gear == "Bat"
 	if attacker and not dead and d.state ~= "Dead" and d.target ~= attacker
-		and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and not badlyHurt(d))) then
+		and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and not badlyHurt(d)) or (hooligan and d.brave)) then
 		d.target = attacker -- it hits back (behave), on its feet again if it went down
 		say(d, pick(ANGRY_LINES))
 	end
@@ -1312,15 +1389,22 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	end
 end
 
-function spawnDummy(cf: CFrame, as: string?)
-	local model = Players:CreateHumanoidModelFromDescription(description, Enum.HumanoidRigType.R15)
+function spawnDummy(cf: CFrame, as: string?, forceKind: string?)
+	local kindName = forceKind or rollKind()
+	local kind = KINDS[kindName]
+	local model = Players:CreateHumanoidModelFromDescription(kind.description, Enum.HumanoidRigType.R15)
 	local name = as or pick(NAMES)
 	model.Name = name
+	model:SetAttribute("Kind", kindName)
+	model:SetAttribute("Gear", kind.gear) -- set before it is parented, so clients get it with the model
 	local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.WalkSpeed = 8
 
 	Looks.buildFace(Looks.plainHead(model))
+	if kind.outfit then
+		Outfits.dress(model, kind.outfit)
+	end
 
 	model:PivotTo(cf)
 	model.Parent = dummyFolder
@@ -1351,9 +1435,14 @@ function spawnDummy(cf: CFrame, as: string?)
 		end)
 	end
 
-	local trait = rollTrait()
+	local trait = kind.traits and pick(kind.traits) or rollTrait()
 	local d = {
 		model = model,
+		gear = kind.gear, -- "Baton" / "Handgun" / "Bat" / "Rifle" / "Rocket" / nil: what it fights with
+		law = kind.law, -- police or army (Wanted)
+		armor = kind.armor or 1, -- what a blow or a blast is worth on it
+		brave = math.random() < (kind.brave or 0), -- stands up to a hooligan (KINDS)
+
 		humanoid = humanoid,
 		home = cf.Position,
 		hp = MAX_HP,
@@ -1462,6 +1551,7 @@ local function headOf(player: Player): BasePart?
 end
 
 punchRemote.OnServerEvent:Connect(function(player, part)
+	Wanted.act(player) -- whatever this does to a dummy is on them
 	if typeof(part) ~= "Instance" or not part:IsA("BasePart") or rateLimited(player, PUNCH_COOLDOWN, "punch") then
 		return
 	end
@@ -1543,6 +1633,7 @@ local PUNT_HITS = 3 -- hits that break the map while it is marked (the client's 
 local MAX_PUNT_SPEED = 200
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
+	Wanted.act(player) -- whatever this does to a dummy is on them
 	if action == "grab" then
 		if typeof(arg) ~= "Instance" or not arg:IsA("BasePart") or held[player] then
 			return
@@ -1715,6 +1806,11 @@ end
 -- (attacks, machines).
 local BLAST_LIMBS = { "LeftLowerArm", "RightLowerArm", "LeftHand", "RightHand", "LeftLowerLeg", "RightLowerLeg", "LeftFoot", "RightFoot", "LeftUpperArm", "RightUpperLeg" }
 local function harm(d, damage: number, kind: string?, from: Vector3?)
+	damage *= d.armor
+	local culprit = Wanted.culprit()
+	if culprit ~= nil then
+		d.blame, d.blameAt = culprit, os.clock()
+	end
 	local dead = d.state == "Dead"
 	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 	if kind == "fire" then
@@ -1869,6 +1965,7 @@ function ATTACKS.Ult(_, cf: CFrame)
 end
 
 attackRemote.OnServerEvent:Connect(function(player, id, look)
+	Wanted.act(player) -- whatever this does to a dummy is on them
 	local run = typeof(id) == "string" and ATTACKS[id]
 	-- where the player is looking (the camera); anything odd falls back to the body's facing
 	if typeof(look) ~= "Vector3" or look ~= look or look.Magnitude < 0.5 or look.Magnitude > 2 then
@@ -1900,6 +1997,7 @@ local KICK_POWER = 45 -- crater radius 8.4, centred far enough ahead that you do
 local SLAM_MAX_SPEED = 250 -- ponytail: client-reported speed, clamped; check against server physics if cheating matters
 local slamReady = {}
 actionRemote.OnServerEvent:Connect(function(player, action, speed)
+	Wanted.act(player) -- whatever this does to a dummy is on them
 	local dive = action == "dive"
 	local kick = action == "kick" or dive
 	if not kick and (action ~= "slam" or typeof(speed) ~= "number" or speed ~= speed) then
@@ -1955,7 +2053,6 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	if typeof(id) ~= "string" or not inventoryIds[id] or not humanoid or humanoid.Health <= 0 then return end
 	if char:GetAttribute("EquippedWeapon") == id then return end
 	if rateLimited(player, 0.05, "equip") then return end
-	MagazineService.cancel(char)
 	char:SetAttribute("BowDrawAt", nil)
 	clearBoxing(player)
 	char:SetAttribute("EquippedWeapon", id)
@@ -2086,12 +2183,14 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		return
 	end
 	-- molotov: breaks on the first thing it touches that is not the thrower
+	local by = Players:GetPlayerFromCharacter(char)
 	local broken = false
 	local function shatter()
 		if broken then
 			return
 		end
 		broken = true
+		Wanted.act(by) -- the fire is the thrower's doing
 		local position = p.Position
 		p:Destroy()
 		Sfx.play(Sfx.SHATTER, position)
@@ -2108,7 +2207,8 @@ end
 -- A rocket: a warhead flown straight along the aim (stepped by hand and raycast each frame, so it
 -- never tunnels through a thin wall at speed), trailing fire and smoke, that blows up on the
 -- first thing it meets or at the end of its range.
-local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3)
+local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3, npc: boolean?)
+	Wanted.act(if npc then false else Players:GetPlayerFromCharacter(char))
 	local p = Instance.new("Part")
 	p.Name = "Rocket"
 	p.Size = Vector3.new(0.7, 0.7, 2.4)
@@ -2150,6 +2250,18 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3)
 	end
 	p:Destroy()
 	explode(position, Sfx.RPG_BOOM)
+	if npc then -- explode only throws dummies: a soldier's rocket is for the player
+		for _, player in Players:GetPlayers() do
+			local c = player.Character
+			local r = c and c:FindFirstChild("HumanoidRootPart") :: BasePart?
+			local hum = c and c:FindFirstChildOfClass("Humanoid")
+			local away = r and r.Position - position
+			if away and hum and hum.Health > 0 and away.Magnitude < 13 then
+				local push = (away.Magnitude > 0.1 and away.Unit or Vector3.yAxis) * 70 + Vector3.yAxis * 45
+				knockPlayer(player, hum, push, 27 * (1 - away.Magnitude / 13) + 5, 2)
+			end
+		end
+	end
 end
 
 -- How far the shooter's own idea of their head may sit from ours. Their body is theirs to move, so
@@ -2235,6 +2347,7 @@ local function batBlow(d, swing)
 end
 
 weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
+	Wanted.act(player) -- whatever this does to a dummy is on them
 	local weapon = typeof(id) == "string" and weaponById[id]
 	local char = player.Character
 	local head = headOf(player)
@@ -2264,7 +2377,6 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	if now < (ready[cooldownId] or 0) then
 		return
 	end
-	if not MagazineService.consume(char, id) then return end
 	local bowCharge = 0
 	if weapon.kind == "bow" then
 		local drawAt = char:GetAttribute("BowDrawAt")
@@ -2294,6 +2406,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	end
 	if weapon.kind == "bow" then
 		Arrows.fire(origin, dir, weapon.speed * (0.4 + 0.6 * bowCharge), char, function(result, direction)
+			Wanted.act(player)
 			local damage = weapon.dmg * (0.25 + 0.75 * bowCharge)
 			if Monsters.damage(result.Instance, damage * 10, direction, player) then return end
 			local d = dummyOf(result.Instance)
@@ -2386,6 +2499,7 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		local hum = char:WaitForChild("Humanoid") :: Humanoid
 		hum.Died:Connect(function()
+			Wanted.clear(player)
 			clearBoxing(player)
 			if held[player] then
 				release(held[player], Vector3.zero)
@@ -2471,6 +2585,7 @@ local function nearestDummy(d, root: BasePart): (any, BasePart?, number)
 		local r = other.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local dist = r and (r.Position - root.Position).Magnitude or math.huge
 		if other ~= d and other.state ~= "Dead" and dist < bestDist
+			and not (d.gear == "Bat" and other.gear) -- a hooligan picks on the unarmed ones
 			and not workspace:Raycast(root.Position + Vector3.yAxis * 1.5, r.Position - root.Position, sightParams) then
 			best, bestRoot, bestDist = other, r, dist
 		end
@@ -2496,6 +2611,7 @@ local XZ = Vector3.new(1, 0, 1)
 local ENGAGE_SLOTS = 2
 local CIRCLE_RADIUS = 10
 local MORALE_BREAK = 20
+local WEAK = 0.35 -- what an unarmed dummy's blows are worth on a hooligan: it fights back, but it is no match
 local DODGE = { Berserk = 0.2, Tough = 0.35, Hothead = 0.25, Mourner = 0.12, Coward = 0.3 } -- chance to slip a blow
 -- [trait] = weights of { jab, combo (jab, jab, haymaker), haymaker, kick }
 local STYLE = {
@@ -2515,6 +2631,22 @@ local MOVES = {
 		shout = { "HRAAH!", "Eat this!", "Night night!" } },
 	kick = { anim = Anims.kick, at = Anims.KICK_HIT, damage = 11, push = 52, up = 16, down = 0.9, reach = 6.5, recover = 0.8, power = 1.6,
 		shout = { "HYAH!", "Boot!" } },
+	-- a hooligan's baseball bat (gear "Bat"): the haymaker's wind-up, longer reach, a harder hit
+	bat = { anim = Anims.haymaker, at = Anims.HAYMAKER_HIT, damage = 18, push = 85, up = 28, down = 1.6, reach = 7.5, recover = 1.1, power = 2.5,
+		weapon = "Bat", shout = { "Home run!", "Batter up!", "OI!" } },
+	-- a cop's baton (gear "Baton", up to 2 stars): quick, lighter than the bat, now and then a knock-down
+	baton = { anim = Anims.haymaker, at = Anims.HAYMAKER_HIT, damage = 4.5, push = 38, up = 12, down = 0.7, reach = 6.5, recover = 0.75, power = 0.75,
+		weapon = "Baton", shout = { "Stop resisting!", "On the ground!", "You're nicked!", "Drop it!" } },
+}
+-- a cop's handgun (gear "Handgun"): it keeps its distance and fires at this pace; `spread` is how
+-- far off the target's middle a shot may go (studs at the target), so some miss
+-- Rifle and Rocket: soldiers (Wanted, 4 stars up); a rocket flies (rocket) instead of a hit ray.
+local SOLDIER_LINES = { "Target sighted!", "Contact!", "Engaging!", "Light them up!", "Rocket out!" }
+local GUN = {
+	-- `aim`: chance a shot is on target, { at NEAR studs or closer, at full range }, straight in between
+	Handgun = { damage = 4.5, push = 22, range = 40, keep = 14, every = 0.9, jitter = 0.7, spread = 1.6, aim = { 0.4, 0.15 } },
+	Rifle = { damage = 3, push = 14, range = 60, keep = 22, every = 0.22, jitter = 0.12, spread = 2.4, lines = SOLDIER_LINES },
+	Rocket = { range = 70, keep = 30, every = 4, jitter = 2, spread = 1.2, lines = SOLDIER_LINES },
 }
 local TAUNT_LINES = { "Come on then!", "Your turn's coming.", "Is that all you've got?", "I'm next, I'm next!", "Get them!" }
 local DODGE_LINES = { "Too slow!", "Missed me!", "Ha!", "Nope." }
@@ -2526,7 +2658,7 @@ local playerWake = setmetatable({}, { __mode = "k" }) -- [character] = token of 
 -- `down` seconds > 0 also ragdolls them and stands them back up after (the latest knock-down wins).
 -- A player with the boxing guard up (right mouse, "Guarding") blocks it: no damage, no knock-down,
 -- only a shove and the thud on the gloves; `unblockable` (machines, not attacks) goes through.
-local function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number, unblockable: boolean?)
+function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number, unblockable: boolean?)
 	local char = player.Character
 	if not unblockable and char and char:GetAttribute("Guarding") and not char:GetAttribute("Ragdolled") then
 		local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -2577,9 +2709,6 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 		end
 		return
 	end
-	if action ~= "reload" or rateLimited(player, 0.2, "reload") then return end
-	local char = player.Character
-	if char then MagazineService.reload(char, char:GetAttribute("EquippedWeapon")) end
 end)
 
 local function targetRoot(target): BasePart?
@@ -2614,6 +2743,12 @@ local function queuePlace(d, target, at: Vector3, dist: number): number
 end
 
 local function pickMove(d, b): string
+	if d.gear == "Bat" then
+		return math.random() < 0.8 and "bat" or "kick"
+	end
+	if d.gear == "Baton" then
+		return math.random() < 0.85 and "baton" or "kick"
+	end
 	local weights = STYLE[d.trait] or STYLE.Mourner
 	local total = 0
 	for _, w in weights do
@@ -2645,6 +2780,10 @@ local function strike(d, b, name: string, target, now: number)
 		say(d, pick(move.shout), "shout")
 	end
 	playTrack(d, move.anim):Play(0.05)
+	local sounds = move.weapon and Sfx.WEAPON[move.weapon]
+	if sounds then
+		Sfx.play(sounds.swing, root.Position)
+	end
 	b.swingToken = (b.swingToken or 0) + 1
 	local swingToken = b.swingToken
 	if name ~= "jab" then -- the heavy ones step into it
@@ -2673,6 +2812,10 @@ local function strike(d, b, name: string, target, now: number)
 			end
 			return
 		end
+		if sounds then -- the bat's arc and crack, as when a player swings it
+			fxRemote:FireAllClients("Shot", d.model, move.weapon, root.Position, other.Position, true)
+			Sfx.play(sounds.hit, other.Position)
+		end
 		if typeof(target) == "Instance" then
 			local char = (target :: Player).Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -2684,7 +2827,8 @@ local function strike(d, b, name: string, target, now: number)
 			local partName = name == "kick" and "LowerTorso" or (math.random() < 0.3 and "Head" or "UpperTorso")
 			local part = target.model:FindFirstChild(partName) or other
 			if head and part.Parent then
-				hit(target, part, dir, move.power, 20 + move.push * 0.5, nil, nil, head.Position)
+				local weak = not d.gear and target.gear == "Bat" and WEAK or 1
+				hit(target, part, dir, move.power * weak, (20 + move.push * 0.5) * weak, nil, nil, head.Position)
 			end
 		end
 	end)
@@ -2734,6 +2878,73 @@ local function chase(d, b, root: BasePart, goal: Vector3, now: number)
 	end
 end
 
+-- A cop's fight (gear "Handgun"): it keeps about COP.keep studs off, squares up (fight turns it)
+-- and fires while it can see the target; out of sight or too far, it closes in. Its bullets hit
+-- whatever is in the way, as a player's do, so a bystander can catch one.
+local function copFight(d, b, root: BasePart, other: BasePart, target, to: Vector3, now: number)
+	local COP = GUN[d.gear]
+	local NEAR = 10 -- studs: a cop's best aim (GUN aim) from this close in
+	local dist = to.Magnitude
+	local hand = (d.model:FindFirstChild("RightHand") or root) :: BasePart
+	local params = RaycastParams.new()
+	params.FilterDescendantsInstances = { d.model, gibFolder }
+	local targetModel = if typeof(target) == "Instance" then (target :: Player).Character else target.model
+	local sight = workspace:Raycast(hand.Position, other.Position - hand.Position, params)
+	local clear = targetModel ~= nil and (sight == nil or sight.Instance:IsDescendantOf(targetModel))
+	d.speed = pace(d) * 1.5
+	if dist > COP.range * 0.7 or not clear then
+		chase(d, b, root, other.Position, now)
+	elseif now >= d.nextLook then
+		d.nextLook = now + 0.3
+		-- too close: back off to shooting distance, else plant the feet
+		walkStraight(d, if dist < COP.keep * 0.6 and dist > 0.1 then root.Position - to.Unit * 6 else root.Position)
+		b.lastPos, b.movedAt = root.Position, now
+	end
+	local facing = dist > 0.1 and (root.CFrame.LookVector * XZ).Unit:Dot(to.Unit) > 0.85
+	if not clear or not facing or dist > COP.range or now < b.swingAt then
+		return
+	end
+	b.swingAt = now + COP.every + math.random() * COP.jitter
+	if not b.warned then
+		b.warned = true
+		say(d, pick(COP.lines or COP_LINES), "shout")
+	end
+	local origin = hand.Position
+	local aimAt = other.Position + Random.new():NextUnitVector() * math.random() * COP.spread
+	if COP.aim then
+		-- a set hit chance by distance: on target, or wide of it by 3-6 studs (never grazing it by luck)
+		local t = math.clamp((dist - NEAR) / (COP.range - NEAR), 0, 1)
+		if math.random() < COP.aim[1] + (COP.aim[2] - COP.aim[1]) * t then
+			aimAt = other.Position
+		else
+			local wide = Random.new():NextUnitVector() * Vector3.new(1, 0.5, 1)
+			aimAt = other.Position + (wide.Magnitude > 0.1 and wide.Unit or Vector3.xAxis) * (3 + math.random() * 3)
+		end
+	end
+	local dir = (aimAt - origin).Unit
+	if d.gear == "Rocket" then
+		Sfx.play(Sfx.WEAPON.Rocket.fire, origin)
+		task.spawn(rocket, weaponById.Rocket, d.model, origin, dir, true)
+		return
+	end
+	local result = workspace:Raycast(origin, dir * COP.range * 1.5, params)
+	local landed = result and result.Position or origin + dir * COP.range * 1.5
+	Sfx.play(Sfx.WEAPON[d.gear].fire, origin)
+	fxRemote:FireAllClients("Shot", d.model, d.gear, origin, landed, result ~= nil, true)
+	alarm(nil, origin, "shot", origin)
+	if not result then
+		return
+	end
+	local victim = dummyOf(result.Instance)
+	local player = Players:GetPlayerFromCharacter(result.Instance:FindFirstAncestorOfClass("Model"))
+	local hum = player and player.Character:FindFirstChildOfClass("Humanoid")
+	if victim and victim ~= d and result.Instance.Parent then
+		hit(victim, result.Instance, dir, 1.5, COP.push, "bullet", result.Position, (d.model:FindFirstChild("Head") or root).Position)
+	elseif hum and hum.Health > 0 then
+		knockPlayer(player, hum, dir * COP.push + Vector3.yAxis * 6, COP.damage, 0)
+	end
+end
+
 -- A punch or a swing is coming from `player`: a dummy fighting them may get out of the way.
 -- True when it did (the blow misses).
 function tryDodge(d, player: Player): boolean
@@ -2770,7 +2981,7 @@ local function fight(d, root: BasePart, now: number)
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	local other = targetRoot(target)
 	local alive = if victim then dummies[victim.model] ~= nil and victim.state ~= "Dead" else player.Parent ~= nil and humanoid ~= nil and humanoid.Health > 0
-	local gone = not (alive and other) or (other.Position - root.Position).Magnitude > 80
+	local gone = not (alive and other) or (other.Position - root.Position).Magnitude > (d.hunt and 250 or 80) -- a hunter (Wanted) chases from far
 	local broken = d.trait ~= "Berserk" and (d.morale < MORALE_BREAK or (d.trait == "Hothead" and badlyHurt(d)))
 	if gone or broken then
 		stopFighting(d)
@@ -2803,7 +3014,7 @@ local function fight(d, root: BasePart, now: number)
 	-- close in it squares up to the target; the humanoid alone would turn to where it walks
 	-- (sideways while it circles). Turned by spin, not by writing root.CFrame: that write every
 	-- frame cancels the humanoid's walk, and it crept along and hopped "unstuck" in place.
-	local close = dist < 16 and dist > 0.5
+	local close = dist < (GUN[d.gear] and GUN[d.gear].range or 16) and dist > 0.5
 	d.humanoid.AutoRotate = not close
 	if close then
 		local look = root.CFrame.LookVector * XZ
@@ -2812,6 +3023,11 @@ local function fight(d, root: BasePart, now: number)
 	end
 	if now < b.busyUntil then
 		return -- mid-blow
+	end
+
+	if GUN[d.gear] then
+		copFight(d, b, root, other, target, to, now)
+		return
 	end
 
 	if queuePlace(d, target, other.Position, dist) > ENGAGE_SLOTS then
@@ -2843,7 +3059,7 @@ local function fight(d, root: BasePart, now: number)
 		walkStraight(d, root.Position) -- in range: plant the feet
 		b.lastPos, b.movedAt = root.Position, now
 	end
-	if dist < 5.5 and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= b.swingAt then
+	if dist < ((d.gear == "Bat" or d.gear == "Baton") and 7 or 5.5) and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= b.swingAt then
 		strike(d, b, table.remove(b.queue, 1) or pickMove(d, b), target, now)
 	end
 end
@@ -3252,3 +3468,25 @@ for i = 1, 8 do
 	local angle = i / 8 * math.pi * 2
 	spawnDummy(CFrame.new(math.cos(angle) * 25, 4, math.sin(angle) * 25))
 end
+Wanted.start({
+	dummies = dummies,
+	law = function(d) return d.law == true end,
+	arm = function(d, gear)
+		if d.gear ~= gear then
+			d.gear = gear
+			d.model:SetAttribute("Gear", gear) -- DummyGear swaps what is in its hand
+		end
+	end,
+	spawn = function(cf, kind)
+		trimDummies()
+		return spawnDummy(cf, nil, kind)
+	end,
+	stop = stopFighting,
+	exclude = function()
+		local list = { dummyFolder, gibFolder }
+		for _, player in Players:GetPlayers() do
+			table.insert(list, player.Character)
+		end
+		return list
+	end,
+})

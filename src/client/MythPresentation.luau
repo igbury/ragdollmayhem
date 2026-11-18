@@ -2,11 +2,9 @@ local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 local Debris = game:GetService("Debris")
-local ContextActionService = game:GetService("ContextActionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
-local Magazines = require(ReplicatedStorage.Shared.Magazines)
 local Presentation = {}
 local function label(parent, name, size, position, textSize)
 	local l = Instance.new("TextLabel")
@@ -45,19 +43,11 @@ function Presentation.start(gui, remotes, api)
 	toast.AnchorPoint, toast.Visible = Vector2.new(0.5, 0), false
 	local instruction = label(container, "FirstEncounter", UDim2.new(0.88, 0, 0, 38), UDim2.new(0.5, 0, 1, -152), 13)
 	instruction.AnchorPoint, instruction.TextWrapped = Vector2.new(0.5, 0), true
-	local ammo = Instance.new("TextButton")
-	ammo.Name, ammo.AnchorPoint, ammo.Position = "Reload", Vector2.new(1, 1), UDim2.new(1, -18, 1, -175)
+	local ammo = Instance.new("TextLabel") -- the bow's draw meter
+	ammo.Name, ammo.AnchorPoint, ammo.Position = "BowDraw", Vector2.new(1, 1), UDim2.new(1, -18, 1, -175)
 	ammo.Size, ammo.BackgroundColor3, ammo.BackgroundTransparency = UDim2.fromOffset(128, 55), Color3.fromRGB(22, 24, 29), 0.18
 	ammo.Font, ammo.TextColor3, ammo.TextSize, ammo.Parent = Enum.Font.GothamBold, Color3.new(1, 1, 1), 16, container
 	round(ammo, 8)
-	local function reload()
-		if not api.blocked() then remotes.Action:FireServer("reload") end
-	end
-	ammo.Activated:Connect(reload)
-	ContextActionService:BindAction("ReloadMagazine", function(_, inputState)
-		if inputState == Enum.UserInputState.Begin then reload() end
-		return Enum.ContextActionResult.Pass
-	end, false, Enum.KeyCode.T, Enum.KeyCode.DPadDown)
 	local feedback = label(container, "ConfirmedHit", UDim2.fromOffset(100, 36), UDim2.new(0.5, 0, 0.5, 25), 17)
 	feedback.AnchorPoint, feedback.Visible = Vector2.new(0.5, 0), false
 	local hitUntil, toastUntil = 0, 0
@@ -160,20 +150,13 @@ function Presentation.start(gui, remotes, api)
 		progress.Visible = inYard == true
 		progress.Text = "MYTH HUNT   " .. xp .. " XP\nNext medal: " .. kills .. " / " .. (math.floor(kills / 3) + 1) * 3 .. " defeats"
 		instruction.Visible = kills == 0 and root ~= nil and player:GetAttribute("Map") == "ARENA"
-		instruction.Text = inYard and "Release a monster at its pedestal. Hit its weak point; dodge the marked attack." or "MYTH YARD is beyond the north edge of the arena. Q: weapons  /  T: reload"
+		instruction.Text = inYard and "Release a monster at its pedestal. Hit its weak point; dodge the marked attack." or "MYTH YARD is beyond the north edge of the arena. Q: weapons"
 		local weapon = api.weapon()
-		local spec = Magazines[weapon.id]
-		ammo.Visible = spec ~= nil or weapon.kind == "bow"
+		ammo.Visible = weapon.kind == "bow"
 		if weapon.kind == "bow" and char then
 			local drawAt = char:GetAttribute("LocalBowDrawAt")
 			local power = drawAt and math.clamp((now - drawAt) / 1.1, 0, 1) or 0
 			ammo.Text, ammo.TextColor3 = math.floor(power * 100) .. "% DRAW\nHOLD / RELEASE", power >= 1 and Color3.fromRGB(255, 206, 76) or Color3.new(1, 1, 1)
-		end
-		if spec and char then
-			local count = char:GetAttribute("Ammo_" .. weapon.id) or spec.capacity
-			local reloading = char:GetAttribute("ReloadWeapon") == weapon.id
-			ammo.Text = reloading and "RELOADING\n" .. string.format("%.1fs", math.max(0, (char:GetAttribute("ReloadUntil") or 0) - now)) or count .. " / " .. spec.capacity .. "\nT / TAP: RELOAD"
-			ammo.TextColor3 = count <= 2 and Color3.fromRGB(255, 165, 95) or Color3.new(1, 1, 1)
 		end
 		feedback.Visible, toast.Visible = os.clock() < hitUntil, os.clock() < toastUntil
 	end)

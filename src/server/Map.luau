@@ -9,8 +9,10 @@ local Sfx = require(game:GetService("ReplicatedStorage").Shared.Sfx)
 local Map = {}
 
 local CUBE = 4 -- layout unit and floor depth
-local TILE = CUBE / 3 -- floor columns and flying debris; ponytail: CUBE / 6 (split 2x2) is 57k floor parts and the server drops to ~1 fps
-local BRICK = CUBE / 2 -- structure cubes; ponytail: CUBE / 4 puts ~100k parts in the map and the server stops responding
+-- Both are only what a hit splits a block into (shatter): the map itself is whole CUBE blocks. ponytail: built
+-- whole at these sizes it would be ~200k parts; split only where hit, a big blast makes a few thousand.
+local TILE = CUBE / 4 -- floor columns and flying debris
+local BRICK = CUBE / 4 -- structure bricks
 local HALF = 80 -- arena is 2*HALF studs wide
 local REGEN = 25
 local LOOSE_LIFE = 6 -- knocked-out structure bricks are swept after this
@@ -21,6 +23,7 @@ local WAVE = 0.04 -- s per stud along a layer: its bricks slide in one after ano
 local SLIDE = 8 -- studs a rebuilt brick slides in from
 local MAX_CHUNKS = 140 -- flying cubes per blast
 local MAX_DEBRIS = 250 -- loose cubes alive at once across all blasts, past it the oldest are removed
+local MAX_FLYING = 160 -- loose bricks one hit throws out of split blocks (shatter)
 local GRASS = { Color3.fromRGB(40, 170, 80), Color3.fromRGB(34, 150, 70) }
 local DIRT = Color3.fromRGB(120, 85, 60)
 local STONE = Color3.fromRGB(190, 182, 170)
@@ -109,12 +112,28 @@ local function setHidden(cubes: { BasePart }, hidden: boolean)
 	end
 end
 
+-- Big blocks and floor tiles stay one part until a hit reaches them; then they split into their small
+-- pieces in place (shatter), so the map has few parts but still breaks into small cubes. The "Piece"
+-- attribute holds the size of the pieces a whole part splits into (an attribute, not a weak table:
+-- Instance keys nothing else in Luau holds get collected).
+
 local function hide(cubes: { BasePart })
 	setHidden(cubes, true)
 	task.delay(REGEN, setHidden, cubes, false)
 end
 
--- Each kind lists its cubes through add(x, y, z, color, material, size?, whole?), in cube-grid units
+-- Total size of what is left of a structure (split pieces count by volume, like the block they came from).
+local function bulk(parts: { Instance }): number
+	local v = 0
+	for _, b in parts do
+		if b:IsA("BasePart") then
+			v += b.Size.X * b.Size.Y * b.Size.Z
+		end
+	end
+	return v
+end
+
+-- Each kind lists its cubes through add(x, y, z, color, material, size?), in cube-grid units
 -- relative to the structure's origin on the ground. Other maps (Factory) add their own kinds.
 local KINDS = {}
 Map.KINDS = KINDS
@@ -193,6 +212,20 @@ end
 -- neighbouring cells get compared.
 local neighbours = setmetatable({}, { __mode = "k" }) -- [brick] = { touching bricks }
 local grounded = setmetatable({}, { __mode = "k" }) -- [brick] = true when it stands on the ground
+-- Joins a and b if they share a face; `d` is a - b in origin space.
+local function pair(a: BasePart, b: BasePart, d: Vector3)
+	local h = (a.Size + b.Size) / 2
+	local x, y, z = math.abs(d.X), math.abs(d.Y), math.abs(d.Z)
+	if x <= h.X + 0.05 and y <= h.Y + 0.05 and z <= h.Z + 0.05 then
+		-- overlapping on two axes = sharing a face, not just an edge or a corner
+		local shared = (x < h.X - 0.05 and 1 or 0) + (y < h.Y - 0.05 and 1 or 0) + (z < h.Z - 0.05 and 1 or 0)
+		if shared >= 2 then
+			table.insert(neighbours[a], b)
+			table.insert(neighbours[b], a)
+		end
+	end
+end
+
 local function link(bricks: { BasePart }, origin: CFrame)
 	local at, cellSize = {}, 0
 	for i, b in bricks do
@@ -218,17 +251,7 @@ local function link(bricks: { BasePart }, origin: CFrame)
 						if j <= i then
 							continue
 						end
-						local b = bricks[j]
-						local d, h = at[i] - at[j], (a.Size + b.Size) / 2
-						local x, y, z = math.abs(d.X), math.abs(d.Y), math.abs(d.Z)
-						if x <= h.X + 0.05 and y <= h.Y + 0.05 and z <= h.Z + 0.05 then
-							-- overlapping on two axes = sharing a face, not just an edge or a corner
-							local shared = (x < h.X - 0.05 and 1 or 0) + (y < h.Y - 0.05 and 1 or 0) + (z < h.Z - 0.05 and 1 or 0)
-							if shared >= 2 then
-								table.insert(neighbours[a], b)
-								table.insert(neighbours[b], a)
-							end
-						end
+						pair(a, bricks[j], at[i] - at[j])
 					end
 				end
 			end
@@ -242,31 +265,107 @@ local function slot(origin: CFrame, position: Vector3): string
 	return `{math.round(at.X * 10)},{math.round(at.Y * 10)},{math.round(at.Z * 10)}`
 end
 
+-- Split every whole block/tile among `hits` into its pieces and return what the hit breaks: the
+-- untouched parts of `hits` plus the pieces in reach. Only the pieces that stay or fly are made:
+--  * `reach(cf, size, floor)`: a piece there is broken by the hit.
+--  * floor pieces in reach are never made: the tile comes back whole REGEN later, in place of what
+--    is left round the hole; a tile wholly in reach (`inside`) is not split at all, just hidden.
+--  * of the structure pieces in reach only MAX_FLYING per hit are made (and fly); the rest just go,
+--    MAX_DEBRIS would sweep them at once anyway. Making them all stalled the server ~200 ms a blast.
+-- `standing`: leave the floor whole.
+local function shatter(hits: { BasePart }, standing: boolean?, inside: (BasePart) -> boolean, reach: (CFrame, Vector3, boolean) -> boolean): { BasePart }
+	local out, plans, flying = {}, {}, 0
+	for _, whole in hits do
+		local piece, parent = whole:GetAttribute("Piece"), whole.Parent
+		local floor = parent == folder
+		if not piece or not parent or (floor and (standing or inside(whole))) then
+			table.insert(out, whole)
+			continue
+		end
+		local n = Vector3.new(math.round(whole.Size.X / piece.X), math.round(whole.Size.Y / piece.Y), math.round(whole.Size.Z / piece.Z))
+		local size = whole.Size / n
+		local cells = {}
+		for x = 1, n.X do
+			for y = 1, n.Y do
+				for z = 1, n.Z do
+					local cf = whole.CFrame * CFrame.new((Vector3.new(x, y, z) - (n + Vector3.one) / 2) * size)
+					local hit = reach(cf, size, floor)
+					table.insert(cells, { cf, hit })
+					if hit and not floor then
+						flying += 1
+					end
+				end
+			end
+		end
+		table.insert(plans, { whole, parent, floor, size, cells })
+	end
+	local keep = math.min(1, MAX_FLYING / math.max(flying, 1))
+	for _, plan in plans do
+		local whole, parent, floor, size, cells = table.unpack(plan)
+		local stay = {}
+		for _, c in cells do
+			if c[2] and (floor or math.random() >= keep) then
+				continue
+			end
+			local p = whole:Clone() -- keeps colour, material, surfaces, shadow
+			p:SetAttribute("Piece", nil)
+			p.Size = size
+			p.CFrame = c[1]
+			p.Parent = parent
+			table.insert(c[2] and out or stay, p)
+		end
+		whole.Parent = nil
+		if floor then
+			task.delay(REGEN, function()
+				for _, p in stay do
+					p:Destroy()
+				end
+				whole.Parent = folder
+			end)
+		else
+			-- link only the pieces that stay: to each other and to what the block touched (relinking
+			-- the whole structure is ~100 ms once it is full of small bricks)
+			local origin = parent:GetAttribute("Origin") or CFrame.identity
+			local around = neighbours[whole] or {}
+			for _, p in stay do
+				neighbours[p] = {}
+				grounded[p] = origin:PointToObjectSpace(p.Position).Y - p.Size.Y / 2 < 0.1 or nil
+			end
+			for i, p in stay do
+				for j = i + 1, #stay do
+					pair(p, stay[j], origin:VectorToObjectSpace(p.Position - stay[j].Position))
+				end
+				for _, nb in around do
+					if nb.Parent == parent then
+						pair(p, nb, origin:VectorToObjectSpace(p.Position - nb.Position))
+					end
+				end
+			end
+			whole:Destroy()
+		end
+	end
+	return out
+end
+
 -- `keep` (a repair): bricks in these slots are still standing, so they are put straight back and
 -- only the rest slide in.
 local function buildStructure(kind: string, origin: CFrame, layered: boolean?, keep: { [string]: boolean }?)
 	local model = Instance.new("Model")
 	model.Name = kind
 	local bricks = {}
-	KINDS[kind](function(x, y, z, color, material, size, whole)
+	KINDS[kind](function(x, y, z, color, material, size)
 		size = size or CUBE
-		-- every block is built out of small bricks so it shatters instead of tumbling whole;
-		-- `whole` keeps it one brick (big city buildings, where 2-stud bricks would be 8x the parts)
-		local n = whole and 1 or math.round(size / BRICK)
-		local brick = size / n
-		for bx = 1, n do
-			for by = 1, n do
-				for bz = 1, n do
-					local offset = Vector3.new(bx, by, bz) * brick - Vector3.one * (size + brick) / 2
-					local cube = block(Vector3.one * brick, Vector3.zero, color, material, nil)
-					cube.CFrame = origin * CFrame.new(x * CUBE, y * CUBE + size / 2, z * CUBE) * CFrame.new(offset)
-					table.insert(bricks, cube)
-				end
-			end
+		-- one part per block; a hit splits it into BRICK-sized bricks (shatter) so it still breaks small
+		local cube = block(Vector3.one * size, Vector3.zero, color, material, nil)
+		cube.CFrame = origin * CFrame.new(x * CUBE, y * CUBE + size / 2, z * CUBE)
+		local n = math.round(size / BRICK)
+		if n > 1 then
+			cube:SetAttribute("Piece", Vector3.one * (size / n))
 		end
+		table.insert(bricks, cube)
 	end)
 	model:SetAttribute("Origin", origin)
-	model:SetAttribute("Total", #bricks)
+	model:SetAttribute("Total", bulk(bricks))
 	link(bricks, origin)
 	model.Parent = folder
 	if not layered then
@@ -360,15 +459,18 @@ function Map.grave(origin: CFrame, name: string)
 	text.Text = "R.I.P.\n" .. name
 	text.Parent = gui
 	gui.Parent = plate
-	model:SetAttribute("Total", #model:GetChildren())
+	model:SetAttribute("Total", bulk(model:GetChildren()))
 	link(model:GetChildren(), origin)
 	model.Parent = folder
 	return model
 end
 
 -- A breakable floor/deck tile: blasts hide it, it comes back after REGEN.
-function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enum.Material)
-	return block(size, position, color, material, folder)
+-- `piece`: split into columns this size when hit (a big tile that still breaks small).
+function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enum.Material, piece: Vector3?)
+	local p = block(size, position, color, material, folder)
+	p:SetAttribute("Piece", piece)
+	return p
 end
 
 -- Knock one brick out of its structure: only what the hit reaches breaks off.
@@ -390,7 +492,7 @@ local function damaged(model: Model)
 		return
 	end
 	local left = model:GetChildren()
-	if #left > (model:GetAttribute("Total") or 0) * REBUILD_AT then
+	if bulk(left) > (model:GetAttribute("Total") or 0) * REBUILD_AT then
 		return
 	end
 	model.Parent = nil
@@ -477,7 +579,7 @@ local function idleCheck(model: Model, stamp: number)
 		task.delay(1, idleCheck, model, stamp)
 		return
 	end
-	if #model:GetChildren() < (model:GetAttribute("Total") or 0) then
+	if bulk(model:GetChildren()) < (model:GetAttribute("Total") or 0) - 1 then
 		repair(model)
 	end
 end
@@ -507,7 +609,21 @@ end
 -- Carve a crater. `inner` leaves an untouched island in the middle (ring crater). `standing`: only
 -- break structures (walls, pillars), not the floor tiles in reach.
 function Map.blast(position: Vector3, radius: number, power: number, inner: number?, standing: boolean?)
-	local hits = workspace:GetPartBoundsInRadius(position, radius, params)
+	local function inside(tile: BasePart): boolean
+		local d, h = ((tile.Position - position) * Vector3.new(1, 0, 1)).Magnitude, tile.Size.X * 0.71
+		return d + h <= radius and d - h >= (inner or 0)
+	end
+	local function reach(cf: CFrame, size: Vector3, floor: boolean): boolean
+		if floor then -- the same test the floor loop below makes
+			local d = ((cf.Position - position) * Vector3.new(1, 0, 1)).Magnitude
+			return d <= radius and d >= (inner or 0)
+		end
+		local at = cf:PointToObjectSpace(position) -- nearest point of the piece to the centre
+		local h = size / 2
+		local near = Vector3.new(math.clamp(at.X, -h.X, h.X), math.clamp(at.Y, -h.Y, h.Y), math.clamp(at.Z, -h.Z, h.Z))
+		return (at - near).Magnitude <= radius
+	end
+	local hits = shatter(workspace:GetPartBoundsInRadius(position, radius, params), standing, inside, reach)
 	local broken = hitStructures(hits, position, power)
 	local chance = math.min(1, MAX_CHUNKS / math.max(#hits, 1))
 	local floor = {}
@@ -533,7 +649,15 @@ end
 
 -- Rip a rectangular slab out of the floor and throw it up as cubes.
 function Map.flip(cf: CFrame, size: Vector3, velocity: Vector3)
-	local hits = workspace:GetPartBoundsInBox(cf, size, params)
+	local function inside(tile: BasePart): boolean
+		local at, h = cf:PointToObjectSpace(tile.Position), tile.Size.X * 0.71
+		return math.abs(at.X) + h <= size.X / 2 and math.abs(at.Z) + h <= size.Z / 2
+	end
+	local function reach(piece: CFrame, extent: Vector3, _floor: boolean): boolean
+		local at, h = cf:PointToObjectSpace(piece.Position), extent * 0.87 -- roughly: its box overlaps the slab
+		return math.abs(at.X) <= size.X / 2 + h.X and math.abs(at.Y) <= size.Y / 2 + h.Y and math.abs(at.Z) <= size.Z / 2 + h.Z
+	end
+	local hits = shatter(workspace:GetPartBoundsInBox(cf, size, params), nil, inside, reach)
 	local broken = hitStructures(hits, cf.Position, velocity.Magnitude)
 	local chance = math.min(1, MAX_CHUNKS * 1.5 / math.max(#hits, 1))
 	local floor = {}
@@ -889,17 +1013,16 @@ function Map.build()
 		bedrock.Position = Vector3.new(0, -CUBE - bedrock.Size.Y / 2, 0)
 		bedrock.Color = Color3.fromRGB(41, 38, 43)
 	end
-	-- floor = thin columns: small on top so craters come out round, full depth so they stay deep
-	local count = math.round(HALF * 2 / TILE)
+	-- floor = CUBE tiles (1.6k parts) that split into thin TILE columns where hit, so craters still
+	-- come out round, full depth so they stay deep
+	local count = math.round(HALF * 2 / CUBE)
+	local column = Vector3.new(TILE, CUBE, TILE)
 	for ix = 0, count - 1 do
 		for iz = 0, count - 1 do
-			local position = Vector3.new(-HALF + (ix + 0.5) * TILE, -CUBE / 2, -HALF + (iz + 0.5) * TILE)
-			local color, material = floorLook(position.X, position.Z, ix, iz)
-			-- nothing under the floor to shade, and 14k shadow casters cost the client every frame
-			block(Vector3.new(TILE, CUBE, TILE), position, color, material, folder).CastShadow = false
-		end
-		if ix % 10 == 0 then
-			task.wait() -- keep the server responsive while ~14k tiles go in
+			local position = Vector3.new(-HALF + (ix + 0.5) * CUBE, -CUBE / 2, -HALF + (iz + 0.5) * CUBE)
+			local color, material = floorLook(position.X, position.Z, ix * 3, iz * 3)
+			-- nothing under the floor to shade, and thousands of shadow casters cost the client every frame
+			Map.tile(Vector3.new(CUBE, CUBE, CUBE), position, color, material, column).CastShadow = false
 		end
 	end
 	-- solid grass around the arena, out to the edge of the 512 baseplate

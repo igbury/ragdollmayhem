@@ -54,6 +54,7 @@ Sfx.WEAPON = {
 	Katana = { hit = { Sfx.KATANA_HIT }, swing = { Sfx.THROW } },
 	Pan = { hit = { Sfx.PAN_HIT }, swing = { Sfx.THROW } },
 	Bat = { hit = { Sfx.PAN_HIT, 0.8 }, swing = { Sfx.THROW, 0.85 } },
+	Baton = { hit = { Sfx.PAN_HIT, 1.15 }, swing = { Sfx.THROW, 1.1 } }, -- cops (higher: a thinner stick)
 	Axe = { hit = { Sfx.KATANA_HIT, 0.75 }, swing = { Sfx.THROW, 0.8 } },
 }
 Sfx.SHATTER = { Sfx.METAL, 1.7, 0.6 } -- a molotov bottle breaking

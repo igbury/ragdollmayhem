@@ -183,8 +183,8 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 			local mesh = AssetService:CreateEditableMesh()
 			local at = {}
 			for k, data in script:GetChildren() do
-				if data.Name == "BoxingGloveLeft" then
-					continue -- only the mirror of BoxingGloves, never an icon; keeps the atlas under the cap
+				if data.Name == "BoxingGloveLeft" or data.Name == "Baton" then
+					continue -- never an icon (the glove's mirror, the cops' baton); keeps the atlas under the cap
 				end
 				local d = require(data)
 				local offset = Vector3.new(0, k * SPACING, 0)

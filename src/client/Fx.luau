@@ -605,6 +605,7 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 	end
 	if w.slash then MELEE[w.slash.id] = true end
 end
+MELEE.Baton = true -- the cops' baton: a dummy weapon, not in Weapons
 
 function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?)
 	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
@@ -661,7 +662,8 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		end
 	else
 		-- guns: tracer from the hip so it does not start inside the shooter's camera
-		local muzzle = ownMuzzle or (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
+		-- a dummy's shot already leaves from its hand
+		local muzzle = ownMuzzle or (shooter and shooter:GetAttribute("Gear") and from) or (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
 		local sniper = weaponId == "Sniper"
 		local big = weaponId == "Revolver" or sniper
 		local pellet = weaponId == "Shotgun"

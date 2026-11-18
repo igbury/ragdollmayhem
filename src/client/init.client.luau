@@ -31,6 +31,9 @@ local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
+require(script:WaitForChild("DummyGear")) -- the cops' guns and the hooligans' bats
+require(script:WaitForChild("WantedHud")) -- the wanted stars
+require(script:WaitForChild("HeliRotors")) -- the army helicopters' rotors
 require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubbles over dummies
 
 -- Sprint run cycle (assets/anims/SprintFlail.json), built in memory, no upload.
@@ -1026,7 +1029,6 @@ local function useWeapon(weapon, swing: Vector3?)
 	local now = os.clock()
 	local char = player.Character
 	local head = char and char:FindFirstChild("Head")
-	if char and (char:GetAttribute("ReloadWeapon") or char:GetAttribute("Ammo_" .. weapon.id) == 0) then return end
 	if now - lastWeaponUse < (weaponVisual.lastCooldown or weapon.cd) or not head or char:GetAttribute("Ragdolled") then
 		return
 	end
@@ -1603,7 +1605,6 @@ end)
 fxRemote.OnClientEvent:Connect(Fx.play)
 require(script:WaitForChild("MythPresentation")).start(gui, remotes, {
 	weapon = function() return Weapons[weaponIndex] end,
-	blocked = function() return Menu.active or gui:GetAttribute("WeaponPickerOpen") == true end,
 })
 -- Sky light (environment diffuse/specular) is not blocked by the factory roof and floods the
 -- inside, so switch it off in there and let the lamps plus a little ambient do the work.
@@ -3008,14 +3009,9 @@ RunService.RenderStepped:Connect(function(dt)
 		* weaponVisual.bob:update(dt, show == true and root ~= nil, root and root.AssemblyLinearVelocity or Vector3.zero,
 			not airborne, sprint, ads)
 		* weaponVisual.recoil:update(dt, show == true)
-	if char and char:GetAttribute("ReloadWeapon") then
-		local remaining = (char:GetAttribute("ReloadUntil") or now) - workspace:GetServerTimeNow()
-		viewCF *= CFrame.new(0, -0.22, 0.25) * CFrame.Angles(-0.18, 0, 0.2 + math.sin(remaining * 7) * 0.05)
-	end
 	recoil = math.max(recoil - dt / 0.15, 0)
 	local pose = inspect and Inspect.pose(inspect.id, now - inspect.at)
-	if inspect and (not pose or inspect.id ~= weapon.id or punching or aiming or not show or knifeT > 0
-		or (char and char:GetAttribute("ReloadWeapon"))) then
+	if inspect and (not pose or inspect.id ~= weapon.id or punching or aiming or not show or knifeT > 0) then
 		inspect, pose = nil, nil
 	end
 	if not (pose and pose.leftAt) then
