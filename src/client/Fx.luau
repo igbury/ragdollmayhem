@@ -1108,16 +1108,6 @@ function EVENTS.Punt(_, position: Vector3, dir: Vector3)
 	Fx.shake(position, 0.6, 0.2)
 end
 
--- A punted body hitting the first thing in its way: far bigger than a throw's thud - a burst of
--- earth with a word, chunks and dust, and a hard jolt for anyone near.
-local PUNT_WORDS = { "KABOOM!", "WHAM!", "CRUNCH!", "SMASH!" }
-function EVENTS.PuntHit(_, position: Vector3, dir: Vector3)
-	Fx.boom(position, 4.5, EARTH, PUNT_WORDS[rng:NextInteger(1, #PUNT_WORDS)], 7)
-	Fx.dust(position, 14, 5, 1.6)
-	Fx.sparks(position, 20, 7, DUST, -dir + Vector3.yAxis)
-	Fx.shake(position, 1.1, 0.35)
-end
-
 -- A body dragged along the ground (F): a low puff of dust kicked up behind where it rubs.
 function EVENTS.Scrape(_, position: Vector3, dir: Vector3)
 	Fx.dust(position - dir * 0.8, 3, 1.6, 0.5)

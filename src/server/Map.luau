@@ -504,14 +504,15 @@ local function hitStructures(hits: { BasePart }, from: Vector3, power: number): 
 	return knocked
 end
 
--- Carve a crater. `inner` leaves an untouched island in the middle (ring crater).
-function Map.blast(position: Vector3, radius: number, power: number, inner: number?)
+-- Carve a crater. `inner` leaves an untouched island in the middle (ring crater). `standing`: only
+-- break structures (walls, pillars), not the floor tiles in reach.
+function Map.blast(position: Vector3, radius: number, power: number, inner: number?, standing: boolean?)
 	local hits = workspace:GetPartBoundsInRadius(position, radius, params)
 	local broken = hitStructures(hits, position, power)
 	local chance = math.min(1, MAX_CHUNKS / math.max(#hits, 1))
 	local floor = {}
 	for _, cube in hits do
-		if cube.Parent ~= folder then
+		if cube.Parent ~= folder or standing then
 			continue
 		end
 		local offset = (cube.Position - position) * Vector3.new(1, 0, 1)
