@@ -436,7 +436,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "X  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nG  Spawn dummy\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "X  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Use the toolbox pick\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -1095,10 +1095,7 @@ local function castAbility(attack)
 end
 
 -- Hotbar (bottom centre) + weapon wheel (hold Q); 1-5 / Q tap / F / L1 R1 / the mouse wheel step through.
-require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
-	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
-	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
-}, {
+local barApi = {
 	get = function()
 		return weaponIndex
 	end,
@@ -1173,7 +1170,13 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 			end
 		end)
 	end,
-})
+}
+require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
+	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
+	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
+}, barApi)
+-- Tab: what G puts down (a character, a block, the delete tool)
+local useToolbox = require(script:WaitForChild("Toolbox")).start(gui, actionRemote, barApi, aim)
 
 -- Actions ---------------------------------------------------------------------
 local function punch()
@@ -1541,10 +1544,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	elseif input.KeyCode == Enum.KeyCode.C then
 		actionRemote:FireServer("fall")
 	elseif input.KeyCode == Enum.KeyCode.G then
-		local result = aim(150)
-		if result then
-			actionRemote:FireServer("spawn", result.Position)
-		end
+		useToolbox()
 	elseif input.KeyCode == Enum.KeyCode.R then
 		if wall or mv.armSlam() then
 			return -- no slam (or revive) while running along or hanging on a wall

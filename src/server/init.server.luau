@@ -1731,9 +1731,31 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 	end
 end)
 
-local MENU_ACTIONS = { map = true, spawn = true, revive = true, fall = true } -- slam / kick / dive: the handler below
-actionRemote.OnServerEvent:Connect(function(player, action, arg)
-	if not MENU_ACTIONS[action] or rateLimited(player, 0.25, "action") then
+-- Toolbox blocks (client/Toolbox.luau): anchored GRID cubes, one folder, capped per player.
+local BLOCK_SIZE = 4
+local MAX_BLOCKS = 300 -- per player
+local BLOCK_MATERIALS = { SmoothPlastic = true, Concrete = true, WoodPlanks = true, Brick = true, DiamondPlate = true, Glass = true, Neon = true }
+local builtFolder = Instance.new("Folder")
+builtFolder.Name = "Built"
+builtFolder.Parent = workspace
+local blockCount = {} -- [Player] = number
+local blockOverlap = OverlapParams.new()
+blockOverlap.FilterType = Enum.RaycastFilterType.Include
+blockOverlap.FilterDescendantsInstances = { builtFolder }
+local function clearBlocks(player: Player)
+	for _, block in builtFolder:GetChildren() do
+		if block:GetAttribute("Owner") == player.UserId then
+			block:Destroy()
+		end
+	end
+	blockCount[player] = nil
+end
+Players.PlayerRemoving:Connect(clearBlocks)
+
+local MENU_ACTIONS = { map = true, spawn = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true } -- slam / kick / dive: the handler below
+actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
+	local building = action == "build" or action == "unbuild"
+	if not MENU_ACTIONS[action] or rateLimited(player, building and 0.08 or 0.25, building and "build" or "action") then
 		return
 	end
 	if action == "map" and SPAWNS[arg] then
@@ -1757,7 +1779,33 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 	end
 	if action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
 		trimDummies()
-		spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
+		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
+		spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
+	elseif action == "build" and finite(arg) and (arg - head.Position).Magnitude < 200 and typeof(extra) == "Color3"
+		and BLOCK_MATERIALS[extra2] and (blockCount[player] or 0) < MAX_BLOCKS then
+		local size = Vector3.one * (BLOCK_SIZE - 0.1) -- a hair smaller: touching neighbours are not overlaps
+		if #workspace:GetPartBoundsInBox(CFrame.new(arg), size, blockOverlap) > 0 then
+			return
+		end
+		local block = Instance.new("Part")
+		block.Name, block.Size, block.Position, block.Anchored = "Block", Vector3.one * BLOCK_SIZE, arg, true
+		block.Color, block.Material = extra, Enum.Material[extra2]
+		block.TopSurface, block.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+		if extra2 == "Glass" then
+			block.Transparency = 0.5
+		end
+		block:SetAttribute("Owner", player.UserId)
+		block.Parent = builtFolder
+		blockCount[player] = (blockCount[player] or 0) + 1
+	elseif action == "unbuild" and typeof(arg) == "Instance" and arg.Parent == builtFolder
+		and (arg.Position - head.Position).Magnitude < 200 then
+		local owner = Players:GetPlayerByUserId(arg:GetAttribute("Owner") or 0)
+		if owner and blockCount[owner] then
+			blockCount[owner] -= 1
+		end
+		arg:Destroy()
+	elseif action == "clearbuild" then
+		clearBlocks(player)
 	elseif action == "revive" then
 		local d = typeof(arg) == "Instance" and dummyOf(arg)
 		if d then
