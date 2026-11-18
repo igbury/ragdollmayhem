@@ -40,12 +40,14 @@ local ABOUT = {
 	Rocket = "Flies straight, blows up anything",
 }
 local INK = Color3.fromRGB(16, 15, 20)
+-- hotbar only: these icons draw smaller in their slot (the camera backs off by this factor)
+local SLOT_ZOOM = { Fists = 1.35, BoxingGloves = 1.35, Handgun = 1.35, Grenade = 1.35, Revolver = 1.35 }
 local HOLD_TIME = 0.18 -- a Q held this long opens the wheel; shorter is a tap (next weapon)
 
 -- A 3D picture of a weapon: its viewmodel parts (as init.client builds them) in a ViewportFrame,
 -- with the camera fitted to them and the long side laid across the frame diagonally.
 -- The blocks show at once; the weapon's Blender mesh (WeaponMeshes) replaces them once it is built.
-local function icon(specs, parent: GuiObject, id: string?): (ViewportFrame, (number?) -> ())
+local function icon(specs, parent: GuiObject, id: string?, zoom: number?): (ViewportFrame, (number?) -> ())
 	local vp = Instance.new("ViewportFrame")
 	vp.BackgroundTransparency = 1
 	vp.Size = UDim2.new(1, -8, 1, -8)
@@ -79,7 +81,7 @@ local function icon(specs, parent: GuiObject, id: string?): (ViewportFrame, (num
 		end
 		upright = size.Y > size.Z -- melee stands up out of the fist, guns point along -Z
 		flat = size.Z < size.X * 0.5 -- the pan: its face looks forward, so look at it from the front
-		dist = math.max(size.Y, size.Z, size.X, 0.8) / (2 * math.tan(math.rad(15))) * 0.95
+		dist = math.max(size.Y, size.Z, size.X, 0.8) / (2 * math.tan(math.rad(15))) * 0.95 * (zoom or 1)
 	end
 	fit()
 	local spin = 0
@@ -201,7 +203,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			s.vp = orb
 			s.place = function() end
 		else
-			s.vp, s.place = icon(viewmodels[w.id] or fistSpec, s.frame, w.id)
+			s.vp, s.place = icon(viewmodels[w.id] or fistSpec, s.frame, w.id, SLOT_ZOOM[w.id])
 		end
 		s.stroke.Color = w.color or GROUP[w.tag] or GROUP.melee
 		s.short.Text = w.short or w.id:upper()
