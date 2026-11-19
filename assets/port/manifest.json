@@ -1,0 +1,437 @@
+{
+ "Port_CraneBoom": [
+  {
+   "name": "Port_CraneBoom__2E6FB0",
+   "color": "2E6FB0",
+   "tris": 2268,
+   "at": [
+    -0.0,
+    54.675,
+    18.0
+   ],
+   "size": [
+    25.3159,
+    25.65,
+    124.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneBoom__464A52",
+   "color": "464A52",
+   "tris": 60,
+   "at": [
+    -0.0,
+    55.6977,
+    18.0
+   ],
+   "size": [
+    4.0,
+    19.8955,
+    124.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneBoom__EBB91E",
+   "color": "EBB91E",
+   "tris": 24,
+   "at": [
+    -0.0,
+    45.95,
+    18.0
+   ],
+   "size": [
+    4.1,
+    0.3,
+    124.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneBoom__FF3030",
+   "color": "FF3030",
+   "tris": 12,
+   "at": [
+    -0.0,
+    46.6,
+    79.5
+   ],
+   "size": [
+    1.0,
+    1.0,
+    1.0
+   ],
+   "neon": true,
+   "transparency": 0
+  }
+ ],
+ "Port_CraneHouse": [
+  {
+   "name": "Port_CraneHouse__EBEBE6",
+   "color": "EBEBE6",
+   "tris": 108,
+   "at": [
+    -0.0,
+    48.0,
+    0.0
+   ],
+   "size": [
+    28.0,
+    12.0,
+    12.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneHouse__2E6FB0",
+   "color": "2E6FB0",
+   "tris": 108,
+   "at": [
+    -0.0,
+    50.5,
+    0.0
+   ],
+   "size": [
+    28.2,
+    2.0,
+    12.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneHouse__2A2D33",
+   "color": "2A2D33",
+   "tris": 96,
+   "at": [
+    -0.0,
+    45.5,
+    0.0
+   ],
+   "size": [
+    21.4,
+    2.2,
+    12.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneHouse__464A52",
+   "color": "464A52",
+   "tris": 408,
+   "at": [
+    -0.0,
+    44.6,
+    0.0
+   ],
+   "size": [
+    28.5,
+    4.6,
+    12.72
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneHouse__96D2F5",
+   "color": "96D2F5",
+   "tris": 24,
+   "at": [
+    -0.0,
+    47.6,
+    2.5
+   ],
+   "size": [
+    28.5,
+    1.6,
+    3.2
+   ],
+   "neon": false,
+   "transparency": 0.3
+  },
+  {
+   "name": "Port_CraneHouse__EBB91E",
+   "color": "EBB91E",
+   "tris": 72,
+   "at": [
+    -0.0,
+    54.6,
+    0.0
+   ],
+   "size": [
+    27.0,
+    1.2,
+    11.6
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Port_CranePortal": [
+  {
+   "name": "Port_CranePortal__464A52",
+   "color": "464A52",
+   "tris": 432,
+   "at": [
+    -0.0,
+    1.65,
+    0.0
+   ],
+   "size": [
+    36.0,
+    1.6,
+    23.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CranePortal__2A2D33",
+   "color": "2A2D33",
+   "tris": 352,
+   "at": [
+    -0.0,
+    0.85,
+    0.0
+   ],
+   "size": [
+    34.6,
+    1.6,
+    23.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CranePortal__2E6FB0",
+   "color": "2E6FB0",
+   "tris": 912,
+   "at": [
+    -0.0,
+    22.225,
+    0.0
+   ],
+   "size": [
+    32.0,
+    39.55,
+    24.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CranePortal__EBEBE6",
+   "color": "EBEBE6",
+   "tris": 648,
+   "at": [
+    -0.0,
+    35.7,
+    0.0
+   ],
+   "size": [
+    32.3,
+    12.6,
+    24.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CranePortal__EBB91E",
+   "color": "EBB91E",
+   "tris": 216,
+   "at": [
+    -0.0,
+    38.5,
+    0.0
+   ],
+   "size": [
+    24.0,
+    0.6,
+    24.2
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Port_CraneTrolley": [
+  {
+   "name": "Port_CraneTrolley__EBB91E",
+   "color": "EBB91E",
+   "tris": 216,
+   "at": [
+    -0.0,
+    33.0,
+    56.0
+   ],
+   "size": [
+    36.0,
+    18.0,
+    8.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneTrolley__EBEBE6",
+   "color": "EBEBE6",
+   "tris": 108,
+   "at": [
+    -0.0,
+    35.5,
+    56.0
+   ],
+   "size": [
+    6.0,
+    5.0,
+    6.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneTrolley__96D2F5",
+   "color": "96D2F5",
+   "tris": 36,
+   "at": [
+    -0.0,
+    36.0,
+    56.615
+   ],
+   "size": [
+    6.46,
+    2.0,
+    5.23
+   ],
+   "neon": false,
+   "transparency": 0.3
+  },
+  {
+   "name": "Port_CraneTrolley__464A52",
+   "color": "464A52",
+   "tris": 156,
+   "at": [
+    -0.0,
+    31.5,
+    56.0
+   ],
+   "size": [
+    6.0,
+    13.0,
+    4.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_CraneTrolley__2A2D33",
+   "color": "2A2D33",
+   "tris": 24,
+   "at": [
+    -0.0,
+    24.5,
+    56.0
+   ],
+   "size": [
+    31.2,
+    0.6,
+    8.4
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Port_Hull": [
+  {
+   "name": "Port_Hull__1C1C20",
+   "color": "1C1C20",
+   "tris": 20,
+   "at": [
+    -0.0,
+    1.5,
+    0.0
+   ],
+   "size": [
+    160.0,
+    13.0,
+    40.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_Hull__EBEBE6",
+   "color": "EBEBE6",
+   "tris": 4710,
+   "at": [
+    -0.095,
+    1.0,
+    0.0
+   ],
+   "size": [
+    160.19,
+    14.0,
+    40.38
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_Hull__962823",
+   "color": "962823",
+   "tris": 176,
+   "at": [
+    -4.0,
+    -13.0,
+    0.0
+   ],
+   "size": [
+    168.0,
+    14.0,
+    40.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_Hull__5A5E66",
+   "color": "5A5E66",
+   "tris": 18,
+   "at": [
+    1.0,
+    -2.0,
+    0.0
+   ],
+   "size": [
+    158.0,
+    20.0,
+    36.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Port_Hull__B08D57",
+   "color": "B08D57",
+   "tris": 100,
+   "at": [
+    -81.2,
+    -14.0,
+    0.0
+   ],
+   "size": [
+    2.4,
+    6.364,
+    6.364
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ]
+}

@@ -21,7 +21,7 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	panel.BackgroundColor3, panel.BorderSizePixel, panel.ZIndex, panel.Parent = Color3.fromRGB(22, 24, 30), 0, 41, cover
 	local max = Instance.new("UISizeConstraint"); max.MaxSize, max.Parent = Vector2.new(840, 630), panel
 	local c = Instance.new("UICorner"); c.CornerRadius, c.Parent = UDim.new(0, 12), panel
-	local title = textButton(panel, "ARSENAL   /   ALL WEAPONS AVAILABLE", UDim2.new(1, -62, 0, 42), UDim2.fromOffset(8, 8))
+	local title = textButton(panel, "ARSENAL   /   KILL TO UNLOCK", UDim2.new(1, -62, 0, 42), UDim2.fromOffset(8, 8))
 	title.BackgroundColor3, title.AutoButtonColor, title.TextXAlignment = Color3.fromRGB(143, 46, 44), false, Enum.TextXAlignment.Left
 	local padding = Instance.new("UIPadding"); padding.PaddingLeft, padding.Parent = UDim.new(0, 12), title
 	local x = textButton(panel, "X", UDim2.fromOffset(38, 42), UDim2.new(1, -46, 0, 8))
@@ -49,8 +49,9 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			local w = weapons[i]
 			card.frame.Visible = (selectedCategory == "all" or w.tag == selectedCategory) and w.name:lower():find(query, 1, true) ~= nil
 			local equipped = api.get() == i
-			card.button.Text = equipped and "EQUIPPED" or "EQUIP"
-			card.button.BackgroundColor3 = equipped and Color3.fromRGB(56, 111, 83) or Color3.fromRGB(43, 128, 76)
+			local lock = api.locked and api.locked(i) -- weapon progression: what it still needs
+			card.button.Text = lock and `🔒 {lock}` or equipped and "EQUIPPED" or "EQUIP"
+			card.button.BackgroundColor3 = lock and Color3.fromRGB(70, 70, 78) or equipped and Color3.fromRGB(56, 111, 83) or Color3.fromRGB(43, 128, 76)
 		end
 		for category, b in buttons do b.BackgroundColor3 = category == selectedCategory and Color3.fromRGB(132, 83, 50) or Color3.fromRGB(45, 48, 57) end
 	end

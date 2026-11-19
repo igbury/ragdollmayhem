@@ -1,0 +1,1284 @@
+{
+ "Factory_Conveyor": [
+  {
+   "name": "Factory_Conveyor__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 12,
+   "at": [
+    -0.0,
+    -0.05,
+    0.0
+   ],
+   "size": [
+    60.0,
+    0.9,
+    8.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Conveyor__26282E",
+   "color": "26282E",
+   "tris": 786,
+   "at": [
+    -0.0,
+    0.615,
+    0.0
+   ],
+   "size": [
+    60.1,
+    1.17,
+    9.8
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Conveyor__EBB91E",
+   "color": "EBB91E",
+   "tris": 302,
+   "at": [
+    -0.0,
+    0.3,
+    0.0
+   ],
+   "size": [
+    60.0,
+    1.62,
+    9.8
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Conveyor__464A52",
+   "color": "464A52",
+   "tris": 1200,
+   "at": [
+    -0.0,
+    0.35,
+    0.0
+   ],
+   "size": [
+    58.2771,
+    0.32,
+    9.82
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Conveyor__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 608,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    61.5599,
+    1.6,
+    10.0
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_CraneBeam": [
+  {
+   "name": "Factory_CraneBeam__EBB91E",
+   "color": "EBB91E",
+   "tris": 2948,
+   "at": [
+    -0.0,
+    0.0,
+    -0.4
+   ],
+   "size": [
+    4.4,
+    3.4,
+    233.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneBeam__464A52",
+   "color": "464A52",
+   "tris": 188,
+   "at": [
+    -0.0,
+    1.8,
+    0.0
+   ],
+   "size": [
+    5.6,
+    1.6,
+    233.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneBeam__26282E",
+   "color": "26282E",
+   "tris": 256,
+   "at": [
+    -0.0,
+    0.95,
+    0.0
+   ],
+   "size": [
+    7.0,
+    5.3,
+    235.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneBeam__D22823",
+   "color": "D22823",
+   "tris": 216,
+   "at": [
+    3.0,
+    3.9,
+    0.0
+   ],
+   "size": [
+    1.2,
+    1.0,
+    233.0
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_CraneHook": [
+  {
+   "name": "Factory_CraneHook__D22823",
+   "color": "D22823",
+   "tris": 106,
+   "at": [
+    -0.0,
+    1.0,
+    0.0
+   ],
+   "size": [
+    3.0,
+    1.8,
+    1.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneHook__26282E",
+   "color": "26282E",
+   "tris": 34,
+   "at": [
+    -0.0,
+    0.75,
+    0.0
+   ],
+   "size": [
+    3.4,
+    1.9,
+    1.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneHook__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 56,
+   "at": [
+    -0.0,
+    0.325,
+    0.0
+   ],
+   "size": [
+    0.7,
+    2.25,
+    1.9
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_CraneHook__EBB91E",
+   "color": "EBB91E",
+   "tris": 116,
+   "at": [
+    0.4453,
+    -1.6578,
+    0.0
+   ],
+   "size": [
+    2.1406,
+    1.7156,
+    0.55
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_CraneTrolley": [
+  {
+   "name": "Factory_CraneTrolley__464A52",
+   "color": "464A52",
+   "tris": 108,
+   "at": [
+    -0.0,
+    -0.2,
+    0.0
+   ],
+   "size": [
+    5.6,
+    2.2,
+    5.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneTrolley__26282E",
+   "color": "26282E",
+   "tris": 138,
+   "at": [
+    -0.0,
+    1.025,
+    0.0
+   ],
+   "size": [
+    6.0,
+    0.75,
+    6.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneTrolley__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 196,
+   "at": [
+    -0.0,
+    -0.2235,
+    0.0
+   ],
+   "size": [
+    4.4,
+    3.9029,
+    4.9
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_CraneTrolley__D22823",
+   "color": "D22823",
+   "tris": 104,
+   "at": [
+    -0.0,
+    -1.2,
+    0.0
+   ],
+   "size": [
+    4.85,
+    2.7298,
+    2.8
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_CraneTrolley__EBB91E",
+   "color": "EBB91E",
+   "tris": 150,
+   "at": [
+    -0.0,
+    0.025,
+    0.575
+   ],
+   "size": [
+    5.7,
+    2.05,
+    6.85
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_Furnace": [
+  {
+   "name": "Factory_Furnace__FF6E14",
+   "color": "FF6E14",
+   "tris": 12,
+   "at": [
+    -0.0,
+    0.2,
+    0.0
+   ],
+   "size": [
+    28.0,
+    0.4,
+    28.0
+   ],
+   "finish": "Neon"
+  },
+  {
+   "name": "Factory_Furnace__6E200C",
+   "color": "6E200C",
+   "tris": 192,
+   "at": [
+    4.2308,
+    0.45,
+    0.3224
+   ],
+   "size": [
+    16.5692,
+    0.12,
+    26.029
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__29262B",
+   "color": "29262B",
+   "tris": 504,
+   "at": [
+    -0.0,
+    0.7915,
+    0.0
+   ],
+   "size": [
+    30.3,
+    1.583,
+    30.3
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__3A363B",
+   "color": "3A363B",
+   "tris": 204,
+   "at": [
+    -0.0,
+    0.7955,
+    0.0
+   ],
+   "size": [
+    30.3,
+    1.591,
+    30.3
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__26282E",
+   "color": "26282E",
+   "tris": 1188,
+   "at": [
+    -0.0,
+    46.3,
+    0.0
+   ],
+   "size": [
+    30.6,
+    92.6,
+    30.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__464A52",
+   "color": "464A52",
+   "tris": 432,
+   "at": [
+    -0.0,
+    1.9,
+    0.0
+   ],
+   "size": [
+    31.0,
+    0.6,
+    31.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__8C4628",
+   "color": "8C4628",
+   "tris": 92,
+   "at": [
+    -0.0,
+    52.0,
+    0.0
+   ],
+   "size": [
+    30.0,
+    76.0,
+    30.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Furnace__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 960,
+   "at": [
+    -0.0,
+    14.5,
+    0.0
+   ],
+   "size": [
+    30.85,
+    0.35,
+    30.85
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_Grinder": [
+  {
+   "name": "Factory_Grinder__26282E",
+   "color": "26282E",
+   "tris": 424,
+   "at": [
+    0.375,
+    10.575,
+    0.0
+   ],
+   "size": [
+    15.95,
+    21.15,
+    11.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Grinder__D22823",
+   "color": "D22823",
+   "tris": 1296,
+   "at": [
+    0.25,
+    6.95,
+    0.0
+   ],
+   "size": [
+    15.5,
+    13.9,
+    11.7
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Grinder__EBB91E",
+   "color": "EBB91E",
+   "tris": 124,
+   "at": [
+    -6.85,
+    6.0,
+    0.0
+   ],
+   "size": [
+    0.4,
+    11.0,
+    11.08
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Grinder__8C4628",
+   "color": "8C4628",
+   "tris": 32,
+   "at": [
+    2.0,
+    17.0,
+    0.0
+   ],
+   "size": [
+    6.4,
+    8.0,
+    6.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_Grinder__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 72,
+   "at": [
+    -7.2,
+    10.4,
+    0.0
+   ],
+   "size": [
+    0.4,
+    3.2,
+    9.0
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_GrinderRoller": [
+  {
+   "name": "Factory_GrinderRoller__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 44,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    8.6,
+    2.1,
+    2.1
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_GrinderRoller__464A52",
+   "color": "464A52",
+   "tris": 720,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    7.6,
+    2.94,
+    2.94
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_GrinderRoller__D22823",
+   "color": "D22823",
+   "tris": 88,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    8.6,
+    2.7,
+    2.7
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_HammerArm": [
+  {
+   "name": "Factory_HammerArm__464A52",
+   "color": "464A52",
+   "tris": 44,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    2.0,
+    2.0,
+    2.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerArm__26282E",
+   "color": "26282E",
+   "tris": 364,
+   "at": [
+    -0.0,
+    -18.2984,
+    0.0
+   ],
+   "size": [
+    4.2,
+    34.4032,
+    7.1556
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerArm__D22823",
+   "color": "D22823",
+   "tris": 108,
+   "at": [
+    -0.0,
+    -35.0,
+    0.0
+   ],
+   "size": [
+    3.6,
+    6.0,
+    9.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerArm__EBB91E",
+   "color": "EBB91E",
+   "tris": 52,
+   "at": [
+    -0.0,
+    -35.0,
+    0.0
+   ],
+   "size": [
+    4.2,
+    1.0,
+    9.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerArm__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 216,
+   "at": [
+    -0.0,
+    -35.0,
+    0.0
+   ],
+   "size": [
+    4.05,
+    4.6,
+    7.6
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_HammerBeam": [
+  {
+   "name": "Factory_HammerBeam__26282E",
+   "color": "26282E",
+   "tris": 228,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    12.0,
+    2.0,
+    2.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerBeam__464A52",
+   "color": "464A52",
+   "tris": 132,
+   "at": [
+    -0.0,
+    -0.8,
+    0.0
+   ],
+   "size": [
+    11.3,
+    3.0,
+    2.8
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_HammerBeam__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 44,
+   "at": [
+    -0.0,
+    -1.0,
+    0.0
+   ],
+   "size": [
+    1.2,
+    1.2,
+    3.4
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_PistonPlate": [
+  {
+   "name": "Factory_PistonPlate__D22823",
+   "color": "D22823",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.0,
+    -0.1
+   ],
+   "size": [
+    9.0,
+    8.0,
+    0.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonPlate__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 108,
+   "at": [
+    -0.0,
+    1.6094,
+    -0.4003
+   ],
+   "size": [
+    12.3417,
+    9.5188,
+    0.4495
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonPlate__EBB91E",
+   "color": "EBB91E",
+   "tris": 104,
+   "at": [
+    -0.0,
+    0.0,
+    -0.45
+   ],
+   "size": [
+    9.0,
+    7.9,
+    0.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonPlate__26282E",
+   "color": "26282E",
+   "tris": 80,
+   "at": [
+    -0.0,
+    0.0,
+    -0.45
+   ],
+   "size": [
+    7.0,
+    7.9,
+    0.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonPlate__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 80,
+   "at": [
+    -0.0,
+    0.0,
+    -0.6
+   ],
+   "size": [
+    8.433,
+    7.6,
+    0.2
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_PistonPlate__464A52",
+   "color": "464A52",
+   "tris": 108,
+   "at": [
+    -0.0,
+    6.3,
+    -0.4
+   ],
+   "size": [
+    7.0,
+    1.0,
+    0.8
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_PistonRam": [
+  {
+   "name": "Factory_PistonRam__464A52",
+   "color": "464A52",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.0,
+    0.2
+   ],
+   "size": [
+    7.6,
+    5.6,
+    1.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonRam__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 152,
+   "at": [
+    -0.0,
+    0.0,
+    1.8
+   ],
+   "size": [
+    8.0,
+    6.0,
+    5.6
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_PistonRam__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 36,
+   "at": [
+    -0.0,
+    0.0,
+    -1.04
+   ],
+   "size": [
+    7.6,
+    5.0,
+    0.12
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonRam__EBB91E",
+   "color": "EBB91E",
+   "tris": 40,
+   "at": [
+    -0.5125,
+    3.0,
+    0.0
+   ],
+   "size": [
+    7.175,
+    0.5,
+    2.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PistonRam__26282E",
+   "color": "26282E",
+   "tris": 86,
+   "at": [
+    0.5125,
+    0.925,
+    0.25
+   ],
+   "size": [
+    7.175,
+    4.65,
+    2.7
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_PressFrame": [
+  {
+   "name": "Factory_PressFrame__26282E",
+   "color": "26282E",
+   "tris": 620,
+   "at": [
+    -0.0,
+    13.75,
+    0.0
+   ],
+   "size": [
+    18.6,
+    27.5,
+    7.1
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressFrame__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 548,
+   "at": [
+    -0.0,
+    13.8,
+    0.0
+   ],
+   "size": [
+    18.033,
+    26.4,
+    7.24
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_PressFrame__EBB91E",
+   "color": "EBB91E",
+   "tris": 168,
+   "at": [
+    -0.0,
+    13.6,
+    0.0
+   ],
+   "size": [
+    17.12,
+    25.2,
+    2.12
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressFrame__464A52",
+   "color": "464A52",
+   "tris": 816,
+   "at": [
+    -0.0,
+    16.5,
+    0.0
+   ],
+   "size": [
+    17.6,
+    21.8,
+    4.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressFrame__D22823",
+   "color": "D22823",
+   "tris": 108,
+   "at": [
+    -0.0,
+    23.5,
+    0.0
+   ],
+   "size": [
+    18.0,
+    3.0,
+    7.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressFrame__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 48,
+   "at": [
+    5.7694,
+    18.779,
+    1.2538
+   ],
+   "size": [
+    2.7613,
+    13.558,
+    0.9888
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_PressHead": [
+  {
+   "name": "Factory_PressHead__464A52",
+   "color": "464A52",
+   "tris": 648,
+   "at": [
+    -0.0,
+    0.3,
+    0.0
+   ],
+   "size": [
+    12.0,
+    3.6,
+    12.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressHead__D22823",
+   "color": "D22823",
+   "tris": 12,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    12.2,
+    0.6,
+    12.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressHead__26282E",
+   "color": "26282E",
+   "tris": 244,
+   "at": [
+    0.15,
+    -0.0125,
+    0.0
+   ],
+   "size": [
+    11.3,
+    3.175,
+    11.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressHead__EBB91E",
+   "color": "EBB91E",
+   "tris": 80,
+   "at": [
+    -0.2,
+    1.5,
+    0.0
+   ],
+   "size": [
+    11.2,
+    0.15,
+    11.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_PressHead__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 60,
+   "at": [
+    -0.0,
+    2.0,
+    0.0
+   ],
+   "size": [
+    3.6,
+    1.2,
+    3.6
+   ],
+   "finish": "Metal"
+  }
+ ],
+ "Factory_SawBlade": [
+  {
+   "name": "Factory_SawBlade__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 480,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    0.86,
+    8.0579,
+    8.0579
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_SawBlade__26282E",
+   "color": "26282E",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    0.44,
+    4.7701,
+    5.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SawBlade__D22823",
+   "color": "D22823",
+   "tris": 52,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    0.8,
+    2.3398,
+    2.4
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_SweeperArm": [
+  {
+   "name": "Factory_SweeperArm__EBB91E",
+   "color": "EBB91E",
+   "tris": 184,
+   "at": [
+    -0.25,
+    0.0,
+    0.0
+   ],
+   "size": [
+    43.5,
+    1.6,
+    1.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperArm__26282E",
+   "color": "26282E",
+   "tris": 160,
+   "at": [
+    0.5,
+    0.0,
+    0.0
+   ],
+   "size": [
+    43.0,
+    1.8,
+    2.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperArm__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    44.0,
+    1.7,
+    1.7
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_SweeperArmShort": [
+  {
+   "name": "Factory_SweeperArmShort__EBB91E",
+   "color": "EBB91E",
+   "tris": 144,
+   "at": [
+    -0.25,
+    0.0,
+    0.0
+   ],
+   "size": [
+    21.5,
+    1.6,
+    1.6
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperArmShort__26282E",
+   "color": "26282E",
+   "tris": 120,
+   "at": [
+    0.5,
+    0.0,
+    0.0
+   ],
+   "size": [
+    21.0,
+    1.8,
+    2.4
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperArmShort__1A1A1E",
+   "color": "1A1A1E",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    22.0,
+    1.7,
+    1.7
+   ],
+   "finish": "Plastic"
+  }
+ ],
+ "Factory_SweeperHub": [
+  {
+   "name": "Factory_SweeperHub__464A52",
+   "color": "464A52",
+   "tris": 120,
+   "at": [
+    -0.0,
+    4.0,
+    0.0
+   ],
+   "size": [
+    6.0,
+    8.0,
+    6.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperHub__BEBEC3",
+   "color": "BEBEC3",
+   "tris": 160,
+   "at": [
+    -0.0,
+    0.75,
+    0.0
+   ],
+   "size": [
+    5.3897,
+    0.3,
+    5.45
+   ],
+   "finish": "Metal"
+  },
+  {
+   "name": "Factory_SweeperHub__26282E",
+   "color": "26282E",
+   "tris": 136,
+   "at": [
+    -0.0,
+    5.3,
+    0.0
+   ],
+   "size": [
+    3.0,
+    9.4,
+    3.0
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperHub__EBB91E",
+   "color": "EBB91E",
+   "tris": 120,
+   "at": [
+    -0.0,
+    2.4,
+    0.0
+   ],
+   "size": [
+    4.2,
+    3.0,
+    4.2
+   ],
+   "finish": "Plastic"
+  },
+  {
+   "name": "Factory_SweeperHub__D22823",
+   "color": "D22823",
+   "tris": 60,
+   "at": [
+    -0.0,
+    8.7,
+    0.0
+   ],
+   "size": [
+    3.4,
+    1.4,
+    3.4
+   ],
+   "finish": "Plastic"
+  }
+ ]
+}

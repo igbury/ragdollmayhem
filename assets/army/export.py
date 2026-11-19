@@ -19,7 +19,7 @@ import bpy
 from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PREFIXES = ("Soldier_", "Heavy_", "Heli_", "Baton")
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton")
 NEON = {"FF3030", "30FF60", "FFFFFF", "FF8A20", "FFF6D0"}
 SEE_THROUGH = {"8FD0F0": 0.55, "2AA8D8": 0.15, "5AB4E0": 0.1}
 TRI_CAP = 19000
@@ -34,6 +34,7 @@ def main():
     out_col = bpy.data.collections.get("Export") or bpy.data.collections.new("Export")
     if out_col.name not in bpy.context.scene.collection.children:
         bpy.context.scene.collection.children.link(out_col)
+    out_col.hide_viewport = False  # hidden at the end of the last export: hidden objects can't be selected
     for ob in list(out_col.objects):
         bpy.data.objects.remove(ob)
     manifest = {}
@@ -52,7 +53,10 @@ def main():
             lo = Vector((min(c.x for c in co), min(c.y for c in co), min(c.z for c in co)))
             hi = Vector((max(c.x for c in co), max(c.y for c in co), max(c.z for c in co)))
             centre = (lo + hi) / 2
-            sub = bpy.data.meshes.new(f"{ob.name}__{hexcol}")
+            name = f"{ob.name}__{hexcol}"
+            if bpy.data.meshes.get(name):  # a last export's mesh: else this one comes out "<name>.001"
+                bpy.data.meshes.remove(bpy.data.meshes[name])
+            sub = bpy.data.meshes.new(name)
             sub.from_pydata([c - centre for c in co], [], [[remap[v] for v in p.vertices] for p in faces])
             sub.materials.append(mat)
             for p in sub.polygons:

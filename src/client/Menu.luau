@@ -33,7 +33,11 @@ local IDLE = Color3.fromRGB(228, 228, 228) -- panel tint at rest; hover lifts it
 local FONT = Enum.Font.LuckiestGuy
 local BURST_IMAGE = "rbxassetid://121244599706688" -- same starburst as Fx.pop
 local HALFTONE_IMAGE = "rbxassetid://82675619059195" -- assets/fx/halftone.png, 64px tile
-local MAPS = { "ARENA", "FACTORY" } -- keys of SPAWNS on the server; "CITY SQUARE" hidden while in development (see City.luau)
+-- Setting: show the MODE tile beside MAP. Off: MAP fills the whole bottom-left and the mode stays SANDBOX.
+local SHOW_MODES = false
+-- ponytail: only the choice is kept (Menu.mode); the server has no modes yet, send it like the map once it does.
+local MODES = { "SANDBOX", "REALISM", "ZOMBIES" }
+local MAPS = { "ARENA", "FACTORY", "PORT" } -- keys of SPAWNS on the server; "CITY SQUARE" hidden while in development (see City.luau)
 local POWS = { "POW!", "BAM!", "ZOOM!", "WHAM!", "BOOM!" }
 local MARGIN = 16 -- px of white page round the panels
 local GAP = 9 -- px, half the white gutter between panels
@@ -47,6 +51,7 @@ local SEAMS = {
 	VS = { Vector2.new(0.6, 0), Vector2.new(0.6, 1) }, -- STATS / PLAY | scene
 	V1 = { Vector2.new(0.52, 0), Vector2.new(0.42, 0.29) }, -- MAP | LOADOUT
 	H2 = { Vector2.new(0, 0.66), Vector2.new(0.6, 0.74) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
+	VM = { Vector2.new(0.31, 0.7), Vector2.new(0.29, 1) }, -- MAP | MODE
 }
 -- The shop page: two slanted rows of panels round a big red one, like a blank comic page.
 local SHOP_SEAMS = {
@@ -83,6 +88,7 @@ end
 
 local Menu = { active = true }
 local mapIndex = 1
+local modeIndex = 1
 local tickers: { (number) -> () } = {} -- run every frame with the time since the menu opened
 local start = os.clock()
 
@@ -339,10 +345,13 @@ type Panel = {
 local PANELS: { Panel } = {
 	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) },
 	{ edges = { "TOP", "RIGHT", "HS", "H1", "V1" }, inside = Vector2.new(0.75, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
-	{ edges = { "H2", "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.3, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, at the bottom
+	{ edges = { "H2", SHOW_MODES and "VM" or "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, bottom left
 	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
 	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
 }
+if SHOW_MODES then
+	table.insert(PANELS, { edges = { "H2", "VS", "BOTTOM", "VM" }, inside = Vector2.new(0.45, 0.88), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }) -- MODE, beside MAP
+end
 local SKY = Color3.fromRGB(60, 140, 225)
 local LIME = Color3.fromRGB(110, 190, 60)
 local SHOP_PANELS: { Panel } = {
@@ -561,6 +570,12 @@ shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromR
 title(shopP, 2, "SHOP", RED, false) -- red on yellow
 mapP.burst = rays(mapP.content :: GuiObject, 0.5, 0.5, 18, 70, 0, Color3.fromRGB(255, 120, 100), 0.35, -10)
 local mapValue = title(mapP, 3, "MAP", WHITE, true) :: TextLabel -- white on red
+local modeP: Panel? = PANELS[6]
+local modeValue: TextLabel? = nil
+if modeP then
+	modeP.burst = rays(modeP.content :: GuiObject, 0.5, 0.5, 18, 70, 0, Color3.fromRGB(150, 205, 80), 0.35, 10)
+	modeValue = title(modeP, 6, "MODE", YELLOW, true) -- yellow on green
+end
 
 playP.burst = rays(playP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, ORANGE, 0.3, 14)
 local playO = playP.overlay :: Frame
@@ -671,8 +686,18 @@ local function squash(label: TextLabel)
 	end
 end
 
+-- The first-time tutorial (server/Tutorial): a player who has not done it never sees the menu (the
+-- end of this file sends them straight to the arena).
+local function inTutorial(): boolean
+	return player:GetAttribute("Tutorial") == true
+end
+
 local function refresh()
 	mapValue.Text = "< " .. MAPS[mapIndex] .. " >"
+	if modeValue then
+		modeValue.Text = "< " .. MODES[modeIndex] .. " >"
+	end
+	Menu.mode = MODES[modeIndex]
 end
 refresh()
 
@@ -747,6 +772,13 @@ mapP.onClick = function()
 	mapIndex = mapIndex % #MAPS + 1
 	refresh()
 	squash(mapValue)
+end
+if modeP then
+	modeP.onClick = function()
+		modeIndex = modeIndex % #MODES + 1
+		refresh()
+		squash(modeValue :: TextLabel)
+	end
 end
 playP.onClick = play
 sceneP.onClick = function()
@@ -930,6 +962,24 @@ RunService:BindToRenderStep("MenuCamera", Enum.RenderPriority.Camera.Value + 1, 
 	local t = os.clock() - start
 	for _, tick in tickers do
 		tick(t)
+	end
+end)
+
+-- Hidden until the saved progress is in (a moment): then a first-time player goes straight to the
+-- arena and its tutorial, with no menu and no walk-off, and everyone else gets the menu.
+gui.Enabled = false
+task.spawn(function()
+	local waitFrom = os.clock()
+	while player:GetAttribute("ProgressLoaded") == nil and os.clock() - waitFrom < 8 do
+		task.wait(0.1)
+	end
+	if inTutorial() and Menu.active then
+		local _ = player.Character or player.CharacterAdded:Wait()
+		leaving = true
+		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("map", "ARENA")
+		handOff()
+	else
+		gui.Enabled = true
 	end
 end)
 

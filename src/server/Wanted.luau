@@ -56,12 +56,19 @@ end
 -- rocket in flight, their grenade's fuse, their molotov's fire all act for them; a soldier's rocket
 -- acts for nobody (false). Per thread, so it holds across waits inside one attack and two players'
 -- attacks never mix. nil: nothing said (dummies' own fights, the Heartbeat).
+-- `weapon`: what it is done with (a Weapons id, "Body" for a thrown body, ...), for the kill counters
+-- behind the weapon progression (server/Progress).
 local acting = setmetatable({}, { __mode = "k" }) -- [thread] = Player | false
-function Wanted.act(by: Player | false | nil)
+local actingWith = setmetatable({}, { __mode = "k" }) -- [thread] = weapon id
+function Wanted.act(by: Player | false | nil, weapon: string?)
 	acting[coroutine.running()] = by
+	actingWith[coroutine.running()] = weapon
 end
 function Wanted.culprit(): Player | false | nil
 	return acting[coroutine.running()]
+end
+function Wanted.weapon(): string?
+	return actingWith[coroutine.running()]
 end
 
 function Wanted.clear(player: Player)
@@ -95,8 +102,10 @@ function Wanted.start(api)
 		local at = root.Position + Vector3.new(math.cos(angle), 0, math.sin(angle)) * (SPAWN_FROM + math.random() * (SPAWN_TO - SPAWN_FROM))
 		params.FilterDescendantsInstances = api.exclude()
 		local ground = workspace:Raycast(at + Vector3.yAxis * 60, Vector3.yAxis * -160, params)
-		if not ground then
-			return false -- off the edge of the map: no one from that side this time
+		-- off the edge of the map, in the port's water (terrain), or up on something tall (the port's
+		-- crane, a container stack) the player is nowhere near: no one from that side this time
+		if not ground or ground.Instance == workspace.Terrain or ground.Position.Y > root.Position.Y + 12 then
+			return false
 		end
 		local d = api.spawn(CFrame.lookAt(ground.Position + Vector3.yAxis * 4, root.Position * Vector3.new(1, 0, 1) + Vector3.yAxis * (ground.Position.Y + 4)), kind)
 		if d then
@@ -178,7 +187,15 @@ function Wanted.start(api)
 						if hunters >= MAX_HUNTERS then
 							break
 						end
-						if kind == "Heli" then
+						if kind == "Heli" and player:GetAttribute("Map") == "FACTORY" then
+							-- a helicopter can't get under the factory's roof (it would hover in it and
+							-- fly through the walls): its Heavies come in on foot instead
+							for _, trooper in HELI do
+								if hunters < MAX_HUNTERS and spawnNear(root, trooper, player) then
+									hunters += 1
+								end
+							end
+						elseif kind == "Heli" then
 							hunters += #HELI
 							local over = root.Position
 							task.spawn(Helicopter.drop, over, HELI, function(cf, trooper)

@@ -13,11 +13,14 @@ local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Impact = require(ReplicatedStorage.Shared.Impact)
 local Factory = require(script.Factory)
 local City = require(script.City)
+local Port = require(script.Port)
 local Looks = require(script.Looks)
 local Anims = require(script.Anims)
 local Monsters = require(script.Monsters)
 local Arrows = require(script.Arrows)
 local Wanted = require(script.Wanted)
+local Progress = require(script.Progress)
+local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
 
 local PUNCH_RANGE = 11
@@ -105,8 +108,9 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 end)
 
 local CITY_ENABLED = false -- City Square is in development: not built, not in the menu. Flip to test it.
-local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil }
--- Until PLAY picks a map the character waits here, anchored, away from every map (they lie on X).
+local PORT_ENABLED = true -- the Port (Port.luau) is new: false hides it again (and leave it out of client/Menu.luau MAPS)
+local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil, PORT = PORT_ENABLED and Port.SPAWN or nil }
+-- Until PLAY picks a map the character waits here, anchored, away from every map (they lie on X, the port at +640 Z).
 local MENU_HOLD = CFrame.new(0, 50, 3000)
 remotes.Parent = ReplicatedStorage
 
@@ -152,16 +156,41 @@ local KINDS = {
 		colors = { Color3.fromRGB(96, 108, 70), Color3.fromRGB(120, 110, 80) } },
 	Heavy = { weight = 0, gear = "Rocket", traits = { "Tough" }, law = true, outfit = "Heavy", armor = 0.3,
 		colors = { Color3.fromRGB(34, 36, 42), Color3.fromRGB(34, 36, 42) } },
+	-- Toolbox only (weight 0). `colors` 3 and 4: arms and head, when not the torso's / the skin.
+	Worker = { weight = 0, outfit = "Worker", -- hard hat, hi-vis vest, tool belt, boots
+		colors = { Color3.fromRGB(59, 92, 140), Color3.fromRGB(44, 62, 92) } },
+	Zombie = { weight = 0, outfit = "Zombie", traits = { "Berserk" }, zombie = true, -- see ZOMBIE
+		colors = { Color3.fromRGB(184, 178, 160), Color3.fromRGB(74, 84, 104), Color3.fromRGB(127, 160, 90), Color3.fromRGB(127, 160, 90) } },
 }
 for _, kind in KINDS do
 	local look = description:Clone()
 	look.Shirt, look.Pants, look.HatAccessory = kind.shirt or 0, kind.pants or 0, kind.hat or ""
 	if kind.colors then
-		look.TorsoColor, look.LeftArmColor, look.RightArmColor = kind.colors[1], kind.colors[1], kind.colors[1]
+		local arms = kind.colors[3] or kind.colors[1]
+		look.TorsoColor, look.LeftArmColor, look.RightArmColor = kind.colors[1], arms, arms
 		look.LeftLegColor, look.RightLegColor = kind.colors[2], kind.colors[2]
+		look.HeadColor = kind.colors[4] or look.HeadColor
 	end
 	kind.description = look
 end
+
+-- Zombies (KINDS.Zombie, d.zombie). They feel no pain: no daze, no flinch, no fear, no running, no
+-- words, and their HP never drops. They shamble at the nearest living thing (a player or a dummy
+-- that is not one of them) with both arms straight out in front (updatePose) and bring them down on
+-- it (ZOMBIE.swing). A broken arm hangs for good and does not hit; a broken leg (or one gone) puts
+-- them down for good, and they drag themselves at it instead. Only the head kills them: a bullet
+-- through it or a blade taking it off (hit). The functions come further down (Brain: fighting).
+local ZOMBIE: any = {
+	speed = 4, -- walk speed (a dummy's is 8)
+	crawl_push = 30, -- each heave on the ground (a dummy's 11 drags it at a fifth of a stud a second)
+	lines = { "Braaains...", "Uuurgh...", "Hhhrrr...", "Mmmnnngh...", "Grraaah..." },
+	-- one blow; `at`: when it lands after the arms go up, `reach`: studs to the prey then
+	claw = { damage = 9, push = 26, up = 6, power = 1.2, at = 0.45, reach = 5, recover = 1.4 },
+	-- where each hand reaches (upper torso space; `sx` -1 left, 1 right): beyond arm's length, so the arm is straight
+	rest = function(sx) return Vector3.new(sx * 0.7, 0.6, -4) end,
+	raised = function(sx) return Vector3.new(sx * 0.5, 3.2, -1.6) end,
+	slam = function(sx) return Vector3.new(sx * 0.4, -0.6, -2.6) end,
+}
 local function rollKind(): string
 	local roll = math.random() * 100
 	for name, kind in KINDS do
@@ -190,6 +219,12 @@ end
 
 -- The bubble itself is drawn by the client (Speech): "talk", "shout" (a "!" in it), "think" ("...").
 local function say(d, text: string, kind: string?)
+	if d.zombie then -- no words left in it: a groan, now and then
+		if math.random() < 0.5 then
+			return
+		end
+		text, kind = pick(ZOMBIE.lines), "talk"
+	end
 	local m = d.model
 	m:SetAttribute("Say", text)
 	m:SetAttribute("SayKind", kind or (text:find("!") and "shout") or (text:find("%.%.%.") and "think") or "talk")
@@ -210,7 +245,6 @@ end
 -- attributes set in syncAttributes.
 local BLOOD_DROWSY, BLOOD_OUT, BLOOD_DEAD = 60, 48, 40
 local MAX_BLEED = 12 -- % of blood per second, however many holes there are
-local SKIN = Color3.fromRGB(215, 215, 220)
 -- Bruises laid on the skin by markAt, each one blotch in a padded 1024 tile (assets/fx/make_bruise.py).
 -- No blood in uploaded images: Roblox moderation strikes the account for it.
 local BRUISE_IMAGES = { "rbxassetid://94993582040943", "rbxassetid://109249822084070", "rbxassetid://103002851312300" }
@@ -273,9 +307,9 @@ local function legHurt(d): number
 	return total
 end
 
--- A leg gone or both broken: it stays down and drags itself.
+-- A leg gone or both broken (a zombie: one): it stays down and drags itself.
 local function grounded(d): boolean
-	return d.legless or legHurt(d) >= 2
+	return d.legless or legHurt(d) >= (d.zombie and 1 or 2)
 end
 
 -- What the HUD calls the dummy's condition; the rules run on d.state.
@@ -454,7 +488,10 @@ local function paint(d, part: BasePart)
 	if not info then
 		return
 	end
-	local skin = SKIN
+	-- from the part's own colour as it was born (a zombie's green, a soldier's olive), not plain skin
+	local base = part:GetAttribute("BaseColor") or part.Color
+	part:SetAttribute("BaseColor", base)
+	local skin = base
 	if p and p.rash then
 		skin = skin:Lerp(RASH, math.min(p.rash / info.breakAt, 1))
 	end
@@ -462,7 +499,7 @@ local function paint(d, part: BasePart)
 		skin = skin:Lerp(CHAR, math.min(d.burn / 8, 0.85))
 	end
 	part.Color = skin
-	part:SetAttribute("Skin", skin ~= SKIN and skin or nil) -- the client puts this back after an X-ray
+	part:SetAttribute("Skin", skin ~= base and skin or nil) -- the client puts this back after an X-ray
 end
 
 local function jointParts(j: Instance): (Instance?, Instance?)
@@ -611,7 +648,7 @@ end
 local function release(d, velocity: Vector3, owner: Player?)
 	local by = owner or d.heldBy -- thrown, dropped or carried into a machine: theirs (Wanted)
 	if by then
-		d.blame, d.blameAt = by, os.clock()
+		d.blame, d.blameAt, d.blameWeapon = by, os.clock(), "Body"
 	end
 	if d.dragging then
 		task.delay(UNHELD_AFTER, function()
@@ -680,7 +717,7 @@ local function revive(d)
 			mark:Destroy()
 		end
 	end
-	d.speed, d.limpSide, d.risingUntil = 8, nil, 0
+	d.speed, d.limpSide, d.risingUntil = d.zombie and ZOMBIE.speed or 8, nil, 0
 	-- a fresh start for the mind too: it used to come back still fighting, still digging a grave,
 	-- or bent over a wound it no longer has
 	d.target, d.burying, d.digUntil, d.legless = nil, nil, 0, false
@@ -713,19 +750,30 @@ local function limp(d, key: string, seconds: number)
 end
 
 local BLAME_FOR = 300 -- seconds a player answers for a death they set going (shot, thrown, set on fire: Wanted)
+-- Respawning: a dummy that dies is replaced at once by a new one somewhere behind the player who
+-- killed it (else the nearest player), where they are not looking. The bodies stay where they fell;
+-- only past MAX_BODIES do the oldest go (bodies do not count toward MAX_DUMMIES, the living, see
+-- trimDummies). The tutorial's dummies are its own business (server/Tutorial). `run` is below, by trimDummies.
+local RESPAWN: any = { MAX_BODIES = 45, BEHIND = { 30, 22, 14 } }
+
 local function kill(d, cause: string)
 	if d.state ~= "Dead" then
 		-- who did it: whoever's action this thread is running (Wanted.act: their attack, their rocket,
 		-- their grenade's fuse, their molotov's fire, their arrow; false for a soldier's rocket), else
 		-- the last one who hurt, threw, dropped or carried it (a landing, a bleed-out, a machine it was
 		-- thrown into). Nobody: no stars (a dummy's own fight, a fall it took by itself).
-		local by = Wanted.culprit()
+		local by, weapon = Wanted.culprit(), Wanted.weapon()
 		if by == nil and d.blameAt and os.clock() - d.blameAt < BLAME_FOR then
-			by = d.blame
+			by, weapon = d.blame, d.blameWeapon
 		end
-		if by then
+		if by and not d.zombie and not d.model:GetAttribute("TutorialFor") then -- no crime: a zombie, the tutorial's dummies
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
+		if by then -- a kill for the weapon progression (zombies count)
+			Progress.credit(by, weapon)
+		end
+		d.diedAt = os.clock() -- the oldest bodies go first (RESPAWN)
+		task.defer(RESPAWN.run, d, by)
 	end
 	d.cause = cause
 	d.deadSynced = false -- one last HUD update (the Heartbeat), then it rests
@@ -792,6 +840,23 @@ local function clutch(d, part: BasePart, point: Vector3, seconds: number)
 end
 
 local function updatePose(d)
+	if d.zombie then
+		-- both arms straight out in front, whatever hurts; a broken or lost arm hangs (armFree).
+		-- ZOMBIE.swing moves these same targets to hit.
+		local key = "zombie" .. (armFree(d, "Left") and "L" or "") .. (armFree(d, "Right") and "R" or "")
+		local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+		if key ~= d.poseKey and torso then
+			dropPose(d)
+			d.poseKey = key
+			for _, side in { "Left", "Right" } do
+				if armFree(d, side) then
+					local sx = side == "Left" and -1 or 1
+					reach(d, side, spot(torso, "ZombieReach" .. side, ZOMBIE.rest(sx)), Vector3.new(sx * 2, 0.6, -1))
+				end
+			end
+		end
+		return
+	end
 	local now = os.clock()
 	local wound = d.wound
 	if wound and (now >= wound.untilTime or wound.part.Parent ~= d.model) then
@@ -875,6 +940,9 @@ local function express(d)
 	elseif ragdolled or #d.injuries > 0 then
 		face = "angry" -- hurt and not happy about it
 	end
+	if d.zombie and d.state ~= "Dead" then
+		face = "angry" -- teeth bared, always
+	end
 	Looks.face(model, face)
 	if ragdolled then
 		return -- the spine is limp; the lean is put back on the way up
@@ -882,7 +950,9 @@ local function express(d)
 	local pose, key = {}, ""
 	local wound = d.wound
 	local ribs = d.parts.UpperTorso and d.parts.UpperTorso.broken
-	if now < d.scaredUntil and not (wound and d.bleed > 0) then
+	if d.zombie then
+		pose, key = { Waist = Vector3.new(-0.18, 0, 0.06), Neck = Vector3.new(-0.2, 0, 0.25) }, "zombie" -- hunched, head lolling
+	elseif now < d.scaredUntil and not (wound and d.bleed > 0) then
 		pose, key = { Waist = Vector3.new(0.14, 0, 0), Neck = Vector3.new(0.1, 0, 0) }, "scared" -- leaning away
 	elseif wound and (wound.part.Name == "UpperTorso" or wound.part.Name == "LowerTorso") then
 		pose, key = { Waist = Vector3.new(-0.45, 0, 0), Neck = Vector3.new(-0.3, 0, 0) }, "doubled" -- over the wound
@@ -912,6 +982,9 @@ local WITNESS_LINES = {
 	cut = { "Is that a leg?!", "I'm going to be sick.", "Not the axe!" },
 }
 local function pace(d): number
+	if d.zombie then
+		return ZOMBIE.speed
+	end
 	return (d.limp or d.blood < BLOOD_DROWSY) and 3.5 or 8
 end
 local function playTrack(d, animation: Animation): AnimationTrack
@@ -926,6 +999,9 @@ end
 -- A reaction interrupts the visible attack AND its pending damage callback.
 -- Otherwise Action3/4 attacks cover the flinch and a cancelled punch still hits.
 local function reactToHit(d, direction: Vector3?)
+	if d.zombie then -- feels nothing: no flinch, and a blow does not stop its swing
+		return
+	end
 	for _, animation in { Anims.punch, Anims.haymaker, Anims.kick, Anims.dodge, Anims.taunt } do
 		local track = d.tracks[animation]
 		if track and track.IsPlaying then
@@ -1045,10 +1121,10 @@ local function walkStraight(d, at: Vector3)
 end
 
 -- Run from `from`, carrying what hurts: a hand stays on a wound that still bleeds, a broken leg
--- drags (the Heartbeat). A hooligan never runs, however badly it is hurt.
+-- drags (the Heartbeat). A hooligan never runs, however badly it is hurt, nor does a zombie.
 local function flee(d, from: Vector3, distance: number)
 	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
-	if not root or d.gear == "Bat" then
+	if not root or d.gear == "Bat" or d.zombie then
 		return
 	end
 	local now = os.clock()
@@ -1121,6 +1197,9 @@ local function alarm(victim, position: Vector3, kind: string, from: Vector3?)
 	local culprit = victim and from and dummyAt(from, victim)
 	local thug = culprit and culprit.gear == "Bat" and not victim.gear and culprit or nil
 	for _, d in dummies do
+		if d.zombie then -- takes no notice of anything but its prey
+			continue
+		end
 		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		if thug and d.law and d.state == "Awake" and d.target ~= thug
 			and not (d.target and typeof(d.target) == "Instance") -- a player it is fighting comes first
@@ -1175,12 +1254,18 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	-- is armed or fighting this one: a blast (smash) hits from a point by the victim, and whoever
 	-- stands there is not the culprit.
 	local culprit = Wanted.culprit()
+	if typeof(culprit) == "Instance" then
+		Tutorial.event(culprit, "hit") -- the controls hints (server/Tutorial)
+		if culprit:GetAttribute("Tutorial") then
+			power *= 2 -- a player still in the tutorial hits twice as hard
+		end
+	end
 	if culprit ~= nil then
-		d.blame, d.blameAt = culprit, os.clock()
+		d.blame, d.blameAt, d.blameWeapon = culprit, os.clock(), Wanted.weapon()
 	elseif typeof(attacker) == "Instance" then
-		d.blame, d.blameAt = attacker, os.clock()
+		d.blame, d.blameAt, d.blameWeapon = attacker, os.clock(), nil
 	elseif attacker and (attacker.gear or attacker.target == d) then
-		d.blame, d.blameAt = false, os.clock()
+		d.blame, d.blameAt, d.blameWeapon = false, os.clock(), nil
 	end
 	if not PARTS[part.Name] then -- the root box: count it as the torso
 		part = d.model:FindFirstChild("UpperTorso") or d.model:FindFirstChild("LowerTorso")
@@ -1251,7 +1336,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		blood = heavy and 2 or 1
 		line = pick(SHOT_LINES)
 		if info.zone == "Head" then
-			if heavy or dead then
+			if heavy or dead or d.zombie then -- any bullet takes a zombie's head off
 				burst = true
 			else
 				addInjury(d, "head wound")
@@ -1314,7 +1399,17 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		end
 	end
 
-	if not dead then
+	if not dead and d.zombie then
+		-- no pain: HP, daze and nerve stay put and it does not flinch. Only what breaks stops it.
+		d.hp, d.daze, d.morale = MAX_HP, 0, d.baseMorale
+		if info.zone == "Head" and (burst or cutOff) then
+			kill(d, "Dead")
+		elseif cutOff or grounded(d) then
+			knockDown(d, 1.6, "Knocked down") -- a broken or lost leg keeps it down for good (grounded)
+		elseif info.limb == "arm" and p.broken then
+			limp(d, info.side, math.huge)
+		end
+	elseif not dead then
 		d.hurtUntil = os.clock() + 1.6
 		d.hp -= zone.damage * power
 		d.morale -= zone.damage * power * (d.trait == "Tough" and 0.5 or 1)
@@ -1389,7 +1484,8 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	end
 end
 
-function spawnDummy(cf: CFrame, as: string?, forceKind: string?)
+-- `forceTrait`: its character instead of the kind's or a random one (the tutorial's never hit back).
+function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: string?)
 	local kindName = forceKind or rollKind()
 	local kind = KINDS[kindName]
 	local model = Players:CreateHumanoidModelFromDescription(kind.description, Enum.HumanoidRigType.R15)
@@ -1435,13 +1531,14 @@ function spawnDummy(cf: CFrame, as: string?, forceKind: string?)
 		end)
 	end
 
-	local trait = kind.traits and pick(kind.traits) or rollTrait()
+	local trait = forceTrait or kind.traits and pick(kind.traits) or rollTrait()
 	local d = {
 		model = model,
 		gear = kind.gear, -- "Baton" / "Handgun" / "Bat" / "Rifle" / "Rocket" / nil: what it fights with
 		law = kind.law, -- police or army (Wanted)
 		armor = kind.armor or 1, -- what a blow or a blast is worth on it
 		brave = math.random() < (kind.brave or 0), -- stands up to a hooligan (KINDS)
+		zombie = kind.zombie, -- see ZOMBIE
 
 		humanoid = humanoid,
 		home = cf.Position,
@@ -1459,7 +1556,7 @@ function spawnDummy(cf: CFrame, as: string?, forceKind: string?)
 		burn = 0, -- times the fire has had it
 		animator = animator,
 		tracks = {}, -- [Animation] = its loaded track (playTrack)
-		speed = 8, -- walk speed it wants; the Heartbeat sets WalkSpeed from it (and the limp)
+		speed = kind.zombie and ZOMBIE.speed or 8, -- walk speed it wants; the Heartbeat sets WalkSpeed from it (and the limp)
 		limpSide = nil :: string?, -- "left" / "right": the broken leg it drags
 		risingUntil = 0, -- getting up (Anims): it does not move or pose until then
 		trait = trait, -- its character (Personalities)
@@ -1504,22 +1601,117 @@ function spawnDummy(cf: CFrame, as: string?, forceKind: string?)
 	return d
 end
 
-local function trimDummies()
-	local list = {}
-	for _, d in dummies do
-		table.insert(list, d)
+-- One still copy of each kind, dressed like spawnDummy dresses it, for the Toolbox's character
+-- tiles (client/Toolbox.luau draws them in ViewportFrames).
+task.spawn(function()
+	local previews = Instance.new("Folder")
+	previews.Name = "ToolboxPreviews"
+	for kindName, kind in KINDS do
+		local ok, err = pcall(function()
+			local model = Players:CreateHumanoidModelFromDescription(kind.description, Enum.HumanoidRigType.R15)
+			model.Name = kindName
+			Looks.buildFace(Looks.plainHead(model))
+			if kind.outfit then
+				Outfits.dress(model, kind.outfit)
+			end
+			-- outside workspace the accessory welds never solve: put each hat on its body attachment
+			for _, acc in model:GetChildren() do
+				local handle = acc:IsA("Accessory") and acc:FindFirstChild("Handle") :: BasePart?
+				local own = handle and handle:FindFirstChildOfClass("Attachment")
+				local body: Attachment? = nil
+				for _, part in model:GetChildren() do
+					body = body or (own and part:IsA("BasePart") and part:FindFirstChild(own.Name) :: Attachment?)
+				end
+				if body then
+					(handle :: BasePart).CFrame = body.WorldCFrame * (own :: Attachment).CFrame:Inverse()
+				end
+			end
+			for _, d in model:GetDescendants() do
+				if d:IsA("BasePart") then
+					d.Anchored = true
+				elseif d:IsA("LuaSourceContainer") then
+					d:Destroy()
+				end
+			end
+			model.Parent = previews
+		end)
+		if not ok then
+			warn("toolbox preview", kindName, err)
+		end
 	end
-	if #list < MAX_DUMMIES then
+	previews.Parent = ReplicatedStorage
+end)
+
+-- Room for one more living dummy: at MAX_DUMMIES living the oldest of them goes. Bodies do not
+-- count; they have their own cap (RESPAWN.MAX_BODIES).
+local function trimDummies()
+	local living = {}
+	for _, d in dummies do
+		if d.state ~= "Dead" then
+			table.insert(living, d)
+		end
+	end
+	if #living < MAX_DUMMIES then
 		return
 	end
-	-- remove the oldest dead dummy, else the oldest one
-	table.sort(list, function(a, b)
-		if (a.state == "Dead") ~= (b.state == "Dead") then
-			return a.state == "Dead"
-		end
+	table.sort(living, function(a, b)
 		return a.born < b.born
 	end)
-	list[1].model:Destroy()
+	living[1].model:Destroy()
+end
+
+function RESPAWN.run(d, by)
+	if d.model:GetAttribute("TutorialFor") or not d.model.Parent then
+		return
+	end
+	-- past MAX_BODIES bodies the oldest go (one carried by someone stays a while longer)
+	local bodies = {}
+	for _, other in dummies do
+		if other.state == "Dead" and not other.heldBy then
+			table.insert(bodies, other)
+		end
+	end
+	if #bodies > RESPAWN.MAX_BODIES then
+		table.sort(bodies, function(a, b)
+			return (a.diedAt or a.born) < (b.diedAt or b.born)
+		end)
+		for k = 1, #bodies - RESPAWN.MAX_BODIES do
+			bodies[k].model:Destroy()
+		end
+	end
+	-- whose back it appears behind: the killer, else the player nearest the body
+	local player = if typeof(by) == "Instance" and by:IsA("Player") then by else nil
+	local body = d.model:GetPivot().Position
+	if not player then
+		local best = math.huge
+		for _, other in Players:GetPlayers() do
+			local r = other.Character and other.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if r and (r.Position - body).Magnitude < best then
+				player, best = other, (r.Position - body).Magnitude
+			end
+		end
+	end
+	local root = player and player.Character and player.Character:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not root then
+		return
+	end
+	local look = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+	look = look.Magnitude > 0.1 and look.Unit or Vector3.zAxis
+	local ground = RaycastParams.new()
+	local skip = { dummyFolder, gibFolder }
+	for _, other in Players:GetPlayers() do
+		table.insert(skip, other.Character)
+	end
+	ground.FilterDescendantsInstances = skip
+	for _, dist in RESPAWN.BEHIND do -- the furthest spot behind them that has ground under it
+		local spot = root.Position - look * dist + root.CFrame.RightVector * math.random(-8, 8)
+		local hit = workspace:Raycast(spot + Vector3.yAxis * 60, -Vector3.yAxis * 160, ground)
+		if hit and hit.Normal.Y > 0.6 then
+			trimDummies()
+			spawnDummy(CFrame.new(hit.Position + Vector3.yAxis * 4) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
+			return
+		end
+	end
 end
 
 -- One timer per player AND per kind of request: a punch, a spawn and the aim reports used to share
@@ -1551,7 +1743,7 @@ local function headOf(player: Player): BasePart?
 end
 
 punchRemote.OnServerEvent:Connect(function(player, part)
-	Wanted.act(player) -- whatever this does to a dummy is on them
+	Wanted.act(player, "Fists") -- whatever this does to a dummy is on them
 	if typeof(part) ~= "Instance" or not part:IsA("BasePart") or rateLimited(player, PUNCH_COOLDOWN, "punch") then
 		return
 	end
@@ -1591,16 +1783,46 @@ aimRemote.Name = "Aim"
 aimRemote.Parent = remotes
 local SCARED_LINES = { "Don't shoot!", "Whoa, easy!", "I give up!", "Not me, not me!" }
 local BLEEDING_LINES = { "I'm already bleeding!", "Please, I need a doctor!", "Haven't you done enough?", "It won't stop bleeding!" }
+local DRAW_LINES = { "Drop the weapon!", "Gun! Gun!", "That's it!", "You asked for it!" }
+-- what a dummy holds (gear): DummyGear on the clients swaps the model in its hand
+local function setGear(d, gear)
+	if d.gear ~= gear then
+		d.gear = gear
+		d.model:SetAttribute("Gear", gear)
+	end
+end
 aimRemote.OnServerEvent:Connect(function(player, part)
 	if rateLimited(player, 0.2, "aim") then -- the client sends one every 0.4 s
 		return
 	end
 	local d = typeof(part) == "Instance" and dummyOf(part)
 	local head = headOf(player)
-	if not d or not head or d.state ~= "Awake" or d.target or (d.model:GetPivot().Position - head.Position).Magnitude > 60 then
+	if not d or not head or d.state ~= "Awake" or d.target or d.zombie or (d.model:GetPivot().Position - head.Position).Magnitude > 60 then
 		return
 	end
 	local now = os.clock()
+	-- a cop on the beat (baton) kept in the sights for 2-3 s: some time in the next 5 s it draws its
+	-- handgun and opens fire (copFight), even worse a shot than a Wanted cop's (d.drawn)
+	if d.model:GetAttribute("Kind") == "Cop" and d.gear == "Baton" and not d.drawAt then
+		if now - (d.aimedLast or 0) > 1 then -- a fresh aim: the reports come every 0.4 s
+			d.aimedSince, d.aimNeed = now, 2 + math.random()
+		end
+		d.aimedLast = now
+		if now - d.aimedSince >= d.aimNeed then
+			d.drawAt = now + math.random() * 5
+			task.delay(d.drawAt - now, function()
+				d.drawAt = nil
+				local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+				if not dummies[d.model] or d.state == "Dead" or d.zombie or (d.target and d.target ~= player)
+					or not player.Parent or not hum or hum.Health <= 0 then
+					return
+				end
+				setGear(d, "Handgun")
+				d.drawn, d.target, d.scaredUntil = true, player, 0
+				say(d, pick(DRAW_LINES), "shout")
+			end)
+		end
+	end
 	local wound = d.lastWound
 	local bleeding = d.bleed > 0 and wound and wound.part.Parent == d.model
 	if bleeding then -- hurt comes first: it presses on the wound instead of putting its hands up
@@ -1633,7 +1855,7 @@ local PUNT_HITS = 3 -- hits that break the map while it is marked (the client's 
 local MAX_PUNT_SPEED = 200
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
-	Wanted.act(player) -- whatever this does to a dummy is on them
+	Wanted.act(player, "Body") -- whatever this does to a dummy is on them
 	if action == "grab" then
 		if typeof(arg) ~= "Instance" or not arg:IsA("BasePart") or held[player] then
 			return
@@ -1681,6 +1903,9 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		end
 		attachment.Parent = arg
 		d.grab = attachment
+		if d.dragging then
+			Tutorial.event(player, "grab") -- held by F: next, the kick
+		end
 		knockDown(d, 0, "Held")
 		if d.state == "Held" then
 			say(d, pick(GRAB_LINES))
@@ -1718,6 +1943,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		d.punt = { by = player, untilTime = os.clock() + PUNT_TIME }
 		fxRemote:FireAllClients("Punt", nil, torso.Position, arg.Unit)
 		hit(d, torso, arg.Unit, PUNT_HURT, 0, "blunt", torso.Position, head.Position)
+		Tutorial.event(player, "punt")
 	elseif action == "release" then
 		local d = held[player]
 		if d then
@@ -1734,21 +1960,30 @@ end)
 -- Toolbox blocks (client/Toolbox.luau): anchored GRID cubes, one folder, capped per player.
 local BLOCK_SIZE = 4
 local MAX_BLOCKS = 300 -- per player
-local BLOCK_MATERIALS = { SmoothPlastic = true, Concrete = true, WoodPlanks = true, Brick = true, DiamondPlate = true, Glass = true, Neon = true }
+local BLOCK_MATERIALS = { Brick = true, Ground = true, Grass = true, Wood = true, Metal = true, Slate = true } -- the map's own (client/Toolbox.luau)
 local builtFolder = Instance.new("Folder")
 builtFolder.Name = "Built"
 builtFolder.Parent = workspace
-local blockCount = {} -- [Player] = number
 local blockOverlap = OverlapParams.new()
 blockOverlap.FilterType = Enum.RaycastFilterType.Include
 blockOverlap.FilterDescendantsInstances = { builtFolder }
+Map.breakable(builtFolder) -- blasts break built blocks too (Map.blast)
+-- What a player has built, in whole blocks: a hit block leaves smaller pieces behind.
+local function blockCount(player: Player): number
+	local volume = 0
+	for _, block in builtFolder:GetChildren() do
+		if block:GetAttribute("Owner") == player.UserId then
+			volume += block.Size.X * block.Size.Y * block.Size.Z
+		end
+	end
+	return volume / BLOCK_SIZE ^ 3
+end
 local function clearBlocks(player: Player)
 	for _, block in builtFolder:GetChildren() do
 		if block:GetAttribute("Owner") == player.UserId then
 			block:Destroy()
 		end
 	end
-	blockCount[player] = nil
 end
 Players.PlayerRemoving:Connect(clearBlocks)
 
@@ -1757,6 +1992,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 	local building = action == "build" or action == "unbuild"
 	if not MENU_ACTIONS[action] or rateLimited(player, building and 0.08 or 0.25, building and "build" or "action") then
 		return
+	end
+	if action == "map" and player:GetAttribute("Tutorial") then
+		arg = "ARENA" -- the tutorial is only on the arena (server/Tutorial)
 	end
 	if action == "map" and SPAWNS[arg] then
 		player:SetAttribute("Map", arg)
@@ -1771,6 +2009,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 				root.Anchored = false
 			end
 		end
+		if arg == "ARENA" then
+			Tutorial.begin(player) -- only for someone who has not done it
+		end
 		return
 	end
 	local head = headOf(player)
@@ -1782,7 +2023,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
 		spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
 	elseif action == "build" and finite(arg) and (arg - head.Position).Magnitude < 200 and typeof(extra) == "Color3"
-		and BLOCK_MATERIALS[extra2] and (blockCount[player] or 0) < MAX_BLOCKS then
+		and BLOCK_MATERIALS[extra2] and blockCount(player) < MAX_BLOCKS then
 		local size = Vector3.one * (BLOCK_SIZE - 0.1) -- a hair smaller: touching neighbours are not overlaps
 		if #workspace:GetPartBoundsInBox(CFrame.new(arg), size, blockOverlap) > 0 then
 			return
@@ -1791,19 +2032,14 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 		block.Name, block.Size, block.Position, block.Anchored = "Block", Vector3.one * BLOCK_SIZE, arg, true
 		block.Color, block.Material = extra, Enum.Material[extra2]
 		block.TopSurface, block.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
-		if extra2 == "Glass" then
-			block.Transparency = 0.5
-		end
 		block:SetAttribute("Owner", player.UserId)
+		block:SetAttribute("Piece", Vector3.one * (BLOCK_SIZE / 4)) -- breaks into bricks like the map's cubes
 		block.Parent = builtFolder
-		blockCount[player] = (blockCount[player] or 0) + 1
 	elseif action == "unbuild" and typeof(arg) == "Instance" and arg.Parent == builtFolder
 		and (arg.Position - head.Position).Magnitude < 200 then
-		local owner = Players:GetPlayerByUserId(arg:GetAttribute("Owner") or 0)
-		if owner and blockCount[owner] then
-			blockCount[owner] -= 1
-		end
+		local at = arg.Position
 		arg:Destroy()
+		Map.dropUnbuilt(at, BLOCK_SIZE) -- what it held up comes down
 	elseif action == "clearbuild" then
 		clearBlocks(player)
 	elseif action == "revive" then
@@ -1857,7 +2093,7 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 	damage *= d.armor
 	local culprit = Wanted.culprit()
 	if culprit ~= nil then
-		d.blame, d.blameAt = culprit, os.clock()
+		d.blame, d.blameAt, d.blameWeapon = culprit, os.clock(), Wanted.weapon()
 	end
 	local dead = d.state == "Dead"
 	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
@@ -1874,7 +2110,10 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 		d.hp -= damage
 		d.hurtUntil = os.clock() + 2
 		d.daze += kind and 8 or 0
-		if d.hp <= 0 then
+		if d.zombie then
+			d.hp, d.daze = MAX_HP, 0 -- thrown about, burned, crushed: never killed (only the head does that, hit)
+			knockDown(d, 1.5, "Knocked down")
+		elseif d.hp <= 0 then
 			kill(d, kind == "fire" and "Dead: burned" or kind == "blast" and "Dead: blown up" or "Dead")
 		else
 			knockDown(d, 4, "Knocked down")
@@ -2013,7 +2252,7 @@ function ATTACKS.Ult(_, cf: CFrame)
 end
 
 attackRemote.OnServerEvent:Connect(function(player, id, look)
-	Wanted.act(player) -- whatever this does to a dummy is on them
+	Wanted.act(player, "Ability") -- whatever this does to a dummy is on them
 	local run = typeof(id) == "string" and ATTACKS[id]
 	-- where the player is looking (the camera); anything odd falls back to the body's facing
 	if typeof(look) ~= "Vector3" or look ~= look or look.Magnitude < 0.5 or look.Magnitude > 2 then
@@ -2045,7 +2284,7 @@ local KICK_POWER = 45 -- crater radius 8.4, centred far enough ahead that you do
 local SLAM_MAX_SPEED = 250 -- ponytail: client-reported speed, clamped; check against server physics if cheating matters
 local slamReady = {}
 actionRemote.OnServerEvent:Connect(function(player, action, speed)
-	Wanted.act(player) -- whatever this does to a dummy is on them
+	Wanted.act(player, "Fists") -- whatever this does to a dummy is on them (a kick, a dive, a slam)
 	local dive = action == "dive"
 	local kick = action == "kick" or dive
 	if not kick and (action ~= "slam" or typeof(speed) ~= "number" or speed ~= speed) then
@@ -2099,6 +2338,7 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	local char = player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	if typeof(id) ~= "string" or not inventoryIds[id] or not humanoid or humanoid.Health <= 0 then return end
+	if not Progress.has(player, id) then return end -- not unlocked yet (shared/Progression)
 	if char:GetAttribute("EquippedWeapon") == id then return end
 	if rateLimited(player, 0.05, "equip") then return end
 	char:SetAttribute("BowDrawAt", nil)
@@ -2238,7 +2478,7 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 			return
 		end
 		broken = true
-		Wanted.act(by) -- the fire is the thrower's doing
+		Wanted.act(by, "Molotov") -- the fire is the thrower's doing
 		local position = p.Position
 		p:Destroy()
 		Sfx.play(Sfx.SHATTER, position)
@@ -2256,7 +2496,7 @@ end
 -- never tunnels through a thin wall at speed), trailing fire and smoke, that blows up on the
 -- first thing it meets or at the end of its range.
 local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3, npc: boolean?)
-	Wanted.act(if npc then false else Players:GetPlayerFromCharacter(char))
+	Wanted.act(if npc then false else Players:GetPlayerFromCharacter(char), "Rocket")
 	local p = Instance.new("Part")
 	p.Name = "Rocket"
 	p.Size = Vector3.new(0.7, 0.7, 2.4)
@@ -2297,6 +2537,23 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3, npc: b
 		tip.CFrame = p.CFrame * CFrame.new(0, 0, -1.3)
 	end
 	p:Destroy()
+	-- Rocket jump: a player's rocket aimed down into the ground at their own feet is a small pop
+	-- (a fraction of the blast, crater and throw) that sends them up and on along where they face.
+	-- The client flings itself (it owns its physics): Hazard with `boost`.
+	local root = not npc and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local shooter = root and Players:GetPlayerFromCharacter(char)
+	local under = root and root.Position - position
+	if shooter and under and dir.Y < -0.5 and under.Y > 0 and under.Magnitude < 8 and (under * Vector3.new(1, 0, 1)).Magnitude < 5 then
+		local UP_SPEED, FORWARD_SPEED = 85, 55 -- ~18 studs up (a double jump is ~8)
+		Sfx.play({ Sfx.RPG_BOOM, 1.25, 0.45 }, position)
+		fxRemote:FireAllClients("Boom", nil, position, 2.5)
+		Map.blast(position, 2, 20)
+		smash(position, 5, 8, Vector3.zero, 20, "blast")
+		local face = root.CFrame.LookVector * Vector3.new(1, 0, 1)
+		face = face.Magnitude > 0.01 and face.Unit or Vector3.zero
+		hazardRemote:FireClient(shooter, face * FORWARD_SPEED + Vector3.yAxis * UP_SPEED, true)
+		return
+	end
 	explode(position, Sfx.RPG_BOOM)
 	if npc then -- explode only throws dummies: a soldier's rocket is for the player
 		for _, player in Players:GetPlayers() do
@@ -2395,7 +2652,7 @@ local function batBlow(d, swing)
 end
 
 weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
-	Wanted.act(player) -- whatever this does to a dummy is on them
+	Wanted.act(player, if typeof(id) == "string" then id else nil) -- whatever this does to a dummy is on them
 	local weapon = typeof(id) == "string" and weaponById[id]
 	local char = player.Character
 	local head = headOf(player)
@@ -2454,7 +2711,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	end
 	if weapon.kind == "bow" then
 		Arrows.fire(origin, dir, weapon.speed * (0.4 + 0.6 * bowCharge), char, function(result, direction)
-			Wanted.act(player)
+			Wanted.act(player, "Bow")
 			local damage = weapon.dmg * (0.25 + 0.75 * bowCharge)
 			if Monsters.damage(result.Instance, damage * 10, direction, player) then return end
 			local d = dummyOf(result.Instance)
@@ -2634,6 +2891,7 @@ local function nearestDummy(d, root: BasePart): (any, BasePart?, number)
 		local dist = r and (r.Position - root.Position).Magnitude or math.huge
 		if other ~= d and other.state ~= "Dead" and dist < bestDist
 			and not (d.gear == "Bat" and other.gear) -- a hooligan picks on the unarmed ones
+			and not (d.zombie and other.zombie) -- zombies leave their own alone
 			and not workspace:Raycast(root.Position + Vector3.yAxis * 1.5, r.Position - root.Position, sightParams) then
 			best, bestRoot, bestDist = other, r, dist
 		end
@@ -2696,6 +2954,7 @@ local GUN = {
 	Rifle = { damage = 3, push = 14, range = 60, keep = 22, every = 0.22, jitter = 0.12, spread = 2.4, lines = SOLDIER_LINES },
 	Rocket = { range = 70, keep = 30, every = 4, jitter = 2, spread = 1.2, lines = SOLDIER_LINES },
 }
+local DRAWN_AIM = 0.5 -- a cop that drew on someone aiming at it (d.drawn): its hit chance times this
 local TAUNT_LINES = { "Come on then!", "Your turn's coming.", "Is that all you've got?", "I'm next, I'm next!", "Get them!" }
 local DODGE_LINES = { "Too slow!", "Missed me!", "Ha!", "Nope." }
 local BREAK_LINES = { "I'm out!", "Nope, not today!", "This isn't worth it!", "I want my mom!" }
@@ -2769,6 +3028,12 @@ end
 
 local function stopFighting(d)
 	d.target, d.brain = nil, nil
+	if d.drawn then -- drawn on someone aiming at it: holstered again, unless Wanted has it hunting
+		d.drawn = nil
+		if not d.hunt then
+			setGear(d, "Baton")
+		end
+	end
 	d.humanoid.AutoRotate = true
 	local guard = d.tracks[Anims.guard]
 	if guard and guard.IsPlaying then
@@ -2962,7 +3227,11 @@ local function copFight(d, b, root: BasePart, other: BasePart, target, to: Vecto
 	if COP.aim then
 		-- a set hit chance by distance: on target, or wide of it by 3-6 studs (never grazing it by luck)
 		local t = math.clamp((dist - NEAR) / (COP.range - NEAR), 0, 1)
-		if math.random() < COP.aim[1] + (COP.aim[2] - COP.aim[1]) * t then
+		local chance = COP.aim[1] + (COP.aim[2] - COP.aim[1]) * t
+		if d.drawn then
+			chance *= DRAWN_AIM
+		end
+		if math.random() < chance then
 			aimAt = other.Position
 		else
 			local wide = Random.new():NextUnitVector() * Vector3.new(1, 0.5, 1)
@@ -2998,7 +3267,7 @@ end
 function tryDodge(d, player: Player): boolean
 	local b = d.brain
 	local now = os.clock()
-	if not b or d.target ~= player or d.state ~= "Awake" or d.limp or d.model:GetAttribute("Ragdolled")
+	if not b or d.target ~= player or d.state ~= "Awake" or d.limp or d.zombie or d.model:GetAttribute("Ragdolled")
 		or now < b.nextDodge or now < b.busyUntil or now < d.risingUntil then
 		return false
 	end
@@ -3112,6 +3381,156 @@ local function fight(d, root: BasePart, now: number)
 	end
 end
 
+-- Zombies (see ZOMBIE at KINDS) ------------------------------------------------------------------
+-- The nearest living thing it can see: a player or a dummy that is not a zombie.
+function ZOMBIE.prey(d, root: BasePart): (any, BasePart?)
+	local player, playerRoot = nearestPlayer(d, root)
+	local victim, victimRoot, dist = nearestDummy(d, root)
+	if player and playerRoot and (playerRoot.Position - root.Position).Magnitude < dist then
+		return player, playerRoot
+	end
+	return victim, victimRoot
+end
+
+-- One blow lands on `target` (a Player or a dummy's record) whose root is `other`.
+function ZOMBIE.land(d, target, other: BasePart, dir: Vector3)
+	local claw = ZOMBIE.claw
+	if typeof(target) == "Instance" then
+		local char = (target :: Player).Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		if hum and hum.Health > 0 and not char:GetAttribute("Ragdolled") then
+			knockPlayer(target, hum, dir * claw.push + Vector3.yAxis * claw.up, claw.damage, 0)
+		end
+	elseif target.state ~= "Dead" then
+		local head = d.model:FindFirstChild("Head") :: BasePart?
+		local part = target.model:FindFirstChild(math.random() < 0.3 and "Head" or "UpperTorso") or other
+		if head and part.Parent then
+			hit(target, part, dir, claw.power, 20 + claw.push * 0.5, nil, nil, head.Position)
+		end
+	end
+end
+
+-- Both working arms go up over the head and come down on the prey: the arms-out pose's IK targets
+-- (updatePose) move, so the swing is the same arms, straight. A broken arm has no target and stays down.
+function ZOMBIE.swing(d, b, target, now: number)
+	local claw = ZOMBIE.claw
+	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+	if not (root and torso) then
+		return
+	end
+	b.busyUntil = now + claw.at + 0.15
+	b.swingAt = now + claw.recover + math.random() * 0.5
+	b.swingToken = (b.swingToken or 0) + 1
+	local token = b.swingToken
+	local function arms(at)
+		for _, side in { "Left", "Right" } do
+			local a = torso:FindFirstChild("ZombieReach" .. side) :: Attachment?
+			if a and armFree(d, side) then
+				a.Position = at(side == "Left" and -1 or 1)
+			end
+		end
+	end
+	arms(ZOMBIE.raised)
+	task.delay(claw.at * 0.6, function()
+		if b.swingToken == token then
+			arms(ZOMBIE.slam)
+		end
+	end)
+	task.delay(claw.at, function()
+		if b.swingToken ~= token or d.target ~= target or d.state ~= "Awake" or d.model:GetAttribute("Ragdolled") or not root.Parent then
+			return
+		end
+		local other = targetRoot(target)
+		local to = other and other.Position - root.Position
+		if not (other and to) or (to * XZ).Magnitude > claw.reach + 0.5 or math.abs(to.Y) > 4.5 then
+			return -- it moved away
+		end
+		ZOMBIE.land(d, target, other, (to * XZ).Magnitude > 0.1 and (to * XZ).Unit or root.CFrame.LookVector)
+	end)
+	task.delay(claw.at + 0.4, function()
+		if torso.Parent then
+			arms(ZOMBIE.rest)
+		end
+	end)
+end
+
+-- Behave, for a zombie: after its prey (found again whenever it is lost), slowly, round walls, and a
+-- blow whenever it is in reach and has an arm to hit with. False while there is nothing to go for
+-- (it wanders, slowly).
+function ZOMBIE.fight(d, root: BasePart, now: number): boolean
+	local target = d.target
+	local other = target and targetRoot(target)
+	local alive = false
+	if other and typeof(target) == "Instance" then
+		local hum = target.Character and target.Character:FindFirstChildOfClass("Humanoid")
+		alive = hum ~= nil and hum.Health > 0
+	elseif other then
+		alive = dummies[target.model] ~= nil and target.state ~= "Dead"
+	end
+	if not alive or (other.Position - root.Position).Magnitude > 80 then
+		if d.target then
+			stopFighting(d)
+		end
+		if now < d.nextLook then
+			return false
+		end
+		d.nextLook = now + 0.5
+		target, other = ZOMBIE.prey(d, root)
+		if not (target and other) then
+			return false
+		end
+		d.target = target
+		say(d, "") -- a groan (say)
+	end
+	local b = d.brain
+	if not b then
+		b = { swingAt = now + 0.5, busyUntil = 0, lastPos = root.Position, movedAt = now, nextJump = 0, pathAt = 0, path = nil, step = 0, pathUntil = 0 }
+		d.brain = b
+	end
+	d.speed = ZOMBIE.speed
+	local to = (other.Position - root.Position) * XZ
+	local dist = to.Magnitude
+	-- close in it turns to face the prey (as fight does: by spin, not by writing the CFrame)
+	local close = dist > 0.5 and dist < 8
+	d.humanoid.AutoRotate = not close
+	if close then
+		local look = root.CFrame.LookVector * XZ
+		root.AssemblyAngularVelocity = Vector3.new(0, math.clamp(math.atan2(look:Cross(to).Y, look:Dot(to)) * 6, -6, 6), 0)
+	end
+	if now < b.busyUntil then
+		return true
+	end
+	if dist > 3.5 then
+		chase(d, b, root, other.Position, now)
+	elseif now >= d.nextLook then
+		d.nextLook = now + 0.3
+		walkStraight(d, root.Position)
+		b.lastPos, b.movedAt = root.Position, now
+	end
+	if (armFree(d, "Left") or armFree(d, "Right")) and dist < ZOMBIE.claw.reach
+		and math.abs(other.Position.Y - root.Position.Y) < 4 and now >= b.swingAt then
+		ZOMBIE.swing(d, b, target, now)
+	end
+	return true
+end
+
+-- On the ground for good (grounded): it drags itself at the nearest prey and claws at it in reach.
+function ZOMBIE.crawl(d, torso: BasePart, now: number)
+	local target, other = ZOMBIE.prey(d, torso)
+	if not (target and other) then
+		return
+	end
+	local to = (other.Position - torso.Position) * XZ
+	if to.Magnitude > 0.1 then
+		torso:ApplyImpulse((to.Unit + Vector3.yAxis * 0.25) * torso.AssemblyMass * ZOMBIE.crawl_push)
+	end
+	if to.Magnitude < 4 and now >= d.nextSwing and (armFree(d, "Left") or armFree(d, "Right")) then
+		d.nextSwing = now + 1.5
+		ZOMBIE.land(d, target, other, to.Magnitude > 0.1 and to.Unit or torso.CFrame.LookVector)
+	end
+end
+
 local function claimable(body): boolean
 	local by = body.claimedBy
 	return body.state == "Dead" and not body.heldBy and not (by and by.burying == body and dummies[by.model] and by.state ~= "Dead")
@@ -3156,6 +3575,9 @@ local function behave(d, now: number): boolean
 	local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not root then
 		return false
+	end
+	if d.zombie then
+		return ZOMBIE.fight(d, root, now)
 	end
 	if d.target then
 		fight(d, root, now)
@@ -3235,6 +3657,13 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)
 	hit(d, part, dir, power, 0, "blunt", part.Position + dir * 0.5) -- the side that struck the ground
+	-- the tutorial's dummies (server/Tutorial) die of any blow against a wall, so a kick into one always
+	-- pays off: a wall is where the kicker saw it strike something standing (`at`), or anything it hit
+	-- going more sideways than down (a landing comes from above)
+	if d.state ~= "Dead" and d.model:GetAttribute("TutorialFor") and (at ~= nil or dir.Y > -0.6) then
+		kill(d, "Dead")
+		syncAttributes(d)
+	end
 end
 
 local function impacts(d, dt: number)
@@ -3341,7 +3770,7 @@ RunService.Heartbeat:Connect(function(dt)
 				stopBleeding(d) -- nothing left to drip
 				d.deadSynced = false -- the HUD still has to show the empty gauge
 			end
-			if d.state ~= "Dead" then
+			if d.state ~= "Dead" and not d.zombie then -- a zombie runs dry and keeps coming
 				if d.blood < BLOOD_DEAD then
 					kill(d, "Dead: bled out")
 				elseif d.blood < BLOOD_OUT and d.state ~= "Out cold" then
@@ -3424,7 +3853,9 @@ RunService.Heartbeat:Connect(function(dt)
 					if limb then
 						limb:ApplyImpulse(Random.new():NextUnitVector() * limb.AssemblyMass * 22)
 					end
-					if down then
+					if down and d.zombie then
+						ZOMBIE.crawl(d, torso, now)
+					elseif down then
 						local away = (torso.Position - (d.attackerAt or torso.Position + torso.CFrame.UpVector)) * Vector3.new(1, 0, 1)
 						if away.Magnitude > 0.1 then
 							torso:ApplyImpulse((away.Unit + Vector3.yAxis * 0.25) * torso.AssemblyMass * 11)
@@ -3478,15 +3909,15 @@ RunService.Heartbeat:Connect(function(dt)
 	end
 end)
 
--- Factory machines: dummies go through harm(), players take Humanoid damage and are flung by
--- their own client (it owns their physics).
-Factory.build(function(model, damage, velocity)
+-- Factory machines and the arena's lava (Map): dummies go through harm() (`kind` "fire" burns), players
+-- take Humanoid damage and are flung by their own client (it owns their physics).
+local function hazard(model: Model, damage: number, velocity: Vector3, kind: string?)
 	local d = dummies[model]
 	if d then
 		if d.heldBy or d.looseOwner then -- the server flings it: it has to own it
 			release(d, Vector3.zero)
 		end
-		harm(d, damage)
+		harm(d, damage, kind)
 		for _, part in model:GetDescendants() do
 			if part:IsA("BasePart") then
 				part.AssemblyLinearVelocity = velocity
@@ -3500,15 +3931,22 @@ Factory.build(function(model, damage, velocity)
 		return
 	end
 	knockPlayer(player, humanoid, velocity, damage, 2.5, true)
-end)
+end
+Factory.build(hazard)
 for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 end
-Map.build()
+Map.build(hazard)
 Monsters.start(remotes, knockPlayer)
 if CITY_ENABLED then
 	City.build()
 	for _, spot in City.DUMMY_SPOTS do
+		spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
+	end
+end
+if PORT_ENABLED then
+	Port.build()
+	for _, spot in Port.DUMMY_SPOTS do
 		spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 	end
 end
@@ -3519,12 +3957,7 @@ end
 Wanted.start({
 	dummies = dummies,
 	law = function(d) return d.law == true end,
-	arm = function(d, gear)
-		if d.gear ~= gear then
-			d.gear = gear
-			d.model:SetAttribute("Gear", gear) -- DummyGear swaps what is in its hand
-		end
-	end,
+	arm = setGear,
 	spawn = function(cf, kind)
 		trimDummies()
 		return spawnDummy(cf, nil, kind)
@@ -3537,4 +3970,30 @@ Wanted.start({
 		end
 		return list
 	end,
+})
+
+-- weapon progression: kill counters, loaded and saved per player (server/Progress)
+Progress.start()
+-- the first-time tutorial on the arena (server/Tutorial)
+Tutorial.start({
+	spawn = function(cf: CFrame, kind: string?): Model
+		trimDummies()
+		-- a Mourner: never hits back (only the Tough, Berserk and Hothead ones do, hit)
+		return spawnDummy(cf, nil, kind, "Mourner").model
+	end,
+	dummies = function(): { Model }
+		local list = {}
+		for model in dummies do
+			table.insert(list, model)
+		end
+		return list
+	end,
+	restock = function() -- the arena's dummies as the server puts them at start
+		for i = 1, 8 do
+			local angle = i / 8 * math.pi * 2
+			trimDummies()
+			spawnDummy(CFrame.new(math.cos(angle) * 25, 4, math.sin(angle) * 25))
+		end
+	end,
+	done = Progress.touch,
 })

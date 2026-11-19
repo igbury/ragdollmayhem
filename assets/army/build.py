@@ -1,4 +1,4 @@
-# The army kit for Wanted (soldier and heavy uniforms, the helicopter, the police baton), modelled in
+# The army kit for Wanted (soldier and heavy uniforms, the helicopter, the police baton) plus the factory worker and zombie outfits, modelled in
 # code in Blender in the weapons' comic style: chunky bevelled shapes, flat saturated colours, a
 # black inverted-hull outline (as assets/weapons/comic.py bakes it). Run inside Blender:
 #   exec(open(r"<repo>/assets/army/build.py").read())
@@ -396,6 +396,162 @@ def heavy():
         p.finish()
 
 
+# ---------------------------------------------------------------- Worker ---------------------
+HAT, HAT_DARK = "FFC21A", "D99A0A"
+VEST, VEST_DARK, REFLECT = "FF7A1A", "D0600E", "D8DCE0"
+LEATHER, LEATHER_DARK, GLOVE, WOOD, STEEL = "7A5230", "5A3A20", "C9A060", "B07A44", "8A9098"
+COLLAR, POCKET, MUFF = "2E4A74", "24364F", "E03A2A"
+PAPER = "F4F4F0"  # not WHITE: that one is Neon (the helicopter's lights)
+
+
+def worker():
+    hx, hy, hz = R15["Head"]
+    p = Piece("Worker_Head")
+    p.ball((hx * 1.16, hy * 1.0, hz * 1.2), (0, hy * 0.1, 0.02), HAT, cut=0.42)  # hard hat
+    p.ball((0.22, hy * 1.08, hz * 1.28), (0, hy * 0.1, 0.02), HAT_DARK, cut=0.42)  # ridge
+    p.cyl((hx * 1.3, hz * 1.36), 0.08, (0, hy * 0.08, 0.0), HAT, segs=22)  # brim
+    p.box((hx * 0.8, 0.08, 0.34), (0, hy * 0.08, -hz * 0.72), HAT, bevel=0.03)  # peak
+    p.box((0.3, 0.26, 0.04), (0, hy * 0.36, -hz * 0.53), PAPER, rot=(30, 0, 0), bevel=0)  # safety sticker
+    p.box((0.2, 0.06, 0.05), (0, hy * 0.36, -hz * 0.55), "2FA84A", rot=(30, 0, 0), bevel=0)
+    p.box((0.06, 0.2, 0.05), (0, hy * 0.36, -hz * 0.55), "2FA84A", rot=(30, 0, 0), bevel=0)
+    p.cyl((hx * 1.2, hz * 1.24), 0.1, (0, hy * 0.2, 0.02), BLACK, segs=20)  # goggle strap
+    p.box((0.86, 0.24, 0.14), (0, hy * 0.22, -hz * 0.62), BLACK, bevel=0.06)  # goggles up on the hat
+    p.box((0.74, 0.16, 0.06), (0, hy * 0.22, -hz * 0.7), GLASS, bevel=0.02)
+    for x in (-1, 1):
+        p.cyl(0.44, 0.18, (x * hx * 0.56, -hy * 0.06, 0.02), MUFF, axis="x", segs=16, bevel=0.04)  # ear muffs
+        p.cyl(0.3, 0.06, (x * hx * 0.65, -hy * 0.06, 0.02), BLACK, axis="x", segs=14)
+    p.finish()
+
+    tx, ty, tz = R15["UpperTorso"]
+    p = Piece("Worker_UpperTorso")
+    for x in (-1, 1):
+        p.box((tx * 0.46, ty * 0.78, 0.14), (x * tx * 0.26, -ty * 0.04, -tz * 0.53), VEST, bevel=0.05)  # front halves
+        p.box((0.14, ty * 0.5, tz * 1.0), (x * tx * 0.52, -ty * 0.18, 0), VEST, bevel=0.04)  # sides
+        p.box((0.36, 0.14, tz * 1.2), (x * tx * 0.26, ty * 0.45, 0), VEST, bevel=0.04)  # shoulder straps
+        p.box((0.12, 0.16, tz * 1.22), (x * tx * 0.26, ty * 0.45, 0), REFLECT, bevel=0)
+        for y in (0.08, -0.24):
+            p.box((tx * 0.42, 0.12, 0.04), (x * tx * 0.26, y * ty, -tz * 0.61), REFLECT, bevel=0)
+    p.box((tx * 0.94, ty * 0.78, 0.14), (0, -ty * 0.04, tz * 0.53), VEST, bevel=0.05)  # back panel
+    for y in (0.08, -0.24):
+        p.box((tx * 0.9, 0.12, 0.04), (0, y * ty, tz * 0.61), REFLECT, bevel=0)
+    p.box((0.05, ty * 0.72, 0.04), (0, -ty * 0.04, -tz * 0.6), "2A2A30", bevel=0)  # zip
+    p.box((0.28, 0.36, 0.04), (-tx * 0.26, ty * 0.27, -tz * 0.62), PAPER, bevel=0.02)  # ID badge
+    p.box((0.14, 0.14, 0.05), (-tx * 0.26, ty * 0.3, -tz * 0.63), "5AB4E0", bevel=0)
+    p.box((0.3, 0.3, 0.05), (tx * 0.26, ty * 0.26, -tz * 0.62), VEST_DARK, bevel=0.02)  # pen pocket
+    p.cyl(0.06, 0.24, (tx * 0.3, ty * 0.36, -tz * 0.63), "2A5AC0", segs=8)
+    p.box((tx * 0.6, 0.16, tz * 0.98), (0, ty * 0.47, 0), COLLAR, bevel=0.06)  # shirt collar
+    p.finish()
+
+    lx, ly, lz = R15["LowerTorso"]
+    p = Piece("Worker_LowerTorso")
+    p.box((lx * 1.08, 0.22, lz * 1.12), (0, ly * 0.18, 0), LEATHER, bevel=0.06)  # tool belt
+    p.box((0.28, 0.2, 0.08), (0, ly * 0.18, -lz * 0.6), STEEL, bevel=0.03)  # buckle
+    for x in (-1, 1):
+        p.box((0.4, 0.46, 0.3), (x * lx * 0.4, -ly * 0.3, -lz * 0.5), LEATHER_DARK, bevel=0.06)  # pouches
+    p.cyl(0.11, 0.9, (lx * 0.6, -0.22, 0), WOOD, segs=10)  # hammer in its loop
+    p.box((0.16, 0.16, 0.5), (lx * 0.6, ly * 0.52, 0), STEEL, bevel=0.04)
+    p.box((0.16, 0.3, 0.3), (-lx * 0.58, -ly * 0.05, 0), HAT, bevel=0.05)  # tape measure
+    p.cyl(0.14, 0.04, (-lx * 0.58 - 0.09, -ly * 0.05, 0), BLACK, axis="x", segs=12)
+    p.finish()
+
+    for side, sign in (("Left", -1), ("Right", 1)):
+        ax, ay, az = R15["UpperArm"]
+        p = Piece(f"Worker_{side}UpperArm")
+        p.cyl((ax * 1.08, az * 1.06), 0.14, (0, ay * 0.1, 0), REFLECT, segs=14)  # reflective band
+        p.finish()
+        bx, by, bz = R15["LowerArm"]
+        p = Piece(f"Worker_{side}LowerArm")
+        p.cyl((bx * 1.12, bz * 1.12), 0.34, (0, -by * 0.36, 0), GLOVE, segs=14, d2=bx * 1.2, bevel=0.03)  # glove cuff
+        p.cyl((bx * 1.22, bz * 1.22), 0.07, (0, -by * 0.2, 0), LEATHER, segs=14)
+        p.finish()
+        ux, uy, uz = R15["UpperLeg"]
+        p = Piece(f"Worker_{side}UpperLeg")
+        p.box((0.12, 0.5, 0.46), (sign * ux * 0.56, -uy * 0.06, 0), POCKET, bevel=0.04)  # side pocket
+        p.finish()
+        kx, ky, kz = R15["LowerLeg"]
+        p = Piece(f"Worker_{side}LowerLeg")
+        p.cyl((kx * 1.1, kz * 1.1), 0.32, (0, -ky * 0.38, 0), LEATHER_DARK, segs=14, bevel=0.03)  # boot tops
+        p.finish()
+        fx, fy, fz = R15["Foot"]
+        p = Piece(f"Worker_{side}Foot")
+        p.box((fx * 1.1, fy * 0.62, fz * 1.08), (0, fy * 0.1, 0), LEATHER, bevel=0.12)  # boot
+        p.ball((fx * 1.04, fy * 0.9, 0.56), (0, -fy * 0.2, -fz * 0.42), STEEL, cut=0.5)  # steel toe
+        p.box((fx * 1.14, 0.12, fz * 1.12), (0, -fy * 0.22, 0), BLACK, bevel=0.04)  # sole
+        p.finish()
+
+
+# ---------------------------------------------------------------- Zombie ---------------------
+# The kind's body colours do most of it (main script KINDS: grey shirt torso, green arms and head,
+# blue trousers); the kit tears them up. Nothing red, nothing open: no gore.
+ZSKIN, ZSKIN_DARK = "7FA05A", "5E7E40"
+RAG, RAG_DARK, TROUSER, HAIR = "A49C88", "7E7868", "3C4456", "3A3428"
+TIE, BANDAGE, ROPE, SHOE = "4A3A6A", "D8D2C0", "8A7A50", "5A4030"
+
+
+def rags(p, y, h, sides):
+    """A ragged hem: diamonds half sunk into the surface ((x, z, facing) each), points hanging below `y`."""
+    for i, (px, pz, face) in enumerate(sides):
+        s = 0.18 + 0.07 * ((i * 7) % 3)
+        p.box((s, s, 0.05) if face == "z" else (0.05, s, s), (px, y - 0.03 * (i % 2), pz), h,
+              rot=(0, 0, 45) if face == "z" else (45, 0, 0), bevel=0)
+
+
+def zombie():
+    hx, hy, hz = R15["Head"]
+    p = Piece("Zombie_Head")
+    for x, y, z, s in ((-0.32, 0.5, 0.1, 0.42), (0.1, 0.56, 0.0, 0.46), (0.36, 0.46, 0.18, 0.36),
+                       (-0.1, 0.44, 0.4, 0.44), (0.24, 0.3, 0.42, 0.34), (-0.4, 0.26, 0.34, 0.3)):
+        p.ball((s, s * 0.7, s), (x * hx, y * hy, z * hz), HAIR, segs=10, rings=6)  # clumps of hair
+    p.box((0.5, 0.05, 0.05), (-0.1, hy * 0.3, -hz * 0.52), ZSKIN_DARK, rot=(0, 0, -12), bevel=0)  # stitched scar
+    for i in range(4):
+        p.box((0.04, 0.16, 0.05), (-0.28 + i * 0.12, hy * 0.3 + 0.04 - i * 0.025, -hz * 0.53), "2A2A24", bevel=0)
+    p.finish()
+
+    tx, ty, tz = R15["UpperTorso"]
+    p = Piece("Zombie_UpperTorso")
+    for x, y, s in ((0.22, -0.22, 0.42), (-0.28, 0.12, 0.3), (0.1, 0.3, 0.22)):
+        p.ball((s, s * 0.8, 0.08), (x * tx, y * ty, -tz * 0.5), ZSKIN, segs=12, rings=6)  # holes in the shirt
+    p.ball((0.46, 0.36, 0.08), (-0.2 * tx, -0.2 * ty, tz * 0.5), ZSKIN, segs=12, rings=6)
+    p.box((0.16, 0.14, 0.08), (0.06, ty * 0.4, -tz * 0.56), TIE, bevel=0.03)  # loose tie
+    p.box((0.18, 0.7, 0.05), (0.14, ty * 0.06, -tz * 0.56), TIE, rot=(0, 0, 14), bevel=0.02)
+    p.box((tx * 0.46, 0.12, tz * 0.78), (0, ty * 0.46, 0), RAG_DARK, bevel=0.05)  # collar
+    hem = [(x * tx, -tz * 0.48, "z") for x in (-0.36, -0.14, 0.08, 0.3)] + [(x * tx, tz * 0.48, "z") for x in (-0.3, -0.06, 0.18, 0.38)]
+    hem += [(s * tx * 0.5, 0, "x") for s in (-1, 1)]
+    rags(p, -ty * 0.48, RAG, hem)
+    p.finish()
+
+    lx, ly, lz = R15["LowerTorso"]
+    p = Piece("Zombie_LowerTorso")
+    p.cyl((lx * 1.08, lz * 1.1), 0.12, (0, ly * 0.22, 0), ROPE, segs=16)  # rope for a belt
+    p.box((0.1, 0.34, 0.06), (lx * 0.2, -ly * 0.1, -lz * 0.56), ROPE, rot=(0, 0, 10), bevel=0)
+    p.finish()
+
+    for side, sign in (("Left", -1), ("Right", 1)):
+        ax, ay, az = R15["UpperArm"]
+        p = Piece(f"Zombie_{side}UpperArm")
+        p.ball((ax * 1.14, ay * 0.96, az * 1.12), (0, ay * 0.05, 0), RAG, cut=0.5)  # torn sleeve
+        rags(p, ay * 0.05, RAG, ((0, -az * 0.56, "z"), (0, az * 0.56, "z"), (ax * 0.57, 0, "x"), (-ax * 0.57, 0, "x")))
+        p.finish()
+        if side == "Left":
+            bx, by, bz = R15["LowerArm"]
+            p = Piece("Zombie_LeftLowerArm")
+            for i, y in enumerate((0.25, 0.02, -0.22)):
+                p.cyl((bx * 1.08, bz * 1.08), 0.13, (0, y * by, 0), BANDAGE, rot=(0, 0, 9 * (-1) ** i), segs=14)  # bandage
+            p.finish()
+        kx, ky, kz = R15["LowerLeg"]
+        p = Piece(f"Zombie_{side}LowerLeg")
+        p.cyl((kx * 1.04, kz * 1.04), ky * 0.4, (0, -ky * 0.3, 0), ZSKIN, segs=14)  # bare shin under the rags
+        rags(p, -ky * 0.06, TROUSER, ((0, -kz * 0.52, "z"), (0, kz * 0.52, "z"), (kx * 0.53, 0, "x"), (-kx * 0.53, 0, "x"),
+                                     (kx * 0.3, -kz * 0.46, "z"), (-kx * 0.3, kz * 0.46, "z")))  # frayed trouser hem
+        p.finish()
+    fx, fy, fz = R15["Foot"]
+    p = Piece("Zombie_RightFoot")  # one old shoe left; the other foot is bare (Outfits paints it)
+    p.box((fx * 1.08, fy * 0.6, fz * 1.06), (0, fy * 0.08, 0), SHOE, bevel=0.12)
+    p.box((fx * 1.1, 0.1, fz * 1.08), (0, -fy * 0.22, 0), "2A2420", bevel=0.04)
+    p.box((0.3, 0.08, 0.3), (0, fy * 0.36, -fz * 0.2), "2A2420", bevel=0.02)  # laces
+    p.finish()
+
+
 # ---------------------------------------------------------------- Helicopter -----------------
 ROTOR_PIVOT = (0, 5.35, 0)  # main rotor centre, Body space (Helicopter.luau)
 TAIL_PIVOT = (0.55, 3.8, 18.0)
@@ -515,17 +671,22 @@ def baton():
     p.finish()
 
 
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton")
+
+
 def build_all():
     for ob in list(bpy.data.objects):
-        if ob.name in ("Cube",) or ob.name.startswith(("Soldier_", "Heavy_", "Heli_", "Baton")):
+        if ob.name in ("Cube",) or ob.name.startswith(PREFIXES):
             bpy.data.objects.remove(ob)
     soldier()
     heavy()
+    worker()
+    zombie()
     helicopter()
     baton()
     # lay them out for a look (object origins stay at the attach point; only the display moves)
     x = 0
-    for prefix in ("Soldier_", "Heavy_"):
+    for prefix in ("Soldier_", "Heavy_", "Worker_", "Zombie_"):
         for ob in bpy.data.objects:
             if ob.name.startswith(prefix):
                 part = ob.name[len(prefix):]
@@ -552,4 +713,4 @@ if __name__ == "__main__" or True:
     build_all()
     if REPO:
         bpy.ops.wm.save_as_mainfile(filepath=os.path.join(REPO, "assets", "army", "army.blend"))
-    print("built", len([o for o in bpy.data.objects if o.name.startswith(("Soldier_", "Heavy_", "Heli_", "Baton"))]), "pieces")
+    print("built", len([o for o in bpy.data.objects if o.name.startswith(PREFIXES)]), "pieces")

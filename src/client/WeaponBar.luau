@@ -9,6 +9,10 @@
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local Progression = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
 
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
 
@@ -20,6 +24,7 @@ local GROUP = { -- outline colour per weapon group (Weapons `tag`)
 	thrown = Color3.fromRGB(120, 230, 140),
 	heavy = Color3.fromRGB(255, 90, 80),
 }
+local CATEGORY = { melee = "MELEE", gun = "GUNS", thrown = "THROWN", heavy = "HEAVY" } -- wheel page per group
 local ABOUT = {
 	Bow = "Hold attack to draw; release to shoot. Arrows drop.",
 	Fists = "Punches, kicks, dive kicks",
@@ -139,12 +144,44 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	local function entry(at: number)
 		return weapons[at] or (at > attackFrom and attacks[at - attackFrom]) or nil
 	end
+	-- Wheel layout: one page per group (Weapons `tag`, in list order; a group past PER goes on), then the
+	-- abilities. slotAt[page][segment] = entry, where[entry] = { page, segment }.
+	local slotAt, where, pageName, pageColor = {}, {}, {}, {}
+	local function lay(i: number, name: string, color: Color3?)
+		local p = slotAt[#slotAt]
+		if name ~= pageName[#slotAt] or #p == PER then
+			p = {}
+			table.insert(slotAt, p)
+			pageName[#slotAt], pageColor[#slotAt] = name, color
+		end
+		table.insert(p, i)
+		where[i] = { #slotAt, #p }
+	end
+	for i, w in weapons do
+		lay(i, CATEGORY[w.tag] or w.tag:upper(), GROUP[w.tag])
+	end
+	for k in attacks do
+		lay(attackFrom + k, "ABILITIES")
+	end
 	local function inHand(): number
 		local a = api.held and api.held()
 		local k = a and table.find(attacks, a)
 		return k and attackFrom + k or api.get()
 	end
+	-- Weapon progression (shared/Progression; the server refuses a locked one too): what a weapon
+	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities are never locked.
+	local player = Players.LocalPlayer
+	local function missing(i: number?): string?
+		local w = i and i <= #weapons and weapons[i]
+		return w and Progression.missing(player, w.id) or nil
+	end
+	local flash: (string) -> () -- the banner over the hotbar, below
 	local function take(i: number)
+		local need = missing(i)
+		if need then
+			flash(`LOCKED: {need}`)
+			return
+		end
 		if i > #weapons then
 			if api.get() ~= 1 then
 				api.set(1) -- Weapons[1], the fists
@@ -156,21 +193,15 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 
 	-- Hotbar -------------------------------------------------------------------------------
-	-- 5 slots hold a loadout; the 6th is the backpack (the wheel with every weapon). Taking one
-	-- from the backpack that is not on the bar puts it in the slot in hand.
-	local loadout = {}
-	for _, id in { "Fists", "BoxingGloves", "Handgun", "Shotgun", "Grenade" } do
-		for i, w in weapons do
-			if w.id == id then
-				table.insert(loadout, i)
-			end
-		end
-	end
+	-- It starts with the fists alone. Each weapon taken from the wheel (hold Q) or the Arsenal (J)
+	-- that is not on it yet gets a slot of its own, up to MAX_SLOTS; after that it replaces the one in hand.
+	local MAX_SLOTS = 5
+	local loadout = { 1 } -- Weapons[1], the fists
 	local bar = Instance.new("Frame")
 	bar.Name = "Hotbar"
 	bar.AnchorPoint = Vector2.new(0.5, 1)
 	bar.Position = UDim2.new(0.5, 0, 1, -12)
-	bar.Size = UDim2.fromOffset((#loadout + 1) * 56 + 16, 70)
+	bar.Size = UDim2.fromOffset(MAX_SLOTS * 56 + 16, 70)
 	bar.BackgroundTransparency = 1
 	bar.Parent = gui
 	local list = Instance.new("UIListLayout")
@@ -182,6 +213,14 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	list.Parent = bar
 
 	local slots = {}
+	local function lockSlot(k: number) -- dark and a padlock while the weapon in it is locked
+		local s = slots[k]
+		local locked = missing(loadout[k]) ~= nil
+		s.lock.Visible = locked
+		if s.vp:IsA("ViewportFrame") then
+			s.vp.ImageColor3 = locked and Color3.fromRGB(70, 70, 76) or Color3.new(1, 1, 1)
+		end
+	end
 	local function fill(k: number)
 		local s = slots[k]
 		local w = entry(loadout[k])
@@ -207,9 +246,10 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 		s.stroke.Color = w.color or GROUP[w.tag] or GROUP.melee
 		s.short.Text = w.short or w.id:upper()
+		s.showing = loadout[k]
+		lockSlot(k)
 	end
-	local openWheel: () -> ()
-	for k in loadout do
+	local function addSlot(k: number)
 		local slot = Instance.new("TextButton")
 		slot.Text = ""
 		slot.AutoButtonColor = false
@@ -238,7 +278,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			TextSize = 9, Font = Enum.Font.GothamBold, ZIndex = 4,
 		})
 		slot.Parent = bar
-		slots[k] = { frame = slot, stroke = stroke, cool = cool, short = short }
+		local lock = text(slot, { Size = UDim2.fromScale(1, 0.8), Text = "🔒", TextSize = 20, ZIndex = 5, Visible = false })
+		slots[k] = { frame = slot, stroke = stroke, cool = cool, short = short, lock = lock }
 		fill(k)
 		slot.Activated:Connect(function()
 			if not api.blocked() then
@@ -246,32 +287,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			end
 		end)
 	end
-	local pack = Instance.new("TextButton") -- slot 6: the backpack
-	pack.Name = "Backpack"
-	pack.Size = UDim2.fromOffset(50, 50)
-	pack.BackgroundColor3 = INK
-	pack.BackgroundTransparency = 0.35
-	pack.AutoButtonColor = false
-	pack.LayoutOrder = #loadout + 1
-	pack.Text = "🎒"
-	pack.TextSize = 26
-	corner(pack, 10)
-	local packStroke = Instance.new("UIStroke")
-	packStroke.Thickness = 1.5
-	packStroke.Color = Color3.fromRGB(200, 196, 210)
-	packStroke.Transparency = 0.55
-	packStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
-	packStroke.Parent = pack
-	text(pack, {
-		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.new(1, 0, 0, 10),
-		TextSize = 9, Font = Enum.Font.GothamBold, Text = "BAG", ZIndex = 4,
-	})
-	pack.Parent = bar
-	pack.Activated:Connect(function()
-		if not api.blocked() then
-			openWheel()
-		end
-	end)
+	for k in loadout do
+		addSlot(k)
+	end
 
 	-- Wheel --------------------------------------------------------------------------------
 	local wheel = Instance.new("Frame")
@@ -285,7 +303,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- a grey ring cut into PER segments, one weapon each, the pointed one lit blue, the one in
 	-- hand with a blue rim; more weapons than segments go on further pages (< 1 / 2 >).
 	local R_OUT, R_IN, SLICES = 260, 165, 10
-	local pages = math.ceil((attackFrom + #attacks) / PER)
+	local pages = #slotAt
 	local ring = Instance.new("Frame")
 	ring.AnchorPoint = Vector2.new(0.5, 0.5)
 	ring.Position = UDim2.fromScale(0.5, 0.5)
@@ -344,7 +362,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 	local petals = {} -- one per weapon, in its segment, shown on its page
 	for i, w in weapons do
-		local seg = segs[(i - 1) % PER + 1]
+		local seg = segs[where[i][2]]
 		local r = (R_IN + R_OUT) / 2
 		local holder = Instance.new("Frame")
 		holder.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -355,15 +373,16 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		holder.Parent = ring
 		local vp, place = icon(viewmodels[w.id] or fistSpec, holder, w.id)
 		vp.ZIndex = 24
+		local lock = text(holder, { Size = UDim2.new(1, 0, 1, -14), Text = "🔒", TextSize = 26, ZIndex = 26, Visible = false })
 		text(holder, {
 			AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(110, 14),
 			TextSize = 12, Font = Enum.Font.GothamBold, Text = w.short or w.id:upper(), TextStrokeTransparency = 0.3, ZIndex = 25,
 		})
-		petals[i] = { holder = holder, place = place, page = math.ceil(i / PER), seg = (i - 1) % PER + 1 }
+		petals[i] = { holder = holder, place = place, page = where[i][1], seg = where[i][2], vp = vp, lock = lock }
 	end
 	for k, a in attacks do
 		local i = attackFrom + k
-		local seg = segs[(i - 1) % PER + 1]
+		local seg = segs[where[i][2]]
 		local r = (R_IN + R_OUT) / 2
 		local holder = Instance.new("Frame")
 		holder.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -376,9 +395,41 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Font = Enum.Font.GothamBlack,
 			Text = a.name, TextColor3 = a.color, TextStrokeTransparency = 0.2, ZIndex = 25,
 		})
-		petals[i] = { holder = holder, page = math.ceil(i / PER), seg = (i - 1) % PER + 1,
+		petals[i] = { holder = holder, page = where[i][1], seg = where[i][2],
 			place = function() name.TextTransparency = os.clock() < (a.readyAt or 0) and 0.6 or 0 end }
 	end
+	-- The tutorial's last step (server/Tutorial: "pick"): the wheel opens on the pistol's page, the pistol
+	-- in a red ring that slowly shrinks and grows.
+	local tutorialGun = 1
+	for i, w in weapons do
+		if w.id == "Handgun" then
+			tutorialGun = i
+		end
+	end
+	local circle = Instance.new("Frame")
+	circle.AnchorPoint = Vector2.new(0.5, 0.5)
+	circle.Position = UDim2.fromScale(0.5, 0.5)
+	circle.Size = UDim2.fromOffset(118, 118)
+	circle.BackgroundTransparency = 1
+	circle.ZIndex = 26
+	corner(circle, 59)
+	local circleStroke = Instance.new("UIStroke")
+	circleStroke.Color, circleStroke.Thickness = Color3.fromRGB(235, 40, 40), 4
+	circleStroke.Parent = circle
+	local circleScale = Instance.new("UIScale")
+	circleScale.Scale = 0.85
+	circleScale.Parent = circle
+	TweenService:Create(circleScale, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.1 }):Play()
+	circle.Parent = petals[tutorialGun].holder
+	local function tutorialPick(): boolean
+		return player:GetAttribute("TutorialStep") == "pick"
+	end
+	local function showCircle()
+		circle.Visible = tutorialPick()
+	end
+	player:GetAttributeChangedSignal("TutorialStep"):Connect(showCircle)
+	showCircle()
+
 	local hub = Instance.new("Frame")
 	hub.AnchorPoint = Vector2.new(0.5, 0.5)
 	hub.Position = UDim2.fromScale(0.5, 0.5)
@@ -387,7 +438,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	hub.ZIndex = 24
 	hub.Parent = ring
 	local hubName = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(1, 0, 0, 22), TextSize = 20, Font = Enum.Font.GothamBold, ZIndex = 25 })
-	local hubPage = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.fromOffset(80, 24), TextSize = 18, Font = Enum.Font.GothamBold, ZIndex = 25 })
+	local hubPage = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.fromOffset(94, 24), TextSize = 16, Font = Enum.Font.GothamBlack, ZIndex = 25 })
 	local hubAbout = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 62), Size = UDim2.new(1, -20, 0, 30), TextSize = 12, Font = Enum.Font.GothamMedium, TextWrapped = true, TextColor3 = Color3.fromRGB(225, 225, 232), ZIndex = 25 })
 	local arrows = {}
 	for _, dirn in { -1, 1 } do
@@ -422,7 +473,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		wheel.Visible = on
 		aimAcc = Vector2.zero
 		pick = inHand()
-		page = petals[pick].page
+		page = petals[if tutorialPick() then tutorialGun else pick].page
 		api.freeze(on)
 		TweenService:Create(wheel, TweenInfo.new(0.12), { BackgroundTransparency = on and 0.45 or 1 }):Play()
 		if on then
@@ -430,17 +481,19 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			TweenService:Create(ringScale, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
 		end
 	end
-	openWheel = function()
-		show(true)
-	end
 	local function step(by: number)
 		local k = table.find(loadout, inHand()) or 1
-		take(loadout[(k - 1 + by) % #loadout + 1])
+		for _ = 1, #loadout do -- past the locked slots
+			k = (k - 1 + by) % #loadout + 1
+			if not missing(loadout[k]) then
+				take(loadout[k])
+				return
+			end
+		end
 	end
 	local function flip(by: number)
 		page = (page - 1 + by) % pages + 1
-		local at = pick and (page - 1) * PER + petals[pick].seg
-		pick = at and entry(at) and at or nil -- same segment on the new page, if it holds one
+		pick = pick and slotAt[page][petals[pick].seg] -- same segment on the new page, if it holds one
 	end
 	for dirn, b in arrows do
 		b.Activated:Connect(function()
@@ -453,10 +506,20 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			show(false)
 			return
 		end
+		if missing(i) then
+			take(i) -- says what it still needs, takes nothing
+			show(false)
+			return
+		end
 		if not table.find(loadout, i) then
-			local k = table.find(loadout, inHand()) or 1
-			loadout[k] = i
-			fill(k)
+			if #loadout < MAX_SLOTS then -- a new slot at the end
+				table.insert(loadout, i)
+				addSlot(#loadout)
+			else -- the bar is full: it takes the place of the one in hand
+				local k = table.find(loadout, inHand()) or 1
+				loadout[k] = i
+				fill(k)
+			end
 		end
 		if i ~= inHand() then
 			take(i)
@@ -464,7 +527,159 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		show(false)
 	end
 
-	openWheel = require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, api, choose, function() show(false) end)
+	-- the Arsenal grid asks the same locks
+	local bagApi = setmetatable({ locked = missing }, { __index = api })
+	require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, bagApi, choose, function() show(false) end)
+
+	-- Unlocks: a notice (below) and the locks redrawn (a new weapon goes on the bar once it is taken).
+	-- The banner is for what a locked weapon still needs.
+	local banner = text(gui, {
+		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -96), Size = UDim2.fromOffset(420, 34),
+		TextSize = 24, Font = Enum.Font.GothamBlack, TextColor3 = Color3.fromRGB(255, 214, 90), TextStrokeTransparency = 0.2, Text = "", Visible = false,
+	})
+	local bannerToken = 0
+	flash = function(message: string)
+		bannerToken += 1
+		local token = bannerToken
+		banner.Text, banner.Visible = message, true
+		task.delay(2.5, function()
+			if bannerToken == token then
+				banner.Visible = false
+			end
+		end)
+	end
+	-- Unlock notices: a comic card on the right of the screen per new weapon - its model turning in a
+	-- disc of its group's colour, its name, its group - sliding in, stacking under the last one, gone
+	-- after NOTICE_TIME (the stack closes up).
+	local NOTICE_TIME = 4.5
+	local CATEGORY = { melee = "MELEE", gun = "GUN", thrown = "THROWABLE", heavy = "HEAVY" }
+	local PAPER = Color3.fromRGB(255, 248, 228)
+	local CAPTION = Color3.fromRGB(252, 200, 50)
+	local COMIC = Enum.Font.LuckiestGuy -- the menu's lettering
+	local notices = Instance.new("Frame")
+	notices.Name = "UnlockNotices"
+	notices.AnchorPoint = Vector2.new(1, 0)
+	notices.Position = UDim2.new(1, -12, 0.2, 0)
+	notices.Size = UDim2.fromOffset(340, 520)
+	notices.BackgroundTransparency = 1
+	notices.Parent = gui
+	local stack = Instance.new("UIListLayout")
+	stack.Padding = UDim.new(0, 10)
+	stack.SortOrder = Enum.SortOrder.LayoutOrder
+	stack.HorizontalAlignment = Enum.HorizontalAlignment.Right
+	stack.Parent = notices
+	local noticeCount = 0
+	local function inked(parent: Instance, thickness: number)
+		local line = Instance.new("UIStroke")
+		line.Thickness, line.Color, line.LineJoinMode = thickness, INK, Enum.LineJoinMode.Miter
+		line.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+		line.Parent = parent
+	end
+	local function notify(i: number)
+		local w = weapons[i]
+		local tint = w.color or GROUP[w.tag] or GROUP.melee
+		noticeCount += 1
+		local slot = Instance.new("Frame") -- its place in the stack; the card slides about inside it
+		slot.Size = UDim2.fromOffset(340, 132)
+		slot.BackgroundTransparency = 1
+		slot.LayoutOrder = noticeCount
+		slot.Parent = notices
+		local card = Instance.new("Frame")
+		card.Size = UDim2.fromOffset(318, 108)
+		card.Position = UDim2.fromOffset(380, 16)
+		card.BackgroundTransparency = 1
+		card.Rotation = -2
+		card.Parent = slot
+		local shadow = Instance.new("Frame")
+		shadow.Size = UDim2.fromScale(1, 1)
+		shadow.Position = UDim2.fromOffset(7, 8)
+		shadow.BackgroundColor3 = INK
+		shadow.BorderSizePixel = 0
+		shadow.Parent = card
+		local paper = Instance.new("Frame")
+		paper.Size = UDim2.fromScale(1, 1)
+		paper.BackgroundColor3 = PAPER
+		paper.BorderSizePixel = 0
+		paper.Parent = card
+		inked(paper, 4)
+		local disc = Instance.new("Frame") -- the model, turning, on a disc of its group's colour
+		disc.Size = UDim2.fromOffset(88, 88)
+		disc.Position = UDim2.fromOffset(12, 12)
+		disc.BackgroundColor3 = tint
+		disc.Parent = paper
+		corner(disc, 100)
+		inked(disc, 3)
+		local _, place = icon(viewmodels[w.id] or fistSpec, disc, w.id)
+		local name = text(paper, {
+			Position = UDim2.fromOffset(110, 24), Size = UDim2.new(1, -120, 0, 44), Text = w.name,
+			Font = COMIC, TextScaled = true, TextColor3 = INK, TextStrokeTransparency = 1, TextXAlignment = Enum.TextXAlignment.Left,
+		})
+		name.TextWrapped = true
+		local badge = Instance.new("Frame") -- its group
+		badge.Position = UDim2.fromOffset(110, 72)
+		badge.Size = UDim2.fromOffset(118, 26)
+		badge.BackgroundColor3 = tint
+		badge.Rotation = 2
+		badge.Parent = paper
+		inked(badge, 2.5)
+		text(badge, {
+			Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), Text = CATEGORY[w.tag] or string.upper(w.tag or ""),
+			Font = COMIC, TextScaled = true, TextColor3 = INK, TextStrokeTransparency = 1,
+		})
+		local caption = Instance.new("Frame") -- the comic caption on its top edge
+		caption.Position = UDim2.fromOffset(-10, -16)
+		caption.Size = UDim2.fromOffset(150, 30)
+		caption.BackgroundColor3 = CAPTION
+		caption.Rotation = -4
+		caption.Parent = card
+		inked(caption, 3)
+		text(caption, {
+			Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromOffset(5, 3), Text = "NEW WEAPON!",
+			Font = COMIC, TextScaled = true, TextColor3 = INK, TextStrokeTransparency = 1,
+		})
+		local spin = RunService.RenderStepped:Connect(function(dt)
+			place(dt)
+		end)
+		TweenService:Create(card, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = UDim2.fromOffset(14, 16) }):Play()
+		task.delay(NOTICE_TIME, function()
+			TweenService:Create(card, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Position = UDim2.fromOffset(380, 16) }):Play()
+			task.wait(0.32)
+			spin:Disconnect()
+			slot:Destroy()
+		end)
+	end
+
+	local unlocked = {}
+	for i in weapons do
+		unlocked[i] = not missing(i)
+	end
+	local function relock()
+		local quiet = not player:GetAttribute("ProgressLoaded") -- the saved counters coming in: no banners
+		for i, p in petals do
+			if i <= #weapons then
+				local locked = missing(i) ~= nil
+				p.lock.Visible = locked
+				p.vp.ImageColor3 = locked and Color3.fromRGB(70, 70, 76) or Color3.new(1, 1, 1)
+				if not locked and not unlocked[i] then
+					unlocked[i] = true
+					if not quiet then
+						notify(i)
+					end
+				end
+			end
+		end
+		for k, s in slots do
+			if s.showing ~= loadout[k] then
+				fill(k) -- a new weapon in it
+			else
+				lockSlot(k)
+			end
+		end
+	end
+	relock()
+	for _, attribute in Progression.ATTRIBUTE do
+		player:GetAttributeChangedSignal(attribute):Connect(relock)
+	end
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if gui:GetAttribute("WeaponPickerOpen") and not open then return end
 		if open and input.UserInputType == Enum.UserInputType.MouseButton1 and not processed then
@@ -522,7 +737,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	RunService.RenderStepped:Connect(function(dt)
 		local current = inHand()
 		local cooldown = api.cooldown()
-		packStroke.Transparency = open and 0 or 0.55
 		for k, s in slots do
 			local on = loadout[k] == current
 			local size = on and 64 or 50
@@ -561,13 +775,12 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 					best, bestGap = k, gap
 				end
 			end
-			local at = (page - 1) * PER + best
-			pick = entry(at) and at or nil
+			pick = slotAt[page][best]
 		end
 		for k, seg in segs do
-			local at = (page - 1) * PER + k
+			local at = slotAt[page][k]
 			for _, f in seg.fill do
-				f.BackgroundColor3 = at == pick and LIT or SEG
+				f.BackgroundColor3 = at ~= nil and at == pick and LIT or SEG -- an empty segment is never lit
 			end
 			for _, f in seg.rim do
 				f.Visible = at == current
@@ -585,9 +798,11 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			local wait = (chosen.readyAt or 0) - os.clock()
 			hubAbout.Text = wait > 0 and string.format("Ready in %.1f s", wait) or `Ability · click to use · {chosen.cd} s cooldown`
 		else
-			hubAbout.Text = chosen and ABOUT[chosen.id] or ""
+			local need = missing(pick)
+			hubAbout.Text = need and `🔒 Unlocks at {need}` or chosen and ABOUT[chosen.id] or ""
 		end
-		hubPage.Text = page .. " / " .. pages
+		hubPage.Text = pageName[page]
+		hubPage.TextColor3 = pageColor[page] or Color3.new(1, 1, 1)
 	end)
 end
 

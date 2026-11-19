@@ -2,10 +2,14 @@
 -- with a Humanoid that touches them. Floors, decks and props break like the arena (Map tiles and
 -- structures); walls, roof, ramps and the machines themselves do not.
 -- Factory.build(hurt) wires it; hurt(model, damage, velocity) belongs to the server script.
+-- With ReplicatedStorage.FactoryKit (assets/factory: Blender meshes, installed into the place file) the
+-- machines wear those meshes; their parts stay, invisible, as collision and damage zones.
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
 local Map = require(script.Parent.Map)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
 
 local Factory = {}
 
@@ -61,6 +65,89 @@ end
 
 local function at(x, y, z)
 	return CFrame.new(x, y, z)
+end
+
+-- Clones a FactoryKit piece's meshes (one per colour). A static piece is anchored at `pivot` (local
+-- space); a moving one is welded to `part`, the stand-in the movers drive, at `offset` from it, so
+-- it rides along with no CFrame writes of its own. `recolor`: { [hex] = Color3 }. False without a kit.
+local function fromKit(piece: string, pivot: CFrame?, part: BasePart?, offset: CFrame?, recolor: { [string]: Color3 }?): boolean
+	local kit = ReplicatedStorage:FindFirstChild("FactoryKit")
+	local meshes = kit and kit:FindFirstChild(piece)
+	if not meshes then
+		return false
+	end
+	for _, mesh in meshes:GetChildren() do
+		local p = mesh:Clone() :: BasePart
+		local place = p:GetAttribute("Place") or CFrame.identity
+		if part then
+			p.CFrame = part.CFrame * (offset or CFrame.identity) * place
+			p.Anchored, p.Massless = false, true
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1 = part, p
+			weld.Parent = p
+		else
+			p.CFrame = CFrame.new(ORIGIN) * (pivot or CFrame.identity) * place
+		end
+		if recolor and recolor[p.Name] then
+			p.Color = recolor[p.Name]
+		end
+		p.Parent = folder
+	end
+	return true
+end
+
+-- With the meshes in, the stand-ins only collide and hurt. Kept (movers still drive them), just unseen.
+local function hide(parts: { BasePart })
+	for _, p in parts do
+		p.Transparency, p.CastShadow = 1, false
+	end
+end
+
+-- Effects: streaks of sparks, and puffs (steam, smoke), from an attachment on `parent` at `offset`.
+-- Emitters along +Y of the attachment; the movers switch the timed ones on and off.
+local function sparks(parent: BasePart, offset: CFrame, rate: number, enabled: boolean): ParticleEmitter
+	local a = Instance.new("Attachment")
+	a.CFrame = offset
+	a.Parent = parent
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/sparkles_main.dds"
+	e.Orientation = Enum.ParticleOrientation.VelocityParallel
+	e.Squash = NumberSequence.new(2.5)
+	e.LightEmission, e.LightInfluence = 1, 0
+	e.Color = ColorSequence.new(Color3.fromRGB(255, 230, 140), Color3.fromRGB(255, 110, 20))
+	e.Size = NumberSequence.new(0.35, 0.05)
+	e.Lifetime = NumberRange.new(0.25, 0.55)
+	e.Speed = NumberRange.new(14, 28)
+	e.SpreadAngle = Vector2.new(65, 65)
+	e.Acceleration = Vector3.new(0, -70, 0)
+	e.Drag = 1
+	e.Rate, e.Enabled = rate, enabled
+	e.Parent = a
+	return e
+end
+
+local function puff(parent: BasePart, offset: CFrame, color: Color3, size: NumberSequence, life: NumberRange, speed: NumberRange, rate: number, enabled: boolean): ParticleEmitter
+	local a = Instance.new("Attachment")
+	a.CFrame = offset
+	a.Parent = parent
+	local e = Instance.new("ParticleEmitter")
+	e.Texture = "rbxasset://textures/particles/smoke_main.dds"
+	e.Color = ColorSequence.new(color)
+	e.Size, e.Lifetime, e.Speed = size, life, speed
+	e.Transparency = NumberSequence.new(0.35, 1)
+	e.RotSpeed = NumberRange.new(-40, 40)
+	e.Rotation = NumberRange.new(0, 360)
+	e.SpreadAngle = Vector2.new(15, 15)
+	e.Rate, e.Enabled = rate, enabled
+	e.Parent = a
+	return e
+end
+
+-- sets a timed emitter only when it changes: every write replicates
+local function switch(e: ParticleEmitter, on: boolean)
+	if e.Enabled ~= on then
+		e.Enabled = on
+	end
 end
 
 local UPRIGHT = CFrame.Angles(0, 0, math.pi / 2) -- turns a cylinder's X axis vertical
@@ -403,14 +490,20 @@ end
 local function presses()
 	for i, pos in PRESSES do
 		local x, z = pos[1], pos[2]
+		local frame = {}
 		for _, s in { -1, 1 } do
-			block(Vector3.new(2, 22, 2), at(x + s * 7.5, 11, z), DARK)
+			table.insert(frame, block(Vector3.new(2, 22, 2), at(x + s * 7.5, 11, z), DARK))
 		end
-		block(Vector3.new(18, 3, 7), at(x, 23.5, z), RED, Enum.Material.Metal)
+		table.insert(frame, block(Vector3.new(18, 3, 7), at(x, 23.5, z), RED, Enum.Material.Metal))
 		local head = block(Vector3.new(12, 3, 12), at(x, 14, z), STEEL, Enum.Material.DiamondPlate)
 		local stripe = block(Vector3.new(12.2, 0.6, 12.2), at(x, 14, z), RED, Enum.Material.Neon)
 		stripe.CanCollide = false
 		local rod = block(Vector3.new(2.4, 1, 2.4), at(x, 17, z), CHROME, Enum.Material.Metal)
+		if fromKit("Factory_PressFrame", at(x, 0, z)) and fromKit("Factory_PressHead", nil, head) then
+			hide(frame)
+			hide({ head, stripe })
+		end
+		local slamSparks = sparks(head, CFrame.new(0, -1.5, 0), 400, false)
 		local offset = i * 0.7
 		local function y(t)
 			local p = (t + offset) % 3
@@ -429,6 +522,12 @@ local function presses()
 			stripe.CFrame = head.CFrame
 			rod.Size = Vector3.new(2.4, 22 - h - 1.5, 2.4)
 			rod.CFrame = CFrame.new(ORIGIN + Vector3.new(x, (22 + h + 1.5) / 2, z))
+			local p = (t + offset) % 3
+			local slam = p >= 1.72 and p < 1.86 -- a burst of sparks and a clang as it lands
+			if slam and not slamSparks.Enabled then
+				Sfx.play({ Sfx.METAL, 0.55, 1 }, head.Position - Vector3.new(0, 1.5, 0))
+			end
+			switch(slamSparks, slam)
 		end)
 		hazard(head, 60, 1, function(position)
 			return flat(position - head.Position) * 45 + Vector3.yAxis * 15
@@ -442,27 +541,41 @@ end
 local function conveyor(z: number, speed: number)
 	local belt = block(Vector3.new(60, 1, 8), at(30, 0.5, z), DARK, Enum.Material.Rubber)
 	belt.AssemblyLinearVelocity = Vector3.xAxis * speed -- anchored part with velocity = conveyor
+	local parts = { belt }
 	for _, s in { -1, 1 } do
-		block(Vector3.new(60, 1.6, 0.8), at(30, 0.8, z + s * 4.4), YELLOW, Enum.Material.Metal)
+		table.insert(parts, block(Vector3.new(60, 1.6, 0.8), at(30, 0.8, z + s * 4.4), YELLOW, Enum.Material.Metal))
 	end
 	for x = 4, 56, 8 do -- rollers under the belt edge, just for looks
-		block(Vector3.new(1.2, 9.6, 1.2), at(x, 0.6, z) * CFrame.Angles(0, math.pi / 2, 0), CHROME, Enum.Material.Metal, Enum.PartType.Cylinder)
+		table.insert(parts, block(Vector3.new(1.2, 9.6, 1.2), at(x, 0.6, z) * CFrame.Angles(0, math.pi / 2, 0), CHROME, Enum.Material.Metal, Enum.PartType.Cylinder))
+	end
+	if fromKit("Factory_Conveyor", at(30, 0.5, z)) then
+		hide(parts)
 	end
 	-- grinder at the end: housing open on the belt side, two spinning rollers inside
 	local gx = 67
-	block(Vector3.new(14, 1, 9), at(gx, 0.5, z), DARK, Enum.Material.Metal)
-	block(Vector3.new(14, 12, 1), at(gx, 6, z - 5), RED)
-	block(Vector3.new(14, 12, 1), at(gx, 6, z + 5), RED)
-	block(Vector3.new(1, 12, 11), at(gx + 7.5, 6, z), RED)
-	block(Vector3.new(15, 1, 11), at(gx + 0.5, 12.5, z), DARK)
-	block(Vector3.new(6, 8, 6), at(gx + 2, 17, z), RUST, Enum.Material.CorrodedMetal) -- hopper
+	local housing = {
+		block(Vector3.new(14, 1, 9), at(gx, 0.5, z), DARK, Enum.Material.Metal),
+		block(Vector3.new(14, 12, 1), at(gx, 6, z - 5), RED),
+		block(Vector3.new(14, 12, 1), at(gx, 6, z + 5), RED),
+		block(Vector3.new(1, 12, 11), at(gx + 7.5, 6, z), RED),
+		block(Vector3.new(15, 1, 11), at(gx + 0.5, 12.5, z), DARK),
+		block(Vector3.new(6, 8, 6), at(gx + 2, 17, z), RUST, Enum.Material.CorrodedMetal), -- hopper
+	}
 	local warn = lamp(gx - 7, 12.6, z, RED, 20)
 	warn.Size = Vector3.new(1, 1, 9)
+	table.insert(housing, warn)
+	local kit = fromKit("Factory_Grinder", at(gx, 0, z))
+	if kit then
+		hide(housing)
+	end
 	local rollers = {}
 	for i, dx in { -3, 0, 3 } do
 		local r = block(Vector3.new(8.6, 3, 3), CFrame.identity, CHROME, Enum.Material.DiamondPlate, Enum.PartType.Cylinder)
 		r.CanCollide = false
 		rollers[i] = { part = r, dx = dx, dir = i % 2 == 1 and 1 or -1 }
+		if kit and fromKit("Factory_GrinderRoller", nil, r) then
+			hide({ r })
+		end
 	end
 	table.insert(movers, function(t)
 		for _, r in rollers do
@@ -478,13 +591,23 @@ local function conveyor(z: number, speed: number)
 end
 
 local function sweeper(cx: number, y: number, cz: number, radius: number, speed: number)
-	block(Vector3.new(8, 3, 3), at(cx, y + 4, cz) * UPRIGHT, DARK, Enum.Material.Metal, Enum.PartType.Cylinder)
-	block(Vector3.new(1, 5, 5), at(cx, y + 8.5, cz) * UPRIGHT, RED, Enum.Material.Neon, Enum.PartType.Cylinder)
+	local hub = {
+		block(Vector3.new(8, 3, 3), at(cx, y + 4, cz) * UPRIGHT, DARK, Enum.Material.Metal, Enum.PartType.Cylinder),
+		block(Vector3.new(1, 5, 5), at(cx, y + 8.5, cz) * UPRIGHT, RED, Enum.Material.Neon, Enum.PartType.Cylinder),
+	}
+	local kit = fromKit("Factory_SweeperHub", at(cx, y, cz))
+	if kit then
+		hide(hub)
+	end
 	local arms = {}
 	for i = 1, 2 do
 		local arm = block(Vector3.new(radius * 2, 1.6, 1.6), CFrame.identity, i == 1 and YELLOW or RED, Enum.Material.Metal)
 		arm.CanCollide = false -- it hits through the hazard, not by shoving
 		arms[i] = arm
+		-- one yellow arm and one red, as without the kit
+		if kit and fromKit(radius > 15 and "Factory_SweeperArm" or "Factory_SweeperArmShort", nil, arm, nil, { EBB91E = arm.Color }) then
+			hide({ arm })
+		end
 		hazard(arm, 25, 1, function(position)
 			local out = flat(position - (ORIGIN + Vector3.new(cx, 0, cz)))
 			return Vector3.new(-out.Z, 0, out.X) * 60 * math.sign(speed) + out * 15 + Vector3.yAxis * 30
@@ -500,15 +623,26 @@ end
 local function furnace()
 	local x, z = 80, 80
 	local pool = block(Vector3.new(28, 0.4, 28), at(x, 0.2, z), LAVA, Enum.Material.Neon)
+	local parts = { pool }
 	for _, s in { -1, 1 } do
-		block(Vector3.new(30, 1.2, 1), at(x, 0.6, z + s * 14.5), DARK, Enum.Material.Basalt)
-		block(Vector3.new(1, 1.2, 30), at(x + s * 14.5, 0.6, z), DARK, Enum.Material.Basalt)
+		table.insert(parts, block(Vector3.new(30, 1.2, 1), at(x, 0.6, z + s * 14.5), DARK, Enum.Material.Basalt))
+		table.insert(parts, block(Vector3.new(1, 1.2, 30), at(x + s * 14.5, 0.6, z), DARK, Enum.Material.Basalt))
 		for _, s2 in { -1, 1 } do
-			block(Vector3.new(2, 14, 2), at(x + s * 14, 7, z + s2 * 14), DARK) -- hood legs
+			table.insert(parts, block(Vector3.new(2, 14, 2), at(x + s * 14, 7, z + s2 * 14), DARK)) -- hood legs
 		end
 	end
-	block(Vector3.new(30, 5, 30), at(x, 16.5, z), RUST, Enum.Material.CorrodedMetal) -- hood
-	block(Vector3.new(6, H - 19, 6), at(x, (H + 19) / 2, z) * UPRIGHT, RUST, Enum.Material.CorrodedMetal, Enum.PartType.Cylinder)
+	table.insert(parts, block(Vector3.new(30, 5, 30), at(x, 16.5, z), RUST, Enum.Material.CorrodedMetal)) -- hood
+	table.insert(parts, block(Vector3.new(6, H - 19, 6), at(x, (H + 19) / 2, z) * UPRIGHT, RUST, Enum.Material.CorrodedMetal, Enum.PartType.Cylinder))
+	-- the kit's chimney carries on through the roof to a rain cap at 92; smoke leaves from its top
+	local kit = fromKit("Factory_Furnace", at(x, 0, z))
+	if kit then
+		hide(parts)
+	end
+	local stack = block(Vector3.new(1, 1, 1), at(x, kit and 91 or 83, z), DARK)
+	stack.Transparency, stack.CanCollide, stack.CastShadow = 1, false, false
+	local smoke = puff(stack, CFrame.identity, Color3.fromRGB(70, 68, 72), NumberSequence.new(5, 16), NumberRange.new(6, 9), NumberRange.new(4, 6), 5, true)
+	smoke.Acceleration = Vector3.new(3, 1, 1)
+	smoke.SpreadAngle = Vector2.new(10, 10)
 	for _, c in { { -6, -6 }, { 6, 4 }, { -2, 7 } } do
 		local fire = Instance.new("Fire")
 		fire.Size = 14
@@ -534,10 +668,23 @@ end
 -- a ram that shoots out of a wall along `dir` (unit, flat) and shoves you off the catwalk
 local function piston(base: Vector3, dir: Vector3, offset: number)
 	local look = CFrame.lookAt(base, base + dir)
-	block(Vector3.new(9, 8, 1), look * CFrame.new(0, 0, 0.5), RED)
+	local plate = block(Vector3.new(9, 8, 1), look * CFrame.new(0, 0, 0.5), RED)
 	local ram = block(Vector3.new(8, 6, 2), look, CHROME, Enum.Material.DiamondPlate)
 	local warn = block(Vector3.new(8.2, 0.5, 2.2), look, YELLOW, Enum.Material.Neon)
 	warn.CanCollide = false
+	-- the ram's rod, from the wall to the ram's back (stretched every frame, like the press rod)
+	local rod = block(Vector3.new(1, 1.6, 1.6), look, CHROME, Enum.Material.Metal, Enum.PartType.Cylinder)
+	rod.CanCollide = false
+	if fromKit("Factory_PistonPlate", look) and fromKit("Factory_PistonRam", nil, ram) then
+		hide({ plate, ram, warn })
+	end
+	-- steam out of both sides of the plate as the ram fires
+	local steam = {}
+	for _, s in { -1, 1 } do
+		local e = puff(plate, CFrame.new(s * 4.6, -2.5, -0.6) * CFrame.Angles(0, 0, -s * math.pi / 2.5), Color3.fromRGB(235, 235, 240), NumberSequence.new(1.2, 4.5), NumberRange.new(0.5, 0.9), NumberRange.new(10, 14), 45, false)
+		e.Drag = 4
+		table.insert(steam, e)
+	end
 	local function out(t) -- 0 = in the wall, 1 = at the catwalk edge
 		local p = (t + offset) % 2.4
 		if p < 1.3 then
@@ -550,8 +697,19 @@ local function piston(base: Vector3, dir: Vector3, offset: number)
 		return 1 - (p - 1.7) / 0.7
 	end
 	table.insert(movers, function(t)
-		ram.CFrame = CFrame.new(ORIGIN) * look * CFrame.new(0, 0, -1 - out(t) * 14)
+		local o = out(t)
+		ram.CFrame = CFrame.new(ORIGIN) * look * CFrame.new(0, 0, -1 - o * 14)
 		warn.CFrame = ram.CFrame * CFrame.new(0, 3, 0)
+		rod.Size = Vector3.new(o * 14 + 1, 1.6, 1.6) -- from 1 inside the wall to the ram's back
+		rod.CFrame = CFrame.new(ORIGIN) * look * CFrame.new(0, 0, 0.5 - (o * 14 + 1) / 2) * CFrame.Angles(0, math.pi / 2, 0)
+		local p = (t + offset) % 2.4
+		local hiss = p >= 1.3 and p < 1.6
+		if hiss and not steam[1].Enabled then
+			Sfx.play({ Sfx.METAL, 0.8, 0.6 }, ram.Position)
+		end
+		for _, e in steam do
+			switch(e, hiss)
+		end
 	end)
 	hazard(ram, 10, 0.8, function()
 		return dir * 90 + Vector3.yAxis * 25
@@ -567,11 +725,17 @@ local function saw(y: number, z: number, amplitude: number, phase: number)
 	blade.CanCollide = false
 	local hub = block(Vector3.new(0.8, 2.4, 2.4), CFrame.identity, RED, Enum.Material.Neon, Enum.PartType.Cylinder)
 	hub.CanCollide = false
+	if fromKit("Factory_SawBlade", nil, blade) then
+		hide({ blade, hub })
+	end
+	-- the hub doesn't spin (a plain disc looks the same), so its sparks spray from where the
+	-- blade bites the floor, up and back
+	sparks(hub, CFrame.new(0, -1.9, 0), 70, true)
 	table.insert(movers, function(t)
 		local x = math.sin(t * 0.8 + phase) * amplitude
-		local cf = CFrame.new(ORIGIN + Vector3.new(x, y + 2, z)) * CFrame.Angles(0, math.pi / 2, 0) * CFrame.Angles(t * 20, 0, 0)
-		blade.CFrame = cf
-		hub.CFrame = cf
+		local at_ = CFrame.new(ORIGIN + Vector3.new(x, y + 2, z)) * CFrame.Angles(0, math.pi / 2, 0)
+		blade.CFrame = at_ * CFrame.Angles(t * 20, 0, 0)
+		hub.CFrame = at_
 	end)
 	hazard(blade, 35, 0.5, function(_, t)
 		return Vector3.xAxis * (math.cos(t * 0.8 + phase) >= 0 and 70 or -70) + Vector3.new(0, 35, 20)
@@ -581,13 +745,18 @@ end
 -- pendulum hammer swinging across an L2 bridge
 local function hammer(x: number, z: number, phase: number)
 	local length = H - 2 - (L2 + 3)
-	block(Vector3.new(12, 2, 2), at(x, H - 1, z), DARK)
+	local beam = block(Vector3.new(12, 2, 2), at(x, H - 1, z), DARK)
 	local arm = block(Vector3.new(0.8, length, 0.8), CFrame.identity, DARK, Enum.Material.Metal)
 	arm.CanCollide = false
 	local head = block(Vector3.new(4, 6, 9), CFrame.identity, RED, Enum.Material.Metal)
 	head.CanCollide = false
 	local band = block(Vector3.new(4.2, 1, 9.2), CFrame.identity, YELLOW, Enum.Material.Neon)
 	band.CanCollide = false
+	-- the arm's mesh is modelled about the swing pivot, `length / 2` above the arm part's centre
+	arm.CFrame = CFrame.new(ORIGIN + Vector3.new(x, H - 2, z)) * CFrame.new(0, -length / 2, 0)
+	if fromKit("Factory_HammerBeam", at(x, H - 1, z)) and fromKit("Factory_HammerArm", nil, arm, CFrame.new(0, length / 2, 0)) then
+		hide({ beam, arm, head, band })
+	end
 	local pivot = CFrame.new(ORIGIN + Vector3.new(x, H - 2, z))
 	table.insert(movers, function(t)
 		local swing = pivot * CFrame.Angles(0, 0, math.sin(t * 1.4 + phase) * 1)
@@ -611,6 +780,9 @@ local function crane()
 	cable.CanCollide = false
 	local hook = block(Vector3.new(4, 4, 4), CFrame.identity, RED, Enum.Material.DiamondPlate)
 	hook.CanCollide = false
+	if fromKit("Factory_CraneBeam", nil, beam) and fromKit("Factory_CraneTrolley", nil, trolley) and fromKit("Factory_CraneHook", nil, hook) then
+		hide({ beam, trolley, hook })
+	end
 	local top, low = H - 7.5, L2 + 4
 	table.insert(movers, function(t)
 		local x = math.sin(t * 0.25) * 100

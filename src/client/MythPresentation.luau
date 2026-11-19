@@ -41,8 +41,6 @@ function Presentation.start(gui, remotes, api)
 	progress.TextXAlignment, progress.TextYAlignment = Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
 	local toast = label(container, "Reward", UDim2.new(0.9, 0, 0, 42), UDim2.new(0.5, 0, 0.3, 0), 21)
 	toast.AnchorPoint, toast.Visible = Vector2.new(0.5, 0), false
-	local instruction = label(container, "FirstEncounter", UDim2.new(0.88, 0, 0, 38), UDim2.new(0.5, 0, 1, -152), 13)
-	instruction.AnchorPoint, instruction.TextWrapped = Vector2.new(0.5, 0), true
 	local ammo = Instance.new("TextLabel") -- the bow's draw meter
 	ammo.Name, ammo.AnchorPoint, ammo.Position = "BowDraw", Vector2.new(1, 1), UDim2.new(1, -18, 1, -175)
 	ammo.Size, ammo.BackgroundColor3, ammo.BackgroundTransparency = UDim2.fromOffset(128, 55), Color3.fromRGB(22, 24, 29), 0.18
@@ -149,8 +147,6 @@ function Presentation.start(gui, remotes, api)
 		local inYard = root and root.Position.Z < -80 and math.abs(root.Position.X) < 100 and root.Position.X < 250
 		progress.Visible = inYard == true
 		progress.Text = "MYTH HUNT   " .. xp .. " XP\nNext medal: " .. kills .. " / " .. (math.floor(kills / 3) + 1) * 3 .. " defeats"
-		instruction.Visible = kills == 0 and root ~= nil and player:GetAttribute("Map") == "ARENA"
-		instruction.Text = inYard and "Release a monster at its pedestal. Hit its weak point; dodge the marked attack." or "MYTH YARD is beyond the north edge of the arena. Q: weapons"
 		local weapon = api.weapon()
 		ammo.Visible = weapon.kind == "bow"
 		if weapon.kind == "bow" and char then

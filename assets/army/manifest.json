@@ -107,7 +107,7 @@
   {
    "name": "Heavy_Head__343844",
    "color": "343844",
-   "tris": 500,
+   "tris": 426,
    "at": [
     -0.0,
     0.099,
@@ -192,7 +192,7 @@
   {
    "name": "Heavy_Head__000000",
    "color": "000000",
-   "tris": 2052,
+   "tris": 1978,
    "at": [
     -0.0,
     0.099,
@@ -440,7 +440,7 @@
   {
    "name": "Heavy_LeftUpperArm__4E5566",
    "color": "4E5566",
-   "tris": 360,
+   "tris": 286,
    "at": [
     -0.0798,
     0.0986,
@@ -474,7 +474,7 @@
   {
    "name": "Heavy_LeftUpperArm__000000",
    "color": "000000",
-   "tris": 648,
+   "tris": 574,
    "at": [
     -0.0798,
     0.099,
@@ -845,7 +845,7 @@
   {
    "name": "Heavy_RightUpperArm__4E5566",
    "color": "4E5566",
-   "tris": 360,
+   "tris": 286,
    "at": [
     0.0798,
     0.0986,
@@ -879,7 +879,7 @@
   {
    "name": "Heavy_RightUpperArm__000000",
    "color": "000000",
-   "tris": 648,
+   "tris": 574,
    "at": [
     0.0798,
     0.099,
@@ -1208,7 +1208,7 @@
   {
    "name": "Heli_Body__4E6428",
    "color": "4E6428",
-   "tris": 648,
+   "tris": 428,
    "at": [
     0.0,
     1.46,
@@ -1293,7 +1293,7 @@
   {
    "name": "Heli_Body__000000",
    "color": "000000",
-   "tris": 10624,
+   "tris": 10404,
    "at": [
     -0.2119,
     0.4921,
@@ -1452,7 +1452,7 @@
   {
    "name": "Soldier_Head__6E8A3A",
    "color": "6E8A3A",
-   "tris": 492,
+   "tris": 382,
    "at": [
     -0.0,
     0.2214,
@@ -1554,7 +1554,7 @@
   {
    "name": "Soldier_Head__000000",
    "color": "000000",
-   "tris": 1412,
+   "tris": 1302,
    "at": [
     -0.0,
     0.0538,
@@ -2230,6 +2230,1342 @@
     1.9472,
     2.1515,
     2.2746
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_Head": [
+  {
+   "name": "Worker_Head__FFC21A",
+   "color": "FFC21A",
+   "tris": 550,
+   "at": [
+    -0.0,
+    0.2086,
+    -0.1082
+   ],
+   "size": [
+    1.4927,
+    0.9988,
+    1.794
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__D99A0A",
+   "color": "D99A0A",
+   "tris": 214,
+   "at": [
+    0.0,
+    0.3856,
+    0.02
+   ],
+   "size": [
+    0.2167,
+    0.7392,
+    1.4848
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__F4F4F0",
+   "color": "F4F4F0",
+   "tris": 12,
+   "at": [
+    -0.0,
+    0.4248,
+    -0.6148
+   ],
+   "size": [
+    0.3,
+    0.2452,
+    0.1646
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__2FA84A",
+   "color": "2FA84A",
+   "tris": 24,
+   "at": [
+    -0.0,
+    0.4248,
+    -0.638
+   ],
+   "size": [
+    0.2,
+    0.1982,
+    0.1433
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__1C1C20",
+   "color": "1C1C20",
+   "tris": 276,
+   "at": [
+    -0.0,
+    0.0813,
+    -0.025
+   ],
+   "size": [
+    1.568,
+    0.5966,
+    1.5284
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__8FD0F0",
+   "color": "8FD0F0",
+   "tris": 96,
+   "at": [
+    -0.0,
+    0.2596,
+    -0.812
+   ],
+   "size": [
+    0.74,
+    0.16,
+    0.06
+   ],
+   "neon": false,
+   "transparency": 0.55
+  },
+  {
+   "name": "Worker_Head__E03A2A",
+   "color": "E03A2A",
+   "tris": 256,
+   "at": [
+    -0.0,
+    -0.0708,
+    0.02
+   ],
+   "size": [
+    1.4792,
+    0.44,
+    0.44
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_Head__000000",
+   "color": "000000",
+   "tris": 1428,
+   "at": [
+    -0.0,
+    0.2324,
+    -0.111
+   ],
+   "size": [
+    1.5997,
+    1.0935,
+    1.8349
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LeftFoot": [
+  {
+   "name": "Worker_LeftFoot__7A5230",
+   "color": "7A5230",
+   "tris": 120,
+   "at": [
+    -0.0,
+    0.0317,
+    0.0
+   ],
+   "size": [
+    0.9576,
+    0.4695,
+    1.3888
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftFoot__8A9098",
+   "color": "8A9098",
+   "tris": 214,
+   "at": [
+    0.0,
+    0.0162,
+    -0.5208
+   ],
+   "size": [
+    0.8603,
+    0.2925,
+    0.56
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftFoot__1C1C20",
+   "color": "1C1C20",
+   "tris": 96,
+   "at": [
+    -0.0,
+    -0.143,
+    0.0
+   ],
+   "size": [
+    0.9576,
+    0.12,
+    1.3888
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftFoot__000000",
+   "color": "000000",
+   "tris": 430,
+   "at": [
+    -0.0,
+    0.0317,
+    -0.0507
+   ],
+   "size": [
+    1.004,
+    0.5159,
+    1.5366
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LeftLowerArm": [
+  {
+   "name": "Worker_LeftLowerArm__C9A060",
+   "color": "C9A060",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.3636,
+    0.0
+   ],
+   "size": [
+    0.7327,
+    0.34,
+    0.7396
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftLowerArm__7A5230",
+   "color": "7A5230",
+   "tris": 52,
+   "at": [
+    -0.0,
+    -0.202,
+    0.0
+   ],
+   "size": [
+    0.7493,
+    0.07,
+    0.7564
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 216,
+   "at": [
+    -0.0,
+    -0.3541,
+    0.0
+   ],
+   "size": [
+    0.7845,
+    0.4059,
+    0.7924
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LeftLowerLeg": [
+  {
+   "name": "Worker_LeftLowerLeg__5A3A20",
+   "color": "5A3A20",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.4446,
+    0.0
+   ],
+   "size": [
+    0.7936,
+    0.32,
+    0.88
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.4446,
+    0.0
+   ],
+   "size": [
+    0.8396,
+    0.3669,
+    0.9271
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LeftUpperArm": [
+  {
+   "name": "Worker_LeftUpperArm__D8DCE0",
+   "color": "D8DCE0",
+   "tris": 52,
+   "at": [
+    -0.0,
+    0.116,
+    0.0
+   ],
+   "size": [
+    0.6002,
+    0.14,
+    0.8268
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 52,
+   "at": [
+    0.0,
+    0.116,
+    0.0
+   ],
+   "size": [
+    0.6353,
+    0.1722,
+    0.8634
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LeftUpperLeg": [
+  {
+   "name": "Worker_LeftUpperLeg__24364F",
+   "color": "24364F",
+   "tris": 108,
+   "at": [
+    -0.42,
+    -0.0924,
+    0.0
+   ],
+   "size": [
+    0.12,
+    0.5,
+    0.46
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LeftUpperLeg__000000",
+   "color": "000000",
+   "tris": 108,
+   "at": [
+    -0.42,
+    -0.0924,
+    0.0
+   ],
+   "size": [
+    0.1664,
+    0.5464,
+    0.5064
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_LowerTorso": [
+  {
+   "name": "Worker_LowerTorso__7A5230",
+   "color": "7A5230",
+   "tris": 168,
+   "at": [
+    0.0169,
+    -0.0123,
+    -0.0462
+   ],
+   "size": [
+    2.1542,
+    0.7774,
+    1.1676
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__8A9098",
+   "color": "8A9098",
+   "tris": 192,
+   "at": [
+    0.477,
+    0.1895,
+    -0.183
+   ],
+   "size": [
+    1.234,
+    0.3738,
+    0.866
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__5A3A20",
+   "color": "5A3A20",
+   "tris": 192,
+   "at": [
+    -0.0,
+    -0.171,
+    -0.48
+   ],
+   "size": [
+    1.752,
+    0.46,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__B07A44",
+   "color": "B07A44",
+   "tris": 36,
+   "at": [
+    1.014,
+    -0.22,
+    0.0
+   ],
+   "size": [
+    0.1046,
+    0.9,
+    0.11
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__FFC21A",
+   "color": "FFC21A",
+   "tris": 96,
+   "at": [
+    -0.9802,
+    -0.0285,
+    0.0
+   ],
+   "size": [
+    0.16,
+    0.3,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__1C1C20",
+   "color": "1C1C20",
+   "tris": 44,
+   "at": [
+    -1.0702,
+    -0.0285,
+    0.0
+   ],
+   "size": [
+    0.04,
+    0.14,
+    0.14
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_LowerTorso__000000",
+   "color": "000000",
+   "tris": 728,
+   "at": [
+    0.0057,
+    -0.1429,
+    -0.0462
+   ],
+   "size": [
+    2.2231,
+    1.0851,
+    1.214
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_RightFoot": [
+  {
+   "name": "Worker_RightFoot__7A5230",
+   "color": "7A5230",
+   "tris": 120,
+   "at": [
+    -0.0,
+    0.0317,
+    0.0
+   ],
+   "size": [
+    0.9576,
+    0.4695,
+    1.3888
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightFoot__8A9098",
+   "color": "8A9098",
+   "tris": 214,
+   "at": [
+    0.0,
+    0.0162,
+    -0.5208
+   ],
+   "size": [
+    0.8603,
+    0.2925,
+    0.56
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightFoot__1C1C20",
+   "color": "1C1C20",
+   "tris": 96,
+   "at": [
+    -0.0,
+    -0.143,
+    0.0
+   ],
+   "size": [
+    0.9576,
+    0.12,
+    1.3888
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightFoot__000000",
+   "color": "000000",
+   "tris": 430,
+   "at": [
+    -0.0,
+    0.0317,
+    -0.0507
+   ],
+   "size": [
+    1.004,
+    0.5159,
+    1.5366
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_RightLowerArm": [
+  {
+   "name": "Worker_RightLowerArm__C9A060",
+   "color": "C9A060",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.3636,
+    0.0
+   ],
+   "size": [
+    0.7327,
+    0.34,
+    0.7396
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightLowerArm__7A5230",
+   "color": "7A5230",
+   "tris": 52,
+   "at": [
+    -0.0,
+    -0.202,
+    0.0
+   ],
+   "size": [
+    0.7493,
+    0.07,
+    0.7564
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightLowerArm__000000",
+   "color": "000000",
+   "tris": 216,
+   "at": [
+    -0.0,
+    -0.3541,
+    0.0
+   ],
+   "size": [
+    0.7845,
+    0.4059,
+    0.7924
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_RightLowerLeg": [
+  {
+   "name": "Worker_RightLowerLeg__5A3A20",
+   "color": "5A3A20",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.4446,
+    0.0
+   ],
+   "size": [
+    0.7936,
+    0.32,
+    0.88
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.4446,
+    0.0
+   ],
+   "size": [
+    0.8396,
+    0.3669,
+    0.9271
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_RightUpperArm": [
+  {
+   "name": "Worker_RightUpperArm__D8DCE0",
+   "color": "D8DCE0",
+   "tris": 52,
+   "at": [
+    -0.0,
+    0.116,
+    0.0
+   ],
+   "size": [
+    0.6002,
+    0.14,
+    0.8268
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 52,
+   "at": [
+    0.0,
+    0.116,
+    0.0
+   ],
+   "size": [
+    0.6353,
+    0.1722,
+    0.8634
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_RightUpperLeg": [
+  {
+   "name": "Worker_RightUpperLeg__24364F",
+   "color": "24364F",
+   "tris": 108,
+   "at": [
+    0.42,
+    -0.0924,
+    0.0
+   ],
+   "size": [
+    0.12,
+    0.5,
+    0.46
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_RightUpperLeg__000000",
+   "color": "000000",
+   "tris": 108,
+   "at": [
+    0.42,
+    -0.0924,
+    0.0
+   ],
+   "size": [
+    0.1664,
+    0.5464,
+    0.5064
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Worker_UpperTorso": [
+  {
+   "name": "Worker_UpperTorso__FF7A1A",
+   "color": "FF7A1A",
+   "tris": 792,
+   "at": [
+    -0.0,
+    0.0776,
+    -0.0236
+   ],
+   "size": [
+    1.9704,
+    1.772,
+    1.3792
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__D8DCE0",
+   "color": "D8DCE0",
+   "tris": 96,
+   "at": [
+    -0.0,
+    0.2074,
+    0.0
+   ],
+   "size": [
+    1.6544,
+    1.4372,
+    1.3942
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__2A2A30",
+   "color": "2A2A30",
+   "tris": 12,
+   "at": [
+    -0.0,
+    -0.0752,
+    -0.666
+   ],
+   "size": [
+    0.05,
+    1.3536,
+    0.04
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__F4F4F0",
+   "color": "F4F4F0",
+   "tris": 96,
+   "at": [
+    -0.4576,
+    0.5076,
+    -0.6882
+   ],
+   "size": [
+    0.28,
+    0.36,
+    0.04
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__5AB4E0",
+   "color": "5AB4E0",
+   "tris": 12,
+   "at": [
+    -0.4576,
+    0.564,
+    -0.6993
+   ],
+   "size": [
+    0.14,
+    0.14,
+    0.05
+   ],
+   "neon": false,
+   "transparency": 0.1
+  },
+  {
+   "name": "Worker_UpperTorso__D0600E",
+   "color": "D0600E",
+   "tris": 96,
+   "at": [
+    0.4576,
+    0.4888,
+    -0.6882
+   ],
+   "size": [
+    0.3,
+    0.3,
+    0.05
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__2A5AC0",
+   "color": "2A5AC0",
+   "tris": 28,
+   "at": [
+    0.528,
+    0.6768,
+    -0.6993
+   ],
+   "size": [
+    0.06,
+    0.24,
+    0.06
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__2E4A74",
+   "color": "2E4A74",
+   "tris": 96,
+   "at": [
+    -0.0,
+    0.8836,
+    0.0
+   ],
+   "size": [
+    1.056,
+    0.16,
+    1.0878
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Worker_UpperTorso__000000",
+   "color": "000000",
+   "tris": 1228,
+   "at": [
+    -0.0,
+    0.0776,
+    -0.0185
+   ],
+   "size": [
+    2.0168,
+    1.8184,
+    1.4589
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_Head": [
+  {
+   "name": "Zombie_Head__3A3428",
+   "color": "3A3428",
+   "tris": 600,
+   "at": [
+    -0.0089,
+    0.5118,
+    0.227
+   ],
+   "size": [
+    1.1954,
+    0.62,
+    0.914
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_Head__5E7E40",
+   "color": "5E7E40",
+   "tris": 12,
+   "at": [
+    -0.1,
+    0.354,
+    -0.6032
+   ],
+   "size": [
+    0.4995,
+    0.1529,
+    0.05
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_Head__2A2A24",
+   "color": "2A2A24",
+   "tris": 48,
+   "at": [
+    -0.1,
+    0.3565,
+    -0.6148
+   ],
+   "size": [
+    0.4,
+    0.235,
+    0.05
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_Head__000000",
+   "color": "000000",
+   "tris": 660,
+   "at": [
+    -0.0089,
+    0.5118,
+    0.0272
+   ],
+   "size": [
+    1.2411,
+    0.668,
+    1.3617
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_LeftLowerArm": [
+  {
+   "name": "Zombie_LeftLowerArm__D8D2C0",
+   "color": "D8D2C0",
+   "tris": 156,
+   "at": [
+    -0.0,
+    0.0152,
+    0.0
+   ],
+   "size": [
+    0.6755,
+    0.7069,
+    0.6696
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 156,
+   "at": [
+    -0.0,
+    0.0152,
+    0.0
+   ],
+   "size": [
+    0.7152,
+    0.7436,
+    0.7056
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_LeftLowerLeg": [
+  {
+   "name": "Zombie_LeftLowerLeg__7FA05A",
+   "color": "7FA05A",
+   "tris": 52,
+   "at": [
+    -0.0,
+    -0.351,
+    0.0
+   ],
+   "size": [
+    0.7503,
+    0.468,
+    0.832
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_LeftLowerLeg__3C4456",
+   "color": "3C4456",
+   "tris": 72,
+   "at": [
+    -0.0155,
+    -0.0852,
+    0.0
+   ],
+   "size": [
+    0.8655,
+    0.4825,
+    0.882
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 124,
+   "at": [
+    -0.0184,
+    -0.2126,
+    0.0
+   ],
+   "size": [
+    0.8989,
+    0.7766,
+    0.9097
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_LeftUpperArm": [
+  {
+   "name": "Zombie_LeftUpperArm__A49C88",
+   "color": "A49C88",
+   "tris": 262,
+   "at": [
+    -0.0,
+    0.2233,
+    0.0
+   ],
+   "size": [
+    0.6998,
+    0.7831,
+    0.9236
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 262,
+   "at": [
+    -0.0,
+    0.2255,
+    0.0
+   ],
+   "size": [
+    0.7275,
+    0.8267,
+    0.9513
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_LowerTorso": [
+  {
+   "name": "Zombie_LowerTorso__8A7A50",
+   "color": "8A7A50",
+   "tris": 72,
+   "at": [
+    -0.0,
+    -0.0238,
+    -0.0198
+   ],
+   "size": [
+    1.8252,
+    0.4185,
+    1.0956
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_LowerTorso__000000",
+   "color": "000000",
+   "tris": 72,
+   "at": [
+    -0.0,
+    -0.0237,
+    -0.018
+   ],
+   "size": [
+    1.8621,
+    0.4509,
+    1.127
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_RightFoot": [
+  {
+   "name": "Zombie_RightFoot__5A4030",
+   "color": "5A4030",
+   "tris": 132,
+   "at": [
+    -0.0,
+    0.0405,
+    0.0
+   ],
+   "size": [
+    0.924,
+    0.467,
+    1.3392
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_RightFoot__2A2420",
+   "color": "2A2420",
+   "tris": 192,
+   "at": [
+    -0.0,
+    0.0405,
+    0.0
+   ],
+   "size": [
+    0.924,
+    0.467,
+    1.3392
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_RightFoot__000000",
+   "color": "000000",
+   "tris": 324,
+   "at": [
+    -0.0,
+    0.0405,
+    0.0
+   ],
+   "size": [
+    0.9704,
+    0.5134,
+    1.3856
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_RightLowerLeg": [
+  {
+   "name": "Zombie_RightLowerLeg__7FA05A",
+   "color": "7FA05A",
+   "tris": 52,
+   "at": [
+    -0.0,
+    -0.351,
+    0.0
+   ],
+   "size": [
+    0.7503,
+    0.468,
+    0.832
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_RightLowerLeg__3C4456",
+   "color": "3C4456",
+   "tris": 72,
+   "at": [
+    -0.0155,
+    -0.0852,
+    0.0
+   ],
+   "size": [
+    0.8655,
+    0.4825,
+    0.882
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 124,
+   "at": [
+    -0.0184,
+    -0.2126,
+    0.0
+   ],
+   "size": [
+    0.8989,
+    0.7766,
+    0.9097
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_RightUpperArm": [
+  {
+   "name": "Zombie_RightUpperArm__A49C88",
+   "color": "A49C88",
+   "tris": 262,
+   "at": [
+    -0.0,
+    0.2233,
+    0.0
+   ],
+   "size": [
+    0.6998,
+    0.7831,
+    0.9236
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 262,
+   "at": [
+    -0.0,
+    0.2255,
+    0.0
+   ],
+   "size": [
+    0.7275,
+    0.8267,
+    0.9513
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Zombie_UpperTorso": [
+  {
+   "name": "Zombie_UpperTorso__7FA05A",
+   "color": "7FA05A",
+   "tris": 516,
+   "at": [
+    -0.0228,
+    0.1716,
+    -0.0333
+   ],
+   "size": [
+    1.24,
+    1.5064,
+    1.2566
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_UpperTorso__4A3A6A",
+   "color": "4A3A6A",
+   "tris": 192,
+   "at": [
+    0.14,
+    0.2891,
+    -0.6216
+   ],
+   "size": [
+    0.3343,
+    1.0657,
+    0.08
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_UpperTorso__7E7868",
+   "color": "7E7868",
+   "tris": 96,
+   "at": [
+    -0.0,
+    0.8648,
+    0.0
+   ],
+   "size": [
+    0.8096,
+    0.12,
+    0.8658
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_UpperTorso__A49C88",
+   "color": "A49C88",
+   "tris": 120,
+   "at": [
+    -0.0,
+    -0.9174,
+    0.0
+   ],
+   "size": [
+    1.81,
+    0.4825,
+    1.1156
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Zombie_UpperTorso__000000",
+   "color": "000000",
+   "tris": 924,
+   "at": [
+    -0.0,
+    -0.1151,
+    -0.0329
+   ],
+   "size": [
+    1.8377,
+    2.1263,
+    1.3038
    ],
    "neon": false,
    "transparency": 0

@@ -470,7 +470,8 @@ function Monsters.start(remotes, hurtPlayer)
 		table.insert(holes, { b - RAMP_HALF - 1, b + RAMP_HALF + 1, YARD.z + PIT, YARD.z + PIT + RAMP_LONG })
 	end
 	-- the yard is the arena's grass rim north of it (Map.build): cut the pits through it, walk on it
-	local rim = workspace:FindFirstChild("Rim")
+	local map = workspace:FindFirstChild("Map")
+	local rim = map and map:FindFirstChild("Rim") -- breakable floor tiles (Map.build)
 	if rim then
 		carve(rim:GetChildren(), holes)
 		table.insert(floors, rim)

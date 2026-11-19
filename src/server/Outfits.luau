@@ -5,6 +5,7 @@
 --  * Heavy (5 stars): full plate. Closed helmet with a visor, jaw guard and breathing filters;
 --    chest, back and belly plates, a power pack, layered pauldrons, gauntlets, tassets, thigh plates,
 --    knee cops, shin guards and armoured boots.
+--  * Worker and Zombie (Toolbox): Blender kit only, no plain-parts version (assets/army/build.py).
 -- Body colours come with the kind (main script KINDS); the armour stat too. Looks only: every piece
 -- is massless and never collides. Offsets are fractions of the part they sit on, so any body fits.
 local Outfits = {}
@@ -263,19 +264,31 @@ local function fromKit(model: Model, name: string): boolean
 	return true
 end
 
--- Dresses `model` (a dummy, built but not yet ragdolled) as `name` ("Soldier", "Heavy"): the Blender
--- kit when the place has it, else the same uniform out of plain parts.
+-- What the kit leaves bare and gets a colour instead: [outfit] = { hands (gloves), feet }.
+local BARE = {
+	Soldier = { BLACK, STRAP },
+	Heavy = { EDGE, EDGE },
+	Worker = { Color3.fromHex("C9A060"), Color3.fromHex("7A5230") }, -- leather gloves, boots
+	Zombie = { nil, Color3.fromHex("7FA05A") }, -- a bare green foot; the other has its shoe in the kit
+}
+
+-- Dresses `model` (a dummy, built but not yet ragdolled) as `name` ("Soldier", "Heavy", "Worker",
+-- "Zombie"): the Blender kit when the place has it, else (Soldier, Heavy) the same out of plain parts.
 function Outfits.dress(model: Model, name: string)
-	local fn = Outfits[name]
-	if type(fn) ~= "function" or name == "dress" then
-		return
-	end
 	if fromKit(model, name) then
-		paint(model, { "LeftHand", "RightHand" }, name == "Heavy" and EDGE or BLACK) -- gloves; the kit has no hands
-		paint(model, { "LeftFoot", "RightFoot" }, name == "Heavy" and EDGE or STRAP)
+		local bare = BARE[name] or {}
+		if bare[1] then
+			paint(model, { "LeftHand", "RightHand" }, bare[1])
+		end
+		if bare[2] then
+			paint(model, { "LeftFoot", "RightFoot" }, bare[2])
+		end
 		return
 	end
-	fn(model)
+	local fn = Outfits[name]
+	if type(fn) == "function" and name ~= "dress" then
+		fn(model)
+	end
 end
 
 return Outfits

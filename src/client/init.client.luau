@@ -359,7 +359,7 @@ end
 
 local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(20, 20) })
 -- Aimed swing (weapons with aimSwing): hold the attack button, a circle comes up round the crosshair
--- and the mouse or right stick (the camera keeps turning with it) draws a line from its centre. Direction = where
+-- and the mouse or right stick (the camera turns at 15% meanwhile) draws a line from its centre. Direction = where
 -- the blow goes, length = power. Released, it swings.
 -- (one table: the script is at Luau's 200-local limit)
 local swingUi = { R = 70, aim = nil :: { weapon: any, x: number, y: number }? } -- aim: x right, y up, pixels (0..R)
@@ -397,6 +397,27 @@ do
 		line.Rotation = math.deg(math.atan2(-a.y, a.x))
 		line.BackgroundColor3, tip.BackgroundColor3, stroke.Color = colour, colour, colour
 		tip.Position = UDim2.new(0.5, a.x, 0.5, -a.y)
+	end
+	-- The camera turns at CAMERA_SLOW of the player's sensitivity while the line is drawn: the
+	-- PlayerModule turns it through the bindings of its CameraRotationAction (InputActions, which a
+	-- CAS sink does not reach), so their Scale is cut and put back on release.
+	swingUi.CAMERA_SLOW, swingUi.scales = 0.15, {} :: { [Instance]: number }
+	function swingUi.holdCamera(hold: boolean)
+		for binding, scale in swingUi.scales do -- put back first, so a second hold never stacks
+			binding.Scale = scale
+		end
+		table.clear(swingUi.scales)
+		if not hold then
+			return
+		end
+		local module = player.PlayerScripts:FindFirstChild("PlayerModule") or game:GetService("StarterPlayer"):FindFirstChild("PlayerModule")
+		local action = module and module:FindFirstChild("CameraRotationAction", true)
+		for _, binding in action and action:GetChildren() or {} do
+			if binding:IsA("InputBinding") then
+				swingUi.scales[binding] = binding.Scale
+				binding.Scale *= swingUi.CAMERA_SLOW
+			end
+		end
 	end
 	-- The line as (side, up, power): side/up the unit direction (0, 0 if barely moved), power 0..1;
 	-- an unmoved line is a plain swing (0.5).
@@ -436,7 +457,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "X  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Use the toolbox pick\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Spawn the picked character\nClick  Build the picked block (1-5 back to weapons)\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -466,34 +487,11 @@ local weaponLabel = label({
 	Position = UDim2.new(0.5, 0, 0, 84),
 	Size = UDim2.fromOffset(300, 22),
 })
-for i, attack in Attacks do -- cast from the weapon wheel (WeaponBar); these show their cooldowns
+for _, attack in Attacks do -- cast from the weapon wheel (WeaponBar), which shows their cooldowns
 	attack.readyAt = 0
-	attack.label = label({
-		Text = attack.name,
-		TextSize = 15,
-		TextColor3 = attack.color,
-		TextXAlignment = Enum.TextXAlignment.Right,
-		AnchorPoint = Vector2.new(1, 1),
-		Position = UDim2.new(1, -16, 1, -16 - (#Attacks - i) * 22),
-		Size = UDim2.fromOffset(220, 20),
-	})
 end
-local targetTitle = label({
-	TextSize = 16,
-	TextColor3 = Color3.fromRGB(255, 190, 70),
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -150), -- above the hotbar
-	Size = UDim2.fromOffset(600, 20),
-})
-local targetInfo = label({
-	TextSize = 14,
-	Font = Enum.Font.Gotham,
-	AnchorPoint = Vector2.new(0.5, 1),
-	Position = UDim2.new(0.5, 0, 1, -130),
-	Size = UDim2.fromOffset(600, 18),
-})
 -- Movement HUD, bottom centre (clear of the body in third person): the wall run time left (shown
--- only once some is used), and the double jump and the dash, dimmed while spent.
+-- only once some is used).
 do
 	local back = Instance.new("Frame")
 	back.AnchorPoint = Vector2.new(0.5, 0)
@@ -509,10 +507,7 @@ do
 	fill.BackgroundColor3 = Color3.fromRGB(120, 220, 255)
 	fill.BorderSizePixel = 0
 	fill.Parent = back
-	local function pip(text: string, x: number)
-		return label({ Text = text, TextSize = 12, AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, x, 1, -176), Size = UDim2.fromOffset(50, 14) })
-	end
-	mv.hud = { wallBack = back, wall = fill, jump = pip("JUMP", -30), dash = pip("DASH", 30) }
+	mv.hud = { wallBack = back, wall = fill }
 end
 -- Vitals panel, bottom right, for the dummy you last looked at: a body diagram seen from the front
 -- (grey = fine, yellow = hurt, orange = broken, dark = cut off), its condition, pulse, blood and
@@ -1040,6 +1035,17 @@ local function useWeapon(weapon, swing: Vector3?)
 	if dir:Dot(ray.Direction) < 0.5 then -- something right beside the head: aim past it, straight down the crosshair
 		dir = (ray.Origin + ray.Direction * 300 - head.Position).Unit
 	end
+	-- an aimed swing that would miss bends to the dummy nearest the crosshair within reach (25° cone)
+	if weapon.aimSwing and not (result and dummyOf(result.Instance) and (result.Position - head.Position).Magnitude <= weapon.range) then
+		local best, crosshairDir = math.cos(math.rad(25)), dir
+		for _, m in dummyFolder:GetChildren() do
+			local torso = m:FindFirstChild("UpperTorso") :: BasePart?
+			local to = torso and torso.Position - head.Position
+			if to and to.Magnitude <= weapon.range + 1 and to.Unit:Dot(crosshairDir) > best then
+				best, dir = to.Unit:Dot(crosshairDir), to.Unit
+			end
+		end
+	end
 	-- hip fire: the shot leaves somewhere in a wide cone round the crosshair; aiming (first or third
 	-- person) closes it, and once fully up the shot goes exactly to the crosshair
 	local aimed = math.max(ads, thirdAim)
@@ -1094,12 +1100,19 @@ local function castAbility(attack)
 	end
 end
 
+-- Tab: G spawns the picked character, a picked block puts a click on building (Toolbox.luau);
+-- assigned below, the hotbar puts the build tool away
+local toolbox
+
 -- Hotbar (bottom centre) + weapon wheel (hold Q); 1-5 / Q tap / F / L1 R1 / the mouse wheel step through.
 local barApi = {
 	get = function()
 		return weaponIndex
 	end,
 	set = function(i: number)
+		if toolbox then
+			toolbox.stop()
+		end
 		heldAbility = nil
 		weaponVisual.bowDrawAt = nil
 		if player.Character then player.Character:SetAttribute("LocalBowDrawAt", nil) end
@@ -1143,6 +1156,9 @@ local barApi = {
 		return heldAbility
 	end,
 	ability = function(attack) -- WeaponBar puts the fists (Weapons[1]) in hand first
+		if toolbox then
+			toolbox.stop()
+		end
 		heldAbility = attack
 	end,
 	-- F: true when it grabbed a dummy to drag (or let go of one), so F does not also change weapon
@@ -1175,8 +1191,7 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	{ BALL, Vector3.one * 0.9, CFrame.identity, SKIN },
 	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
 }, barApi)
--- Tab: what G puts down (a character, a block, the delete tool)
-local useToolbox = require(script:WaitForChild("Toolbox")).start(gui, actionRemote, barApi, aim)
+toolbox = require(script:WaitForChild("Toolbox")).start(gui, actionRemote, barApi, aim)
 
 -- Actions ---------------------------------------------------------------------
 local function punch()
@@ -1483,6 +1498,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			drop(camera.CFrame.LookVector * THROW_SPEED)
 			return
 		end
+		if toolbox.click() then
+			return -- a block picked in the toolbox: the click builds (or deletes)
+		end
 		if heldAbility then
 			castAbility(heldAbility)
 			return
@@ -1498,7 +1516,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if weapon.aimSwing then -- the swing comes on release (InputEnded); meanwhile the mouse draws it
 			swingUi.aim = { weapon = weapon, x = 0, y = 0 }
 			swingUi.draw()
-			-- reads the mouse/stick and passes it on, so the camera still turns while the line is drawn
+			swingUi.holdCamera(true)
+			-- reads the mouse/stick for the line; the camera barely turns meanwhile (holdCamera), so the
+			-- crosshair stays on what you aimed at
 			ContextActionService:BindActionAtPriority("SwingAim", function(_, _, inp)
 				local a = swingUi.aim
 				if not a then return Enum.ContextActionResult.Pass end
@@ -1511,7 +1531,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 				local len = math.sqrt(a.x * a.x + a.y * a.y)
 				if len > swingUi.R then a.x, a.y = a.x / len * swingUi.R, a.y / len * swingUi.R end
 				swingUi.draw()
-				return Enum.ContextActionResult.Pass
+				return Enum.ContextActionResult.Pass -- on to the camera, slowed by holdCamera
 			end, false, Enum.ContextActionPriority.High.Value, Enum.UserInputType.MouseMovement, Enum.KeyCode.Thumbstick2)
 			return
 		end
@@ -1544,7 +1564,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	elseif input.KeyCode == Enum.KeyCode.C then
 		actionRemote:FireServer("fall")
 	elseif input.KeyCode == Enum.KeyCode.G then
-		useToolbox()
+		toolbox.use()
 	elseif input.KeyCode == Enum.KeyCode.R then
 		if wall or mv.armSlam() then
 			return -- no slam (or revive) while running along or hanging on a wall
@@ -1579,6 +1599,7 @@ UserInputService.InputEnded:Connect(function(input)
 			swingUi.aim = nil
 			swingUi.draw()
 			ContextActionService:UnbindAction("SwingAim")
+			swingUi.holdCamera(false)
 			if Weapons[weaponIndex] == weapon and not Menu.active and not holding then useWeapon(weapon, swing) end
 		end
 		if weaponVisual.bowDrawAt then
@@ -1612,13 +1633,31 @@ local Lighting = game:GetService("Lighting")
 local OUTSIDE = { Ambient = Lighting.Ambient, EnvironmentDiffuseScale = Lighting.EnvironmentDiffuseScale, EnvironmentSpecularScale = Lighting.EnvironmentSpecularScale }
 local INSIDE = { Ambient = Color3.fromRGB(20, 20, 20), EnvironmentDiffuseScale = 0, EnvironmentSpecularScale = 0 }
 player:GetAttributeChangedSignal("Map"):Connect(function()
-	for prop, value in player:GetAttribute("Map") == "FACTORY" and INSIDE or OUTSIDE do
+	local inside = player:GetAttribute("Map") == "FACTORY"
+	for prop, value in inside and INSIDE or OUTSIDE do
 		Lighting[prop] = value
 	end
+	-- the lamps light the hall's yellow (deck edges, rails, the crane) past the bloom threshold and
+	-- it glowed like neon: inside, only what is really bright (lava, fire, lamps' cores) blooms
+	for _, bloom in Lighting:GetChildren() do
+		if bloom:IsA("BloomEffect") then
+			if bloom:GetAttribute("OutsideThreshold") == nil then
+				bloom:SetAttribute("OutsideThreshold", bloom.Threshold)
+			end
+			bloom.Threshold = if inside then 4 else bloom:GetAttribute("OutsideThreshold")
+		end
+	end
 end)
-remotes:WaitForChild("Hazard").OnClientEvent:Connect(function(velocity: Vector3)
-	-- a factory machine hit us; we own our physics, so the server cannot fling us itself
+remotes:WaitForChild("Hazard").OnClientEvent:Connect(function(velocity: Vector3, boost: boolean?)
+	-- a factory machine hit us; we own our physics, so the server cannot fling us itself.
+	-- `boost` (a rocket jump): kept like a double jump's speed, against air control (carry)
 	local char = player.Character
+	if boost then
+		local horizontal = velocity * XZ -- the speed you already had along it is kept if it is more
+		carry = if horizontal.Magnitude > 0.01 then horizontal.Unit * math.max(horizontal.Magnitude, carry.Magnitude) else Vector3.zero
+		velocity = carry + Vector3.yAxis * velocity.Y
+		mv.airJumpUsed = false -- one more jump in the air after it
+	end
 	for _, part in char and char:GetDescendants() or {} do
 		if part:IsA("BasePart") then
 			part.AssemblyLinearVelocity = velocity
@@ -2163,7 +2202,11 @@ end
 edgeGui.Parent = player:WaitForChild("PlayerGui")
 local fovKick, flash, wallGlow, moveFov = 0, 0, 0, 0
 
+-- Strength of the movement juice (FOV kick, flash, shake, speed lines); calibration knob, 1 = old full strength
+local MOVE_FX = 0.5
+
 local function jolt(fov: number, flashAmount: number)
+	fov, flashAmount = fov * MOVE_FX, flashAmount * MOVE_FX
 	fovKick = math.max(fovKick, fov)
 	flash = math.max(flash, flashAmount)
 end
@@ -2203,11 +2246,11 @@ local function launch(root: BasePart, power: number)
 	local feet = root.Position - Vector3.yAxis * 3
 	Fx.ring(CFrame.new(feet), 1, 10 * power, 0.4, AIR, { thick = 0.7, sides = 8, spin = 1 })
 	Fx.sparks(feet, math.round(12 * power), 8 * power, AIR, -flat)
-	for _ = 1, math.round(10 * power) do
+	for _ = 1, math.round(10 * power * MOVE_FX) do
 		Fx.speedLine()
 	end
 	Fx.dust(feet, 5, 3, 0.8)
-	Fx.shake(root.Position, 0.5 * power, 0.25)
+	Fx.shake(root.Position, 0.5 * power * MOVE_FX, 0.25)
 	jolt(30 * power, 0.8 * power)
 	zap()
 end
@@ -2267,7 +2310,7 @@ local function jumpPressed()
 		regrabAt = now + 0.4 -- A/D is probably still held: don't snap straight back on
 		doubleJumpFrom, doubleJumpUntil = now + 0.15, now + DOUBLE_JUMP_WINDOW
 		Fx.dust(root.Position - Vector3.new(0, 3, 0), 4, 2, 0.6)
-		Fx.shake(root.Position, 0.35, 0.2)
+		Fx.shake(root.Position, 0.35 * MOVE_FX, 0.2)
 		jolt(20, 0.55)
 		zap()
 	elseif not ledgeUsed and now > ledgeReadyAt and now - groundedAt < LEDGE_GRACE
@@ -2336,7 +2379,7 @@ function mv.wallFlip()
 	Fx.ring(CFrame.fromMatrix(foot, normal:Cross(Vector3.yAxis), normal), 1, 9, 0.35, AIR, { thick = 0.6 }) -- flat on the wall, like the wall jump's
 	Fx.sparks(foot, 12, 7, AIR, normal)
 	Fx.dust(foot, 4, 2, 0.7)
-	Fx.shake(root.Position, 0.4, 0.2)
+	Fx.shake(root.Position, 0.4 * MOVE_FX, 0.2)
 	jolt(24, 0.6)
 	zap()
 	moveRemote:FireServer("shot", "flip")
@@ -2405,10 +2448,10 @@ function mv.dash()
 	if not isFirstPerson() and player.Character then
 		Fx.ghosts(player.Character, AIR, 5, 0.035, 0.32)
 	end
-	for _ = 1, 12 do
+	for _ = 1, math.round(12 * MOVE_FX) do
 		Fx.speedLine()
 	end
-	Fx.shake(root.Position, 0.25, 0.12)
+	Fx.shake(root.Position, 0.25 * MOVE_FX, 0.12)
 	jolt(22, 0.55)
 	zap()
 end
@@ -2490,7 +2533,7 @@ function mv.diveKick(): boolean
 		sounds.Kick:Play()
 	end
 	moveRemote:FireServer("shot", "kick")
-	for _ = 1, 8 do
+	for _ = 1, math.round(8 * MOVE_FX) do
 		Fx.speedLine()
 	end
 	jolt(16, 0.4)
@@ -2631,7 +2674,7 @@ RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, 
 	wallGlow += ((wall and 1 or 0) - wallGlow) * math.min(dt * 8, 1)
 	flash *= math.exp(-dt * 6)
 	fovKick *= math.exp(-dt * 4)
-	moveFov = wallGlow * 12 + fovKick
+	moveFov = wallGlow * 12 * MOVE_FX + fovKick
 	-- the wall's side of the screen: its normal points away from it
 	local wallSide = wall and (wall.normal:Dot(camera.CFrame.RightVector) > 0 and -1 or 1) or 0
 	for side, frame in edges do
@@ -2960,7 +3003,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local sniper = held.id == "Sniper"
 	local wantAds = aiming and show and (held.kind == "gun" or held.kind == "rocket")
 	ads += ((wantAds and 1 or 0) - ads) * math.min(dt * 14, 1)
-	Fx.fovBoost = (14 * sprint + moveFov) * (1 - ads) - ads * (sniper and 52 or 22)
+	Fx.fovBoost = (14 * MOVE_FX * sprint + moveFov) * (1 - ads) - ads * (sniper and 52 or 22)
 	UserInputService.MouseDeltaSensitivity = 1 - ads * (sniper and 0.7 or 0.35)
 	crosshair.TextSize = 22 + math.min((held.hip or 0) * (1 - math.max(ads, thirdAim)) * 300, 50) -- a wide cross for a wide spread
 	local scoped = sniper and ads > 0.85
@@ -2995,10 +3038,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local airborne = humanoid ~= nil and humanoid.FloorMaterial == Enum.Material.Air
 	mv.hud.wallBack.Visible = wallLeft < WALL_TIME - 0.05
 	mv.hud.wall.Size = UDim2.fromScale(math.clamp(wallLeft / WALL_TIME, 0, 1), 1)
-	mv.hud.jump.TextTransparency = (mv.airJumpUsed or slamming) and 0.8 or 0
-	mv.hud.dash.TextTransparency = (now < mv.dashReadyAt or (airborne and mv.airDashUsed)) and 0.8 or 0
 	if (sprinting or wall or mv.sliding) and now > nextLine then
-		nextLine = now + 0.03
+		nextLine = now + 0.03 / MOVE_FX
 		Fx.speedLine()
 	end
 
@@ -3370,9 +3411,6 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	weaponLabel.Text = weapon.name
 
-	for _, attack in Attacks do
-		attack.label.TextTransparency = os.clock() < attack.readyAt and 0.65 or 0
-	end
 	-- an ability in hand: the viewmodel hands glow in first person, the body's own in third
 	local glowColor = heldAbility and heldAbility.color
 	local firstPerson = isFirstPerson()
@@ -3383,14 +3421,10 @@ RunService.RenderStepped:Connect(function(dt)
 	handGlow(char and char:FindFirstChild("LeftHand") :: BasePart?, glowColor, not firstPerson)
 	handGlow(char and char:FindFirstChild("RightHand") :: BasePart?, glowColor, not firstPerson)
 
-	-- hints + target info
+	-- the dummy in the crosshair: its vitals panel (below)
 	local result = aim(60)
 	local dummy = result and dummyOf(result.Instance)
 	if dummy then
-		local injuries = dummy:GetAttribute("Injuries")
-		local blood = dummy:GetAttribute("Blood") or 100
-		targetTitle.Text = injuries ~= "" and injuries or "No injuries"
-		targetInfo.Text = `{dummy.Name} · {dummy:GetAttribute("Trait") or "?"} · {dummy:GetAttribute("Status")} · {blood >= 100 and "full blood" or blood .. "% blood"}`
 		mv.seen, mv.seenAt = dummy, os.clock()
 		-- pointing a gun at it: tell the server now and then, so it puts its hands up
 		local aimRemote = remotes:FindFirstChild("Aim")
@@ -3398,9 +3432,6 @@ RunService.RenderStepped:Connect(function(dt)
 			mv.aimedAt = os.clock()
 			aimRemote:FireServer(result.Instance)
 		end
-	else
-		targetTitle.Text = ""
-		targetInfo.Text = ""
 	end
 
 	-- vitals of the dummy last looked at; the panel lingers a while after you look away
@@ -3432,3 +3463,6 @@ RunService.RenderStepped:Connect(function(dt)
 		vitals.awake.Size = UDim2.fromScale(awake, 1)
 	end
 end)
+
+-- the first-time tutorial: outlines on its dummies, what to do next (server/Tutorial)
+require(script:WaitForChild("TutorialHud")).start()
