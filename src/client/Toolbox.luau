@@ -1,9 +1,15 @@
--- Toolbox (Tab): pick what G puts down — a character to spawn, a block to build, or the delete tool.
--- The server checks and does the spawning and building (server/init.server.luau, "build" / "spawn").
+-- Toolbox (Tab): pick what G puts down — a character to spawn, a block to build, or the delete tool —
+-- or an outfit or a team a click puts on a dummy, or time stopped. The server checks and does the spawning, building and dressing
+-- (server/init.server.luau, "build" / "spawn" / "dress" / "team" / "freeze"). Items with a `pass` are that game pass's
+-- (shared/Shop): while it is locked they wear its sticker, and a click offers the pass instead.
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
+
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
@@ -14,21 +20,38 @@ local SECTIONS = {
 		{ name = "Civilian", kind = "Normal", color = Color3.fromRGB(110, 170, 90) },
 		{ name = "Cop", kind = "Cop", color = Color3.fromRGB(60, 90, 160) },
 		{ name = "Hooligan", kind = "Hooligan", color = Color3.fromRGB(40, 40, 44) },
-		{ name = "Soldier", kind = "Soldier", color = Color3.fromRGB(96, 108, 70) },
-		{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42) },
-		{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26) },
-		{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90) },
+		{ name = "Soldier", kind = "Soldier", color = Color3.fromRGB(96, 108, 70), pass = "SandboxPlus" },
+		{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
+		{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
+		{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
 	} },
 	{ name = "BLOCKS", items = { -- the map's own blocks: colours and materials as server/Map.luau builds them
 		{ name = "Brick", block = Color3.fromRGB(170, 95, 80), material = "Brick" },
 		{ name = "Dirt", block = Color3.fromRGB(120, 85, 60), material = "Ground" },
 		{ name = "Grass", block = Color3.fromRGB(40, 170, 80), material = "Grass" },
 		{ name = "Wood", block = Color3.fromRGB(128, 82, 52), material = "Wood" },
-		{ name = "Leaves", block = Color3.fromRGB(30, 125, 55), material = "Grass" },
-		{ name = "Metal", block = Color3.fromRGB(120, 122, 130), material = "Metal" },
-		{ name = "Rocks", block = Color3.fromRGB(120, 122, 130), material = "Slate" },
+		{ name = "Leaves", block = Color3.fromRGB(30, 125, 55), material = "Grass", pass = "SandboxPlus" },
+		{ name = "Metal", block = Color3.fromRGB(120, 122, 130), material = "Metal", pass = "SandboxPlus" },
+		{ name = "Rocks", block = Color3.fromRGB(120, 122, 130), material = "Slate", pass = "SandboxPlus" },
+	} },
+	{ name = "OUTFITS", items = { -- `look`: the kind (server KINDS) whose clothes a click puts on a dummy
+		{ name = "Civilian", look = "Normal", color = Color3.fromRGB(110, 170, 90), pass = "DressUp" },
+		{ name = "Cop", look = "Cop", color = Color3.fromRGB(60, 90, 160), pass = "DressUp" },
+		{ name = "Hooligan", look = "Hooligan", color = Color3.fromRGB(40, 40, 44), pass = "DressUp" },
+		{ name = "Soldier", look = "Soldier", color = Color3.fromRGB(96, 108, 70), pass = "DressUp" },
+		{ name = "Heavy", look = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "DressUp" },
+		{ name = "Worker", look = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "DressUp" },
+		{ name = "Zombie", look = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "DressUp" },
+	} },
+	{ name = "TEAMS", items = { -- a click puts a dummy in the team, and G spawns into it; teams fight each other
+		{ name = "Red team", team = 1, color = Color3.fromRGB(232, 70, 56), pass = "SandboxPlus" },
+		{ name = "Blue team", team = 2, color = Color3.fromRGB(40, 110, 220), pass = "SandboxPlus" },
+		{ name = "Green team", team = 3, color = Color3.fromRGB(90, 180, 60), pass = "SandboxPlus" },
+		{ name = "Yellow team", team = 4, color = Color3.fromRGB(230, 170, 30), pass = "SandboxPlus" },
+		{ name = "No team", team = 0, color = Color3.fromRGB(110, 110, 118), pass = "SandboxPlus" },
 	} },
 	{ name = "TOOLS", items = {
+		{ name = "Stop time", tool = "freeze", color = Color3.fromRGB(70, 60, 150), pass = "SandboxPlus" },
 		{ name = "Delete block", tool = "delete", color = Color3.fromRGB(143, 46, 44) },
 		{ name = "Clear my blocks", tool = "clear", color = Color3.fromRGB(90, 40, 40) },
 	} },
@@ -164,7 +187,7 @@ end
 local function characterTile(parent, item)
 	return pictureTile(parent, item, item.color, function(view)
 		local previews = ReplicatedStorage:WaitForChild("ToolboxPreviews", 30)
-		local source = previews and previews:WaitForChild(item.kind, 10)
+		local source = previews and previews:WaitForChild(item.kind or item.look, 10)
 		if not source then
 			return
 		end
@@ -215,7 +238,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 
 	-- G spawns the picked character. Picking a block (or Delete block) takes out the build tool: then
 	-- a click builds (or deletes) instead of attacking, until a weapon or ability comes off the bar (stop).
+	-- Picking an outfit takes out the same tool: a click on a dummy dresses it.
 	local character = SECTIONS[1].items[1]
+	local team = 0 -- the team G spawns into (TEAMS), 0: none
 	local tool = nil
 	local building = false
 
@@ -258,6 +283,22 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	inner.PaddingTop, inner.PaddingBottom, inner.PaddingLeft, inner.PaddingRight = UDim.new(0, 8), UDim.new(0, 14), UDim.new(0, 8), UDim.new(0, 18)
 	inner.Parent = scroll
 
+	local player = Players.LocalPlayer
+	-- a tilted yellow sticker naming the pass, on a tile while that pass is locked
+	local function passSticker(b: GuiObject, key: string)
+		local sticker = Instance.new("TextLabel")
+		sticker.Text, sticker.Font, sticker.TextSize, sticker.TextColor3 = Shop.item(key).name, FONT, 15, INK
+		sticker.BackgroundColor3, sticker.BorderSizePixel, sticker.Rotation = YELLOW, 0, 6
+		sticker.AnchorPoint, sticker.Position, sticker.Size = Vector2.new(1, 0), UDim2.new(1, -4, 0, 4), UDim2.fromOffset(96, 22)
+		sticker.ZIndex, sticker.Parent = 47, b
+		outline(sticker, 2)
+		local function show()
+			sticker.Visible = Shop.locked(player, key)
+		end
+		show()
+		player:GetAttributeChangedSignal(Shop.attribute(key)):Connect(show)
+	end
+
 	local cards = {}
 	local function refresh()
 		for item, b in cards do
@@ -293,24 +334,42 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		grid.LayoutOrder, grid.ZIndex, grid.Parent = order, 42, scroll
 		local layout = Instance.new("UIGridLayout")
 		local first = section.items[1]
-		layout.CellSize = if first.kind then UDim2.new(0.2, -GAP, 0, 180) -- characters: upright tiles
+		layout.CellSize = if first.kind or first.look then UDim2.new(0.2, -GAP, 0, 180) -- characters: upright tiles
 			elseif first.block then UDim2.new(0.25, -GAP, 0, 130)
 			else UDim2.new(0.25, -GAP, 0, 52)
 		layout.CellPadding, layout.SortOrder = UDim2.fromOffset(GAP, GAP), Enum.SortOrder.LayoutOrder
 		layout.Parent = grid
 		for i, item in section.items do
-			local b = if item.kind then characterTile(grid, item)
+			local b = if item.kind or item.look then characterTile(grid, item)
 				elseif item.block then blockTile(grid, item)
 				else button(grid, item.name, item.color)
 			b.LayoutOrder = i
 			cards[item] = b
+			if item.tool == "freeze" then -- says what a click does now
+				local label = b:FindFirstChild("Label") :: TextLabel
+				local function show()
+					label.Text = if workspace:GetAttribute("TimeFrozen") then "RESUME TIME" else "STOP TIME"
+				end
+				show()
+				workspace:GetAttributeChangedSignal("TimeFrozen"):Connect(show)
+			end
+			if item.pass then
+				passSticker(b, item.pass)
+			end
 			b.Activated:Connect(function()
+				if item.pass and Shop.locked(player, item.pass) then
+					MarketplaceService:PromptGamePassPurchase(player, Shop.item(item.pass).pass)
+					return
+				end
 				if item.tool == "clear" then
 					actionRemote:FireServer("clearbuild")
+				elseif item.tool == "freeze" then
+					actionRemote:FireServer("freeze")
 				elseif item.kind then
 					character = item
 				else
 					tool, building = item, true
+					team = item.team or team -- G spawns into the last team picked ("No team": 0)
 				end
 				refresh()
 				setOpen(false)
@@ -333,7 +392,18 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end
 	end)
 
-	-- the block a click would build (ghost), or the built block it would delete (outline)
+	-- the dummy (a model in workspace.Dummies) the aim is on, for an outfit
+	local function dummyAt(result: RaycastResult): Model?
+		local dummies = workspace:FindFirstChild("Dummies")
+		local inst: Instance? = result.Instance
+		while inst and inst.Parent ~= dummies do
+			inst = inst.Parent
+		end
+		return if inst and inst:IsA("Model") then inst else nil
+	end
+
+	-- the block a click would build (ghost), the built block it would delete or the dummy an outfit
+	-- goes on (outline)
 	local ghost = Instance.new("Part")
 	ghost.Name, ghost.Size, ghost.Anchored = "BuildGhost", Vector3.one * GRID, true
 	ghost.CanCollide, ghost.CanQuery, ghost.CanTouch, ghost.CastShadow = false, false, false, false
@@ -362,6 +432,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		elseif tool.block then
 			ghost.Color, ghost.Material = tool.block, Enum.Material[tool.material]
 			ghost.Position, ghost.Parent, outline.Adornee = blockSpot(result, built), workspace, nil
+		elseif tool.look or tool.team then
+			ghost.Parent = nil
+			outline.Adornee = dummyAt(result)
 		else
 			ghost.Parent = nil
 			outline.Adornee = built and result.Instance.Parent == built and result.Instance or nil
@@ -372,7 +445,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		use = function() -- G
 			local result = aim(RANGE)
 			if result then
-				actionRemote:FireServer("spawn", result.Position, character.kind)
+				actionRemote:FireServer("spawn", result.Position, character.kind, team)
 			end
 		end,
 		click = function(): boolean -- left click: true when the build tool took it
@@ -385,6 +458,16 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				return true -- aimed at the sky: nothing to build on, but no swing either
 			elseif tool.block then
 				actionRemote:FireServer("build", blockSpot(result, built), tool.block, tool.material)
+			elseif tool.look then
+				local dummy = dummyAt(result)
+				if dummy then
+					actionRemote:FireServer("dress", dummy, tool.look)
+				end
+			elseif tool.team then
+				local dummy = dummyAt(result)
+				if dummy then
+					actionRemote:FireServer("team", dummy, tool.team)
+				end
 			elseif built and result.Instance.Parent == built then
 				actionRemote:FireServer("unbuild", result.Instance)
 			end

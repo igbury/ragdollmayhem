@@ -7,6 +7,7 @@ local Debris = game:GetService("Debris")
 local Attacks = require(ReplicatedStorage.Shared.Attacks)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Weapons = require(ReplicatedStorage.Shared.Weapons)
+local Shop = require(ReplicatedStorage.Shared.Shop)
 local BoxingGloves = require(ReplicatedStorage.Shared.BoxingGloves)
 local Map = require(script.Map)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
@@ -20,6 +21,7 @@ local Monsters = require(script.Monsters)
 local Arrows = require(script.Arrows)
 local Wanted = require(script.Wanted)
 local Progress = require(script.Progress)
+local ShopServer = require(script.Shop)
 local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
 
@@ -696,8 +698,9 @@ local function revive(d)
 	if next(d.lost) then -- limbs do not grow back: a whole new body, same name, same spot
 		local cf = CFrame.new(d.model:GetPivot().Position + Vector3.yAxis * 3)
 		local name = d.model.Name
+		local kind, look = d.model:GetAttribute("Kind"), d.model:GetAttribute("Look") -- same person, same clothes
 		d.model:Destroy()
-		task.spawn(spawnDummy, cf, name)
+		task.spawn(spawnDummy, cf, name, kind, d.trait, look)
 		return
 	end
 	stopBleeding(d)
@@ -736,6 +739,113 @@ local function revive(d)
 	syncAttributes(d)
 end
 
+-- Toolbox extras: DRESS UP, TEAMS and TIME STOP (one table: the script is at Luau's 200-locals limit)
+local Sandbox: any = { frozen = false, userFrozen = false, frozenParts = {}, frozenTracks = {} }
+
+-- DRESS UP (Toolbox, shared/Shop): the same person in the clothes of another kind (`look`, a KINDS
+-- name). Like a revive with limbs gone, it is a whole new body: same name, kind, trait and spot,
+-- only the description and outfit come from `look`.
+function Sandbox.dress(d, look: string)
+	local at = d.model:GetPivot()
+	local flat = Vector3.new(at.LookVector.X, 0, at.LookVector.Z)
+	local cf = CFrame.lookAlong(at.Position + Vector3.yAxis, if flat.Magnitude > 0.1 then flat else Vector3.zAxis)
+	local name, kind, trait, team = d.model.Name, d.model:GetAttribute("Kind"), d.trait, d.team
+	d.model:Destroy()
+	task.spawn(function()
+		local fresh = spawnDummy(cf, name, kind, trait, look)
+		if team and fresh then
+			Sandbox.setTeam(fresh, team)
+		end
+	end)
+end
+
+-- TEAMS (Toolbox, SANDBOX + in shared/Shop): up to 4; a dummy in one goes after the nearest dummy of
+-- another (behave, nearestDummy), never a teammate, and does not lose its nerve. A coloured dot over
+-- its head shows which.
+Sandbox.TEAM_COLORS = { Color3.fromRGB(232, 70, 56), Color3.fromRGB(40, 110, 220), Color3.fromRGB(90, 180, 60), Color3.fromRGB(252, 200, 50) }
+function Sandbox.setTeam(d, team: number?)
+	d.team = team
+	d.model:SetAttribute("Team", team)
+	local head = d.model:FindFirstChild("Head")
+	local mark = head and head:FindFirstChild("TeamMark")
+	if mark and not team then
+		mark:Destroy()
+	elseif head and team then
+		if not mark then
+			mark = Instance.new("BillboardGui")
+			mark.Name, mark.Size, mark.StudsOffset, mark.LightInfluence = "TeamMark", UDim2.fromScale(0.9, 0.9), Vector3.new(0, 2.2, 0), 0
+			mark.MaxDistance = 150
+			local dot = Instance.new("Frame")
+			dot.Name, dot.Size, dot.BorderSizePixel = "Dot", UDim2.fromScale(1, 1), 0
+			Instance.new("UICorner", dot).CornerRadius = UDim.new(0.5, 0)
+			local ring = Instance.new("UIStroke")
+			ring.Thickness, ring.Color, ring.Parent = 3, Color3.fromRGB(20, 20, 24), dot
+			dot.Parent = mark
+			mark.Parent = head
+		end
+		(mark :: any).Dot.BackgroundColor3 = Sandbox.TEAM_COLORS[team]
+	end
+	local target = d.target
+	if team and target and typeof(target) ~= "Instance" and target.team == team then -- now on its side
+		d.target, d.brain = nil, nil
+		local guard = d.tracks[Anims.guard]
+		if guard then
+			guard:Stop(0.3)
+		end
+	end
+end
+
+-- TIME STOP: every dummy holds still where it is, anchored, its animations paused and its brain off
+-- (the Heartbeat skips it); time on puts it all back. On while the Toolbox button (SANDBOX +) has it
+-- on (userFrozen), so they can be set up, and while every player is still in the menu (inMenu): the
+-- world waits for PLAY.
+-- Sandbox.frozenParts: [BasePart] = true, anchored by the stop; Sandbox.frozenTracks: [AnimationTrack] = its speed
+function Sandbox.freeze(d)
+	d.frozen = true
+	if d.heldBy or d.looseOwner then
+		release(d, Vector3.zero)
+	end
+	for _, part in d.model:GetDescendants() do
+		if part:IsA("BasePart") and not part.Anchored then
+			part.Anchored = true
+			Sandbox.frozenParts[part] = true
+		end
+	end
+	local animator = d.humanoid:FindFirstChildOfClass("Animator")
+	for _, track in animator and animator:GetPlayingAnimationTracks() or {} do
+		Sandbox.frozenTracks[track] = track.Speed
+		track:AdjustSpeed(0)
+	end
+end
+function Sandbox.inMenu(): boolean
+	local players = Players:GetPlayers()
+	for _, player in players do
+		if player:GetAttribute("Map") then
+			return false
+		end
+	end
+	return #players > 0
+end
+function Sandbox.setFrozen(on: boolean)
+	Sandbox.frozen = on
+	if on then
+		return -- the Heartbeat freezes each dummy (new ones too, once they have landed)
+	end
+	for part in Sandbox.frozenParts do
+		if part.Parent then
+			part.Anchored = false
+		end
+	end
+	for track, speed in Sandbox.frozenTracks do
+		track:AdjustSpeed(speed)
+	end
+	table.clear(Sandbox.frozenParts)
+	table.clear(Sandbox.frozenTracks)
+	for _, d in dummies do
+		d.frozen = nil
+	end
+end
+
 -- Joints that go limp on their own while the dummy stays on its feet (Ragdoll.joints).
 local LIMP = {
 	left = { "LeftShoulder", "LeftElbow", "LeftWrist" },
@@ -756,16 +866,21 @@ local BLAME_FOR = 300 -- seconds a player answers for a death they set going (sh
 -- trimDummies). The tutorial's dummies are its own business (server/Tutorial). `run` is below, by trimDummies.
 local RESPAWN: any = { MAX_BODIES = 45, BEHIND = { 30, 22, 14 } }
 
+-- Who did what is happening to `d` now: whoever's action this thread is running (Wanted.act: their
+-- attack, their rocket, their grenade's fuse, their molotov's fire, their arrow; false for a soldier's
+-- rocket), else the last one who hurt, threw, dropped or carried it (a landing, a bleed-out, a machine
+-- it was thrown into). Nobody: a dummy's own fight, a fall it took by itself.
+local function blameOf(d): (Player?, string?)
+	local by, weapon = Wanted.culprit(), Wanted.weapon()
+	if by == nil and d.blameAt and os.clock() - d.blameAt < BLAME_FOR then
+		by, weapon = d.blame, d.blameWeapon
+	end
+	return by or nil, weapon
+end
+
 local function kill(d, cause: string)
 	if d.state ~= "Dead" then
-		-- who did it: whoever's action this thread is running (Wanted.act: their attack, their rocket,
-		-- their grenade's fuse, their molotov's fire, their arrow; false for a soldier's rocket), else
-		-- the last one who hurt, threw, dropped or carried it (a landing, a bleed-out, a machine it was
-		-- thrown into). Nobody: no stars (a dummy's own fight, a fall it took by itself).
-		local by, weapon = Wanted.culprit(), Wanted.weapon()
-		if by == nil and d.blameAt and os.clock() - d.blameAt < BLAME_FOR then
-			by, weapon = d.blame, d.blameWeapon
-		end
+		local by, weapon = blameOf(d)
 		if by and not d.zombie and not d.model:GetAttribute("TutorialFor") then -- no crime: a zombie, the tutorial's dummies
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
@@ -1290,6 +1405,10 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	local function breakBone()
 		if not p.broken then
 			p.broken = true
+			local by = blameOf(d)
+			if by then
+				Progress.add(by, "StatBones") -- the STATS page
+			end
 			Sfx.play(Sfx.BONE, point)
 			addInjury(d, info.broken)
 			d.limp = d.limp or info.limb == "leg"
@@ -1469,7 +1588,8 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	syncAttributes(d)
 	alarm(d, point, (not dead and d.state == "Dead") and "death" or cutOff and "cut" or kind == "bullet" and "shot" or "hit", from)
 	local hooligan = attacker and typeof(attacker) ~= "Instance" and attacker.gear == "Bat"
-	if attacker and not dead and d.state ~= "Dead" and d.target ~= attacker
+	local teammate = attacker and typeof(attacker) ~= "Instance" and d.team and attacker.team == d.team
+	if attacker and not dead and not teammate and d.state ~= "Dead" and d.target ~= attacker
 		and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and not badlyHurt(d)) or (hooligan and d.brave)) then
 		d.target = attacker -- it hits back (behave), on its feet again if it went down
 		say(d, pick(ANGRY_LINES))
@@ -1485,21 +1605,24 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 end
 
 -- `forceTrait`: its character instead of the kind's or a random one (the tutorial's never hit back).
-function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: string?)
+-- `look`: a KINDS name to dress it as instead of its own kind (DRESS UP, dress)
+function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: string?, look: string?)
 	local kindName = forceKind or rollKind()
 	local kind = KINDS[kindName]
-	local model = Players:CreateHumanoidModelFromDescription(kind.description, Enum.HumanoidRigType.R15)
+	local wear = look and KINDS[look] or kind
+	local model = Players:CreateHumanoidModelFromDescription(wear.description, Enum.HumanoidRigType.R15)
 	local name = as or pick(NAMES)
 	model.Name = name
 	model:SetAttribute("Kind", kindName)
+	model:SetAttribute("Look", look)
 	model:SetAttribute("Gear", kind.gear) -- set before it is parented, so clients get it with the model
 	local humanoid = model:FindFirstChildOfClass("Humanoid") :: Humanoid
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
 	humanoid.WalkSpeed = 8
 
 	Looks.buildFace(Looks.plainHead(model))
-	if kind.outfit then
-		Outfits.dress(model, kind.outfit)
+	if wear.outfit then
+		Outfits.dress(model, wear.outfit)
 	end
 
 	model:PivotTo(cf)
@@ -1644,14 +1767,14 @@ end)
 
 -- Room for one more living dummy: at MAX_DUMMIES living the oldest of them goes. Bodies do not
 -- count; they have their own cap (RESPAWN.MAX_BODIES).
-local function trimDummies()
+local function trimDummies(limit: number?) -- `limit`: a lower cap than MAX_DUMMIES (SANDBOX + in shared/Shop)
 	local living = {}
 	for _, d in dummies do
 		if d.state ~= "Dead" then
 			table.insert(living, d)
 		end
 	end
-	if #living < MAX_DUMMIES then
+	if #living < math.min(limit or MAX_DUMMIES, MAX_DUMMIES) then
 		return
 	end
 	table.sort(living, function(a, b)
@@ -1853,6 +1976,7 @@ local PUNT_BLAST = 2.4 -- radius it smashes where it lands (Map.blast, PUNT_BLAS
 local PUNT_BLAST_POWER = 55
 local PUNT_HITS = 3 -- hits that break the map while it is marked (the client's PUNT_HITS)
 local MAX_PUNT_SPEED = 200
+Sandbox.THROWN_SPEED = 25 -- studs/s a let-go body needs to count as thrown (STATS)
 
 grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 	Wanted.act(player, "Body") -- whatever this does to a dummy is on them
@@ -1869,6 +1993,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		end
 		d.heldBy = player
 		d.dragging = (...) == "drag" -- F: by the chest in one hand, ground into the floor on a sprint (scrape)
+		d.throwFrom = nil
 		d.looseOwner = nil -- caught again mid-flight: the new holder owns it (knockDown below)
 		held[player] = d
 		local attachment = Instance.new("Attachment")
@@ -1952,6 +2077,10 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 			if velocity.Magnitude > cap then
 				velocity = velocity.Unit * cap
 			end
+			if velocity.Magnitude > Sandbox.THROWN_SPEED then -- a throw or a punt, not a drop: the STATS page
+				Progress.add(player, "StatThrown")
+				d.throwFrom = d.model:GetPivot().Position -- how far it got: the loose check in the Heartbeat
+			end
 			release(d, velocity, player) -- the thrower applies the velocity: it owns the body
 		end
 	end
@@ -1959,7 +2088,7 @@ end)
 
 -- Toolbox blocks (client/Toolbox.luau): anchored GRID cubes, one folder, capped per player.
 local BLOCK_SIZE = 4
-local MAX_BLOCKS = 300 -- per player
+
 local BLOCK_MATERIALS = { Brick = true, Ground = true, Grass = true, Wood = true, Metal = true, Slate = true } -- the map's own (client/Toolbox.luau)
 local builtFolder = Instance.new("Folder")
 builtFolder.Name = "Built"
@@ -1987,7 +2116,7 @@ local function clearBlocks(player: Player)
 end
 Players.PlayerRemoving:Connect(clearBlocks)
 
-local MENU_ACTIONS = { map = true, spawn = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true } -- slam / kick / dive: the handler below
+local MENU_ACTIONS = { map = true, menu = true, spawn = true, dress = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 	local building = action == "build" or action == "unbuild"
 	if not MENU_ACTIONS[action] or rateLimited(player, building and 0.08 or 0.25, building and "build" or "action") then
@@ -1995,6 +2124,25 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 	end
 	if action == "map" and player:GetAttribute("Tutorial") then
 		arg = "ARENA" -- the tutorial is only on the arena (server/Tutorial)
+	end
+	if action == "menu" and player:GetAttribute("Map") then -- back to the menu (M): off the map, held still, as before PLAY
+		if held[player] then
+			release(held[player], Vector3.zero)
+		end
+		player:SetAttribute("Map", nil) -- Sandbox.inMenu: with nobody in a map, time stops
+		local char = player.Character
+		if char then
+			if char:GetAttribute("Ragdolled") then
+				Ragdoll.set(char, false)
+			end
+			char:PivotTo(MENU_HOLD)
+			local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if root then
+				root.AssemblyLinearVelocity = Vector3.zero
+				root.Anchored = true
+			end
+		end
+		return
 	end
 	if action == "map" and SPAWNS[arg] then
 		player:SetAttribute("Map", arg)
@@ -2018,12 +2166,35 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 	if not head then
 		return
 	end
+	local plus = not Shop.locked(player, "SandboxPlus") -- SANDBOX + (shared/Shop): every kind, higher caps
 	if action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
-		trimDummies()
 		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
-		spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
+		if kind and Shop.SANDBOX.kinds[kind] and not plus then
+			return
+		end
+		trimDummies(Shop.SANDBOX.dummies[plus and 2 or 1])
+		local d = spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
+		if plus and d and Sandbox.TEAM_COLORS[extra2] then -- spawned straight into the picked team
+			Sandbox.setTeam(d, extra2)
+		end
+	elseif action == "team" and plus and typeof(arg) == "Instance" and (extra == 0 or Sandbox.TEAM_COLORS[extra]) then
+		local d = dummyOf(arg)
+		if d and d.state ~= "Dead" then
+			Sandbox.setTeam(d, if extra == 0 then nil else extra)
+		end
+	elseif action == "freeze" and plus then
+		Sandbox.userFrozen = not Sandbox.userFrozen -- the Heartbeat applies it
+		workspace:SetAttribute("TimeFrozen", Sandbox.userFrozen)
+	elseif action == "dress" and typeof(arg) == "Instance" and typeof(extra) == "string" and KINDS[extra]
+		and not Shop.locked(player, "DressUp") then
+		local d = dummyOf(arg)
+		if d and d.state ~= "Dead" and not d.heldBy and not d.looseOwner and not d.model:GetAttribute("TutorialFor")
+			and (d.model:GetPivot().Position - head.Position).Magnitude < 200 then
+			Sandbox.dress(d, extra)
+		end
 	elseif action == "build" and finite(arg) and (arg - head.Position).Magnitude < 200 and typeof(extra) == "Color3"
-		and BLOCK_MATERIALS[extra2] and blockCount(player) < MAX_BLOCKS then
+		and BLOCK_MATERIALS[extra2] and (plus or not Shop.SANDBOX.materials[extra2])
+		and blockCount(player) < Shop.SANDBOX.blocks[plus and 2 or 1] then
 		local size = Vector3.one * (BLOCK_SIZE - 0.1) -- a hair smaller: touching neighbours are not overlaps
 		if #workspace:GetPartBoundsInBox(CFrame.new(arg), size, blockOverlap) > 0 then
 			return
@@ -2252,6 +2423,9 @@ function ATTACKS.Ult(_, cf: CFrame)
 end
 
 attackRemote.OnServerEvent:Connect(function(player, id, look)
+	if Shop.locked(player, "Anime") then -- the abilities are the ANIME ATTACKS pass (shared/Shop)
+		return
+	end
 	Wanted.act(player, "Ability") -- whatever this does to a dummy is on them
 	local run = typeof(id) == "string" and ATTACKS[id]
 	-- where the player is looking (the camera); anything odd falls back to the body's facing
@@ -2864,6 +3038,7 @@ end)
 local sightParams = RaycastParams.new()
 sightParams.FilterType = Enum.RaycastFilterType.Exclude
 local SIGHT = 45
+Sandbox.TEAM_SIGHT = 120 -- a dummy in a team (Toolbox TEAMS) looks this far for the other teams
 
 local function nearestPlayer(d, root: BasePart): (Player?, BasePart?)
 	local best, bestRoot, bestDist = nil, nil, SIGHT
@@ -2884,14 +3059,16 @@ end
 
 -- The nearest dummy still alive that `d` can see (a Berserk goes for those too).
 local function nearestDummy(d, root: BasePart): (any, BasePart?, number)
-	local best, bestRoot, bestDist = nil, nil, SIGHT
+	local best, bestRoot, bestDist = nil, nil, if d.team then Sandbox.TEAM_SIGHT else SIGHT
 	sightParams.FilterDescendantsInstances = { dummyFolder, gibFolder }
 	for _, other in dummies do
 		local r = other.model:FindFirstChild("HumanoidRootPart") :: BasePart?
 		local dist = r and (r.Position - root.Position).Magnitude or math.huge
 		if other ~= d and other.state ~= "Dead" and dist < bestDist
-			and not (d.gear == "Bat" and other.gear) -- a hooligan picks on the unarmed ones
+			and not (d.gear == "Bat" and other.gear and not d.team) -- a hooligan picks on the unarmed ones
 			and not (d.zombie and other.zombie) -- zombies leave their own alone
+			and not (d.team and other.team == d.team) -- teammates (Toolbox TEAMS)
+			and not (d.team and not other.team) -- a team fights the other teams only
 			and not workspace:Raycast(root.Position + Vector3.yAxis * 1.5, r.Position - root.Position, sightParams) then
 			best, bestRoot, bestDist = other, r, dist
 		end
@@ -3298,8 +3475,8 @@ local function fight(d, root: BasePart, now: number)
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	local other = targetRoot(target)
 	local alive = if victim then dummies[victim.model] ~= nil and victim.state ~= "Dead" else player.Parent ~= nil and humanoid ~= nil and humanoid.Health > 0
-	local gone = not (alive and other) or (other.Position - root.Position).Magnitude > (d.hunt and 250 or 80) -- a hunter (Wanted) chases from far
-	local broken = d.trait ~= "Berserk" and (d.morale < MORALE_BREAK or (d.trait == "Hothead" and badlyHurt(d)))
+	local gone = not (alive and other) or (other.Position - root.Position).Magnitude > (d.hunt and 250 or d.team and Sandbox.TEAM_SIGHT + 10 or 80) -- a hunter (Wanted) or a team chases from far
+	local broken = d.trait ~= "Berserk" and not d.team and (d.morale < MORALE_BREAK or (d.trait == "Hothead" and badlyHurt(d)))
 	if gone or broken then
 		stopFighting(d)
 		d.speed = pace(d)
@@ -3591,6 +3768,15 @@ local function behave(d, now: number): boolean
 		return false
 	end
 	d.nextLook = now + 0.5
+	if d.team then -- Toolbox TEAMS: after the nearest one of another team, whatever its trait
+		local enemy = nearestDummy(d, root)
+		if enemy then
+			d.target = enemy
+			say(d, pick(BERSERK_LINES))
+			return true
+		end
+		return false
+	end
 	if d.trait == "Berserk" or (d.trait == "Coward" and d.calmAt == 0) then
 		local player, other = nearestPlayer(d, root)
 		if d.trait == "Berserk" then
@@ -3747,6 +3933,10 @@ end
 local nextSync = 0
 RunService.Heartbeat:Connect(function(dt)
 	local now = os.clock()
+	local stop = Sandbox.userFrozen or Sandbox.inMenu() -- TIME STOP
+	if stop ~= Sandbox.frozen then
+		Sandbox.setFrozen(stop)
+	end
 	local sync = now >= nextSync -- blood and status tick over on the HUD a few times a second
 	if sync then
 		nextSync = now + 0.3
@@ -3758,6 +3948,12 @@ RunService.Heartbeat:Connect(function(dt)
 		local core = d.model:FindFirstChild("UpperTorso") :: BasePart?
 		if not core or not d.model:FindFirstChild("HumanoidRootPart") or core.Position.Y < workspace.FallenPartsDestroyHeight + 40 then
 			d.model:Destroy()
+			continue
+		end
+		if Sandbox.frozen and (d.frozen or now - d.born > 0.8) then -- TIME STOP: still; a new one lands first
+			if not d.frozen then
+				Sandbox.freeze(d)
+			end
 			continue
 		end
 		if d.dragging and d.heldBy then
@@ -3788,6 +3984,11 @@ RunService.Heartbeat:Connect(function(dt)
 		if d.looseOwner then -- let go: back to the server once it lies still (no snap), or after LOOSE_MAX
 			local since = now - d.looseSince
 			if since > LOOSE_MAX or (since > 0.5 and core.AssemblyLinearVelocity.Magnitude < 1.5) or not d.looseOwner.Parent then
+				if d.throwFrom and d.looseOwner.Parent then -- landed: the longest throw (STATS)
+					local flown = (core.Position - d.throwFrom) * Vector3.new(1, 0, 1)
+					Progress.best(d.looseOwner, "StatThrow", math.floor(flown.Magnitude))
+				end
+				d.throwFrom = nil
 				d.looseOwner = nil
 				setOwner(d.model, nil)
 				d.impactState = Impact.new()
@@ -3974,6 +4175,7 @@ Wanted.start({
 
 -- weapon progression: kill counters, loaded and saved per player (server/Progress)
 Progress.start()
+ShopServer.start()
 -- the first-time tutorial on the arena (server/Tutorial)
 Tutorial.start({
 	spawn = function(cf: CFrame, kind: string?): Model

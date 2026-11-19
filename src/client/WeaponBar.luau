@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Progression = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
 
@@ -169,10 +170,13 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		return k and attackFrom + k or api.get()
 	end
 	-- Weapon progression (shared/Progression; the server refuses a locked one too): what a weapon
-	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities are never locked.
+	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities: only by the ANIME ATTACKS pass.
 	local player = Players.LocalPlayer
 	local function missing(i: number?): string?
 		local w = i and i <= #weapons and weapons[i]
+		if i and i > attackFrom and Shop.locked(player, "Anime") then
+			return "ANIME ATTACKS PASS" -- the abilities (shared/Shop)
+		end
 		return w and Progression.missing(player, w.id) or nil
 	end
 	local flash: (string) -> () -- the banner over the hotbar, below
@@ -679,6 +683,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	relock()
 	for _, attribute in Progression.ATTRIBUTE do
 		player:GetAttributeChangedSignal(attribute):Connect(relock)
+	end
+	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime" } do -- passes that unlock (shared/Shop)
+		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if gui:GetAttribute("WeaponPickerOpen") and not open then return end

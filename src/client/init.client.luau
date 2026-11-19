@@ -457,7 +457,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Spawn the picked character\nClick  Build the picked block (1-5 back to weapons)\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera",
+	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Spawn the picked character\nClick  Build the picked block (1-5 back to weapons)\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera\nM  Back to the menu",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -466,13 +466,13 @@ local controls = label({
 	Size = UDim2.fromOffset(320, 320),
 })
 local controlsHint = label({
-	Text = "H  Controls",
+	Text = "H  Controls    M  Menu",
 	TextSize = 13,
 	TextTransparency = 0.25,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	AnchorPoint = Vector2.new(0, 1),
 	Position = UDim2.new(0, 16, 1, -16),
-	Size = UDim2.fromOffset(160, 16),
+	Size = UDim2.fromOffset(240, 16),
 })
 UserInputService.InputBegan:Connect(function(input, processed)
 	if not processed and input.KeyCode == Enum.KeyCode.H then
@@ -1297,6 +1297,20 @@ local function drop(velocity: Vector3)
 	end
 	holding = nil
 end
+
+-- M: back to the menu. The server takes the character off the map ("menu") and Menu.reopen builds the
+-- menu again; PLAY from there goes back in like the first time.
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed or input.KeyCode ~= Enum.KeyCode.M or Menu.active or gui:GetAttribute("WeaponPickerOpen")
+		or UserInputService:GetFocusedTextBox() then
+		return
+	end
+	if holding then
+		drop(Vector3.zero)
+	end
+	actionRemote:FireServer("menu")
+	Menu.reopen()
+end)
 
 local function toggleGrab()
 	if holding then
