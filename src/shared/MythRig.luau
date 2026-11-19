@@ -1,6 +1,33 @@
 -- Articulated part rigs: custom Motor6Ds, local procedural poses, existing Ragdoll constraints.
 local Rig = {}
 local Mythology = require(script.Parent.Mythology)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+-- Blender-made bodies (blender/build_myth_yard.py, installed by assets/myth/install.luau). Each mesh
+-- has a "Place": its CFrame in rig space, rest pose, before Model:ScaleTo.
+local function kitFor(kind)
+	local kit = ReplicatedStorage:FindFirstChild("MythKit")
+	local k = kit and kit:FindFirstChild(kind)
+	return k and k:FindFirstChild("Boss")
+end
+local function dress(m, kit)
+	-- the part rig stays as the hit boxes, joints and ragdoll; the meshes ride on it
+	for _, p in m:GetDescendants() do
+		if p:IsA("BasePart") then p.Transparency = 1 end
+	end
+	for _, group in kit:GetChildren() do
+		local on = m:FindFirstChild(group.Name)
+		if not (on and on:IsA("BasePart")) then continue end
+		for _, src in group:GetChildren() do
+			local c = src:Clone()
+			c.CFrame = c:GetAttribute("Place")
+			c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch, c.Massless = false, false, false, false, true
+			local w = Instance.new("WeldConstraint")
+			w.Part0, w.Part1, w.Parent = on, c, c
+			c.Parent = on
+		end
+	end
+	m:SetAttribute("Dressed", true)
+end
 local function piece(model, name, size, position, color, shape)
 	local p = Instance.new("Part")
 	p.Name, p.Size, p.CFrame, p.Color = name, size, CFrame.new(position), color
@@ -37,16 +64,16 @@ function Rig.build(kind)
 	local chest = piece(m, "UpperTorso", Vector3.new(5.8, 4.3, 3.1), Vector3.new(0, 8.4, 0), def.color)
 	local head = piece(m, "Head", Vector3.new(3.2, 3.3, 2.6), Vector3.new(0, 11.2, -0.6), def.color)
 	joint("Root", root, hips, root.Position)
-	joint("Waist", hips, chest, Vector3.new(0, 6.7, 0))
-	joint("Neck", chest, head, Vector3.new(0, 10.1, -0.4))
+	joint("Waist", hips, chest, Vector3.new(0, 7, 0))
+	joint("Neck", chest, head, Vector3.new(0, 10.2, -0.3))
 	-- Broad shoulders and long hanging arms preserve the reference's recognizable silhouette.
 	for _, side in { "Left", "Right" } do
 		local sign = side == "Left" and -1 or 1
 		local upper = piece(m, side .. "UpperArm", Vector3.new(2.3, 3.5, 2.4), Vector3.new(sign * 3.6, 8, 0), def.color)
 		local lower = piece(m, side .. "LowerArm", Vector3.new(1.9, 3, 2), Vector3.new(sign * 3.9, 5.3, -0.3), def.color)
 		local hand = piece(m, side .. "Hand", Vector3.new(2.2, 1.8, 2), Vector3.new(sign * 3.9, 3.3, -0.5), def.color)
-		joint(side .. "Shoulder", chest, upper, Vector3.new(sign * 2.7, 9.4, 0))
-		joint(side .. "Elbow", upper, lower, Vector3.new(sign * 3.8, 6.5, -0.1))
+		joint(side .. "Shoulder", chest, upper, Vector3.new(sign * 3.6, 9.6, 0))
+		joint(side .. "Elbow", upper, lower, Vector3.new(sign * 3.6, 6.7, 0))
 		joint(side .. "Wrist", lower, hand, Vector3.new(sign * 3.9, 4, -0.4))
 		for finger = 1, 3 do
 			detail(m, hand, side .. "Finger" .. finger, Vector3.new(0.5, 1.2, 0.55), CFrame.new((finger - 2) * 0.6, -0.9, -0.45), def.color)
@@ -54,8 +81,8 @@ function Rig.build(kind)
 		local thigh = piece(m, side .. "UpperLeg", Vector3.new(1.7, 2.8, 2), Vector3.new(sign * 1.1, 3.6, 0), def.color)
 		local shin = piece(m, side .. "LowerLeg", Vector3.new(1.5, 2.1, 1.7), Vector3.new(sign * 1.2, 1.5, 0), def.color)
 		local foot = piece(m, side .. "Foot", Vector3.new(2, 1, 2.8), Vector3.new(sign * 1.2, 0.5, -0.65), def.color)
-		joint(side .. "Hip", hips, thigh, Vector3.new(sign * 1.1, 4.8, 0))
-		joint(side .. "Knee", thigh, shin, Vector3.new(sign * 1.2, 2.3, 0))
+		joint(side .. "Hip", hips, thigh, Vector3.new(sign * 1.1, 5, 0))
+		joint(side .. "Knee", thigh, shin, Vector3.new(sign * 1.1, 2.6, 0))
 		joint(side .. "Ankle", shin, foot, Vector3.new(sign * 1.2, 0.7, 0))
 		detail(m, lower, side .. "Cuff", Vector3.new(2, 0.65, 2.1), CFrame.new(0, -0.6, 0), Color3.fromRGB(53, 44, 37))
 		for panel = -1, 1 do
@@ -67,7 +94,7 @@ function Rig.build(kind)
 	detail(m, hips, "Belt", Vector3.new(3.8, 0.65, 2.6), CFrame.new(0, 0.7, 0), Color3.fromRGB(48, 37, 27))
 	detail(m, hips, "Buckle", Vector3.new(0.7, 0.65, 0.2), CFrame.new(0, 0.7, -1.35), def.accent, Enum.PartType.Block)
 	if kind == "Cyclops" then
-		local eye = detail(m, head, "Eye", Vector3.new(1.7, 1.3, 0.8), CFrame.new(0, 0, -1.22), Color3.fromRGB(238, 229, 201), nil, true)
+		local eye = detail(m, head, "Eye", Vector3.new(2.2, 2.2, 1), CFrame.new(0, 0.25, -1.75), Color3.fromRGB(238, 229, 201), nil, true)
 		eye:SetAttribute("WeakPoint", true)
 		detail(m, eye, "Iris", Vector3.new(0.85, 0.95, 0.3), CFrame.new(0, 0, -0.4), def.accent)
 		detail(m, eye, "Pupil", Vector3.new(0.36, 0.65, 0.18), CFrame.new(0, 0, -0.58), Color3.fromRGB(20, 22, 20))
@@ -82,7 +109,7 @@ function Rig.build(kind)
 	else
 		detail(m, head, "Visor", Vector3.new(2.3, 0.35, 0.3), CFrame.new(0, 0.1, -1.29), def.accent, Enum.PartType.Block)
 		local ankle = m.RightLowerLeg
-		local seal = detail(m, ankle, "AnkleSeal", Vector3.new(1, 1.1, 0.5), CFrame.new(0, -0.15, -0.88), def.accent, nil, true)
+		local seal = detail(m, ankle, "AnkleSeal", Vector3.new(1.4, 1.4, 0.6), CFrame.new(-0.1, -0.35, -1.1), def.accent, nil, true)
 		seal.Material = Enum.Material.Neon
 		seal:SetAttribute("WeakPoint", true)
 		for _, sign in { -1, 1 } do
@@ -95,6 +122,8 @@ function Rig.build(kind)
 	humanoid.MaxHealth, humanoid.Health, humanoid.Parent = def.hp, def.hp, m
 	Instance.new("Animator", humanoid)
 	m.PrimaryPart = root
+	local kit = kitFor(kind)
+	if kit then dress(m, kit) end
 	m:ScaleTo(def.scale)
 	m:SetAttribute("MonsterKind", kind)
 	m:SetAttribute("HP", def.hp)

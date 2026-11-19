@@ -1,0 +1,3954 @@
+{
+ "Cyclops": {
+  "boss": [
+   {
+    "name": "Cyclops_Head__0",
+    "group": "Head",
+    "color": "DED2BA",
+    "material": "SmoothPlastic",
+    "tris": 324,
+    "at": [
+     0.0,
+     9.95,
+     -2.18
+    ],
+    "size": [
+     1.432,
+     0.45,
+     0.232
+    ]
+   },
+   {
+    "name": "Cyclops_Head__1",
+    "group": "Head",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 1320,
+    "at": [
+     0.245,
+     11.7019,
+     -0.7705
+    ],
+    "size": [
+     2.851,
+     2.504,
+     2.011
+    ]
+   },
+   {
+    "name": "Cyclops_Head__2",
+    "group": "Head",
+    "color": "ECB544",
+    "material": "Neon",
+    "tris": 188,
+    "at": [
+     0.0,
+     11.45,
+     -2.66
+    ],
+    "size": [
+     1.04,
+     1.04,
+     0.12
+    ]
+   },
+   {
+    "name": "Cyclops_Head__3",
+    "group": "Head",
+    "color": "E8DEC8",
+    "material": "SmoothPlastic",
+    "tris": 576,
+    "at": [
+     0.0,
+     11.45,
+     -1.85
+    ],
+    "size": [
+     1.688,
+     1.7,
+     1.688
+    ]
+   },
+   {
+    "name": "Cyclops_Head__4",
+    "group": "Head",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 288,
+    "at": [
+     -1.8,
+     10.4,
+     -0.4
+    ],
+    "size": [
+     0.087,
+     0.525,
+     0.525
+    ]
+   },
+   {
+    "name": "Cyclops_Head__5",
+    "group": "Head",
+    "color": "BE7828",
+    "material": "Neon",
+    "tris": 280,
+    "at": [
+     0.0,
+     11.45,
+     -2.73
+    ],
+    "size": [
+     0.9,
+     0.857,
+     0.03
+    ]
+   },
+   {
+    "name": "Cyclops_Head__6",
+    "group": "Head",
+    "color": "96601E",
+    "material": "SmoothPlastic",
+    "tris": 576,
+    "at": [
+     0.0,
+     11.45,
+     -2.7
+    ],
+    "size": [
+     1.085,
+     1.085,
+     0.087
+    ]
+   },
+   {
+    "name": "Cyclops_Head__7",
+    "group": "Head",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 3208,
+    "at": [
+     0.0,
+     11.1107,
+     -0.9021
+    ],
+    "size": [
+     3.98,
+     3.528,
+     3.696
+    ]
+   },
+   {
+    "name": "Cyclops_Head__8",
+    "group": "Head",
+    "color": "B0A28C",
+    "material": "Marble",
+    "tris": 19000,
+    "at": [
+     -0.0035,
+     10.2378,
+     -0.7046
+    ],
+    "size": [
+     3.75,
+     6.543,
+     3.945
+    ]
+   },
+   {
+    "name": "Cyclops_Head__9",
+    "group": "Head",
+    "color": "B0A28C",
+    "material": "Marble",
+    "tris": 12656,
+    "at": [
+     0.0,
+     10.2193,
+     -0.6786
+    ],
+    "size": [
+     3.757,
+     6.506,
+     3.85
+    ]
+   },
+   {
+    "name": "Cyclops_Head__10",
+    "group": "Head",
+    "color": "8E8070",
+    "material": "Marble",
+    "tris": 896,
+    "at": [
+     0.0,
+     11.4902,
+     -1.2942
+    ],
+    "size": [
+     3.871,
+     2.18,
+     2.032
+    ]
+   },
+   {
+    "name": "Cyclops_Head__11",
+    "group": "Head",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 764,
+    "at": [
+     0.0,
+     11.145,
+     -1.8474
+    ],
+    "size": [
+     2.178,
+     2.81,
+     1.901
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerArm__12",
+    "group": "LeftLowerArm",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 1296,
+    "at": [
+     -3.6,
+     4.75,
+     -0.05
+    ],
+    "size": [
+     2.288,
+     0.908,
+     2.254
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerArm__13",
+    "group": "LeftLowerArm",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 3556,
+    "at": [
+     -3.5081,
+     4.2838,
+     -0.3066
+    ],
+    "size": [
+     2.564,
+     6.073,
+     2.913
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerArm__14",
+    "group": "LeftLowerArm",
+    "color": "BEB096",
+    "material": "Marble",
+    "tris": 432,
+    "at": [
+     -2.7346,
+     1.7171,
+     -0.4907
+    ],
+    "size": [
+     0.779,
+     1.017,
+     2.507
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerLeg__15",
+    "group": "LeftLowerLeg",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 1884,
+    "at": [
+     -1.0948,
+     1.5182,
+     -0.4904
+    ],
+    "size": [
+     1.939,
+     3.01,
+     3.532
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerLeg__16",
+    "group": "LeftLowerLeg",
+    "color": "BEB096",
+    "material": "Marble",
+    "tris": 496,
+    "at": [
+     -1.1,
+     0.4,
+     -2.12
+    ],
+    "size": [
+     1.577,
+     0.146,
+     0.194
+    ]
+   },
+   {
+    "name": "Cyclops_LeftLowerLeg__17",
+    "group": "LeftLowerLeg",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 912,
+    "at": [
+     -1.0499,
+     0.9627,
+     -1.3565
+    ],
+    "size": [
+     0.776,
+     0.412,
+     0.714
+    ]
+   },
+   {
+    "name": "Cyclops_LeftUpperArm__18",
+    "group": "LeftUpperArm",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 424,
+    "at": [
+     -3.6777,
+     9.6534,
+     -1.3251
+    ],
+    "size": [
+     0.897,
+     0.68,
+     0.403
+    ]
+   },
+   {
+    "name": "Cyclops_LeftUpperArm__19",
+    "group": "LeftUpperArm",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 1568,
+    "at": [
+     -3.62,
+     8.4804,
+     -0.0
+    ],
+    "size": [
+     3.311,
+     4.341,
+     3.377
+    ]
+   },
+   {
+    "name": "Cyclops_LeftUpperArm__20",
+    "group": "LeftUpperArm",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 1920,
+    "at": [
+     -3.7992,
+     10.49,
+     0.0029
+    ],
+    "size": [
+     1.335,
+     0.194,
+     1.668
+    ]
+   },
+   {
+    "name": "Cyclops_LeftUpperLeg__21",
+    "group": "LeftUpperLeg",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 336,
+    "at": [
+     -0.7442,
+     4.4644,
+     -1.2276
+    ],
+    "size": [
+     0.417,
+     0.438,
+     0.225
+    ]
+   },
+   {
+    "name": "Cyclops_LeftUpperLeg__22",
+    "group": "LeftUpperLeg",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 848,
+    "at": [
+     -1.1,
+     3.878,
+     -0.1591
+    ],
+    "size": [
+     2.163,
+     3.264,
+     2.493
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__23",
+    "group": "LowerTorso",
+    "color": "9A6B34",
+    "material": "Metal",
+    "tris": 2676,
+    "at": [
+     0.0,
+     3.6646,
+     -0.065
+    ],
+    "size": [
+     5.245,
+     3.321,
+     3.31
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__24",
+    "group": "LowerTorso",
+    "color": "80221E",
+    "material": "Fabric",
+    "tris": 412,
+    "at": [
+     0.0,
+     3.4309,
+     -0.1577
+    ],
+    "size": [
+     4.191,
+     3.057,
+     2.834
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__25",
+    "group": "LowerTorso",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1480,
+    "at": [
+     0.0,
+     3.35,
+     -1.62
+    ],
+    "size": [
+     4.798,
+     2.402,
+     0.17
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__26",
+    "group": "LowerTorso",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 44,
+    "at": [
+     0.0,
+     4.85,
+     0.0
+    ],
+    "size": [
+     3.95,
+     0.75,
+     2.85
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__27",
+    "group": "LowerTorso",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 192,
+    "at": [
+     -0.0026,
+     5.697,
+     0.0006
+    ],
+    "size": [
+     3.425,
+     2.428,
+     2.329
+    ]
+   },
+   {
+    "name": "Cyclops_LowerTorso__28",
+    "group": "LowerTorso",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 44,
+    "at": [
+     0.0,
+     4.85,
+     -1.62
+    ],
+    "size": [
+     0.65,
+     0.55,
+     0.12
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerArm__29",
+    "group": "RightLowerArm",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 1296,
+    "at": [
+     3.6,
+     4.75,
+     -0.05
+    ],
+    "size": [
+     2.288,
+     0.908,
+     2.254
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerArm__30",
+    "group": "RightLowerArm",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 3556,
+    "at": [
+     3.5081,
+     4.2655,
+     -0.3066
+    ],
+    "size": [
+     2.564,
+     6.11,
+     2.913
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerArm__31",
+    "group": "RightLowerArm",
+    "color": "BEB096",
+    "material": "Marble",
+    "tris": 432,
+    "at": [
+     2.7313,
+     1.7061,
+     -0.4907
+    ],
+    "size": [
+     0.772,
+     1.04,
+     2.507
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerLeg__32",
+    "group": "RightLowerLeg",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 1528,
+    "at": [
+     1.7081,
+     0.6982,
+     -0.1551
+    ],
+    "size": [
+     3.836,
+     1.454,
+     2.93
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerLeg__33",
+    "group": "RightLowerLeg",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 1884,
+    "at": [
+     1.1052,
+     1.5182,
+     -0.4904
+    ],
+    "size": [
+     1.939,
+     3.01,
+     3.532
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerLeg__34",
+    "group": "RightLowerLeg",
+    "color": "BEB096",
+    "material": "Marble",
+    "tris": 496,
+    "at": [
+     1.1,
+     0.4,
+     -2.12
+    ],
+    "size": [
+     1.588,
+     0.146,
+     0.194
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerLeg__35",
+    "group": "RightLowerLeg",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 960,
+    "at": [
+     1.3347,
+     0.9992,
+     -1.2733
+    ],
+    "size": [
+     1.15,
+     0.529,
+     0.914
+    ]
+   },
+   {
+    "name": "Cyclops_RightLowerLeg__36",
+    "group": "RightLowerLeg",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 28,
+    "at": [
+     1.1,
+     1.0,
+     -1.48
+    ],
+    "size": [
+     0.12,
+     0.3,
+     0.05
+    ]
+   },
+   {
+    "name": "Cyclops_RightUpperArm__37",
+    "group": "RightUpperArm",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 424,
+    "at": [
+     4.2573,
+     9.8369,
+     -1.0081
+    ],
+    "size": [
+     0.901,
+     0.361,
+     0.644
+    ]
+   },
+   {
+    "name": "Cyclops_RightUpperArm__38",
+    "group": "RightUpperArm",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 1568,
+    "at": [
+     3.62,
+     8.4804,
+     -0.0
+    ],
+    "size": [
+     3.311,
+     4.341,
+     3.377
+    ]
+   },
+   {
+    "name": "Cyclops_RightUpperArm__39",
+    "group": "RightUpperArm",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 1920,
+    "at": [
+     3.6268,
+     10.49,
+     -0.004
+    ],
+    "size": [
+     1.632,
+     0.196,
+     1.546
+    ]
+   },
+   {
+    "name": "Cyclops_RightUpperLeg__40",
+    "group": "RightUpperLeg",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 336,
+    "at": [
+     0.9198,
+     4.0275,
+     -1.2864
+    ],
+    "size": [
+     0.499,
+     0.713,
+     0.195
+    ]
+   },
+   {
+    "name": "Cyclops_RightUpperLeg__41",
+    "group": "RightUpperLeg",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 848,
+    "at": [
+     1.1,
+     3.878,
+     -0.1591
+    ],
+    "size": [
+     2.163,
+     3.264,
+     2.493
+    ]
+   },
+   {
+    "name": "Cyclops_UpperTorso__42",
+    "group": "UpperTorso",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 1860,
+    "at": [
+     0.3245,
+     8.3734,
+     -0.2243
+    ],
+    "size": [
+     3.553,
+     2.368,
+     3.672
+    ]
+   },
+   {
+    "name": "Cyclops_UpperTorso__43",
+    "group": "UpperTorso",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 5232,
+    "at": [
+     0.0,
+     8.5795,
+     -0.0694
+    ],
+    "size": [
+     6.615,
+     5.059,
+     4.003
+    ]
+   }
+  ],
+  "cage": [
+   {
+    "name": "Cyclops_Gate__44",
+    "group": "Gate",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 8432,
+    "at": [
+     0.0,
+     10.561,
+     -9.0
+    ],
+    "size": [
+     19.6,
+     20.878,
+     1.6
+    ]
+   },
+   {
+    "name": "Cyclops_Gate__45",
+    "group": "Gate",
+    "color": "703A1E",
+    "material": "CorrodedMetal",
+    "tris": 884,
+    "at": [
+     0.026,
+     9.5881,
+     -9.4375
+    ],
+    "size": [
+     18.281,
+     16.186,
+     0.485
+    ]
+   },
+   {
+    "name": "Cyclops_Static__46",
+    "group": "Static",
+    "color": "ECB544",
+    "material": "Neon",
+    "tris": 352,
+    "at": [
+     0.0,
+     15.0,
+     -12.0
+    ],
+    "size": [
+     25.3,
+     1.6,
+     1.3
+    ]
+   },
+   {
+    "name": "Cyclops_Static__47",
+    "group": "Static",
+    "color": "DED2BA",
+    "material": "SmoothPlastic",
+    "tris": 2060,
+    "at": [
+     0.4422,
+     0.7583,
+     3.7823
+    ],
+    "size": [
+     13.557,
+     1.524,
+     8.774
+    ]
+   },
+   {
+    "name": "Cyclops_Static__48",
+    "group": "Static",
+    "color": "6E4A33",
+    "material": "Brick",
+    "tris": 2112,
+    "at": [
+     0.0004,
+     13.895,
+     -9.2031
+    ],
+    "size": [
+     28.743,
+     24.91,
+     3.416
+    ]
+   },
+   {
+    "name": "Cyclops_Static__49",
+    "group": "Static",
+    "color": "7C5238",
+    "material": "Brick",
+    "tris": 3124,
+    "at": [
+     -0.0002,
+     12.5551,
+     -9.2328
+    ],
+    "size": [
+     28.743,
+     22.233,
+     3.383
+    ]
+   },
+   {
+    "name": "Cyclops_Static__50",
+    "group": "Static",
+    "color": "60402E",
+    "material": "Brick",
+    "tris": 3696,
+    "at": [
+     0.0005,
+     13.8979,
+     -9.1991
+    ],
+    "size": [
+     28.741,
+     24.904,
+     3.438
+    ]
+   },
+   {
+    "name": "Cyclops_Static__51",
+    "group": "Static",
+    "color": "764630",
+    "material": "Brick",
+    "tris": 2332,
+    "at": [
+     -0.0002,
+     13.8988,
+     -9.2091
+    ],
+    "size": [
+     28.742,
+     24.902,
+     3.429
+    ]
+   },
+   {
+    "name": "Cyclops_Static__52",
+    "group": "Static",
+    "color": "78542E",
+    "material": "Metal",
+    "tris": 44,
+    "at": [
+     0.0,
+     23.08,
+     -10.72
+    ],
+    "size": [
+     6.6,
+     1.25,
+     0.3
+    ]
+   },
+   {
+    "name": "Cyclops_Static__53",
+    "group": "Static",
+    "color": "E6D6B4",
+    "material": "SmoothPlastic",
+    "tris": 152,
+    "at": [
+     0.0,
+     14.5,
+     -12.0
+    ],
+    "size": [
+     24.38,
+     0.6,
+     0.4
+    ]
+   },
+   {
+    "name": "Cyclops_Static__54",
+    "group": "Static",
+    "color": "FF9632",
+    "material": "Neon",
+    "tris": 206,
+    "at": [
+     -0.005,
+     17.3504,
+     8.1756
+    ],
+    "size": [
+     0.51,
+     0.819,
+     0.572
+    ]
+   },
+   {
+    "name": "Cyclops_Static__55",
+    "group": "Static",
+    "color": "FFE696",
+    "material": "Neon",
+    "tris": 44,
+    "at": [
+     0.0,
+     17.1726,
+     8.15
+    ],
+    "size": [
+     0.239,
+     0.345,
+     0.256
+    ]
+   },
+   {
+    "name": "Cyclops_Static__56",
+    "group": "Static",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1040,
+    "at": [
+     0.0,
+     23.08,
+     -10.905
+    ],
+    "size": [
+     6.98,
+     1.5,
+     0.33
+    ]
+   },
+   {
+    "name": "Cyclops_Static__57",
+    "group": "Static",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 9296,
+    "at": [
+     0.0,
+     8.5698,
+     -1.6112
+    ],
+    "size": [
+     25.345,
+     17.66,
+     22.122
+    ]
+   },
+   {
+    "name": "Cyclops_Static__58",
+    "group": "Static",
+    "color": "D4C8B2",
+    "material": "Marble",
+    "tris": 1420,
+    "at": [
+     0.0723,
+     0.0805,
+     2.0049
+    ],
+    "size": [
+     14.238,
+     0.84,
+     8.771
+    ]
+   },
+   {
+    "name": "Cyclops_Static__59",
+    "group": "Static",
+    "color": "4A423A",
+    "material": "Concrete",
+    "tris": 152,
+    "at": [
+     0.0,
+     12.0,
+     -9.0
+    ],
+    "size": [
+     28.0,
+     24.0,
+     3.0
+    ]
+   },
+   {
+    "name": "Cyclops_Static__60",
+    "group": "Static",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 12000,
+    "at": [
+     0.0243,
+     1.1655,
+     9.26
+    ],
+    "size": [
+     18.733,
+     3.015,
+     0.204
+    ]
+   },
+   {
+    "name": "Cyclops_Static__61",
+    "group": "Static",
+    "color": "8C8070",
+    "material": "SmoothPlastic",
+    "tris": 7968,
+    "at": [
+     -0.0474,
+     0.0422,
+     -18.3207
+    ],
+    "size": [
+     29.289,
+     0.49,
+     15.111
+    ]
+   },
+   {
+    "name": "Cyclops_Static__62",
+    "group": "Static",
+    "color": "485058",
+    "material": "SmoothPlastic",
+    "tris": 280,
+    "at": [
+     -4.73,
+     0.6625,
+     -9.51
+    ],
+    "size": [
+     7.62,
+     1.315,
+     24.5
+    ]
+   },
+   {
+    "name": "Cyclops_Static__63",
+    "group": "Static",
+    "color": "C4A878",
+    "material": "Sand",
+    "tris": 12,
+    "at": [
+     0.0,
+     -0.1,
+     -18.5
+    ],
+    "size": [
+     30.0,
+     0.2,
+     16.0
+    ]
+   },
+   {
+    "name": "Cyclops_Static__64",
+    "group": "Static",
+    "color": "404246",
+    "material": "Slate",
+    "tris": 19000,
+    "at": [
+     0.0,
+     11.5726,
+     1.1987
+    ],
+    "size": [
+     24.5,
+     23.245,
+     17.524
+    ]
+   },
+   {
+    "name": "Cyclops_Static__65",
+    "group": "Static",
+    "color": "404246",
+    "material": "Slate",
+    "tris": 14000,
+    "at": [
+     0.0,
+     11.5726,
+     1.1987
+    ],
+    "size": [
+     24.5,
+     23.245,
+     17.524
+    ]
+   },
+   {
+    "name": "Cyclops_Static__66",
+    "group": "Static",
+    "color": "34373C",
+    "material": "Slate",
+    "tris": 144,
+    "at": [
+     0.0,
+     11.8,
+     1.5
+    ],
+    "size": [
+     24.0,
+     24.4,
+     19.0
+    ]
+   },
+   {
+    "name": "Cyclops_Static__67",
+    "group": "Static",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 3568,
+    "at": [
+     -0.009,
+     1.4,
+     -6.6521
+    ],
+    "size": [
+     27.031,
+     4.013,
+     27.997
+    ]
+   },
+   {
+    "name": "Cyclops_Static__68",
+    "group": "Static",
+    "color": "967A5C",
+    "material": "Slate",
+    "tris": 3496,
+    "at": [
+     0.0,
+     13.325,
+     -14.2474
+    ],
+    "size": [
+     29.4,
+     26.65,
+     14.395
+    ]
+   },
+   {
+    "name": "Cyclops_Static__69",
+    "group": "Static",
+    "color": "C4A052",
+    "material": "Fabric",
+    "tris": 16720,
+    "at": [
+     0.2179,
+     0.4168,
+     6.4993
+    ],
+    "size": [
+     18.59,
+     1.438,
+     6.0
+    ]
+   },
+   {
+    "name": "Cyclops_Static__70",
+    "group": "Static",
+    "color": "A85C3A",
+    "material": "Brick",
+    "tris": 2534,
+    "at": [
+     -0.015,
+     1.5136,
+     -14.5169
+    ],
+    "size": [
+     26.93,
+     3.201,
+     5.173
+    ]
+   },
+   {
+    "name": "Cyclops_Static__71",
+    "group": "Static",
+    "color": "587034",
+    "material": "SmoothPlastic",
+    "tris": 4028,
+    "at": [
+     0.0381,
+     0.5379,
+     -17.7276
+    ],
+    "size": [
+     28.106,
+     1.134,
+     13.66
+    ]
+   },
+   {
+    "name": "Cyclops_Static__72",
+    "group": "Static",
+    "color": "5C4028",
+    "material": "Wood",
+    "tris": 284,
+    "at": [
+     -4.255,
+     8.3828,
+     5.1277
+    ],
+    "size": [
+     8.79,
+     16.566,
+     7.955
+    ]
+   }
+  ],
+  "boss_lights": [],
+  "cage_lights": [
+   {
+    "group": "Static",
+    "at": [
+     12.0,
+     15.0,
+     -13.3
+    ],
+    "color": "ECB544",
+    "brightness": 1.68,
+    "range": 21.7
+   },
+   {
+    "group": "Static",
+    "at": [
+     -12.0,
+     15.0,
+     -13.3
+    ],
+    "color": "ECB544",
+    "brightness": 1.68,
+    "range": 21.7
+   },
+   {
+    "group": "Static",
+    "at": [
+     0.0,
+     17.6,
+     7.6
+    ],
+    "color": "FF9646",
+    "brightness": 1.77,
+    "range": 22.2
+   }
+  ],
+  "stand": [
+   0.0,
+   0.0,
+   1.5
+  ],
+  "gate_box": [
+   [
+    -9.8,
+    0.12199999999999989,
+    -9.8
+   ],
+   [
+    9.8,
+    21.0,
+    -8.2
+   ]
+  ]
+ },
+ "Minotaur": {
+  "boss": [
+   {
+    "name": "Minotaur_Head__0",
+    "group": "Head",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 1436,
+    "at": [
+     -0.0,
+     11.1498,
+     -0.7579
+    ],
+    "size": [
+     5.666,
+     3.553,
+     3.409
+    ]
+   },
+   {
+    "name": "Minotaur_Head__1",
+    "group": "Head",
+    "color": "EA6C49",
+    "material": "Neon",
+    "tris": 596,
+    "at": [
+     -0.0,
+     12.3855,
+     -1.98
+    ],
+    "size": [
+     2.524,
+     1.911,
+     0.624
+    ]
+   },
+   {
+    "name": "Minotaur_Head__2",
+    "group": "Head",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 8108,
+    "at": [
+     0.0695,
+     12.0682,
+     -0.0645
+    ],
+    "size": [
+     4.475,
+     2.598,
+     3.617
+    ]
+   },
+   {
+    "name": "Minotaur_Head__3",
+    "group": "Head",
+    "color": "222623",
+    "material": "Fabric",
+    "tris": 2732,
+    "at": [
+     -0.0,
+     11.9841,
+     0.5432
+    ],
+    "size": [
+     5.2,
+     2.163,
+     2.454
+    ]
+   },
+   {
+    "name": "Minotaur_Head__4",
+    "group": "Head",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 6536,
+    "at": [
+     -0.0,
+     12.065,
+     -1.6032
+    ],
+    "size": [
+     8.369,
+     5.41,
+     3.914
+    ]
+   },
+   {
+    "name": "Minotaur_Head__5",
+    "group": "Head",
+    "color": "C4B69C",
+    "material": "SmoothPlastic",
+    "tris": 1944,
+    "at": [
+     -0.0,
+     13.0647,
+     -0.6877
+    ],
+    "size": [
+     8.006,
+     2.198,
+     1.707
+    ]
+   },
+   {
+    "name": "Minotaur_Head__6",
+    "group": "Head",
+    "color": "786C5A",
+    "material": "SmoothPlastic",
+    "tris": 1680,
+    "at": [
+     -0.0,
+     12.9932,
+     -0.5445
+    ],
+    "size": [
+     7.53,
+     1.759,
+     1.369
+    ]
+   },
+   {
+    "name": "Minotaur_Head__7",
+    "group": "Head",
+    "color": "6A786E",
+    "material": "Metal",
+    "tris": 384,
+    "at": [
+     -0.0,
+     10.2003,
+     -1.8246
+    ],
+    "size": [
+     2.478,
+     2.546,
+     2.295
+    ]
+   },
+   {
+    "name": "Minotaur_Head__8",
+    "group": "Head",
+    "color": "3E4640",
+    "material": "SmoothPlastic",
+    "tris": 1072,
+    "at": [
+     0.0,
+     10.55,
+     -2.9563
+    ],
+    "size": [
+     2.494,
+     1.44,
+     0.903
+    ]
+   },
+   {
+    "name": "Minotaur_Head__9",
+    "group": "Head",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 292,
+    "at": [
+     -0.0,
+     10.255,
+     -3.155
+    ],
+    "size": [
+     2.397,
+     1.11,
+     0.71
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__10",
+    "group": "LeftLowerArm",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 154,
+    "at": [
+     -3.935,
+     5.25,
+     -0.1
+    ],
+    "size": [
+     2.83,
+     1.8,
+     2.16
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__11",
+    "group": "LeftLowerArm",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 3556,
+    "at": [
+     -3.5081,
+     4.2859,
+     -0.3066
+    ],
+    "size": [
+     2.564,
+     6.192,
+     2.913
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__12",
+    "group": "LeftLowerArm",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 1378,
+    "at": [
+     -3.582,
+     3.9952,
+     0.121
+    ],
+    "size": [
+     2.417,
+     0.954,
+     2.619
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__13",
+    "group": "LeftLowerArm",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1920,
+    "at": [
+     -3.6,
+     5.25,
+     -0.1
+    ],
+    "size": [
+     2.427,
+     1.773,
+     2.427
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__14",
+    "group": "LeftLowerArm",
+    "color": "282420",
+    "material": "SmoothPlastic",
+    "tris": 432,
+    "at": [
+     -2.7335,
+     1.7076,
+     -0.4841
+    ],
+    "size": [
+     0.803,
+     1.037,
+     2.52
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerArm__15",
+    "group": "LeftLowerArm",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 1548,
+    "at": [
+     -3.8653,
+     2.7233,
+     0.0
+    ],
+    "size": [
+     3.451,
+     3.153,
+     2.89
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__16",
+    "group": "LeftLowerLeg",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 44,
+    "at": [
+     -1.1,
+     2.6,
+     -0.95
+    ],
+    "size": [
+     1.7,
+     1.2,
+     0.5
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__17",
+    "group": "LeftLowerLeg",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 1180,
+    "at": [
+     -1.097,
+     1.5515,
+     -0.1834
+    ],
+    "size": [
+     1.941,
+     3.045,
+     2.981
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__18",
+    "group": "LeftLowerLeg",
+    "color": "222623",
+    "material": "Fabric",
+    "tris": 1408,
+    "at": [
+     -1.0985,
+     0.932,
+     0.0387
+    ],
+    "size": [
+     2.05,
+     0.885,
+     2.097
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__19",
+    "group": "LeftLowerLeg",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 240,
+    "at": [
+     -1.1,
+     2.6,
+     -1.22
+    ],
+    "size": [
+     1.356,
+     0.18,
+     0.167
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__20",
+    "group": "LeftLowerLeg",
+    "color": "282420",
+    "material": "SmoothPlastic",
+    "tris": 376,
+    "at": [
+     -1.1,
+     0.48,
+     -0.5388
+    ],
+    "size": [
+     1.79,
+     0.95,
+     2.678
+    ]
+   },
+   {
+    "name": "Minotaur_LeftLowerLeg__21",
+    "group": "LeftLowerLeg",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 44,
+    "at": [
+     -1.1,
+     0.45,
+     -0.45
+    ],
+    "size": [
+     0.08,
+     0.7,
+     2.6
+    ]
+   },
+   {
+    "name": "Minotaur_LeftUpperArm__22",
+    "group": "LeftUpperArm",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 690,
+    "at": [
+     -3.6,
+     10.3,
+     0.0
+    ],
+    "size": [
+     3.648,
+     3.2,
+     3.648
+    ]
+   },
+   {
+    "name": "Minotaur_LeftUpperArm__23",
+    "group": "LeftUpperArm",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 1568,
+    "at": [
+     -3.62,
+     8.5079,
+     -0.0
+    ],
+    "size": [
+     3.455,
+     4.399,
+     3.524
+    ]
+   },
+   {
+    "name": "Minotaur_LeftUpperArm__24",
+    "group": "LeftUpperArm",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 2284,
+    "at": [
+     -3.6943,
+     10.3775,
+     -0.1796
+    ],
+    "size": [
+     3.171,
+     1.058,
+     3.508
+    ]
+   },
+   {
+    "name": "Minotaur_LeftUpperArm__25",
+    "group": "LeftUpperArm",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1632,
+    "at": [
+     -3.6,
+     9.798,
+     0.0
+    ],
+    "size": [
+     3.727,
+     0.604,
+     3.727
+    ]
+   },
+   {
+    "name": "Minotaur_LeftUpperLeg__26",
+    "group": "LeftUpperLeg",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 848,
+    "at": [
+     -1.1,
+     3.9,
+     -0.1745
+    ],
+    "size": [
+     2.257,
+     3.36,
+     2.524
+    ]
+   },
+   {
+    "name": "Minotaur_LowerTorso__27",
+    "group": "LowerTorso",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 896,
+    "at": [
+     -0.0015,
+     4.231,
+     0.9681
+    ],
+    "size": [
+     3.426,
+     5.362,
+     4.264
+    ]
+   },
+   {
+    "name": "Minotaur_LowerTorso__28",
+    "group": "LowerTorso",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 2040,
+    "at": [
+     0.0014,
+     3.5352,
+     -0.0414
+    ],
+    "size": [
+     5.452,
+     2.8,
+     4.491
+    ]
+   },
+   {
+    "name": "Minotaur_LowerTorso__29",
+    "group": "LowerTorso",
+    "color": "222623",
+    "material": "Fabric",
+    "tris": 2544,
+    "at": [
+     0.0068,
+     2.6908,
+     0.4926
+    ],
+    "size": [
+     5.35,
+     3.909,
+     5.298
+    ]
+   },
+   {
+    "name": "Minotaur_LowerTorso__30",
+    "group": "LowerTorso",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 460,
+    "at": [
+     -0.0,
+     4.9,
+     -1.6503
+    ],
+    "size": [
+     1.717,
+     1.24,
+     0.401
+    ]
+   },
+   {
+    "name": "Minotaur_LowerTorso__31",
+    "group": "LowerTorso",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 44,
+    "at": [
+     -0.0,
+     4.9,
+     0.0
+    ],
+    "size": [
+     4.0,
+     0.95,
+     2.95
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__32",
+    "group": "RightLowerArm",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 154,
+    "at": [
+     3.935,
+     5.25,
+     -0.1
+    ],
+    "size": [
+     2.83,
+     1.8,
+     2.16
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__33",
+    "group": "RightLowerArm",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 3556,
+    "at": [
+     3.5081,
+     4.2709,
+     -0.3066
+    ],
+    "size": [
+     2.564,
+     6.222,
+     2.913
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__34",
+    "group": "RightLowerArm",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 1438,
+    "at": [
+     3.5505,
+     3.9977,
+     0.0664
+    ],
+    "size": [
+     2.424,
+     0.955,
+     2.655
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__35",
+    "group": "RightLowerArm",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1920,
+    "at": [
+     3.6,
+     5.25,
+     -0.1
+    ],
+    "size": [
+     2.427,
+     1.773,
+     2.427
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__36",
+    "group": "RightLowerArm",
+    "color": "282420",
+    "material": "SmoothPlastic",
+    "tris": 432,
+    "at": [
+     2.7776,
+     1.6902,
+     -0.4841
+    ],
+    "size": [
+     0.891,
+     1.071,
+     2.52
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerArm__37",
+    "group": "RightLowerArm",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 1548,
+    "at": [
+     3.8666,
+     2.7233,
+     0.0
+    ],
+    "size": [
+     3.453,
+     3.153,
+     2.89
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__38",
+    "group": "RightLowerLeg",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 44,
+    "at": [
+     1.1,
+     2.6,
+     -0.95
+    ],
+    "size": [
+     1.7,
+     1.2,
+     0.5
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__39",
+    "group": "RightLowerLeg",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 1180,
+    "at": [
+     1.103,
+     1.5515,
+     -0.1834
+    ],
+    "size": [
+     1.941,
+     3.045,
+     2.981
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__40",
+    "group": "RightLowerLeg",
+    "color": "222623",
+    "material": "Fabric",
+    "tris": 1398,
+    "at": [
+     1.0854,
+     0.9074,
+     0.0321
+    ],
+    "size": [
+     2.077,
+     0.907,
+     2.118
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__41",
+    "group": "RightLowerLeg",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 240,
+    "at": [
+     1.1,
+     2.6,
+     -1.22
+    ],
+    "size": [
+     1.356,
+     0.18,
+     0.167
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__42",
+    "group": "RightLowerLeg",
+    "color": "282420",
+    "material": "SmoothPlastic",
+    "tris": 376,
+    "at": [
+     1.1,
+     0.48,
+     -0.5388
+    ],
+    "size": [
+     1.79,
+     0.95,
+     2.678
+    ]
+   },
+   {
+    "name": "Minotaur_RightLowerLeg__43",
+    "group": "RightLowerLeg",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 44,
+    "at": [
+     1.1,
+     0.45,
+     -0.45
+    ],
+    "size": [
+     0.08,
+     0.7,
+     2.6
+    ]
+   },
+   {
+    "name": "Minotaur_RightUpperArm__44",
+    "group": "RightUpperArm",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 1568,
+    "at": [
+     3.62,
+     8.5079,
+     -0.0
+    ],
+    "size": [
+     3.455,
+     4.399,
+     3.524
+    ]
+   },
+   {
+    "name": "Minotaur_RightUpperArm__45",
+    "group": "RightUpperArm",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 2264,
+    "at": [
+     3.6756,
+     10.5574,
+     -0.3656
+    ],
+    "size": [
+     3.252,
+     1.497,
+     3.123
+    ]
+   },
+   {
+    "name": "Minotaur_RightUpperLeg__46",
+    "group": "RightUpperLeg",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 848,
+    "at": [
+     1.1,
+     3.9,
+     -0.1745
+    ],
+    "size": [
+     2.257,
+     3.36,
+     2.524
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__47",
+    "group": "UpperTorso",
+    "color": "966C3A",
+    "material": "Metal",
+    "tris": 376,
+    "at": [
+     -1.4205,
+     9.8092,
+     2.15
+    ],
+    "size": [
+     4.2,
+     4.134,
+     0.607
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__48",
+    "group": "UpperTorso",
+    "color": "4E5A52",
+    "material": "Metal",
+    "tris": 5808,
+    "at": [
+     0.0,
+     9.0375,
+     0.2029
+    ],
+    "size": [
+     6.763,
+     5.975,
+     4.604
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__49",
+    "group": "UpperTorso",
+    "color": "CDA86E",
+    "material": "Metal",
+    "tris": 1464,
+    "at": [
+     -0.4827,
+     9.8066,
+     0.3068
+    ],
+    "size": [
+     6.107,
+     4.117,
+     3.986
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__50",
+    "group": "UpperTorso",
+    "color": "323B36",
+    "material": "Fabric",
+    "tris": 14782,
+    "at": [
+     0.0819,
+     11.1405,
+     0.6023
+    ],
+    "size": [
+     7.915,
+     3.005,
+     5.574
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__51",
+    "group": "UpperTorso",
+    "color": "222623",
+    "material": "Fabric",
+    "tris": 5858,
+    "at": [
+     -0.1823,
+     11.4037,
+     1.595
+    ],
+    "size": [
+     7.485,
+     2.744,
+     3.829
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__52",
+    "group": "UpperTorso",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 1132,
+    "at": [
+     -0.225,
+     8.6096,
+     0.0154
+    ],
+    "size": [
+     3.306,
+     3.299,
+     4.569
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__53",
+    "group": "UpperTorso",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 2132,
+    "at": [
+     -0.2,
+     7.563,
+     0.0997
+    ],
+    "size": [
+     5.113,
+     5.634,
+     4.6
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__54",
+    "group": "UpperTorso",
+    "color": "6F9C8A",
+    "material": "SmoothPlastic",
+    "tris": 6552,
+    "at": [
+     0.0698,
+     8.6546,
+     -1.1039
+    ],
+    "size": [
+     4.692,
+     2.655,
+     1.151
+    ]
+   },
+   {
+    "name": "Minotaur_UpperTorso__55",
+    "group": "UpperTorso",
+    "color": "5C4028",
+    "material": "Wood",
+    "tris": 76,
+    "at": [
+     -0.15,
+     7.8,
+     2.15
+    ],
+    "size": [
+     4.608,
+     6.99,
+     0.4
+    ]
+   }
+  ],
+  "cage": [
+   {
+    "name": "Minotaur_Gate__56",
+    "group": "Gate",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 44,
+    "at": [
+     -0.6,
+     10.45,
+     -11.1
+    ],
+    "size": [
+     1.2,
+     1.3,
+     0.5
+    ]
+   },
+   {
+    "name": "Minotaur_Gate__57",
+    "group": "Gate",
+    "color": "23272B",
+    "material": "Metal",
+    "tris": 11436,
+    "at": [
+     -0.0,
+     11.75,
+     -10.4976
+    ],
+    "size": [
+     21.0,
+     15.0,
+     1.395
+    ]
+   },
+   {
+    "name": "Minotaur_Gate__58",
+    "group": "Gate",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 28,
+    "at": [
+     -0.6,
+     10.3,
+     -11.37
+    ],
+    "size": [
+     0.12,
+     0.35,
+     0.05
+    ]
+   },
+   {
+    "name": "Minotaur_Static__59",
+    "group": "Static",
+    "color": "DED2BA",
+    "material": "SmoothPlastic",
+    "tris": 1220,
+    "at": [
+     -0.6416,
+     4.745,
+     -0.2654
+    ],
+    "size": [
+     14.356,
+     1.155,
+     12.946
+    ]
+   },
+   {
+    "name": "Minotaur_Static__60",
+    "group": "Static",
+    "color": "B08840",
+    "material": "Metal",
+    "tris": 3532,
+    "at": [
+     -0.0,
+     4.3,
+     0.0
+    ],
+    "size": [
+     19.16,
+     0.1,
+     19.16
+    ]
+   },
+   {
+    "name": "Minotaur_Static__61",
+    "group": "Static",
+    "color": "80221E",
+    "material": "Fabric",
+    "tris": 88,
+    "at": [
+     -0.0,
+     18.9,
+     -2.3
+    ],
+    "size": [
+     30.2,
+     8.0,
+     0.12
+    ]
+   },
+   {
+    "name": "Minotaur_Static__62",
+    "group": "Static",
+    "color": "1A1816",
+    "material": "Basalt",
+    "tris": 956,
+    "at": [
+     -0.2123,
+     3.9979,
+     -14.5207
+    ],
+    "size": [
+     32.644,
+     0.562,
+     2.243
+    ]
+   },
+   {
+    "name": "Minotaur_Static__63",
+    "group": "Static",
+    "color": "FF561C",
+    "material": "Neon",
+    "tris": 2062,
+    "at": [
+     0.1774,
+     4.0136,
+     -14.4881
+    ],
+    "size": [
+     32.674,
+     0.542,
+     2.108
+    ]
+   },
+   {
+    "name": "Minotaur_Static__64",
+    "group": "Static",
+    "color": "28221E",
+    "material": "SmoothPlastic",
+    "tris": 2376,
+    "at": [
+     0.0385,
+     1.3988,
+     -11.03
+    ],
+    "size": [
+     16.089,
+     2.946,
+     0.12
+    ]
+   },
+   {
+    "name": "Minotaur_Static__65",
+    "group": "Static",
+    "color": "FF9632",
+    "material": "Neon",
+    "tris": 412,
+    "at": [
+     -0.0,
+     4.702,
+     -14.4968
+    ],
+    "size": [
+     31.95,
+     1.546,
+     1.18
+    ]
+   },
+   {
+    "name": "Minotaur_Static__66",
+    "group": "Static",
+    "color": "FFE696",
+    "material": "Neon",
+    "tris": 88,
+    "at": [
+     -0.0,
+     4.4472,
+     -14.5
+    ],
+    "size": [
+     31.46,
+     0.794,
+     0.515
+    ]
+   },
+   {
+    "name": "Minotaur_Static__67",
+    "group": "Static",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 6072,
+    "at": [
+     -0.375,
+     12.1775,
+     -0.5275
+    ],
+    "size": [
+     30.95,
+     21.095,
+     21.295
+    ]
+   },
+   {
+    "name": "Minotaur_Static__68",
+    "group": "Static",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 18496,
+    "at": [
+     -0.0,
+     12.7854,
+     -2.9267
+    ],
+    "size": [
+     34.186,
+     25.623,
+     26.333
+    ]
+   },
+   {
+    "name": "Minotaur_Static__69",
+    "group": "Static",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 2768,
+    "at": [
+     -0.0,
+     12.7854,
+     -3.2161
+    ],
+    "size": [
+     34.186,
+     25.623,
+     25.754
+    ]
+   },
+   {
+    "name": "Minotaur_Static__70",
+    "group": "Static",
+    "color": "23272B",
+    "material": "Metal",
+    "tris": 19000,
+    "at": [
+     -0.0,
+     12.35,
+     0.76
+    ],
+    "size": [
+     22.36,
+     12.92,
+     19.84
+    ]
+   },
+   {
+    "name": "Minotaur_Static__71",
+    "group": "Static",
+    "color": "23272B",
+    "material": "Metal",
+    "tris": 15020,
+    "at": [
+     -0.0,
+     13.3625,
+     0.0
+    ],
+    "size": [
+     28.9,
+     26.725,
+     21.5
+    ]
+   },
+   {
+    "name": "Minotaur_Static__72",
+    "group": "Static",
+    "color": "5E5A52",
+    "material": "Slate",
+    "tris": 1922,
+    "at": [
+     -0.0,
+     1.8114,
+     0.0114
+    ],
+    "size": [
+     26.0,
+     4.377,
+     27.582
+    ]
+   },
+   {
+    "name": "Minotaur_Static__73",
+    "group": "Static",
+    "color": "7A7468",
+    "material": "Slate",
+    "tris": 660,
+    "at": [
+     -0.0,
+     2.125,
+     0.0
+    ],
+    "size": [
+     29.8,
+     4.25,
+     23.7
+    ]
+   },
+   {
+    "name": "Minotaur_Static__74",
+    "group": "Static",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 19000,
+    "at": [
+     -0.0997,
+     0.66,
+     -0.1212
+    ],
+    "size": [
+     26.232,
+     0.202,
+     25.388
+    ]
+   },
+   {
+    "name": "Minotaur_Static__75",
+    "group": "Static",
+    "color": "46602C",
+    "material": "Grass",
+    "tris": 4520,
+    "at": [
+     0.2184,
+     0.66,
+     0.051
+    ],
+    "size": [
+     24.38,
+     0.175,
+     25.043
+    ]
+   },
+   {
+    "name": "Minotaur_Static__76",
+    "group": "Static",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 280,
+    "at": [
+     5.6845,
+     4.74,
+     -6.4505
+    ],
+    "size": [
+     0.68,
+     0.44,
+     0.572
+    ]
+   },
+   {
+    "name": "Minotaur_Static__77",
+    "group": "Static",
+    "color": "C4A052",
+    "material": "Fabric",
+    "tris": 7040,
+    "at": [
+     6.5526,
+     4.5218,
+     6.4998
+    ],
+    "size": [
+     4.984,
+     1.428,
+     5.494
+    ]
+   },
+   {
+    "name": "Minotaur_Static__78",
+    "group": "Static",
+    "color": "5C4028",
+    "material": "Wood",
+    "tris": 120,
+    "at": [
+     -0.0,
+     23.0,
+     -2.3
+    ],
+    "size": [
+     30.6,
+     0.2,
+     0.2
+    ]
+   }
+  ],
+  "boss_lights": [
+   {
+    "group": "Head",
+    "at": [
+     -0.0,
+     12.4,
+     -2.8
+    ],
+    "color": "EA6C49",
+    "brightness": 0.93,
+    "range": 15.6
+   },
+   {
+    "group": "Head",
+    "at": [
+     -0.0,
+     11.8,
+     -3.0
+    ],
+    "color": "EA6C49",
+    "brightness": 0.81,
+    "range": 14.0
+   }
+  ],
+  "cage_lights": [
+   {
+    "group": "Static",
+    "at": [
+     15.5,
+     6.0,
+     -14.5
+    ],
+    "color": "FF8C3C",
+    "brightness": 2.77,
+    "range": 24.0
+   },
+   {
+    "group": "Static",
+    "at": [
+     -15.5,
+     6.0,
+     -14.5
+    ],
+    "color": "FF8C3C",
+    "brightness": 2.77,
+    "range": 24.0
+   },
+   {
+    "group": "Static",
+    "at": [
+     -0.0,
+     15.0,
+     -6.0
+    ],
+    "color": "FFC8A0",
+    "brightness": 2.6,
+    "range": 24.0
+   }
+  ],
+  "stand": [
+   -0.0,
+   4.5,
+   0.0
+  ],
+  "gate_box": [
+   [
+    -10.5,
+    4.25,
+    -11.395
+   ],
+   [
+    10.5,
+    19.25,
+    -9.8001
+   ]
+  ]
+ },
+ "Talos": {
+  "boss": [
+   {
+    "name": "Talos_Head__0",
+    "group": "Head",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 3980,
+    "at": [
+     -0.0,
+     13.15,
+     -0.2637
+    ],
+    "size": [
+     3.653,
+     6.5,
+     3.687
+    ]
+   },
+   {
+    "name": "Talos_Head__1",
+    "group": "Head",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 932,
+    "at": [
+     -0.0,
+     11.73,
+     -0.4
+    ],
+    "size": [
+     3.347,
+     4.26,
+     3.142
+    ]
+   },
+   {
+    "name": "Talos_Head__2",
+    "group": "Head",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 464,
+    "at": [
+     -0.0,
+     13.2,
+     -0.2115
+    ],
+    "size": [
+     3.783,
+     7.1,
+     4.023
+    ]
+   },
+   {
+    "name": "Talos_Head__3",
+    "group": "Head",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 536,
+    "at": [
+     -0.0,
+     11.075,
+     -0.5799
+    ],
+    "size": [
+     2.3,
+     1.95,
+     2.65
+    ]
+   },
+   {
+    "name": "Talos_Head__4",
+    "group": "Head",
+    "color": "1A120A",
+    "material": "SmoothPlastic",
+    "tris": 88,
+    "at": [
+     -0.0,
+     11.08,
+     -1.92
+    ],
+    "size": [
+     2.4,
+     2.06,
+     0.2
+    ]
+   },
+   {
+    "name": "Talos_HumanoidRootPart__5",
+    "group": "HumanoidRootPart",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 988,
+    "at": [
+     1.3942,
+     5.7837,
+     -1.3566
+    ],
+    "size": [
+     2.465,
+     9.099,
+     0.911
+    ]
+   },
+   {
+    "name": "Talos_HumanoidRootPart__6",
+    "group": "HumanoidRootPart",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 300,
+    "at": [
+     1.35,
+     6.2,
+     -1.51
+    ],
+    "size": [
+     0.818,
+     5.24,
+     1.06
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerArm__7",
+    "group": "LeftLowerArm",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 932,
+    "at": [
+     -3.6,
+     4.4949,
+     0.1261
+    ],
+    "size": [
+     2.1,
+     6.084,
+     2.342
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerArm__8",
+    "group": "LeftLowerArm",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 2664,
+    "at": [
+     -3.5081,
+     3.9856,
+     -0.3816
+    ],
+    "size": [
+     2.564,
+     5.629,
+     2.763
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerArm__9",
+    "group": "LeftLowerArm",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 1004,
+    "at": [
+     -3.572,
+     4.155,
+     -0.2615
+    ],
+    "size": [
+     2.456,
+     5.99,
+     2.965
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerArm__10",
+    "group": "LeftLowerArm",
+    "color": "1A120A",
+    "material": "SmoothPlastic",
+    "tris": 132,
+    "at": [
+     -3.6,
+     5.75,
+     -1.06
+    ],
+    "size": [
+     1.2,
+     0.82,
+     0.1
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerLeg__11",
+    "group": "LeftLowerLeg",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 768,
+    "at": [
+     -1.1,
+     1.99,
+     -0.2624
+    ],
+    "size": [
+     1.9,
+     2.78,
+     2.085
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerLeg__12",
+    "group": "LeftLowerLeg",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 132,
+    "at": [
+     -1.1,
+     1.275,
+     -0.405
+    ],
+    "size": [
+     2.0,
+     2.55,
+     3.01
+    ]
+   },
+   {
+    "name": "Talos_LeftLowerLeg__13",
+    "group": "LeftLowerLeg",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 608,
+    "at": [
+     -1.1,
+     1.838,
+     -0.7597
+    ],
+    "size": [
+     1.91,
+     2.675,
+     3.4
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperArm__14",
+    "group": "LeftUpperArm",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 2012,
+    "at": [
+     -3.65,
+     8.9025,
+     0.0
+    ],
+    "size": [
+     3.48,
+     3.295,
+     3.48
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperArm__15",
+    "group": "LeftUpperArm",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 1196,
+    "at": [
+     -3.65,
+     8.1465,
+     0.0
+    ],
+    "size": [
+     3.276,
+     3.793,
+     3.341
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperArm__16",
+    "group": "LeftUpperArm",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 1896,
+    "at": [
+     -3.65,
+     9.0275,
+     0.0
+    ],
+    "size": [
+     3.474,
+     3.215,
+     3.544
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperLeg__17",
+    "group": "LeftUpperLeg",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 432,
+    "at": [
+     -1.1,
+     4.4775,
+     0.0
+    ],
+    "size": [
+     1.97,
+     3.045,
+     2.09
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperLeg__18",
+    "group": "LeftUpperLeg",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 88,
+    "at": [
+     -1.1,
+     3.6,
+     -0.1
+    ],
+    "size": [
+     1.7,
+     2.8,
+     2.2
+    ]
+   },
+   {
+    "name": "Talos_LeftUpperLeg__19",
+    "group": "LeftUpperLeg",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 240,
+    "at": [
+     -1.1,
+     3.22,
+     -1.04
+    ],
+    "size": [
+     1.023,
+     0.2,
+     0.17
+    ]
+   },
+   {
+    "name": "Talos_LowerTorso__20",
+    "group": "LowerTorso",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 3312,
+    "at": [
+     0.23,
+     3.9713,
+     -0.0745
+    ],
+    "size": [
+     4.94,
+     3.043,
+     3.147
+    ]
+   },
+   {
+    "name": "Talos_LowerTorso__21",
+    "group": "LowerTorso",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 44,
+    "at": [
+     -0.0,
+     5.7,
+     0.0
+    ],
+    "size": [
+     3.5,
+     2.5,
+     2.4
+    ]
+   },
+   {
+    "name": "Talos_LowerTorso__22",
+    "group": "LowerTorso",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 748,
+    "at": [
+     0.325,
+     3.85,
+     -0.0275
+    ],
+    "size": [
+     4.75,
+     2.8,
+     2.905
+    ]
+   },
+   {
+    "name": "Talos_LowerTorso__23",
+    "group": "LowerTorso",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 10716,
+    "at": [
+     0.16,
+     4.435,
+     -0.0124
+    ],
+    "size": [
+     4.619,
+     2.13,
+     3.175
+    ]
+   },
+   {
+    "name": "Talos_LowerTorso__24",
+    "group": "LowerTorso",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 4752,
+    "at": [
+     0.23,
+     2.475,
+     -0.0039
+    ],
+    "size": [
+     4.777,
+     0.85,
+     2.833
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__25",
+    "group": "RightLowerArm",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 1024,
+    "at": [
+     3.6108,
+     4.5128,
+     -1.1818
+    ],
+    "size": [
+     2.122,
+     6.049,
+     6.593
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__26",
+    "group": "RightLowerArm",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 2796,
+    "at": [
+     4.3982,
+     4.013,
+     -2.8173
+    ],
+    "size": [
+     4.344,
+     5.574,
+     7.635
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__27",
+    "group": "RightLowerArm",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 2250,
+    "at": [
+     4.8386,
+     4.1807,
+     -2.1448
+    ],
+    "size": [
+     4.989,
+     5.939,
+     9.145
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__28",
+    "group": "RightLowerArm",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 576,
+    "at": [
+     4.4337,
+     2.09,
+     -5.163
+    ],
+    "size": [
+     4.131,
+     0.15,
+     1.979
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__29",
+    "group": "RightLowerArm",
+    "color": "5B3A1C",
+    "material": "Fabric",
+    "tris": 2880,
+    "at": [
+     3.7059,
+     3.4,
+     -0.6007
+    ],
+    "size": [
+     1.142,
+     0.724,
+     2.584
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__30",
+    "group": "RightLowerArm",
+    "color": "4A4640",
+    "material": "Slate",
+    "tris": 44,
+    "at": [
+     4.9316,
+     3.4,
+     -5.2485
+    ],
+    "size": [
+     4.346,
+     2.4,
+     3.048
+    ]
+   },
+   {
+    "name": "Talos_RightLowerArm__31",
+    "group": "RightLowerArm",
+    "color": "1A120A",
+    "material": "SmoothPlastic",
+    "tris": 132,
+    "at": [
+     3.6,
+     5.75,
+     -1.06
+    ],
+    "size": [
+     1.2,
+     0.82,
+     0.1
+    ]
+   },
+   {
+    "name": "Talos_RightLowerLeg__32",
+    "group": "RightLowerLeg",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 1488,
+    "at": [
+     1.1,
+     1.9132,
+     -0.2642
+    ],
+    "size": [
+     1.9,
+     2.934,
+     2.088
+    ]
+   },
+   {
+    "name": "Talos_RightLowerLeg__33",
+    "group": "RightLowerLeg",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 132,
+    "at": [
+     1.1,
+     1.275,
+     -0.4057
+    ],
+    "size": [
+     2.0,
+     2.55,
+     3.011
+    ]
+   },
+   {
+    "name": "Talos_RightLowerLeg__34",
+    "group": "RightLowerLeg",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 1440,
+    "at": [
+     1.1,
+     1.8291,
+     -0.7588
+    ],
+    "size": [
+     1.917,
+     2.695,
+     3.405
+    ]
+   },
+   {
+    "name": "Talos_RightLowerLeg__35",
+    "group": "RightLowerLeg",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 188,
+    "at": [
+     1.1,
+     1.15,
+     -1.0
+    ],
+    "size": [
+     1.0,
+     1.0,
+     0.4
+    ]
+   },
+   {
+    "name": "Talos_RightUpperArm__36",
+    "group": "RightUpperArm",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 2012,
+    "at": [
+     3.65,
+     8.9025,
+     0.0
+    ],
+    "size": [
+     3.48,
+     3.295,
+     3.48
+    ]
+   },
+   {
+    "name": "Talos_RightUpperArm__37",
+    "group": "RightUpperArm",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 1196,
+    "at": [
+     3.65,
+     8.1465,
+     0.0
+    ],
+    "size": [
+     3.276,
+     3.793,
+     3.341
+    ]
+   },
+   {
+    "name": "Talos_RightUpperArm__38",
+    "group": "RightUpperArm",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 1896,
+    "at": [
+     3.65,
+     9.0275,
+     0.0
+    ],
+    "size": [
+     3.474,
+     3.215,
+     3.544
+    ]
+   },
+   {
+    "name": "Talos_RightUpperLeg__39",
+    "group": "RightUpperLeg",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 432,
+    "at": [
+     1.1,
+     4.4775,
+     0.0
+    ],
+    "size": [
+     1.97,
+     3.045,
+     2.09
+    ]
+   },
+   {
+    "name": "Talos_RightUpperLeg__40",
+    "group": "RightUpperLeg",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 88,
+    "at": [
+     1.1,
+     3.6,
+     -0.1
+    ],
+    "size": [
+     1.7,
+     2.8,
+     2.2
+    ]
+   },
+   {
+    "name": "Talos_RightUpperLeg__41",
+    "group": "RightUpperLeg",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 240,
+    "at": [
+     1.1,
+     3.22,
+     -1.04
+    ],
+    "size": [
+     1.023,
+     0.2,
+     0.17
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__42",
+    "group": "UpperTorso",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 1908,
+    "at": [
+     -0.0,
+     9.075,
+     0.175
+    ],
+    "size": [
+     6.133,
+     5.45,
+     3.79
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__43",
+    "group": "UpperTorso",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 1656,
+    "at": [
+     -0.0,
+     8.345,
+     -0.275
+    ],
+    "size": [
+     5.8,
+     4.41,
+     3.65
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__44",
+    "group": "UpperTorso",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 6024,
+    "at": [
+     -0.0,
+     9.0645,
+     0.0239
+    ],
+    "size": [
+     6.3,
+     5.469,
+     4.223
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__45",
+    "group": "UpperTorso",
+    "color": "C9A247",
+    "material": "Metal",
+    "tris": 480,
+    "at": [
+     -0.0,
+     9.85,
+     -1.92
+    ],
+    "size": [
+     1.511,
+     1.511,
+     0.118
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__46",
+    "group": "UpperTorso",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 140,
+    "at": [
+     -0.0,
+     9.0,
+     1.58
+    ],
+    "size": [
+     3.0,
+     2.12,
+     0.05
+    ]
+   },
+   {
+    "name": "Talos_UpperTorso__47",
+    "group": "UpperTorso",
+    "color": "1A120A",
+    "material": "SmoothPlastic",
+    "tris": 220,
+    "at": [
+     -0.0,
+     9.0,
+     1.62
+    ],
+    "size": [
+     3.0,
+     2.22,
+     0.1
+    ]
+   }
+  ],
+  "cage": [
+   {
+    "name": "Talos_Gate__48",
+    "group": "Gate",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 552,
+    "at": [
+     -0.0,
+     5.35,
+     -0.15
+    ],
+    "size": [
+     17.2,
+     9.4,
+     17.5
+    ]
+   },
+   {
+    "name": "Talos_Gate__49",
+    "group": "Gate",
+    "color": "78542E",
+    "material": "Metal",
+    "tris": 5856,
+    "at": [
+     -0.0,
+     11.8297,
+     0.0
+    ],
+    "size": [
+     16.35,
+     21.859,
+     16.35
+    ]
+   },
+   {
+    "name": "Talos_Gate__50",
+    "group": "Gate",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 19000,
+    "at": [
+     -0.0,
+     13.0678,
+     0.0
+    ],
+    "size": [
+     16.7,
+     24.336,
+     16.7
+    ]
+   },
+   {
+    "name": "Talos_Gate__51",
+    "group": "Gate",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 7096,
+    "at": [
+     0.3051,
+     12.498,
+     -0.4556
+    ],
+    "size": [
+     15.97,
+     21.404,
+     15.704
+    ]
+   },
+   {
+    "name": "Talos_Gate__52",
+    "group": "Gate",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 1728,
+    "at": [
+     -0.0,
+     17.6586,
+     -4.1443
+    ],
+    "size": [
+     0.975,
+     15.117,
+     9.085
+    ]
+   },
+   {
+    "name": "Talos_Gate__53",
+    "group": "Gate",
+    "color": "1E1A16",
+    "material": "SmoothPlastic",
+    "tris": 28,
+    "at": [
+     -0.0,
+     9.3,
+     -8.92
+    ],
+    "size": [
+     0.12,
+     0.3,
+     0.05
+    ]
+   },
+   {
+    "name": "Talos_Static__54",
+    "group": "Static",
+    "color": "3A3C40",
+    "material": "Metal",
+    "tris": 144,
+    "at": [
+     19.4912,
+     3.75,
+     -7.0
+    ],
+    "size": [
+     4.182,
+     2.1,
+     1.3
+    ]
+   },
+   {
+    "name": "Talos_Static__55",
+    "group": "Static",
+    "color": "5B3A1C",
+    "material": "Metal",
+    "tris": 12480,
+    "at": [
+     -0.4125,
+     12.8,
+     0.0
+    ],
+    "size": [
+     31.025,
+     25.6,
+     21.0
+    ]
+   },
+   {
+    "name": "Talos_Static__56",
+    "group": "Static",
+    "color": "A8743A",
+    "material": "Metal",
+    "tris": 660,
+    "at": [
+     -0.0,
+     13.275,
+     0.0
+    ],
+    "size": [
+     30.2,
+     25.35,
+     2.4
+    ]
+   },
+   {
+    "name": "Talos_Static__57",
+    "group": "Static",
+    "color": "D9A55B",
+    "material": "Metal",
+    "tris": 15308,
+    "at": [
+     -0.1375,
+     13.085,
+     0.0
+    ],
+    "size": [
+     31.075,
+     25.83,
+     21.422
+    ]
+   },
+   {
+    "name": "Talos_Static__58",
+    "group": "Static",
+    "color": "1A1816",
+    "material": "Basalt",
+    "tris": 2616,
+    "at": [
+     -22.7939,
+     1.5662,
+     -2.8405
+    ],
+    "size": [
+     7.141,
+     3.592,
+     7.637
+    ]
+   },
+   {
+    "name": "Talos_Static__59",
+    "group": "Static",
+    "color": "FF561C",
+    "material": "Neon",
+    "tris": 2234,
+    "at": [
+     -20.0334,
+     3.1034,
+     -5.7525
+    ],
+    "size": [
+     3.809,
+     0.676,
+     3.515
+    ]
+   },
+   {
+    "name": "Talos_Static__60",
+    "group": "Static",
+    "color": "FF9632",
+    "material": "Neon",
+    "tris": 206,
+    "at": [
+     -20.0336,
+     3.8468,
+     -6.0416
+    ],
+    "size": [
+     1.08,
+     1.646,
+     1.108
+    ]
+   },
+   {
+    "name": "Talos_Static__61",
+    "group": "Static",
+    "color": "FFE696",
+    "material": "Neon",
+    "tris": 4820,
+    "at": [
+     -19.5405,
+     6.5103,
+     -5.8679
+    ],
+    "size": [
+     4.961,
+     6.721,
+     4.432
+    ]
+   },
+   {
+    "name": "Talos_Static__62",
+    "group": "Static",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 380,
+    "at": [
+     -0.0,
+     0.63,
+     0.0
+    ],
+    "size": [
+     7.8,
+     0.06,
+     7.8
+    ]
+   },
+   {
+    "name": "Talos_Static__63",
+    "group": "Static",
+    "color": "5CD2BE",
+    "material": "Neon",
+    "tris": 4896,
+    "at": [
+     -0.0,
+     0.62,
+     0.0
+    ],
+    "size": [
+     17.938,
+     0.141,
+     17.938
+    ]
+   },
+   {
+    "name": "Talos_Static__64",
+    "group": "Static",
+    "color": "2B2F33",
+    "material": "Metal",
+    "tris": 13076,
+    "at": [
+     -0.7992,
+     11.097,
+     -1.6663
+    ],
+    "size": [
+     44.72,
+     22.288,
+     13.651
+    ]
+   },
+   {
+    "name": "Talos_Static__65",
+    "group": "Static",
+    "color": "485058",
+    "material": "SmoothPlastic",
+    "tris": 156,
+    "at": [
+     -21.5,
+     2.9,
+     3.5
+    ],
+    "size": [
+     2.8,
+     0.05,
+     2.8
+    ]
+   },
+   {
+    "name": "Talos_Static__66",
+    "group": "Static",
+    "color": "967A5C",
+    "material": "Slate",
+    "tris": 88,
+    "at": [
+     -0.0,
+     0.6,
+     0.0
+    ],
+    "size": [
+     31.4,
+     1.2,
+     3.4
+    ]
+   },
+   {
+    "name": "Talos_Static__67",
+    "group": "Static",
+    "color": "5C4028",
+    "material": "Wood",
+    "tris": 1348,
+    "at": [
+     -0.3952,
+     3.6,
+     -1.5578
+    ],
+    "size": [
+     45.39,
+     7.2,
+     13.345
+    ]
+   }
+  ],
+  "boss_lights": [
+   {
+    "group": "Head",
+    "at": [
+     -0.0,
+     11.4,
+     -2.6
+    ],
+    "color": "5CD2BE",
+    "brightness": 0.75,
+    "range": 13.1
+   },
+   {
+    "group": "RightLowerLeg",
+    "at": [
+     1.1,
+     1.2,
+     -2.0
+    ],
+    "color": "5CD2BE",
+    "brightness": 0.97,
+    "range": 16.0
+   }
+  ],
+  "cage_lights": [
+   {
+    "group": "Static",
+    "at": [
+     -0.0,
+     2.5,
+     -2.0
+    ],
+    "color": "5CD2BE",
+    "brightness": 2.27,
+    "range": 24.0
+   },
+   {
+    "group": "Static",
+    "at": [
+     -20.0,
+     5.0,
+     -6.0
+    ],
+    "color": "FF8232",
+    "brightness": 3.0,
+    "range": 24.0
+   }
+  ],
+  "stand": [
+   -0.0,
+   0.66,
+   0.0
+  ],
+  "gate_box": [
+   [
+    -8.6,
+    0.6499999999999995,
+    -8.945
+   ],
+   [
+    8.6,
+    25.235799999999998,
+    8.6
+   ]
+  ]
+ }
+}
