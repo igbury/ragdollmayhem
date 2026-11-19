@@ -457,7 +457,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, blocks)\nG  Spawn the picked character\nClick  Build the picked block (1-5 back to weapons)\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera\nM  Back to the menu",
+	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, teams, build)\nG  Spawn the picked character\nBuilding: hold Q  Blocks, 1 / 2  Block / trash, click  Build / delete\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera\nM  Back to the menu",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -1145,6 +1145,9 @@ local barApi = {
 	blocked = function(): boolean
 		local hum = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 		return Menu.active or not hum or hum.Health <= 0
+	end,
+	building = function(): boolean -- BUILD on (Toolbox): the weapon keys are the build bar's
+		return toolbox ~= nil and toolbox.building()
 	end,
 	scrollable = function(): boolean
 		return holding == nil

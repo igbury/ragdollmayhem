@@ -688,6 +688,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)
+		if api.building and api.building() and input.KeyCode ~= Enum.KeyCode.F then return end -- BUILD (F still drags): Q, 1-5 are the build bar's (Toolbox)
 		if gui:GetAttribute("WeaponPickerOpen") and not open then return end
 		if open and input.UserInputType == Enum.UserInputType.MouseButton1 and not processed then
 			choose(pick) -- the backpack opened by a click closes on one (the page arrows are buttons)
@@ -721,6 +722,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
+		if api.building and api.building() then return end
 		if input.KeyCode ~= Enum.KeyCode.Q or not qDownAt then
 			return
 		end
@@ -734,7 +736,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	UserInputService.InputChanged:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.MouseWheel and open then
 			flip(input.Position.Z > 0 and -1 or 1)
-		elseif input.UserInputType == Enum.UserInputType.MouseWheel and not processed and api.scrollable() and not api.blocked() then
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel and not processed and api.scrollable() and not api.blocked() and not (api.building and api.building()) then
 			step(input.Position.Z > 0 and -1 or 1)
 		elseif input.KeyCode == Enum.KeyCode.Thumbstick2 then
 			stick = Vector2.new(input.Position.X, -input.Position.Y)

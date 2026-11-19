@@ -1,5 +1,5 @@
--- Toolbox (Tab): pick what G puts down — a character to spawn, a block to build, or the delete tool —
--- or an outfit or a team a click puts on a dummy, or time stopped. The server checks and does the spawning, building and dressing
+-- Toolbox (Tab): pick the character G puts down, a team a click puts a dummy in, BUILD (the block wheel
+-- on Q and the trash, instead of the weapons) or time stopped. The server checks and does it all
 -- (server/init.server.luau, "build" / "spawn" / "dress" / "team" / "freeze"). Items with a `pass` are that game pass's
 -- (shared/Shop): while it is locked they wear its sticker, and a click offers the pass instead.
 local MarketplaceService = game:GetService("MarketplaceService")
@@ -25,24 +25,6 @@ local SECTIONS = {
 		{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
 		{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
 	} },
-	{ name = "BLOCKS", items = { -- the map's own blocks: colours and materials as server/Map.luau builds them
-		{ name = "Brick", block = Color3.fromRGB(170, 95, 80), material = "Brick" },
-		{ name = "Dirt", block = Color3.fromRGB(120, 85, 60), material = "Ground" },
-		{ name = "Grass", block = Color3.fromRGB(40, 170, 80), material = "Grass" },
-		{ name = "Wood", block = Color3.fromRGB(128, 82, 52), material = "Wood" },
-		{ name = "Leaves", block = Color3.fromRGB(30, 125, 55), material = "Grass", pass = "SandboxPlus" },
-		{ name = "Metal", block = Color3.fromRGB(120, 122, 130), material = "Metal", pass = "SandboxPlus" },
-		{ name = "Rocks", block = Color3.fromRGB(120, 122, 130), material = "Slate", pass = "SandboxPlus" },
-	} },
-	{ name = "OUTFITS", items = { -- `look`: the kind (server KINDS) whose clothes a click puts on a dummy
-		{ name = "Civilian", look = "Normal", color = Color3.fromRGB(110, 170, 90), pass = "DressUp" },
-		{ name = "Cop", look = "Cop", color = Color3.fromRGB(60, 90, 160), pass = "DressUp" },
-		{ name = "Hooligan", look = "Hooligan", color = Color3.fromRGB(40, 40, 44), pass = "DressUp" },
-		{ name = "Soldier", look = "Soldier", color = Color3.fromRGB(96, 108, 70), pass = "DressUp" },
-		{ name = "Heavy", look = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "DressUp" },
-		{ name = "Worker", look = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "DressUp" },
-		{ name = "Zombie", look = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "DressUp" },
-	} },
 	{ name = "TEAMS", items = { -- a click puts a dummy in the team, and G spawns into it; teams fight each other
 		{ name = "Red team", team = 1, color = Color3.fromRGB(232, 70, 56), pass = "SandboxPlus" },
 		{ name = "Blue team", team = 2, color = Color3.fromRGB(40, 110, 220), pass = "SandboxPlus" },
@@ -51,11 +33,24 @@ local SECTIONS = {
 		{ name = "No team", team = 0, color = Color3.fromRGB(110, 110, 118), pass = "SandboxPlus" },
 	} },
 	{ name = "TOOLS", items = {
+		{ name = "Build", tool = "build", color = Color3.fromRGB(40, 140, 70) },
 		{ name = "Stop time", tool = "freeze", color = Color3.fromRGB(70, 60, 150), pass = "SandboxPlus" },
-		{ name = "Delete block", tool = "delete", color = Color3.fromRGB(143, 46, 44) },
 		{ name = "Clear my blocks", tool = "clear", color = Color3.fromRGB(90, 40, 40) },
 	} },
 }
+
+-- BUILD (TOOLS) puts these on the Q wheel instead of the weapons: the map's own blocks, colours and
+-- materials as server/Map.luau builds them. The trash sits on the build bar beside the block, always.
+local BLOCKS = {
+	{ name = "Brick", block = Color3.fromRGB(170, 95, 80), material = "Brick" },
+	{ name = "Dirt", block = Color3.fromRGB(120, 85, 60), material = "Ground" },
+	{ name = "Grass", block = Color3.fromRGB(40, 170, 80), material = "Grass" },
+	{ name = "Wood", block = Color3.fromRGB(128, 82, 52), material = "Wood" },
+	{ name = "Leaves", block = Color3.fromRGB(30, 125, 55), material = "Grass", pass = "SandboxPlus" },
+	{ name = "Metal", block = Color3.fromRGB(120, 122, 130), material = "Metal", pass = "SandboxPlus" },
+	{ name = "Rocks", block = Color3.fromRGB(120, 122, 130), material = "Slate", pass = "SandboxPlus" },
+}
+local TRASH = { name = "Trash", tool = "delete", color = Color3.fromRGB(143, 46, 44) }
 
 local Toolbox = {}
 
@@ -236,13 +231,22 @@ end
 function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	pcall(StarterGui.SetCoreGuiEnabled, StarterGui, Enum.CoreGuiType.PlayerList, false) -- Tab is ours
 
-	-- G spawns the picked character. Picking a block (or Delete block) takes out the build tool: then
-	-- a click builds (or deletes) instead of attacking, until a weapon or ability comes off the bar (stop).
-	-- Picking an outfit takes out the same tool: a click on a dummy dresses it.
+	-- G spawns the picked character. Picking a team takes out a tool: a click on a dummy puts it in
+	-- the team, until a weapon or ability comes off the bar (stop).
+	-- BUILD swaps the weapons for the build bar (the block in hand and the trash, 1 / 2) and the
+	-- block wheel (hold Q); a click builds or deletes, until BUILD again.
 	local character = SECTIONS[1].items[1]
 	local team = 0 -- the team G spawns into (TEAMS), 0: none
 	local tool = nil
 	local building = false
+	local buildMode, brick, trashing = false, BLOCKS[1], false
+	local function current() -- what a click does now: a block, the trash, a team, or nothing
+		if buildMode then
+			return if trashing then TRASH else brick
+		end
+		return if building then tool else nil
+	end
+	local setBuild: (boolean) -> () -- below, with the build bar
 
 	local cover = Instance.new("Frame")
 	cover.Name, cover.Size = "Toolbox", UDim2.fromScale(1, 1)
@@ -299,11 +303,12 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		player:GetAttributeChangedSignal(Shop.attribute(key)):Connect(show)
 	end
 
+	local buildLabel = function() end -- the BUILD tile says what a click does now
 	local cards = {}
 	local function refresh()
 		for item, b in cards do
 			local stroke = b:FindFirstChildOfClass("UIStroke")
-			local picked = item == character or (building and item == tool)
+			local picked = item == character or (building and item == tool) or (buildMode and item.tool == "build")
 			stroke.Color, stroke.Thickness = picked and YELLOW or INK, picked and 6 or 3
 		end
 	end
@@ -334,14 +339,12 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		grid.LayoutOrder, grid.ZIndex, grid.Parent = order, 42, scroll
 		local layout = Instance.new("UIGridLayout")
 		local first = section.items[1]
-		layout.CellSize = if first.kind or first.look then UDim2.new(0.2, -GAP, 0, 180) -- characters: upright tiles
-			elseif first.block then UDim2.new(0.25, -GAP, 0, 130)
+		layout.CellSize = if first.kind then UDim2.new(0.2, -GAP, 0, 180) -- characters: upright tiles
 			else UDim2.new(0.25, -GAP, 0, 52)
 		layout.CellPadding, layout.SortOrder = UDim2.fromOffset(GAP, GAP), Enum.SortOrder.LayoutOrder
 		layout.Parent = grid
 		for i, item in section.items do
-			local b = if item.kind or item.look then characterTile(grid, item)
-				elseif item.block then blockTile(grid, item)
+			local b = if item.kind then characterTile(grid, item)
 				else button(grid, item.name, item.color)
 			b.LayoutOrder = i
 			cards[item] = b
@@ -352,6 +355,12 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				end
 				show()
 				workspace:GetAttributeChangedSignal("TimeFrozen"):Connect(show)
+			end
+			if item.tool == "build" then
+				local label = b:FindFirstChild("Label") :: TextLabel
+				buildLabel = function()
+					label.Text = if buildMode then "STOP BUILDING" else "BUILD"
+				end
 			end
 			if item.pass then
 				passSticker(b, item.pass)
@@ -365,6 +374,8 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 					actionRemote:FireServer("clearbuild")
 				elseif item.tool == "freeze" then
 					actionRemote:FireServer("freeze")
+				elseif item.tool == "build" then
+					setBuild(not buildMode)
 				elseif item.kind then
 					character = item
 				else
@@ -389,6 +400,131 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			setOpen(not cover.Visible)
 		elseif cover.Visible and input.KeyCode == Enum.KeyCode.Escape and not processed then
 			setOpen(false)
+		end
+	end)
+
+	-- Build bar (in place of the weapons' hotbar): the block in hand (1) and the trash (2) -------------
+	local buildBar = Instance.new("Frame")
+	buildBar.Name, buildBar.BackgroundTransparency, buildBar.Visible = "BuildBar", 1, false
+	buildBar.AnchorPoint, buildBar.Position, buildBar.Size = Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -16), UDim2.fromOffset(220, 130)
+	buildBar.ZIndex, buildBar.Parent = 30, gui
+	local hint = Instance.new("TextLabel")
+	hint.Text, hint.Font, hint.TextSize, hint.TextColor3 = "HOLD Q  BLOCKS     TAB  STOP BUILDING", FONT, 16, WHITE
+	hint.TextStrokeTransparency, hint.BackgroundTransparency = 0, 1
+	hint.Size, hint.Position, hint.ZIndex, hint.Parent = UDim2.new(1, 200, 0, 20), UDim2.new(0, -100, 0, -4), 31, buildBar
+	local function trashTile(parent): TextButton
+		local b = button(parent, "🗑", TRASH.color)
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize, label.Size = 40, UDim2.new(1, 0, 1, -CAPTION)
+		local name = Instance.new("TextLabel")
+		name.Text, name.Font, name.TextSize, name.TextColor3 = "TRASH", FONT, 17, WHITE
+		name.TextStrokeTransparency, name.BackgroundTransparency, name.ZIndex = 0, 1, b.ZIndex + 1
+		name.AnchorPoint, name.Position, name.Size = Vector2.new(0, 1), UDim2.fromScale(0, 1), UDim2.new(1, 0, 0, CAPTION)
+		name.Parent = b
+		return b
+	end
+	local brickSlot: GuiObject
+	local trashSlot = trashTile(buildBar)
+	trashSlot.Size, trashSlot.Position, trashSlot.ZIndex = UDim2.fromOffset(100, 100), UDim2.fromOffset(115, 24), 31
+	local function mark(slot: GuiObject, on: boolean)
+		local stroke = slot:FindFirstChildOfClass("UIStroke") :: UIStroke
+		stroke.Color, stroke.Thickness = on and YELLOW or INK, on and 6 or 3
+	end
+	local function showBar()
+		if brickSlot then
+			brickSlot:Destroy()
+		end
+		brickSlot = blockTile(buildBar, brick)
+		brickSlot.Size, brickSlot.Position = UDim2.fromOffset(100, 100), UDim2.fromOffset(5, 24)
+		brickSlot.Activated:Connect(function()
+			trashing = false
+			showBar()
+		end)
+		mark(brickSlot, not trashing)
+		mark(trashSlot, trashing)
+	end
+	trashSlot.Activated:Connect(function()
+		trashing = true
+		showBar()
+	end)
+
+	-- Block wheel (hold Q while building): the blocks round the middle; point at one, let go of Q --
+	local wheel = Instance.new("Frame")
+	wheel.Name, wheel.Size, wheel.BackgroundColor3, wheel.BackgroundTransparency = "BlockWheel", UDim2.fromScale(1, 1), INK, 0.5
+	wheel.ZIndex, wheel.Visible, wheel.Parent = 39, false, gui -- under the tiles (43+), the dimmer behind them
+	local RADIUS = 200
+	local petals = {}
+	for i, item in BLOCKS do
+		local b = blockTile(wheel, item)
+		local a = (i - 1) / #BLOCKS * math.pi * 2
+		b.AnchorPoint, b.Size = Vector2.new(0.5, 0.5), UDim2.fromOffset(120, 130)
+		b.Position = UDim2.new(0.5, math.sin(a) * RADIUS, 0.5, -math.cos(a) * RADIUS)
+		if item.pass then
+			passSticker(b, item.pass)
+		end
+		petals[i] = { item = item, button = b, angle = a }
+	end
+	local hovered = nil
+	local function pickBlock(item)
+		if item.pass and Shop.locked(player, item.pass) then
+			MarketplaceService:PromptGamePassPurchase(player, Shop.item(item.pass).pass)
+			return
+		end
+		brick, trashing = item, false
+		showBar()
+	end
+	local function showWheel(on: boolean)
+		if on == wheel.Visible then
+			return
+		end
+		wheel.Visible, hovered = on, nil
+		gui:SetAttribute("WeaponPickerOpen", on)
+		api.freeze(on)
+		UIS.MouseIconEnabled = on
+	end
+	for _, p in petals do
+		p.button.Activated:Connect(function()
+			pickBlock(p.item)
+			showWheel(false)
+		end)
+	end
+
+	setBuild = function(on: boolean)
+		if on and not buildMode then
+			api.set(1) -- the fists, so no weapon is left drawn; this also stops a team tool
+		end
+		buildMode = on
+		if not on then
+			showWheel(false)
+		end
+		buildBar.Visible = on
+		local hotbar = gui:FindFirstChild("Hotbar")
+		if hotbar then
+			hotbar.Visible = not on
+		end
+		showBar()
+		buildLabel()
+		refresh()
+	end
+	showBar()
+
+	UIS.InputBegan:Connect(function(input, processed)
+		if not buildMode or processed or cover.Visible or api.blocked() or UIS:GetFocusedTextBox() then
+			return
+		end
+		if input.KeyCode == Enum.KeyCode.Q and not wheel.Visible then
+			showWheel(true)
+		elseif input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.Two then
+			trashing = input.KeyCode == Enum.KeyCode.Two
+			showBar()
+		end
+	end)
+	UIS.InputEnded:Connect(function(input)
+		if input.KeyCode == Enum.KeyCode.Q and wheel.Visible then
+			if hovered then
+				pickBlock(hovered.item)
+			end
+			showWheel(false)
 		end
 	end)
 
@@ -425,14 +561,33 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				end
 			end
 		end
+		if wheel.Visible then -- the petal the mouse points at from the middle
+			local off = UIS:GetMouseLocation() - workspace.CurrentCamera.ViewportSize / 2
+			local best = nil
+			if off.Magnitude > 40 then
+				local a = math.atan2(off.X, -off.Y) % (math.pi * 2)
+				local gap = math.huge
+				for _, p in petals do
+					local d = math.abs((a - p.angle + math.pi) % (math.pi * 2) - math.pi)
+					if d < gap then
+						best, gap = p, d
+					end
+				end
+			end
+			hovered = best
+			for _, p in petals do
+				mark(p.button, p == best)
+			end
+		end
 		local built = workspace:FindFirstChild("Built")
-		local result = building and not cover.Visible and not api.blocked() and aim(RANGE)
+		local tool = current()
+		local result = tool and not cover.Visible and not wheel.Visible and not api.blocked() and aim(RANGE)
 		if not result then
 			ghost.Parent, outline.Adornee = nil, nil
 		elseif tool.block then
 			ghost.Color, ghost.Material = tool.block, Enum.Material[tool.material]
 			ghost.Position, ghost.Parent, outline.Adornee = blockSpot(result, built), workspace, nil
-		elseif tool.look or tool.team then
+		elseif tool.team then
 			ghost.Parent = nil
 			outline.Adornee = dummyAt(result)
 		else
@@ -449,7 +604,8 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			end
 		end,
 		click = function(): boolean -- left click: true when the build tool took it
-			if not building then
+			local tool = current()
+			if not tool then
 				return false
 			end
 			local result = aim(RANGE)
@@ -458,11 +614,6 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				return true -- aimed at the sky: nothing to build on, but no swing either
 			elseif tool.block then
 				actionRemote:FireServer("build", blockSpot(result, built), tool.block, tool.material)
-			elseif tool.look then
-				local dummy = dummyAt(result)
-				if dummy then
-					actionRemote:FireServer("dress", dummy, tool.look)
-				end
 			elseif tool.team then
 				local dummy = dummyAt(result)
 				if dummy then
@@ -478,6 +629,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				building = false
 				refresh()
 			end
+		end,
+		building = function(): boolean -- BUILD is on: no weapon bar (init, WeaponBar)
+			return buildMode
 		end,
 	}
 end
