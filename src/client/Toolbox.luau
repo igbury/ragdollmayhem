@@ -1,6 +1,6 @@
 -- Toolbox (Tab): pick the character G puts down, a team a click puts a dummy in, BUILD (the block wheel
 -- on Q and the trash, instead of the weapons) or time stopped. The server checks and does it all
--- (server/init.server.luau, "build" / "spawn" / "dress" / "team" / "freeze"). Items with a `pass` are that game pass's
+-- (server/init.server.luau, "build" / "spawn" / "team" / "freeze"). Items with a `pass` are that game pass's
 -- (shared/Shop): while it is locked they wear its sticker, and a click offers the pass instead.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")

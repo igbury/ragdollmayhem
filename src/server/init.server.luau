@@ -739,25 +739,8 @@ local function revive(d)
 	syncAttributes(d)
 end
 
--- Toolbox extras: DRESS UP, TEAMS and TIME STOP (one table: the script is at Luau's 200-locals limit)
+-- Toolbox extras: TEAMS and TIME STOP (one table: the script is at Luau's 200-locals limit)
 local Sandbox: any = { frozen = false, userFrozen = false, frozenParts = {}, frozenTracks = {} }
-
--- DRESS UP (Toolbox, shared/Shop): the same person in the clothes of another kind (`look`, a KINDS
--- name). Like a revive with limbs gone, it is a whole new body: same name, kind, trait and spot,
--- only the description and outfit come from `look`.
-function Sandbox.dress(d, look: string)
-	local at = d.model:GetPivot()
-	local flat = Vector3.new(at.LookVector.X, 0, at.LookVector.Z)
-	local cf = CFrame.lookAlong(at.Position + Vector3.yAxis, if flat.Magnitude > 0.1 then flat else Vector3.zAxis)
-	local name, kind, trait, team = d.model.Name, d.model:GetAttribute("Kind"), d.trait, d.team
-	d.model:Destroy()
-	task.spawn(function()
-		local fresh = spawnDummy(cf, name, kind, trait, look)
-		if team and fresh then
-			Sandbox.setTeam(fresh, team)
-		end
-	end)
-end
 
 -- TEAMS (Toolbox, SANDBOX + in shared/Shop): up to 4; a dummy in one goes after the nearest dummy of
 -- another (behave, nearestDummy), never a teammate, and does not lose its nerve. A coloured dot over
@@ -1605,7 +1588,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 end
 
 -- `forceTrait`: its character instead of the kind's or a random one (the tutorial's never hit back).
--- `look`: a KINDS name to dress it as instead of its own kind (DRESS UP, dress)
+-- `look`: a KINDS name to dress it as instead of its own kind (a revive keeps the "Look" it had)
 function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: string?, look: string?)
 	local kindName = forceKind or rollKind()
 	local kind = KINDS[kindName]
@@ -2185,13 +2168,6 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 	elseif action == "freeze" and plus then
 		Sandbox.userFrozen = not Sandbox.userFrozen -- the Heartbeat applies it
 		workspace:SetAttribute("TimeFrozen", Sandbox.userFrozen)
-	elseif action == "dress" and typeof(arg) == "Instance" and typeof(extra) == "string" and KINDS[extra]
-		and not Shop.locked(player, "DressUp") then
-		local d = dummyOf(arg)
-		if d and d.state ~= "Dead" and not d.heldBy and not d.looseOwner and not d.model:GetAttribute("TutorialFor")
-			and (d.model:GetPivot().Position - head.Position).Magnitude < 200 then
-			Sandbox.dress(d, extra)
-		end
 	elseif action == "build" and finite(arg) and (arg - head.Position).Magnitude < 200 and typeof(extra) == "Color3"
 		and BLOCK_MATERIALS[extra2] and (plus or not Shop.SANDBOX.materials[extra2])
 		and blockCount(player) < Shop.SANDBOX.blocks[plus and 2 or 1] then

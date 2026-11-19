@@ -14,7 +14,6 @@ Shop.PASSES = {
 	{ key = "AllWeapons", name = "ALL WEAPONS", price = 399, pass = 0 },
 	{ key = "DoubleKO", name = "2X KO", price = 249, pass = 0 }, -- kills count double toward unlocks
 	{ key = "Anime", name = "ANIME ATTACKS", price = 299, pass = 0 }, -- the abilities (shared/Attacks)
-	{ key = "DressUp", name = "DRESS UP", price = 149, pass = 0 }, -- outfits for dummies (Toolbox)
 	{ key = "SandboxPlus", name = "SANDBOX +", price = 199, pass = 0 }, -- every Toolbox kind, higher caps
 }
 
