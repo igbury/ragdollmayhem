@@ -51,7 +51,7 @@ local LOOK = {
 	wall = Color3.fromRGB(110, 106, 114), steel = Color3.fromRGB(224, 160, 48), plank = Color3.fromRGB(150, 110, 70),
 	crate = Color3.fromRGB(196, 150, 92), iron = Color3.fromRGB(58, 58, 66), flame = Color3.fromRGB(255, 150, 60),
 }
-local THEME = { -- a glowing ring in the paving (radius from, to)
+local THEME = { -- a coloured ring in the paving (radius from, to)
 	Cyclops = { ring = { 14, 17.5 }, glow = Color3.fromRGB(240, 122, 58) },
 	Minotaur = {},
 	Talos = { ring = { 9.5, 12 }, glow = Color3.fromRGB(57, 208, 230) },
@@ -108,10 +108,10 @@ end
 local function torch(parent, x, z, y)
 	slab(parent, "Post", Vector3.new(2, 3.5, 2), Vector3.new(x, y + 1.75, z), LOOK.dark, Enum.Material.Slate)
 	slab(parent, "Post", Vector3.new(2.6, 0.6, 2.6), Vector3.new(x, y + 3.8, z), LOOK.marble, Enum.Material.Marble)
-	local flame = slab(parent, "Flame", Vector3.new(1, 1.2, 1), Vector3.new(x, y + 4.7, z), LOOK.flame, Enum.Material.Neon)
+	local flame = slab(parent, "Flame", Vector3.new(1, 1.2, 1), Vector3.new(x, y + 4.7, z), LOOK.flame, Enum.Material.SmoothPlastic)
 	flame.CanCollide, flame.CanQuery, flame.CastShadow = false, false, false
-	local light = Instance.new("PointLight")
-	light.Color, light.Brightness, light.Range, light.Shadows = LOOK.flame, 1.4, 22, false
+	local light = Instance.new("PointLight") -- a soft glow, not a floodlight
+	light.Color, light.Brightness, light.Range, light.Shadows = LOOK.flame, 0.6, 14, false
 	light.Parent = flame
 end
 -- One boss's dungeon around base (the pit floor's centre). Returns the arch to hang its name on.
@@ -127,8 +127,10 @@ local function dungeon(ground, kind, base, floors)
 			local px, pz = x0 + 1 + (i + 0.5) * tile, z0 + 1 + (k + 0.5) * tile
 			local r = math.sqrt((px - b) ^ 2 + (pz - c) ^ 2)
 			local color, material = (r // 4) % 2 == 0 and LOOK.plaza or LOOK.dark, Enum.Material.Cobblestone
-			if theme.ring and r >= theme.ring[1] and r < theme.ring[2] then color, material = theme.glow, Enum.Material.Neon end
-			table.insert(floors, slab(model, "Floor", Vector3.new(tile, 1, tile), Vector3.new(px, low - 0.5, pz), color, material))
+			if theme.ring and r >= theme.ring[1] and r < theme.ring[2] then color, material = theme.glow, Enum.Material.Slate end
+			-- a hair below the pit's bottom: the cage kits lay their own sand / paving right at `low`,
+			-- and two faces at one height flicker (z-fighting)
+			table.insert(floors, slab(model, "Floor", Vector3.new(tile, 1, tile), Vector3.new(px, low - 0.55, pz), color, material))
 		end
 	end
 	-- walls stand on the bedrock: slate under a brick band; the rampart ones carry merlons
@@ -148,7 +150,7 @@ local function dungeon(ground, kind, base, floors)
 	wall(x0 + 1, b - RAMP_HALF - 1, z1 - 1, z1, RAMPART); wall(b + RAMP_HALF + 1, x1 - 1, z1 - 1, z1, RAMPART)
 	-- the ramp: a trench lined like the pit, a wedge rising toward the arena (+z) on a paved bed
 	wall(b - RAMP_HALF - 1, b - RAMP_HALF, z1 - 1, z1 + RAMP_LONG, 0); wall(b + RAMP_HALF, b + RAMP_HALF + 1, z1 - 1, z1 + RAMP_LONG, 0)
-	table.insert(floors, span(model, "Floor", b - RAMP_HALF, b + RAMP_HALF, low - 1, low, z1 - 1, z1 + RAMP_LONG, LOOK.dark, Enum.Material.Cobblestone))
+	table.insert(floors, span(model, "Floor", b - RAMP_HALF, b + RAMP_HALF, low - 1.05, low - 0.05, z1 - 1, z1 + RAMP_LONG, LOOK.dark, Enum.Material.Cobblestone)) -- under the kit's sand (see the paving)
 	local ramp = Instance.new("WedgePart") -- low edge at its front (-z, the pit), high at the back
 	ramp.Name, ramp.Size, ramp.CFrame, ramp.Anchored = "Ramp", Vector3.new(2 * RAMP_HALF, -low, RAMP_LONG), CFrame.new(b, low / 2, z1 + RAMP_LONG / 2), true
 	ramp.Color, ramp.Material = LOOK.dark, Enum.Material.Slate
@@ -524,6 +526,14 @@ function Monsters.start(remotes, hurtPlayer)
 					local c = src:Clone()
 					c.CFrame = pivot * c:GetAttribute("Place")
 					c.Anchored = true
+					if c:IsA("BasePart") and c.Material == Enum.Material.Neon then
+						c.Material = Enum.Material.SmoothPlastic -- no neon in the yard; the lanterns only glow softly
+					end
+					for _, light in c:GetDescendants() do
+						if light:IsA("Light") then
+							light.Brightness, light.Range = math.min(light.Brightness, 0.6), math.min(light.Range, 14)
+						end
+					end
 					if group.Name == "Gate" then c:SetAttribute("Shut", c.CFrame) end
 					c.Parent = group.Name == "Gate" and gate or look
 				end
