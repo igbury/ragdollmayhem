@@ -9,6 +9,13 @@ local PROFILES = {
 	Rifle = { back = 2.3, pitch = 3.2, speed = 34 },
 	Sniper = { back = 7.0, pitch = 8.5, speed = 23 },
 	Rocket = { back = 6.0, pitch = 5.0, speed = 22 },
+	-- the comic set
+	Taser = { back = 3.0, pitch = 4.2, speed = 30 },
+	Frostgun = { back = 4.0, pitch = 5.0, speed = 26 },
+	Boilgun = { back = 6.5, pitch = 7.5, speed = 24 },
+	Flamethrower = { back = 0.6, pitch = 0.8, speed = 40 },
+	Minigun = { back = 1.2, pitch = 1.6, speed = 40 },
+	Harpoon = { back = 7.0, pitch = 6.0, speed = 22 },
 }
 
 local function step(position: Vector3, velocity: Vector3, speed: number, dt: number): (Vector3, Vector3)

@@ -31,6 +31,8 @@ tint.Parent = Lighting
 local Fx = {}
 Fx.fovBoost = 0 -- extra FOV set by the client (sprint)
 Fx.muzzle = nil :: ((weaponId: string) -> Vector3?)? -- set by the client: our held weapon's muzzle, now
+Fx.weaponPoint = nil :: ((weaponId: string, point: Vector3) -> CFrame?)? -- set by the client: a point on it
+Fx.hookAt = nil :: number? -- os.clock() our crowbar's claw went into a shoulder (EVENTS.Hook)
 Fx.cameraOffset = Vector3.zero -- Humanoid.CameraOffset set by the client (over the shoulder), shake goes on top
 local active = {} -- { t0, dur, fn, parts }
 local shakeMag, shakeStart, shakeEnd = 0, 0, 0
@@ -598,6 +600,115 @@ local FLAME = { Color3.fromRGB(255, 120, 30), Color3.fromRGB(255, 200, 60), Colo
 local TRACER = Color3.fromRGB(255, 235, 150)
 
 local SLASH = Color3.fromRGB(170, 225, 255)
+local ICE = Color3.fromRGB(170, 225, 255)
+local ZAP = Color3.fromRGB(255, 240, 90)
+local ROPE = Color3.fromRGB(176, 132, 78)
+local STEEL = Color3.fromRGB(205, 210, 220)
+
+-- A straight stick of `width` from a to b (tracers, wires, rope).
+local function stick(p: BasePart, a: Vector3, b: Vector3, width: number)
+	p.Size = Vector3.new(width, width, math.max((b - a).Magnitude, 0.05))
+	p.CFrame = CFrame.lookAt(a:Lerp(b, 0.5), b)
+end
+
+-- The comic set's shots (server/Specials sends them as "Shot"): (muzzle, to, aimCf, distance, landed,
+-- primary). Harpoon: primary = it struck a body (into anything else it stays stuck a while).
+local COMIC_SHOTS = {}
+
+function COMIC_SHOTS.Frostgun(muzzle: Vector3, to: Vector3, aimCf: CFrame, _, landed: boolean)
+	local beam, core = part(Enum.PartType.Block, ICE), part(Enum.PartType.Block, WHITE)
+	run(0.3, { beam, core }, function(a)
+		stick(beam, muzzle, to, 0.45 * (1 - a) + 0.02)
+		stick(core, muzzle, to, 0.15 * (1 - a) + 0.01)
+		beam.Transparency = 0.3 + 0.7 * a
+	end)
+	Fx.glint(muzzle, 2, ICE, 0.08)
+	Fx.shake(muzzle, 0.15, 0.1)
+	if landed then
+		Fx.crystals(CFrame.new(to), 6, 1.6, 2.4, 0.7, ICE)
+		Fx.sparks(to, 8, 4, WHITE, -aimCf.LookVector, 0.4)
+		Fx.text(to + UP * 2, "FREEZE!", ICE, 2.2)
+	end
+end
+
+function COMIC_SHOTS.Taser(muzzle: Vector3, to: Vector3, aimCf: CFrame, _, landed: boolean)
+	local wires = { part(Enum.PartType.Block, ZAP), part(Enum.PartType.Block, ZAP) }
+	run(0.6, wires, function(a)
+		for i, w in wires do
+			local side = aimCf.RightVector * (i == 1 and -0.08 or 0.08)
+			stick(w, muzzle + side, to + side * 3 + UP * math.sin(a * 40 + i) * 0.05, 0.05)
+			w.Transparency = a > 0.7 and (a - 0.7) / 0.3 or 0
+		end
+	end)
+	if landed then
+		Fx.sparks(to, 10, 3, ZAP, -aimCf.LookVector, 0.35)
+		Fx.text(to + UP * 2, "ZZZT!", ZAP, 2.2)
+	end
+end
+
+function COMIC_SHOTS.Boilgun(muzzle: Vector3, to: Vector3, aimCf: CFrame, _, landed: boolean, primary: boolean?)
+	local puff = part(Enum.PartType.Ball, WHITE, Enum.Material.SmoothPlastic)
+	run(0.28, { puff }, function(a)
+		puff.Size = Vector3.one * (0.3 + 1.4 * out(a))
+		puff.Position = muzzle:Lerp(to, out(a))
+		puff.Transparency = 0.35 + 0.65 * a
+	end)
+	if primary ~= false then
+		Fx.glint(muzzle, 2.2, WHITE, 0.08)
+		Fx.shake(muzzle, 0.3, 0.12)
+	end
+	if landed then
+		Fx.burst(to, 0.3, 1.6, 0.35, WHITE, 0.4)
+	end
+end
+
+function COMIC_SHOTS.Lasso(hand: Vector3, to: Vector3, aimCf: CFrame, distance: number, landed: boolean)
+	-- the loop flies out spinning flat, the rope paying out behind it (the server's rope takes over)
+	local bits = {}
+	for _ = 1, 12 do
+		table.insert(bits, part(Enum.PartType.Block, ROPE, Enum.Material.SmoothPlastic))
+	end
+	local line = part(Enum.PartType.Block, ROPE, Enum.Material.SmoothPlastic)
+	table.insert(bits, line)
+	local start = hand + UP * 1.2
+	run(math.clamp(distance / 90, 0.15, 0.5), bits, function(a)
+		local p = start:Lerp(to, a) + UP * math.sin(a * math.pi) * distance * 0.08
+		local spin = a * 10
+		for i = 1, 12 do
+			local t0, t1 = (i - 1) / 12 * math.pi * 2 + spin, i / 12 * math.pi * 2 + spin
+			stick(bits[i], p + Vector3.new(math.cos(t0), 0, math.sin(t0)) * 1.2, p + Vector3.new(math.cos(t1), 0, math.sin(t1)) * 1.2, 0.12)
+		end
+		stick(line, start, p, 0.1)
+	end)
+	if landed then
+		task.delay(math.clamp(distance / 90, 0.15, 0.5), Fx.text, to + UP * 2.5, "GOTCHA!", Color3.fromRGB(255, 220, 60), 2.2)
+	end
+end
+
+function COMIC_SHOTS.Harpoon(muzzle: Vector3, to: Vector3, aimCf: CFrame, distance: number, landed: boolean, onBody: boolean?)
+	local shaft, tip, line = part(Enum.PartType.Block, STEEL, Enum.Material.Metal), part(Enum.PartType.Block, STEEL, Enum.Material.Metal),
+		part(Enum.PartType.Block, WHITE, Enum.Material.SmoothPlastic)
+	local flight = distance / 160
+	local look = aimCf.LookVector
+	run(flight, { shaft, tip, line }, function(a)
+		local p = muzzle:Lerp(to, a)
+		stick(shaft, p - look * 2.4, p, 0.1)
+		stick(tip, p - look * 0.3, p + look * 0.15, 0.22)
+		stick(line, muzzle, p - look * 2.4, 0.04)
+	end)
+	Fx.shake(muzzle, 0.3, 0.12)
+	if landed then
+		task.delay(flight, function()
+			Fx.hit(to)
+			if not onBody then -- into a wall: it stays stuck there a while
+				local stuck = part(Enum.PartType.Block, STEEL, Enum.Material.Metal)
+				stick(stuck, to - look * 2.2, to + look * 0.2, 0.1)
+				run(3, { stuck }, function() end)
+			end
+		end)
+	end
+end
+
 local MELEE = {}
 for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 	if w.kind == "melee" then
@@ -623,6 +734,26 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 			else
 				Fx.shake(to, 0.22, 0.12)
 			end
+		end
+	elseif weaponId == "Spear" then
+		-- a thrust, not a swing: one quick straight streak along the point's path, no crescent
+		local look = aimCf.LookVector
+		local start = from + look * 1.5
+		local streak = part(Enum.PartType.Block, WHITE)
+		run(0.12, { streak }, function(a)
+			local reach = start:Lerp(to, 0.35 + 0.65 * out(a))
+			stick(streak, start:Lerp(reach, 0.6 * a), reach, 0.12 * (1 - a) + 0.02)
+			streak.Transparency = 0.2 + 0.8 * a
+		end)
+		if landed then
+			Fx.sparks(to, 4, 3, TRACER, -look, 0.25)
+			Fx.shake(to, 0.25, 0.12)
+		end
+	elseif weaponId == "Crowbar" then
+		-- no comic look (no crescent, no flash star or BAM!): a few metal sparks and a knock where it lands
+		if landed then
+			Fx.sparks(to, 5, 3, TRACER, -aimCf.LookVector, 0.25)
+			Fx.shake(to, 0.3, 0.15)
 		end
 	elseif MELEE[weaponId] then
 		-- swing: a crescent sweeping in front of the attacker; the katana's is a thin, wide,
@@ -660,6 +791,9 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		if landed then
 			task.delay(distance / 160, Fx.hit, to)
 		end
+	elseif COMIC_SHOTS[weaponId] then
+		-- the comic set's own looks (server/Specials); from the muzzle as the guns below
+		COMIC_SHOTS[weaponId](ownMuzzle or (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position, to, aimCf, distance, landed, primary)
 	else
 		-- guns: tracer from the hip so it does not start inside the shooter's camera
 		-- a dummy's shot already leaves from its hand
@@ -718,6 +852,203 @@ end
 function EVENTS.Boom(_, position: Vector3, radius: number)
 	Fx.boom(position, radius, FLAME[1], "BOOM!", 5)
 end
+
+-- The flamethrower's spray (server/Specials, one per tick while it is held): a cone of tumbling flame
+-- cubes from the muzzle out to `range`, every fourth one smoke.
+function EVENTS.Flame(shooter: Model?, from: Vector3, dir: Vector3, range: number)
+	local muzzle = shooter == player.Character and Fx.muzzle and Fx.muzzle("Flamethrower") or from + dir * 2
+	for i = 1, 6 do
+		local smoke = i % 4 == 0
+		local cube = part(Enum.PartType.Block, smoke and BLACK or FLAME[rng:NextInteger(1, 3)])
+		local spread = rng:NextUnitVector() * 0.18
+		local aim = (dir + spread).Unit
+		local reach = range * rng:NextNumber(0.6, 1)
+		local tumble = rng:NextUnitVector() * 6
+		run(rng:NextNumber(0.3, 0.45) * (smoke and 1.4 or 1), { cube }, function(a)
+			local size = (0.4 + 2.2 * a) * (1 - a * 0.5)
+			cube.Size = Vector3.one * size
+			cube.CFrame = CFrame.new(muzzle + aim * reach * out(a) + UP * a * a * 2) * CFrame.Angles(tumble.X * a, tumble.Y * a, tumble.Z * a)
+			cube.Transparency = smoke and 0.4 + 0.6 * a or a ^ 2
+		end)
+	end
+	if rng:NextNumber() < 0.3 then
+		Fx.glint(muzzle, 1.2, FLAME[2], 0.06)
+	end
+end
+
+-- A tased body (server/Specials): crackling sparks round the part the wires hit for `dur` seconds.
+function EVENTS.Tase(_, hitPart: BasePart, dur: number)
+	for tick = 0, dur / 0.12 do
+		task.delay(tick * 0.12, function()
+			if hitPart.Parent then
+				Fx.sparks(hitPart.Position, 3, 1.8, ZAP, nil, 0.2)
+			end
+		end)
+	end
+end
+
+-- Steam off a scalded body (the boilgun).
+function EVENTS.Steam(_, position: Vector3)
+	for _ = 1, 3 do
+		local puff = part(Enum.PartType.Ball, WHITE, Enum.Material.SmoothPlastic)
+		local drift = Vector3.new(rng:NextNumber(-1, 1), 0, rng:NextNumber(-1, 1))
+		run(0.8, { puff }, function(a)
+			puff.Size = Vector3.one * (0.6 + 1.6 * a)
+			puff.Position = position + drift + UP * (1 + 3 * out(a))
+			puff.Transparency = 0.45 + 0.55 * a
+		end)
+	end
+end
+
+-- The crowbar's claw sinks into a shoulder (server/Specials ripArm), then tears the arm off: no comic
+-- words or bursts here, only sparks off the claw and the camera's jolt.
+function EVENTS.Hook(attacker: Model?, position: Vector3)
+	Fx.sparks(position, 4, 2, TRACER, UP, 0.25)
+	Fx.shake(position, 0.35, 0.15)
+	if attacker and attacker == player.Character then
+		Fx.hookAt = os.clock() -- our own claw is in: the client plays the tug (WeaponAnims Rip_Crowbar, view hookT)
+	end
+end
+
+function EVENTS.Rip(_, position: Vector3)
+	Fx.shake(position, 0.6, 0.25)
+end
+
+-- The torn arm on the claw (server/Specials ripArm). Everyone else sees the server move it on the
+-- third-person crowbar; for the attacker it goes on the crowbar they actually see (first person: the
+-- viewmodel), so the server's copy is hidden here and a local copy rides the claw's point instead.
+local CLAW = Vector3.new(0, 1.37, -0.37) -- the hook's point in the Crowbar mesh (Specials CLAW_TIP)
+local function hangCF(claw: CFrame, arm: BasePart): CFrame -- Specials.hangCF
+	local look = claw.LookVector * Vector3.new(1, 0, 1)
+	look = look.Magnitude > 0.05 and look.Unit or Vector3.zAxis
+	return CFrame.lookAlong(claw.Position, look) * CFrame.new(0, -arm.Size.Y * 0.4, 0)
+end
+function EVENTS.Hang(shooter: Model?, gib: Model, arm: BasePart, dur: number)
+	if shooter ~= player.Character or not gib or not arm or not Fx.weaponPoint then
+		return
+	end
+	local copies, rel, hidden = {}, {}, {}
+	for _, p in gib:GetDescendants() do
+		if p:IsA("BasePart") then
+			local c = p:Clone()
+			for _, kid in c:GetChildren() do
+				if kid:IsA("Constraint") or kid:IsA("JointInstance") or kid:IsA("WeldConstraint") then
+					kid:Destroy()
+				end
+			end
+			c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
+			c.Parent = folder
+			rel[c] = arm.CFrame:ToObjectSpace(p.CFrame)
+			table.insert(copies, c)
+			p.LocalTransparencyModifier = 1
+			table.insert(hidden, p)
+		end
+	end
+	run(dur, copies, function(a)
+		local claw = Fx.weaponPoint("Crowbar", CLAW)
+		if claw then
+			local at = hangCF(claw, arm)
+			for _, c in copies do
+				c.CFrame = at * rel[c]
+			end
+		end
+		if a >= 1 then
+			for _, p in hidden do
+				p.LocalTransparencyModifier = 0
+			end
+		end
+	end)
+end
+
+-- A frozen dummy thaws: the ice cracks off.
+function EVENTS.Thaw(_, position: Vector3)
+	Fx.sparks(position, 12, 4, ICE, UP, 0.45)
+end
+
+local function bodyParts(model: Model): { BasePart }
+	local parts = {}
+	for _, p in model:GetChildren() do
+		if p:IsA("BasePart") and p.Transparency < 1 then
+			table.insert(parts, p)
+		end
+	end
+	return parts
+end
+
+-- Blood boiling in a body (the boilgun, server/Specials: one per tick while it boils): dark red
+-- bubbles swell and pop on the skin, steam rolls off it.
+local BOIL_RED = Color3.fromRGB(150, 15, 25)
+function EVENTS.Boil(_, model: Model?)
+	local parts = model and model.Parent and bodyParts(model) or {}
+	if #parts == 0 then
+		return
+	end
+	for _ = 1, 4 do
+		local p = parts[rng:NextInteger(1, #parts)]
+		local base = p.Position + rng:NextUnitVector() * math.min(p.Size.X, p.Size.Y, p.Size.Z) * 0.5
+		local bubble = part(Enum.PartType.Ball, BOIL_RED, Enum.Material.SmoothPlastic)
+		local size = rng:NextNumber(0.25, 0.55)
+		run(rng:NextNumber(0.25, 0.4), { bubble }, function(a)
+			bubble.Size = Vector3.one * size * (0.3 + 0.9 * out(a))
+			bubble.Position = base + UP * a * 0.6
+			bubble.Transparency = if a > 0.8 then (a - 0.8) / 0.2 else 0.05
+		end)
+	end
+	EVENTS.Steam(nil, parts[rng:NextInteger(1, #parts)].Position - UP)
+end
+
+-- Burning dummies (server/Specials.alight sets "Burning"): the flamethrower's flame cubes lick up
+-- off the body and a light flickers on it, for as long as it burns.
+local function burnFx(model: Instance)
+	if not model:IsA("Model") then
+		return
+	end
+	local running = false
+	local function start()
+		if running or model:GetAttribute("Burning") ~= true then
+			return
+		end
+		running = true
+		local light = Instance.new("PointLight")
+		light.Color, light.Range, light.Brightness = FLAME[1], 12, 2.5
+		light.Parent = model:FindFirstChild("UpperTorso")
+		task.spawn(function()
+			while model.Parent and model:GetAttribute("Burning") == true do
+				local parts = bodyParts(model)
+				if #parts == 0 then
+					break
+				end
+				for _ = 1, 3 do
+					local p = parts[rng:NextInteger(1, #parts)]
+					local base = p.Position + Vector3.new(rng:NextNumber(-0.5, 0.5) * p.Size.X, rng:NextNumber(-0.5, 0.5) * p.Size.Y,
+						rng:NextNumber(-0.5, 0.5) * p.Size.Z)
+					local smoke = rng:NextNumber() < 0.15
+					local cube = part(Enum.PartType.Block, smoke and BLACK or FLAME[rng:NextInteger(1, 3)])
+					local size, rise = rng:NextNumber(0.5, 1.1), rng:NextNumber(1.5, 3.5)
+					local tumble = rng:NextUnitVector() * 5
+					run(rng:NextNumber(0.35, 0.6) * (smoke and 1.5 or 1), { cube }, function(a)
+						cube.Size = Vector3.one * (size * (1 - a) + 0.05)
+						cube.CFrame = CFrame.new(base + UP * rise * out(a)) * CFrame.Angles(tumble.X * a, tumble.Y * a, tumble.Z * a)
+						cube.Transparency = if smoke then 0.4 + 0.6 * a else a ^ 2
+					end)
+				end
+				light.Brightness = rng:NextNumber(1.8, 3)
+				task.wait(0.07)
+			end
+			light:Destroy()
+			running = false
+		end)
+	end
+	model:GetAttributeChangedSignal("Burning"):Connect(start)
+	start()
+end
+task.spawn(function()
+	local dummies = workspace:WaitForChild("Dummies")
+	for _, m in dummies:GetChildren() do
+		burnFx(m)
+	end
+	dummies.ChildAdded:Connect(burnFx)
+end)
 
 -- Burning pool: flames are small cubes that rise, tumble and shrink; every fifth one is smoke.
 function EVENTS.Slam(_, position: Vector3, radius: number)

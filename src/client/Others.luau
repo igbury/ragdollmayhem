@@ -25,7 +25,7 @@ local LOOPS = {
 }
 -- one-off moves and the sound that goes with each ("" = none); the animation, when there is one,
 -- has the same name
-local SHOTS = { roll = "", flip = "", kick = "Kick", jump = "Jump", slam = "Slam", dash = "Jump",
+local SHOTS = { roll = "", flip = "", kick = "Kick", jump = "Jump", slam = "Slam", dash = "Dash",
 	mantle = "", vault = "", slideEnter = "", slideExit = "", diveEnter = "" }
 local SHOT_SPEED = { mantle = 0.5 / 0.4, vault = 0.5 / 0.28 }
 local Fx = require(script.Parent:WaitForChild("Fx")) -- the dash leaves afterimages here too

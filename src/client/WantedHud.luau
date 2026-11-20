@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
 
 local player = Players.LocalPlayer
 local GOLD = Color3.fromRGB(255, 206, 60)
@@ -36,6 +37,12 @@ gui.Parent = player:WaitForChild("PlayerGui")
 local shown = 0
 local function update()
 	local n = player:GetAttribute("Wanted") or 0
+	if n > shown then -- a star earned; the first one also sets off the alarm
+		Sfx.ui(Sfx.WANTED_STAR_UP, 0.6)
+		if shown == 0 then
+			Sfx.ui(Sfx.WANTED_ALARM, 0.45)
+		end
+	end
 	for i, star in stars do
 		local on = i <= n
 		star.TextColor3, star.TextTransparency = on and GOLD or OFF, on and 0 or 0.45

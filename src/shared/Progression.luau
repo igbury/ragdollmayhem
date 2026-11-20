@@ -27,6 +27,21 @@ Progression.UNLOCK = {
 	Rocket = { "ranged", 250 },
 	Tomato = { "thrown", 10 },
 	Molotov = { "thrown", 25 },
+	Crowbar = { "kills", 5 },
+	Sledgehammer = { "kills", 15 },
+	Lasso = { "kills", 20 },
+	Spear = { "kills", 40 },
+	Lightsaber = { "kills", 60 },
+	Chainsaw = { "kills", 80 },
+	Taser = { "ranged", 40 },
+	Harpoon = { "ranged", 60 },
+	Frostgun = { "ranged", 80 },
+	Boilgun = { "ranged", 120 },
+	Flamethrower = { "ranged", 150 },
+	Minigun = { "ranged", 200 },
+	TNT = { "thrown", 30 },
+	C4 = { "thrown", 40 },
+	Landmine = { "thrown", 45 },
 }
 -- the player attribute each counter is kept in, and how a lock names it
 Progression.ATTRIBUTE = { kills = "Kills", ranged = "RangedKills", thrown = "ThrownKills" }

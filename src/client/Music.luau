@@ -104,4 +104,45 @@ end
 workspace.DescendantAdded:Connect(route)
 apply()
 
+-- Ambience under everything (city hum, wind), flat, through the Effects volume.
+local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
+for _, bed in { { Sfx.CITY_AMBIENCE_LOOP, 0.25 }, { Sfx.WIND_LOOP, 0.12 } } do
+	Sfx.loop(SoundService, bed[1], bed[2]).SoundGroup = effects
+end
+
+-- Every button in the interface clicks when pressed and ticks when the mouse comes onto it.
+local hoverAt = 0
+local function button(b: Instance)
+	if not b:IsA("GuiButton") then
+		return
+	end
+	b.Activated:Connect(function()
+		Sfx.ui(Sfx.UI_CLICK, 0.5)
+	end)
+	b.MouseEnter:Connect(function()
+		if os.clock() - hoverAt > 0.06 then -- sweeping across a row: not a tick per button at once
+			hoverAt = os.clock()
+			Sfx.ui(Sfx.UI_HOVER, 0.25)
+		end
+	end)
+end
+local playerGui = player:WaitForChild("PlayerGui")
+for _, b in playerGui:GetDescendants() do
+	button(b)
+end
+playerGui.DescendantAdded:Connect(button)
+
+-- a pass or product bought: the till
+local MarketplaceService = game:GetService("MarketplaceService")
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(who, _, bought)
+	if who == player and bought then
+		Sfx.ui(Sfx.UI_PURCHASE, 0.7)
+	end
+end)
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(userId, _, bought)
+	if userId == player.UserId and bought then
+		Sfx.ui(Sfx.UI_PURCHASE, 0.7)
+	end
+end)
+
 return Music

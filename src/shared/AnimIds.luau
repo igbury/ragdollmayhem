@@ -59,4 +59,15 @@ return {
 	WallFlip = "76443454974804",
 	WallRunLeft = "91023832316686",
 	WallRunRight = "132351787837493",
+	-- comic weapon set (WeaponAnims)
+	Detonate_C4 = "132888171116328",
+	Hold_Twohand = "93881888614723",
+	Place_Landmine = "117371101346535",
+	Rip_Crowbar = "126788964049090",
+	Swing_Crowbar = "77192268409800",
+	Swing_Lightsaber = "135227834778105",
+	Swing_Sledgehammer = "102165984436237",
+	Throw_Bomb = "102420444323231",
+	Throw_Lasso = "75770699484646",
+	Thrust_Spear = "134371111208919",
 }

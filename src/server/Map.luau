@@ -45,6 +45,9 @@ PhysicsService:CollisionGroupSetCollidable("Debris", "Debris", false)
 local folder = Instance.new("Folder")
 folder.Name = "Map"
 Map.folder = folder
+-- Called after every blast with (position, radius, power): things that break like the map but are not
+-- part of it (server/PoliceCar: the sport car's panels).
+Map.blasted = {} :: { (Vector3, number, number) -> () }
 -- The grass round the arena (Map.build): floor tiles like the arena's, in a folder of their own that the
 -- Myth Yard cuts its pits through (Monsters). Floor is whatever sits straight in `folder` or `rim`.
 local rim = Instance.new("Folder")
@@ -421,6 +424,105 @@ local function shatter(hits: { BasePart }, standing: boolean?, inside: (BasePart
 	return out
 end
 
+-- Skins: a kind can stand as a Blender model (ReplicatedStorage.ArmyKit; assets/army/build.py vehicles)
+-- instead of its bricks: the model plus invisible boxes to bump into and stand on, until a hit reaches
+-- it. Then it turns in place into the model's own cubes (CarVoxels, assets/army/voxels.py) and from
+-- there breaks, settles and mends like any structure; built again, it is the model again. A place
+-- without the kit gets the kind's old bricks (KINDS) instead.
+-- Map.SKINS[kind] = { pieces = { kit piece, ... }, paint = Color3? (the stand-in PAINT colour),
+--   material = Enum.Material? (its bricks; default SmoothPlastic), boxes = { { CFrame, Vector3 }, ... } }
+local SKINS = {}
+Map.SKINS = SKINS
+local Voxels = require(script.Parent.CarVoxels)
+local PAINT = "FE01FE"
+
+local function skinned(kind: string)
+	local skin = SKINS[kind]
+	local kit = skin and game:GetService("ReplicatedStorage"):FindFirstChild("ArmyKit")
+	if not kit then
+		return nil, nil
+	end
+	for _, piece in skin.pieces do
+		if not kit:FindFirstChild(piece) or not Voxels[piece] then
+			return nil, nil
+		end
+	end
+	return skin, kit
+end
+
+local function buildSkin(kind: string, origin: CFrame, skin, kit: Instance)
+	local model = Instance.new("Model")
+	model.Name = kind
+	local total = 0
+	for _, piece in skin.pieces do
+		for _, mesh in kit[piece]:GetChildren() do
+			local p = mesh:Clone() :: BasePart
+			p.Anchored = true
+			p.CFrame = origin * (p:GetAttribute("Place") or CFrame.identity)
+			if p.Name == PAINT and skin.paint then
+				p.Color = skin.paint
+			end
+			p.Parent = model
+		end
+		local data = Voxels[piece]
+		total += #data.cells // 4 * (data.size or Voxels.size) ^ 3
+	end
+	for _, b in skin.boxes do
+		local box = Instance.new("Part")
+		box.Name = "SkinBox"
+		box.Anchored, box.Transparency, box.CastShadow = true, 1, false
+		box.Size, box.CFrame = b[2], origin * b[1]
+		box:SetAttribute("SkinBox", true)
+		box.Parent = model
+	end
+	model:SetAttribute("Origin", origin)
+	model:SetAttribute("Total", total)
+	model:SetAttribute("Skinned", true)
+	model.Parent = folder
+end
+
+-- A skinned structure a hit reached: the model and its boxes give way to its cubes, joined up like bricks.
+local function unskin(model: Model)
+	local skin, kit = skinned(model.Name)
+	if not (skin and kit and model:GetAttribute("Skinned")) then
+		return
+	end
+	model:SetAttribute("Skinned", nil)
+	local origin = model:GetAttribute("Origin")
+	local bricks, taken = {}, {}
+	for _, piece in skin.pieces do
+		local data, looks = Voxels[piece], kit[piece]
+		local size, oy, cells = data.size or Voxels.size, data.oy or 0, data.cells
+		for i = 1, #cells, 4 do
+			local at = Vector3.new(cells[i] * size, cells[i + 1] * size + oy, cells[i + 2] * size)
+			local key = slot(CFrame.identity, at)
+			if taken[key] then
+				continue -- two pieces meet here (the taxi sign on the roof)
+			end
+			taken[key] = true
+			local hex = data.colours[cells[i + 3]]
+			local look = looks:FindFirstChild(hex) :: BasePart?
+			local neon = look and look.Material == Enum.Material.Neon
+			local cube = block(Vector3.one * size, Vector3.zero, if hex == PAINT and skin.paint then skin.paint else Color3.fromHex(hex),
+				if neon then Enum.Material.Neon else skin.material or Enum.Material.SmoothPlastic, nil)
+			cube.CFrame = origin * CFrame.new(at)
+			cube.Transparency = if look then look.Transparency else 0
+			if size > BRICK then
+				cube:SetAttribute("Piece", Vector3.one * BRICK)
+			end
+			table.insert(bricks, cube)
+		end
+	end
+	link(bricks, origin)
+	for _, child in model:GetChildren() do
+		child:Destroy()
+	end
+	for _, cube in bricks do
+		cube.Parent = model
+	end
+	model:SetAttribute("Total", bulk(bricks))
+end
+
 -- Kinds put back whole and at once instead of sliding in layer by layer: big pieces people stand on
 -- (Map.build's landmarks), where a roof going see-through under someone would drop them through it.
 local INSTANT = {}
@@ -428,6 +530,11 @@ local INSTANT = {}
 -- `keep` (a repair): bricks in these slots are still standing, so they are put straight back and
 -- only the rest slide in.
 local function buildStructure(kind: string, origin: CFrame, layered: boolean?, keep: { [string]: boolean }?)
+	local skin, kit = skinned(kind)
+	if skin and kit then -- a skin always comes back whole (a repair too)
+		buildSkin(kind, origin, skin, kit)
+		return
+	end
 	local model = Instance.new("Model")
 	model.Name = kind
 	local bricks = {}
@@ -556,6 +663,9 @@ function Map.grave(origin: CFrame, name: string)
 	text.Parent = gui
 	gui.Parent = plate
 	model:SetAttribute("Total", bulk(model:GetChildren()))
+	model:SetAttribute("Spot", origin) -- where it stands, and who lies in it (server/World raises them)
+	model:SetAttribute("Buried", name)
+	model:SetAttribute("DugAt", os.clock())
 	link(model:GetChildren(), origin)
 	model.Parent = folder
 	table.insert(graves, model)
@@ -585,6 +695,7 @@ local function knock(cube: BasePart, from: Vector3, power: number)
 	cube.AssemblyAngularVelocity = Vector3.new(math.random(-6, 6), math.random(-6, 6), math.random(-6, 6))
 	Debris:AddItem(cube, LOOSE_LIFE)
 end
+Map.knock = knock -- the cars' cubes fly off the same way (server/PoliceCar)
 
 -- Once 90% of a structure is gone the rest falls and it rebuilds REGEN later, bottom up.
 local function damaged(model: Model)
@@ -663,9 +774,6 @@ local function repair(model: Model)
 	for _, b in model:GetChildren() do
 		if b:IsA("BasePart") then
 			keep[slot(origin, b.Position)] = true
-	model:SetAttribute("Spot", origin) -- where it stands, and who lies in it (server/World raises them)
-	model:SetAttribute("Buried", name)
-	model:SetAttribute("DugAt", os.clock())
 		end
 	end
 	buildStructure(model.Name, origin, true, keep)
@@ -693,7 +801,9 @@ local function hitStructures(hits: { BasePart }, from: Vector3, power: number): 
 	local models, knocked = {}, {}
 	for _, cube in hits do
 		local model = cube.Parent
-		if model == built then
+		if cube:GetAttribute("SkinBox") then
+			unskin(model :: Model) -- its cubes break from the next hit on
+		elseif model == built then
 			knock(cube, from, power) -- a built brick: no structure to settle or rebuild
 			table.insert(knocked, cube)
 		elseif model and not isFloor(cube) and model.Parent == folder then
@@ -777,6 +887,11 @@ function Map.blast(position: Vector3, radius: number, power: number, inner: numb
 		local near = Vector3.new(math.clamp(at.X, -h.X, h.X), math.clamp(at.Y, -h.Y, h.Y), math.clamp(at.Z, -h.Z, h.Z))
 		return (at - near).Magnitude <= radius
 	end
+	for _, p in workspace:GetPartBoundsInRadius(position, radius, params) do
+		if p:GetAttribute("SkinBox") and p.Parent then
+			unskin(p.Parent :: Model) -- a model in reach turns into its cubes, which this blast then breaks
+		end
+	end
 	local hits = shatter(workspace:GetPartBoundsInRadius(position, radius, params), standing, inside, reach)
 	local broken = hitStructures(hits, position, power)
 	local chance = math.min(1, MAX_CHUNKS / math.max(#hits, 1))
@@ -794,6 +909,9 @@ function Map.blast(position: Vector3, radius: number, power: number, inner: numb
 	end
 	dropUnbuilt(position, radius)
 	breakSounds(broken, position)
+	for _, f in Map.blasted do
+		f(position, radius, power)
+	end
 end
 
 -- Rip a rectangular slab out of the floor and throw it up as cubes.
@@ -1292,6 +1410,10 @@ end
 
 -- A parked car facing `yaw`: body, glass cabin, wheels, lights. Its own origin, so its bricks line up with it.
 local function car(name: string, x: number, z: number, yaw: number, color: Color3)
+	SKINS[name] = { pieces = { "Park_Car" }, paint = color, boxes = {
+		{ CFrame.new(0, 1.7, 0), Vector3.new(4.4, 1.8, 9) }, { CFrame.new(0, 3.3, 0.5), Vector3.new(4, 1.4, 4.4) },
+		{ CFrame.new(0, 0.4, 0), Vector3.new(4.6, 0.8, 7.4) },
+	} }
 	landmark(name, function(add)
 		add(CFrame.new(0, 1.7, 0), Vector3.new(4.4, 1.8, 9), color, Enum.Material.SmoothPlastic)
 		add(CFrame.new(0, 3.3, 0.5), Vector3.new(4, 1.4, 5), GLASS, Enum.Material.Glass)
@@ -1401,6 +1523,9 @@ local function districts(at: (string, number, number, number?) -> ())
 		end
 	end)
 	for i, b in { { 206, 44, 0 }, { 168, -40, math.pi / 2 } } do
+		SKINS[`Boat{i}`] = { pieces = { "Park_Boat" }, material = Enum.Material.WoodPlanks, boxes = {
+			{ CFrame.new(0, 0.4, 0), Vector3.new(5, 1.6, 12) }, { CFrame.new(0, 1.4, 0), Vector3.new(4.6, 0.4, 1.4) },
+		} }
 		landmark(`Boat{i}`, function(add)
 			add(CFrame.new(0, 0.4, 0), Vector3.new(5, 1.6, 12), Color3.fromRGB(196, 72, 52), Enum.Material.WoodPlanks)
 			add(CFrame.new(0, 1.4, 0), Vector3.new(4.6, 0.4, 1.4), PLANK, Enum.Material.WoodPlanks) -- a seat

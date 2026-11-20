@@ -802,7 +802,395 @@ def police_car():
     p.finish()
 
 
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_")
+# ---------------------------------------------------------------- Sport car ------------------
+# A red hot hatch in a manga wrap: flat red with a darker cel-shade band, white highlight strokes and
+# black ink hatching drawn on. It is built as separate PANELS so it can be smashed apart like the
+# map's structures (server/PoliceCar.luau knocks off whatever a blast reaches): Sport_Body is the
+# core (sides, fenders, skirts), the rest bolt onto it. Every panel's origin is the ground under the
+# middle of the car, like Cop_Body; Sport_Wheel is one wheel round its hub, outer face +X.
+SP_RED, SP_SHADE, SP_HL, SP_INK = "E3242B", "9E1018", "FFF1EA", "121214"
+SP_GLASS, SP_TRIM, SP_RIM, SP_SPOKE = "1E232B", "18181C", "26262C", "3E4048"
+SPORT_WHEEL_AT = ((3.2, 1.35, -5.0), (3.2, 1.35, 5.2))  # right front, right rear hub
+HOOD_SLOPE = math.degrees(math.atan2(0.48, 3.7))
+
+
+def hood_y(z):
+    """Top of the hood panel at `z` (it rises from the nose to the windscreen)."""
+    return 2.97 + (z + 7.75) * 0.48 / 3.7
+
+
+def ink_side(p, side, x, marks):
+    """Hatching on a car side facing `side` (+1 / -1) at |x|: each mark is (z, y, slant degrees, count, length)."""
+    for z, y, slant, n, ln in marks:
+        for i in range(n):
+            p.box((0.025, ln * (1 - 0.18 * (i % 2)), 0.06), (side * (x + 0.012), y, z + i * 0.16), SP_INK, rot=(slant, 0, 0), bevel=0)
+
+
+def ink_top(p, marks, top, slope):
+    """Hatching lying on a top surface whose height at z is top(z): each mark is (x, z, count, length)."""
+    for x, z, n, ln in marks:
+        for i in range(n):
+            p.box((0.06, 0.02, ln * (1 - 0.18 * (i % 2))), (x + i * 0.15, top(z) + 0.012, z), SP_INK, rot=(-slope, 0, 0), bevel=0)
+
+
+def sport_car():
+    arch = []
+    for zc in (SPORT_WHEEL_AT[1][2], SPORT_WHEEL_AT[0][2]):  # rear arch, then front, going forward
+        r = 1.7  # its top (2.95) stays under the hood line, else the profile folds over itself
+        arch.append((zc + r, 0.85))
+        arch += [(zc + r * math.cos(t * math.pi / 10), 1.25 + r * math.sin(t * math.pi / 10)) for t in range(11)]
+        arch.append((zc - r, 0.85))
+
+    # core: the body between the bumpers, with both arches, skirts and the fenders' marks
+    p = Piece("Sport_Body", exact=True)
+    p.prism([(7.6, 3.3), (7.6, 0.85)] + arch + [(-7.6, 0.85), (-7.6, 2.8), (-4.0, 3.25), (5.4, 3.35)], 7.2, (0, 0, 0), SP_RED, bevel=0.16)
+    p.box((5.0, 1.2, 15.0), (0, 1.5, 0), "141416", bevel=0)  # underbody, seen through the arches
+    for s in (-1, 1):
+        p.box((0.22, 0.32, 6.4), (s * 3.66, 0.86, 0.05), SP_TRIM, bevel=0.06)  # skirt
+        p.box((0.02, 0.05, 2.4), (s * 3.612, 2.85, -6.1), SP_HL, rot=(-7.1, 0, 0), bevel=0)  # fender highlights
+        p.box((0.02, 0.05, 2.4), (s * 3.612, 3.1, 6.2), SP_HL, bevel=0)
+        p.prism([(-7.5, 2.1), (-7.0, 2.45), (-6.85, 2.2), (-7.3, 1.0), (-7.5, 1.0)], 0.02, (s * 3.61, 0, 0), SP_SHADE, bevel=0)
+        p.prism([(7.5, 2.0), (7.1, 2.5), (6.95, 2.25), (7.3, 1.0), (7.5, 1.0)], 0.02, (s * 3.61, 0, 0), SP_SHADE, bevel=0)
+        ink_side(p, s, 3.6, [(-6.9, 2.55, 12, 3, 0.5), (6.3, 2.85, -12, 3, 0.55)])
+    p.finish()
+
+    # hood: a plate over the core's nose, scoop, cel-shade band, highlight strokes, hatching
+    p = Piece("Sport_Hood", exact=True)
+    p.prism([(-7.75, 2.75), (-4.05, 3.23), (-4.05, 3.45), (-7.75, 2.97)], 6.9, (0, 0, 0), SP_RED, bevel=0.08)
+    p.box((2.0, 0.3, 1.1), (0, hood_y(-6.0) + 0.12, -6.0), SP_RED, rot=(-HOOD_SLOPE, 0, 0), bevel=0.1)
+    p.box((1.6, 0.16, 0.06), (0, hood_y(-6.55) + 0.17, -6.57), SP_INK, rot=(-HOOD_SLOPE, 0, 0), bevel=0.03)
+    for s in (-1, 1):
+        p.box((1.1, 0.02, 3.3), (s * 1.05, hood_y(-5.9) + 0.012, -5.9), SP_SHADE, rot=(-HOOD_SLOPE, 0, 0), bevel=0)
+        p.box((0.06, 0.02, 3.4), (s * 2.65, hood_y(-5.9) + 0.014, -5.9), SP_HL, rot=(-HOOD_SLOPE, 0, 0), bevel=0)
+    ink_top(p, [(1.9, -7.1, 3, 0.6), (-2.6, -6.6, 3, 0.5), (0.4, -4.8, 2, 0.45), (-1.5, -7.4, 2, 0.4)], hood_y, HOOD_SLOPE)
+    p.finish()
+
+    # front bumper: splitter, grilles, headlights (a white LED brow), corner vents, fogs, a plain badge
+    p = Piece("Sport_BumperF", exact=True)
+    p.prism([(-7.55, 0.65), (-8.65, 0.65), (-8.75, 1.4), (-8.6, 2.45), (-8.2, 2.8), (-7.55, 2.8)], 7.5, (0, 0, 0), SP_RED, bevel=0.14)
+    p.box((7.8, 0.1, 0.9), (0, 0.6, -8.55), SP_TRIM, bevel=0.04)
+    p.box((3.6, 0.7, 0.06), (0, 1.32, -8.79), SP_TRIM, bevel=0.02)
+    p.box((2.6, 0.22, 0.06), (0, 2.15, -8.7), SP_TRIM, bevel=0.02)
+    p.box((0.32, 0.32, 0.06), (0, 1.84, -8.8), "C8CCD4", rot=(0, 0, 45), bevel=0.02)
+    p.box((6.0, 0.03, 0.05), (0, 2.81, -7.9), SP_HL, bevel=0)
+    for s in (-1, 1):
+        p.box((1.8, 0.42, 0.3), (s * 2.5, 2.5, -8.4), "2A2A30", rot=(0, s * 10, 0), bevel=0.08)
+        p.box((1.5, 0.07, 0.05), (s * 2.5, 2.6, -8.58), WHITE, rot=(0, s * 10, 0), bevel=0)
+        p.box((1.0, 0.7, 0.06), (s * 2.85, 1.25, -8.79), SP_TRIM, bevel=0.02)
+        p.cyl(0.3, 0.08, (s * 2.85, 1.25, -8.84), "C8CCD4", axis="z", segs=12)
+        ink_side(p, s, 3.75, [(-8.3, 1.6, 10, 3, 0.5)])
+    p.finish()
+
+    # rear bumper: taillights, diffuser and fins, three tailpipes in the middle, vents, plate
+    p = Piece("Sport_BumperR", exact=True)
+    p.prism([(7.55, 0.7), (8.6, 0.75), (8.7, 1.6), (8.55, 2.9), (8.1, 3.35), (7.55, 3.35)], 7.5, (0, 0, 0), SP_RED, bevel=0.14)
+    p.box((4.4, 0.5, 0.9), (0, 0.95, 8.45), SP_TRIM, bevel=0.05)
+    for x in (-1.5, -0.75, 0.75, 1.5):
+        p.box((0.06, 0.45, 0.9), (x, 0.92, 8.75), SP_TRIM, bevel=0)
+    for x in (-0.65, 0, 0.65):
+        p.cyl(0.5, 0.5, (x, 1.38, 8.78), "8A8E98", axis="z", segs=14, bevel=0.04)
+        p.cyl(0.34, 0.52, (x, 1.38, 8.79), "0C0C0E", axis="z", segs=14)
+    p.box((1.5, 0.45, 0.06), (0, 2.2, 8.66), "F2F2EE", bevel=0.02)
+    p.box((6.6, 0.03, 0.05), (0, 3.36, 7.95), SP_HL, bevel=0)
+    for s in (-1, 1):
+        p.box((1.6, 0.42, 0.18), (s * 2.55, 2.88, 8.6), RED, rot=(0, 0, s * 8), bevel=0.06)
+        p.box((1.1, 0.7, 0.06), (s * 2.55, 1.55, 8.73), SP_TRIM, bevel=0.02)
+        ink_side(p, s, 3.75, [(8.1, 2.2, -10, 3, 0.55)])
+    p.finish()
+
+    # doors, one piece a side: skin, cel-shade band with a jagged top, highlight, seam, handles,
+    # hatching, the mirror
+    for s, name in ((-1, "Sport_DoorL"), (1, "Sport_DoorR")):
+        p = Piece(name, exact=True)
+        p.prism([(-3.05, 1.0), (3.2, 1.0), (3.2, 3.32), (-2.9, 3.18)], 0.22, (s * 3.71, 0, 0), SP_RED, bevel=0.06)
+        jag = [(3.1, 1.05), (3.1, 1.95), (2.3, 2.3), (1.4, 1.9), (0.5, 2.35), (-0.5, 1.95), (-1.4, 2.3), (-2.2, 1.9), (-2.95, 2.1), (-2.95, 1.05)]
+        p.prism(jag, 0.02, (s * 3.83, 0, 0), SP_SHADE, bevel=0)
+        p.box((0.02, 0.06, 5.9), (s * 3.835, 2.95, 0.1), SP_HL, bevel=0)
+        p.box((0.02, 2.15, 0.05), (s * 3.836, 2.1, 0.4), SP_INK, bevel=0)
+        for z in (-0.6, 2.6):
+            p.box((0.08, 0.14, 0.55), (s * 3.86, 2.72, z), SP_TRIM, bevel=0.03)
+        ink_side(p, s, 3.83, [(-2.5, 1.7, 15, 3, 0.8), (1.6, 1.5, -12, 4, 0.6), (2.75, 2.6, 10, 2, 0.5), (-1.0, 2.75, -8, 3, 0.4)])
+        p.box((0.55, 0.38, 0.6), (s * 3.98, 3.55, -2.7), SP_RED, bevel=0.1)
+        p.box((0.3, 0.12, 0.2), (s * 3.72, 3.45, -2.6), SP_TRIM, bevel=0.03)
+        p.finish()
+
+    # cabin: dark tinted glass, red roof on black pillars (a floating roof), roof fins, glass glints
+    p = Piece("Sport_Cabin", exact=True)
+    p.prism([(-4.0, 3.22), (-1.0, 4.6), (2.5, 4.6), (6.4, 3.35)], 6.3, (0, 0, 0), SP_GLASS, bevel=0.1)
+    p.prism([(-1.15, 4.5), (-0.9, 4.82), (2.5, 4.82), (2.85, 4.5)], 6.45, (0, 0, 0), SP_RED, bevel=0.08)
+    p.box((6.4, 0.03, 0.05), (0, 4.83, 1.0), SP_HL, bevel=0)
+    for s in (-1, 1):
+        p.box((0.28, 0.28, 3.35), (s * 3.08, 3.925, -2.5), SP_TRIM, rot=(-24.2, 0, 0), bevel=0.05)
+        p.box((0.28, 0.28, 4.1), (s * 3.08, 3.975, 4.45), SP_TRIM, rot=(17.8, 0, 0), bevel=0.05)
+        p.box((0.28, 1.3, 0.4), (s * 3.08, 3.95, 0.6), SP_TRIM, bevel=0.05)
+        p.box((0.3, 0.2, 10.2), (s * 3.08, 3.3, 1.2), SP_TRIM, bevel=0.05)
+        p.box((0.02, 0.9, 0.1), (s * 3.165, 3.95, -1.6), SP_HL, rot=(20, 0, 0), bevel=0)
+        p.box((0.02, 0.7, 0.1), (s * 3.165, 3.9, 1.9), SP_HL, rot=(20, 0, 0), bevel=0)
+    for x, ln in ((1.3, 1.6), (1.75, 1.1)):  # windscreen glints
+        p.box((0.12, 0.02, ln), (x, 3.851, -2.735), SP_HL, rot=(-24.2, 0, 0), bevel=0)
+    for x, ln in ((-1.2, 1.6), (-1.6, 1.0)):  # hatch glass glints
+        p.box((0.12, 0.02, ln), (x, 4.02, 4.41), SP_HL, rot=(17.8, 0, 0), bevel=0)
+    for x in (-2.0, -1.2, -0.4, 0.4, 1.2, 2.0):  # roof fins
+        p.box((0.06, 0.2, 0.4), (x, 4.92, 2.2), SP_TRIM, bevel=0)
+    p.finish()
+
+    # rear wing: two stalks, a wide blade with end plates and a gurney strip
+    p = Piece("Sport_Wing", exact=True)
+    for s in (-1, 1):
+        p.box((0.18, 1.1, 0.5), (s * 2.3, 3.9, 7.25), SP_TRIM, bevel=0.04)
+        p.box((0.1, 0.8, 1.7), (s * 3.55, 4.45, 7.35), SP_RED, bevel=0.04)
+    p.box((7.0, 0.16, 1.5), (0, 4.5, 7.35), SP_RED, rot=(-6, 0, 0), bevel=0.05)
+    p.box((6.9, 0.1, 0.06), (0, 4.6, 8.08), SP_TRIM, bevel=0)
+    p.box((6.6, 0.02, 0.06), (0, 4.585, 6.7), SP_HL, bevel=0)
+    ink_top(p, [(2.2, 7.3, 3, 0.5), (-2.8, 7.4, 2, 0.45)], lambda z: 4.58 - (z - 7.35) * math.tan(math.radians(6)), 6)
+    p.finish()
+
+    p = Piece("Sport_Wheel", exact=True)  # a right-hand wheel round its hub, axle along X
+    p.cyl(2.7, 1.15, (0, 0, 0), "16161A", axis="x", segs=24, bevel=0.22)
+    p.cyl(1.85, 1.18, (0, 0, 0), SP_RIM, axis="x", segs=24, bevel=0.04)
+    p.cyl(0.45, 1.24, (0, 0, 0), "8A8E98", axis="x", segs=12, bevel=0.03)
+    for i in range(5):
+        a = i * 72
+        rad = math.radians(a)
+        p.box((0.08, 0.7, 0.21), (0.6, math.cos(rad) * 0.5, math.sin(rad) * 0.5), SP_SPOKE, rot=(a, 0, 0), bevel=0.02)
+    p.finish()
+
+
+SPORT_PIECES = ("Sport_Body", "Sport_Hood", "Sport_BumperF", "Sport_BumperR", "Sport_DoorL", "Sport_DoorR", "Sport_Cabin", "Sport_Wing")
+
+
+# ---------------------------------------------------------------- Map vehicles ---------------
+# The parked vehicles the maps used to build out of plain blocks, remade to the same footprint,
+# heights and colours (Map.luau car / boats, City.luau car / Bus, Factory.luau Forklift) in the kit's
+# comic style. PAINT is a stand-in: the game paints that mesh (and its cubes) each car's own colour.
+# Origins are on the ground under the middle, front toward -Z; Map.luau shows these until a hit
+# reaches them and then swaps in their cubes (assets/army/voxels.py), so they still break brick by brick.
+PAINT = "FE01FE"
+V_DARK, V_TYRE, V_HUB, V_INK, V_HL = "1C1C20", "18181A", "C8CCD4", "121214", "FFF1EA"
+V_HEAD, V_TAIL = "FFF4C8", "FF3030"
+
+
+def wheel(p, at, diameter, width, hub=V_HUB, segs=18):
+    p.cyl(diameter, width, at, V_TYRE, axis="x", segs=segs, bevel=min(0.18, width * 0.2))
+    p.cyl(diameter * 0.5, width + 0.04, at, hub, axis="x", segs=12, bevel=0.03)
+
+
+def arched(length_half, bottom, top_front, top_back, arches, r, cy, nose=0.4):
+    """A car side profile (z, y) with wheel arches: front at -length_half, a rounded nose and tail."""
+    prof = [(length_half - 0.2, top_back), (length_half, top_back - 0.3), (length_half, bottom + 0.25), (length_half - 0.15, bottom)]
+    for zc in sorted(arches, reverse=True):
+        prof.append((zc + r, bottom))
+        prof += [(zc + r * math.cos(t * math.pi / 8), cy + r * math.sin(t * math.pi / 8)) for t in range(9)]
+        prof.append((zc - r, bottom))
+    prof += [(-length_half + 0.15, bottom), (-length_half, bottom + 0.25), (-length_half, top_front - nose), (-length_half + nose, top_front)]
+    return prof
+
+
+def text_z(p, s, width, depth, at, h, side):
+    """Lettering on a face looking along `side` Z (-1: the front), reading left to right from there."""
+    font = None
+    for f in ("ariblk.ttf", "impact.ttf", "arialbd.ttf"):
+        path = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", f)
+        if os.path.exists(path):
+            font = bpy.data.fonts.load(path, check_existing=True)
+            break
+    cu = bpy.data.curves.new("_txt", "FONT")
+    cu.body, cu.align_x, cu.align_y, cu.extrude, cu.resolution_u = s, "CENTER", "CENTER", depth / 2, 3
+    if font:
+        cu.font = font
+    ob = bpy.data.objects.new("_txt", cu)
+    bpy.context.scene.collection.objects.link(ob)
+    me = ob.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+    xs = [v.co.x for v in me.vertices]
+    k = width / (max(xs) - min(xs))
+    vmap = [p.bm.verts.new(R2B @ (Vector(at) + Vector((side * v.co.x * k, v.co.y * k, side * v.co.z)))) for v in me.vertices]
+    faces = [p.bm.faces.new([vmap[i] for i in q.vertices]) for q in me.polygons]
+    ob.to_mesh_clear()
+    bpy.data.objects.remove(ob)
+    bpy.data.curves.remove(cu)
+    bmesh.ops.recalc_face_normals(p.bm, faces=faces)
+    i = p._col(h)
+    for f in faces:
+        f.material_index = i
+
+
+def park_car():
+    """Map.luau car(): body 4.4 x 1.8 x 9 (y 0.8..2.6), a glass cabin 4 x 1.4 x 5 on it (z -2..3),
+    0.8-wide wheels 1.6 across at x 1.9, z 2.9, headlights at the front."""
+    p = Piece("Park_Car", exact=True)
+    p.prism(arched(4.5, 0.8, 2.45, 2.6, (-2.9, 2.9), 0.95, 0.8, nose=0.3) + [(-2.4, 2.6)], 4.4, (0, 0, 0), PAINT, bevel=0.14)
+    p.box((3.4, 0.6, 8.0), (0, 1.05, 0), V_DARK, bevel=0)  # floor, seen in the arches
+    for s in (-1, 1):
+        for z in (-2.9, 2.9):
+            wheel(p, (s * 1.9, 0.8, z), 1.6, 0.8)
+        p.box((0.9, 0.5, 0.1), (s * 1.4, 1.9, -4.53), V_HEAD, bevel=0.04)
+        p.box((0.8, 0.35, 0.1), (s * 1.5, 2.15, 4.53), V_TAIL, bevel=0.03)
+        p.box((0.02, 0.05, 6.2), (s * 2.212, 2.35, 0.2), V_HL, bevel=0)  # shoulder highlight
+        p.box((0.02, 1.2, 0.05), (s * 2.212, 1.75, 0.6), V_INK, bevel=0)  # door seam
+        p.box((0.06, 0.1, 0.4), (s * 2.24, 2.15, 0.0), V_DARK, bevel=0.02)  # handle
+        p.box((0.32, 0.26, 0.36), (s * 2.3, 2.85, -1.75), PAINT, bevel=0.06)  # mirror
+    for z in (-1, 1):
+        p.box((4.5, 0.35, 0.3), (0, 1.05, z * 4.55), V_DARK, bevel=0.08)  # bumpers
+    p.box((1.6, 0.36, 0.06), (0, 1.55, -4.54), V_DARK, bevel=0.02)  # grille
+    # the glass cabin, as the old block had it, with a thin frame and two glints
+    p.prism([(-2.0, 2.58), (-1.2, 4.0), (2.3, 4.0), (3.0, 2.58)], 4.0, (0, 0, 0), "364A66", bevel=0.1)
+    for s in (-1, 1):
+        p.box((0.12, 0.12, 5.1), (s * 2.0, 2.66, 0.5), V_DARK, bevel=0)
+    for x, ln in ((0.8, 1.2), (1.15, 0.8)):
+        p.box((0.1, 0.02, ln), (x, 3.32, -1.62), V_HL, rot=(-60, 0, 0), bevel=0)
+    p.finish()
+
+
+def city_car():
+    """City.luau car(): 4 wide, 10 long; a black chassis row with the wheels at z 4 (y 0..2), the
+    painted body (y 2..4), a tinted glass cabin z -3..3 (y 4..6). Roof pieces: a taxi sign, police lights."""
+    p = Piece("City_Car", exact=True)
+    p.prism(arched(5.0, 1.5, 3.75, 4.0, (-4.0, 4.0), 1.15, 1.0, nose=0.35) + [(-3.0, 4.0)], 4.0, (0, 0, 0), PAINT, bevel=0.15)
+    p.box((3.4, 1.0, 5.4), (0, 1.1, 0), V_DARK, bevel=0.06)  # the old black chassis row between the wheels
+    for s in (-1, 1):
+        for z in (-4.0, 4.0):
+            wheel(p, (s * 1.5, 1.0, z), 2.0, 1.0)
+        p.box((1.0, 0.45, 0.1), (s * 1.3, 3.15, -5.03), V_HEAD, bevel=0.04)
+        p.box((0.8, 0.4, 0.1), (s * 1.4, 3.3, 5.03), V_TAIL, bevel=0.03)
+        p.box((0.02, 0.05, 7.0), (s * 2.012, 3.7, 0.0), V_HL, bevel=0)
+        for z in (-2.6, 0.2, 2.9):
+            p.box((0.02, 2.0, 0.05), (s * 2.012, 2.7, z), V_INK, bevel=0)  # door seams
+        p.box((0.06, 0.12, 0.45), (s * 2.04, 3.25, -1.3), V_DARK, bevel=0.02)
+        p.box((0.06, 0.12, 0.45), (s * 2.04, 3.25, 1.5), V_DARK, bevel=0.02)
+        p.box((0.3, 0.28, 0.4), (s * 2.12, 4.3, -2.6), PAINT, bevel=0.06)
+    for z in (-1, 1):
+        p.box((4.1, 0.4, 0.35), (0, 1.75, z * 5.05), V_DARK, bevel=0.1)
+    p.box((2.0, 0.4, 0.06), (0, 2.5, -5.04), V_DARK, bevel=0.02)
+    p.prism([(-3.0, 3.98), (-2.3, 6.0), (2.5, 6.0), (3.0, 3.98)], 3.8, (0, 0, 0), "1E2634", bevel=0.12)
+    for s in (-1, 1):
+        p.box((0.12, 0.12, 6.1), (s * 1.9, 4.05, 0.0), V_DARK, bevel=0)
+        p.box((0.12, 1.95, 0.25), (s * 1.9, 5.0, 0.1), V_DARK, bevel=0)  # B pillar
+    for x, ln in ((0.7, 1.4), (1.1, 0.9)):
+        p.box((0.1, 0.02, ln), (x, 5.05, -2.72), V_HL, rot=(-71, 0, 0), bevel=0)
+    p.finish()
+
+    p = Piece("City_TaxiSign", exact=True)  # the old white light cube on the roof, as a sign
+    p.box((1.8, 0.65, 0.8), (0, 6.33, 0), "F4F4E6", bevel=0.12)
+    for side in (-1, 1):
+        text_z(p, "TAXI", 1.3, 0.04, (0, 6.33, side * 0.41), V_INK, side)
+    p.finish()
+
+    p = Piece("City_PoliceLights", exact=True)  # the old blue and red cubes over the roof
+    p.box((3.4, 0.2, 0.8), (0, 6.1, 0), V_DARK, bevel=0.05)
+    p.box((1.2, 0.5, 0.75), (-1.0, 6.45, 0), "3060FF", bevel=0.1)
+    p.box((1.2, 0.5, 0.75), (1.0, 6.45, 0), "FF3030", bevel=0.1)
+    p.finish()
+
+
+def city_bus():
+    """City.luau Bus: 6 wide, 22 long, 8 high; black chassis row with wheels at x 2, z 6; a blue band,
+    a tinted window band, a white roof."""
+    p = Piece("City_Bus", exact=True)
+    p.prism(arched(11.0, 1.4, 4.0, 4.0, (-6.0, 6.0), 1.2, 1.0, nose=0.15), 6.0, (0, 0, 0), "2850BE", bevel=0.18)
+    p.box((5.2, 1.0, 17.6), (0, 1.15, 0), V_DARK, bevel=0.05)
+    for s in (-1, 1):
+        for z in (-6.0, 6.0):
+            wheel(p, (s * 2.4, 1.0, z), 2.0, 1.0)
+    p.box((5.95, 2.0, 21.95), (0, 5.0, 0), "1E2634", bevel=0.1)  # window band
+    p.box((6.0, 2.0, 22.0), (0, 7.0, 0), "E8E8E2", bevel=0.4)  # roof
+    for s in (-1, 1):
+        for z in range(-9, 10, 3):
+            p.box((0.08, 2.0, 0.3), (s * 2.99, 5.0, z), "E8E8E2", bevel=0)  # window posts
+        p.box((0.02, 0.06, 20.5), (s * 3.012, 3.7, 0), V_HL, bevel=0)
+        p.box((1.0, 0.45, 0.1), (s * 2.1, 2.6, -11.03), V_HEAD, bevel=0.04)
+        p.box((0.8, 0.5, 0.1), (s * 2.2, 2.8, 11.03), V_TAIL, bevel=0.03)
+    p.box((0.06, 3.1, 1.6), (3.02, 3.0, -8.2), "1E2634", bevel=0.02)  # the door, curb side
+    p.box((0.07, 3.1, 0.06), (3.04, 3.0, -8.2), V_INK, bevel=0)
+    for z in (-1, 1):
+        p.box((6.1, 0.5, 0.4), (0, 1.6, z * 11.05), V_DARK, bevel=0.12)
+    p.box((3.6, 0.7, 0.08), (0, 6.5, -11.04), V_DARK, bevel=0.03)  # destination sign
+    text_z(p, "CITY", 2.4, 0.04, (0, 6.5, -11.1), "FF8A20", -1)
+    for x, ln in ((-1.6, 1.4), (-1.1, 0.9)):
+        p.box((0.1, ln, 0.02), (x, 5.0, -11.0), V_HL, rot=(0, 0, 25), bevel=0)
+    p.finish()
+
+
+def park_boat():
+    """Map.luau boats: a 5 x 1.6 x 12 red wooden hull (y -0.4..1.2) with a plank seat across it."""
+    p = Piece("Park_Boat", exact=True)
+    hull, plank = "C44834", "966E46"
+    loops = []
+    for z, half in ((-6.0, 0.05), (-5.3, 1.3), (-4.2, 2.1), (-2.6, 2.5), (0, 2.5), (3.5, 2.5), (6.0, 2.3)):
+        lo = max(0.05, half * 0.6)
+        loops.append([(-half, 1.2, z), (-half * 0.92, 0.2, z), (-lo, -0.4, z), (lo, -0.4, z), (half * 0.92, 0.2, z), (half, 1.2, z)])
+    faces = p._solid(loops, (0, 0, 0), hull, (0, 0, 0), closed=False)
+    # the cross-sections are closed (their top edge is the deck), so only the bow and the stern need capping
+    for loop in (loops[0], loops[-1]):
+        faces.append(p.bm.faces.new([p.bm.verts.new(R2B @ Vector(v)) for v in loop]))
+    bmesh.ops.remove_doubles(p.bm, verts=list({v for f in faces for v in f.verts}), dist=0.001)
+    i = p._col(hull)
+    for f in faces:
+        if f.is_valid:
+            f.material_index = i
+    for z in (-3.0, -1.0, 1.0, 3.0, 5.0):  # deck planks and the seat
+        p.box((4.6 if z > -2 else 3.8, 0.06, 1.7), (0, 1.23, z), plank, bevel=0)
+        p.box((4.62 if z > -2 else 3.82, 0.07, 0.04), (0, 1.235, z + 0.86), V_INK, bevel=0)
+    p.box((4.6, 0.4, 1.4), (0, 1.4, 0), plank, bevel=0.08)
+    for s in (-1, 1):
+        p.box((0.02, 0.05, 9.0), (s * 2.52, 0.75, 0.8), V_INK, bevel=0)  # plank seams down the side
+        p.box((0.02, 0.05, 7.5), (s * 2.52, 0.2, 1.4), V_INK, bevel=0)
+        p.box((0.02, 0.06, 8.0), (s * 2.52, 1.05, 1.2), V_HL, bevel=0)
+    p.finish()
+
+
+def factory_forklift():
+    """Factory.luau Forklift (cube units of 4): a yellow body 4 x 4 x 12, a dark seat on it, a dark
+    overhead guard to y 16, the steel mast in front (z -8..-6, to y 14), chrome forks to z -12."""
+    p = Piece("Factory_Forklift", exact=True)
+    yellow, dark, steel, chrome = "EBB91E", "26282E", "464A52", "BEBEC3"
+    p.prism([(6.0, 3.6), (6.0, 0.9), (4.9, 0.6), (-5.8, 0.6), (-6.0, 1.0), (-6.0, 3.6), (-5.6, 4.0), (5.6, 4.0)], 4.0, (0, 0, 0), yellow, bevel=0.25)
+    p.box((3.6, 1.6, 2.4), (0, 4.6, 4.6), yellow, bevel=0.4)  # counterweight hump at the back
+    for s in (-1, 1):
+        for z, d in ((-3.8, 2.6), (3.6, 2.2)):
+            wheel(p, (s * 1.75, d / 2, z), d, 0.9, hub="2A2A30")
+        p.box((0.02, 0.06, 10.5), (s * 2.012, 3.6, 0), V_HL, bevel=0)
+        for z in (-1.0, -0.8, -0.6):
+            p.box((0.02, 0.9, 0.05), (s * 2.012, 2.0, z * 4), V_INK, bevel=0)  # hatching
+    for x in (-1, 1):  # black and yellow chevrons on the back
+        p.box((0.5, 2.2, 0.06), (x * 1.1, 2.2, 6.04), V_INK, rot=(0, 0, 30 * x), bevel=0)
+    p.box((2.6, 0.8, 2.6), (0, 4.5, 2.0), dark, bevel=0.2)  # seat
+    p.box((2.6, 2.4, 0.6), (0, 5.8, 3.3), dark, bevel=0.2)
+    p.cyl(1.2, 0.12, (0, 6.0, -0.6), dark, axis="z", rot=(-35, 0, 0), segs=14)  # steering wheel
+    p.box((0.2, 1.6, 0.2), (0, 5.0, -0.3), dark, rot=(-35, 0, 0), bevel=0.03)
+    for x in (-1.75, 1.75):  # overhead guard: four posts and a slatted roof
+        for z in (-1.8, 3.6):
+            p.box((0.4, 8.4, 0.4), (x, 8.2, z), dark, bevel=0.06)
+    p.box((4.0, 0.4, 6.4), (0, 12.6, 0.9), dark, bevel=0.12)
+    for z in range(-1, 4):
+        p.box((3.4, 0.12, 0.35), (0, 12.86, z * 1.1), steel, bevel=0)
+    p.cyl(0.6, 0.6, (1.2, 13.2, 3.4), "FF8A20", segs=12, bevel=0.06)  # warning beacon
+    for x in (-1.4, 1.4):  # mast: two channels with cross bars, the carriage, the forks
+        p.box((0.6, 14.0, 0.8), (x, 7.0, -7.0), steel, bevel=0.08)
+    for y in (2.0, 7.0, 13.4):
+        p.box((3.4, 0.4, 0.5), (0, y, -7.0), steel, bevel=0.06)
+    p.box((4.0, 2.2, 0.4), (0, 1.7, -7.6), dark, bevel=0.08)
+    for x in (-1.1, 1.1):
+        p.box((0.7, 0.35, 4.4), (x, 0.4, -9.8), chrome, bevel=0.05)
+        p.box((0.7, 2.0, 0.35), (x, 1.2, -7.9), chrome, bevel=0.05)
+    p.finish()
+
+
+VEHICLE_PIECES = ("Park_Car", "City_Car", "City_TaxiSign", "City_PoliceLights", "City_Bus", "Park_Boat", "Factory_Forklift")
+
+
+def vehicles():
+    park_car()
+    city_car()
+    city_bus()
+    park_boat()
+    factory_forklift()
+    for i, n in enumerate(VEHICLE_PIECES):
+        bpy.data.objects[n].location = (80 + (i % 4) * 14, (i // 4) * 26, 0)
+    for n in ("City_TaxiSign", "City_PoliceLights"):
+        bpy.data.objects[n].location = bpy.data.objects["City_Car"].location
+
+
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_")
 
 
 def build_all():
@@ -816,6 +1204,8 @@ def build_all():
     helicopter()
     baton()
     police_car()
+    sport_car()
+    vehicles()
     # lay them out for a look (object origins stay at the attach point; only the display moves)
     x = 0
     for prefix in ("Soldier_", "Heavy_", "Worker_", "Zombie_"):
@@ -835,6 +1225,15 @@ def build_all():
             bpy.context.scene.collection.objects.link(w)
             w.name = "_wheel_view"
         w.location = Vector((40, 0, 0)) + R2B @ Vector((x * WHEEL_AT[z][0], WHEEL_AT[z][1], WHEEL_AT[z][2]))
+        w.rotation_euler = (0, 0, 0 if x > 0 else math.pi)
+    for n in SPORT_PIECES:
+        bpy.data.objects[n].location = (60, 0, 0)
+    for i, (x, z) in enumerate(((1, 0), (1, 1), (-1, 0), (-1, 1))):
+        w = bpy.data.objects["Sport_Wheel"] if i == 0 else bpy.data.objects["Sport_Wheel"].copy()
+        if i:
+            bpy.context.scene.collection.objects.link(w)
+            w.name = "_wheel_view"
+        w.location = Vector((60, 0, 0)) + R2B @ Vector((x * SPORT_WHEEL_AT[z][0], SPORT_WHEEL_AT[z][1], SPORT_WHEEL_AT[z][2]))
         w.rotation_euler = (0, 0, 0 if x > 0 else math.pi)
 
 

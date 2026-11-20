@@ -4,6 +4,7 @@
 -- line changes, the old text shrinks away and the new one pops in.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
 
 local TutorialHud = {}
 
@@ -90,6 +91,9 @@ function TutorialHud.start()
 	local wasOn = false
 	local function show()
 		local step = player:GetAttribute("TutorialStep")
+		if wasOn then -- a step done (or the last one)
+			Sfx.ui(Sfx.TUTORIAL_STEP, 0.6)
+		end
 		if step then
 			setLine(label, STEPS[step])
 		elseif wasOn then -- just done

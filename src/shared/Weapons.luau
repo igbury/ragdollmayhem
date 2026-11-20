@@ -34,4 +34,23 @@ return {
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },
 	{ id = "Tomato", name = "TOMATO", tag = "thrown", short = "TMT", kind = "thrown", cd = 0.35, speed = 95 },
 	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140, hip = 0.12 },
+	-- the comic set: each has its own mechanic in server/Specials (the flamethrower's fire, the
+	-- frostgun's freeze, the taser's shock, the lasso's and the harpoon's rope, C4, mines, ...);
+	-- knockdown: every blow that lands floors the dummy for that long; spinUp: s of trigger before
+	-- the first round; Specials ignores `kind` for the rays it fires itself, the client still uses it.
+	{ id = "Crowbar", name = "CROWBAR", tag = "melee", short = "CRW", kind = "melee", aimSwing = true, hurt = "blunt", cd = 0.45, range = 10, dmg = 2, push = 60, chip = 1.5 },
+	{ id = "Sledgehammer", name = "SLEDGEHAMMER", tag = "melee", short = "SLDG", kind = "melee", aimSwing = true, hurt = "blunt", cd = 1.1, range = 11, dmg = 4, push = 130, chip = 3.5, knockdown = 2.5 },
+	{ id = "Spear", name = "SPEAR", tag = "melee", short = "SPR", kind = "melee", hurt = "blade", cd = 0.75, range = 15, dmg = 3, push = 45 },
+	{ id = "Lightsaber", name = "LIGHTSABER", tag = "melee", short = "LSBR", kind = "melee", aimSwing = true, hurt = "blade", cd = 0.4, range = 12, dmg = 4, push = 30, chip = 1.5 },
+	{ id = "Chainsaw", name = "CHAINSAW", tag = "melee", short = "CHNS", kind = "melee", auto = true, hurt = "blade", cd = 0.12, range = 9, dmg = 1.2, push = 6, knockdown = 1 },
+	{ id = "Lasso", name = "LASSO", tag = "melee", short = "LSO", kind = "thrown", cd = 1.5, range = 45 },
+	{ id = "Taser", name = "TASER", tag = "gun", short = "TSR", kind = "gun", hurt = "blunt", cd = 1.2, range = 35, dmg = 1, push = 5, hip = 0.06 },
+	{ id = "Frostgun", name = "FROST GUN", tag = "gun", short = "FRST", kind = "gun", cd = 0.8, range = 120, dmg = 1, hip = 0.06 },
+	{ id = "Boilgun", name = "BOIL GUN", tag = "gun", short = "BOIL", kind = "gun", cd = 0.9, range = 30, dmg = 1, push = 35, hip = 0.1 },
+	{ id = "Flamethrower", name = "FLAMETHROWER", tag = "gun", short = "FLAM", kind = "gun", auto = true, cd = 0.1, range = 18, dmg = 2.5, hip = 0.1 },
+	{ id = "Minigun", name = "MINIGUN", tag = "gun", short = "MINI", kind = "gun", auto = true, spinUp = 0.5, hurt = "bullet", cd = 0.06, range = 350, dmg = 0.9, push = 12, chip = 0.8, spread = 0.035, hip = 0.06 },
+	{ id = "Harpoon", name = "HARPOON", tag = "gun", short = "HARP", kind = "gun", cd = 1.4, range = 120, dmg = 4, speed = 160, hip = 0.05 },
+	{ id = "TNT", name = "TNT", tag = "thrown", short = "TNT", kind = "thrown", cd = 2.5, speed = 45 },
+	{ id = "C4", name = "C4", tag = "thrown", short = "C4", kind = "thrown", cd = 0.6, speed = 45 },
+	{ id = "Landmine", name = "LANDMINE", tag = "thrown", short = "MINE", kind = "thrown", cd = 1.0 },
 }

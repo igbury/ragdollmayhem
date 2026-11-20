@@ -288,7 +288,14 @@ function KINDS.CitySignal(add) -- arm toward +x, lights facing +z
 end
 
 -- A car: 4 wide, 10 long along z. `top` lists roof lights as { x, colour }.
+local ROOF = { Taxi = { "City_TaxiSign", Vector3.new(1.8, 0.7, 0.8) }, Police = { "City_PoliceLights", Vector3.new(3.4, 0.75, 0.8) } }
 local function car(name: string, color: Color3, top: { any }?)
+	-- the Blender car (Map.SKINS) with what it carries on the roof; these bricks without the kit
+	local roof = ROOF[name]
+	Map.SKINS[name] = { pieces = { "City_Car", roof and roof[1] }, paint = color, boxes = {
+		{ CFrame.new(0, 2, 0), Vector3.new(4, 4, 10) }, { CFrame.new(0, 5, 0), Vector3.new(3.8, 2, 6) },
+		roof and { CFrame.new(0, 6.35, 0), roof[2] },
+	} }
 	KINDS[name] = function(add)
 		local s = studs(add)
 		for _, x in { -1, 1 } do
@@ -311,6 +318,7 @@ car("CarBlue", BLUE)
 car("CarWhite", PAINT)
 car("Police", Color3.fromRGB(30, 34, 48), { { -1, BLUE }, { 1, RED } })
 
+Map.SKINS.Bus = { pieces = { "City_Bus" }, boxes = { { CFrame.new(0, 4, 0), Vector3.new(6, 8, 22) } } }
 function KINDS.Bus(add) -- 6 wide, 22 long along z
 	local s = studs(add)
 	for _, x in { -2, 0, 2 } do

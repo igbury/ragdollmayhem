@@ -223,11 +223,11 @@ end
 
 -- The bubble itself is drawn by the client (Speech): "talk", "shout" (a "!" in it), "think" ("...").
 local function say(d, text: string, kind: string?)
-	if d.zombie then -- no words left in it: a groan, now and then
+	if d.zombie then -- no words left in it: a groan, now and then (client Speech: a talk bubble, a groan's voice)
 		if math.random() < 0.5 then
 			return
 		end
-		text, kind = pick(ZOMBIE.lines), "talk"
+		text, kind = pick(ZOMBIE.lines), "groan"
 	end
 	local m = d.model
 	m:SetAttribute("Say", text)
@@ -320,7 +320,7 @@ end
 local Body: any = {
 	TOUGH = { Hand = 3, Foot = 3, LowerArm = 5, LowerLeg = 6, UpperArm = 7, UpperLeg = 8 },
 	WEAR = { bullet = 1, blade = 1.2 },
-	CHOP = { Axe = true, Katana = true },
+	CHOP = { Axe = true, Katana = true, Lightsaber = true },
 	ARROW = 0.5, -- an arrow wears a limb this much of a blade
 	CRAWL_SPEED = 1.6,
 	HOP_SPEED = 4.5,
@@ -1083,6 +1083,10 @@ local function kill(d, cause: string)
 		end
 		if by then -- a kill for the weapon progression (zombies count)
 			Progress.credit(by, weapon)
+		end
+		local head = d.zombie and d.model:FindFirstChild("Head") :: BasePart?
+		if head then
+			Sfx.play(Sfx.ZOMBIE_DEATH, head.Position)
 		end
 		d.diedAt = os.clock() -- the oldest bodies go first (RESPAWN)
 		task.defer(RESPAWN.run, d, by)
@@ -1987,7 +1991,9 @@ task.spawn(function()
 			warn("toolbox preview", kindName, err)
 		end
 	end
-	PoliceCar.preview().Parent = previews
+	for kind in PoliceCar.KINDS do
+		PoliceCar.preview(kind).Parent = previews
+	end
 	previews.Parent = ReplicatedStorage
 end)
 
@@ -2395,13 +2401,13 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		return
 	end
 	local plus = not Shop.locked(player, "SandboxPlus") -- SANDBOX + (shared/Shop): every kind, higher caps
-	if action == "spawn" and extra == "PoliceCar" and finite(arg) and (arg - head.Position).Magnitude < 200 then
+	if action == "spawn" and PoliceCar.KINDS[extra] and finite(arg) and (arg - head.Position).Magnitude < 200 then
 		-- one drivable car where the aim is, nose away from the player (server/PoliceCar)
 		local flat = (arg - head.Position) * Vector3.new(1, 0, 1)
 		local look = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zAxis
 		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look) -- no room (a wall, someone): no car
 		if spot then
-			PoliceCar.spawn(spot, player)
+			PoliceCar.spawn(spot, player, extra)
 		end
 	elseif action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
 		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
@@ -2529,6 +2535,7 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 				paint(d, part)
 			end
 		end
+		require(script.Specials).alight(d) -- it catches fire (BURNING DUMMIES setting)
 	end
 	if not dead then
 		local by = blameOf(d)
@@ -2796,15 +2803,23 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	if state.tracks.guard then state.tracks.guard:Play(0.15) end
 end)
 
-local function explode(position: Vector3, sound: string)
-	Sfx.play({ sound, 1, 1 }, position)
-	fxRemote:FireAllClients("Boom", nil, position, 9)
-	Map.blast(position, 9, 70)
-	smash(position, 13, 45, Vector3.zero, 80, "blast")
+-- `scale` (default 1) grows the blast: its crater, reach, damage and the shove (TNT, C4).
+local function explode(position: Vector3, sound: string, scale: number?)
+	local s = scale or 1
+	Sfx.play({ sound, 1 / math.sqrt(s), 1 }, position)
+	fxRemote:FireAllClients("Boom", nil, position, 9 * s)
+	Map.blast(position, 9 * s, 70)
+	smash(position, 13 * s, 45 * s, Vector3.zero, 80 * math.sqrt(s), "blast")
 end
 
 local function ignite(position: Vector3)
 	fxRemote:FireAllClients("Fire", nil, position, 8, 5)
+	local crackle = Instance.new("Part") -- the burning patch's sound (the fire itself is client Fx)
+	crackle.Anchored, crackle.CanCollide, crackle.CanQuery, crackle.CanTouch = true, false, false, false
+	crackle.Transparency, crackle.Size, crackle.Position = 1, Vector3.one, position
+	crackle.Parent = workspace
+	Sfx.loop(crackle, Sfx.FIRE_BURNING_LOOP, 0.7, 120)
+	Debris:AddItem(crackle, 5.2)
 	Map.blast(position, 2.5, 30)
 	for _ = 1, 10 do
 		smash(position, 8, 6, Vector3.zero, 0, "fire")
@@ -2855,6 +2870,9 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 	task.delay(5, splat)
 end
 
+-- thrown charges that go off on a fuse: [id] = { seconds, blast scale } (C4 and the landmine: Specials)
+local FUSED = { Grenade = { 2, 1 }, TNT = { 3, 1.6 } }
+
 local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 	local p = Instance.new("Part")
 	if weapon.id == "Tomato" then
@@ -2862,7 +2880,7 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		p.Size = Vector3.one * 0.85
 		p.Color = TOMATO_RED
 		p.Material = Enum.Material.SmoothPlastic
-	elseif weapon.id == "Grenade" then
+	elseif FUSED[weapon.id] then
 		p.Shape = Enum.PartType.Ball
 		p.Size = Vector3.one * 1.1
 		p.Color = Color3.fromRGB(60, 80, 50)
@@ -2892,11 +2910,18 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		tomato(p, char, Players:GetPlayerFromCharacter(char))
 		return
 	end
-	if weapon.id == "Grenade" then
-		task.wait(2)
+	local fuse = FUSED[weapon.id]
+	if fuse then
+		if weapon.id == "TNT" then -- the lit fuse fizzes all the way
+			Instance.new("Sparkles").Parent = p
+			if Sfx.TNT_FUSE then
+				Sfx.loop(p, Sfx.TNT_FUSE, 0.6, 90)
+			end
+		end
+		task.wait(fuse[1])
 		local position = p.Position
 		p:Destroy()
-		explode(position, Sfx.GRENADE_BOOM)
+		explode(position, Sfx.GRENADE_BOOM, fuse[2])
 		return
 	end
 	-- molotov: breaks on the first thing it touches that is not the thrower
@@ -2945,6 +2970,7 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3, npc: b
 	smoke.Size, smoke.RiseVelocity, smoke.Opacity = 2.5, 1, 0.35
 	smoke.Color = Color3.fromRGB(200, 196, 190)
 	smoke.Parent = p
+	Sfx.loop(p, Sfx.ROCKET_FLIGHT_LOOP, 0.8, 250)
 	local params = RaycastParams.new()
 	params.FilterDescendantsInstances = { char, p }
 	local position = origin + dir * 3
@@ -2974,7 +3000,7 @@ local function rocket(weapon, char: Model, origin: Vector3, dir: Vector3, npc: b
 	local under = root and root.Position - position
 	if shooter and under and dir.Y < -0.5 and under.Y > 0 and under.Magnitude < 8 and (under * Vector3.new(1, 0, 1)).Magnitude < 5 then
 		local UP_SPEED, FORWARD_SPEED = 85, 55 -- ~18 studs up (a double jump is ~8)
-		Sfx.play({ Sfx.RPG_BOOM, 1.25, 0.45 }, position)
+		Sfx.play({ Sfx.ROCKET_JUMP_POP, 1, 0.9 }, position)
 		fxRemote:FireAllClients("Boom", nil, position, 2.5)
 		Map.blast(position, 2, 20)
 		smash(position, 5, 8, Vector3.zero, 20, "blast")
@@ -3080,6 +3106,14 @@ local function batBlow(d, swing)
 	end)
 end
 
+-- the comic set's own mechanics (Specials: flamethrower, frostgun, lasso, C4, ...), with the helpers above
+require(script.Specials).init({
+	dummies = dummies, dummyOf = dummyOf, hit = hit, harm = harm, knockDown = knockDown, release = release,
+	setOwner = setOwner, smash = smash, explode = explode, setGear = setGear, say = say,
+	kill = kill, addInjury = addInjury, sync = syncAttributes, sever = sever, Body = Body,
+	Monsters = Monsters, Map = Map, Sfx = Sfx, fx = fxRemote,
+})
+
 weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	Wanted.act(player, if typeof(id) == "string" then id else nil) -- whatever this does to a dummy is on them
 	local weapon = typeof(id) == "string" and weaponById[id]
@@ -3134,16 +3168,27 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	if weapon.kind == "melee" then
 		lastSwing[player] = now
 	end
+	if require(script.Specials).spinning(weapon, player) then
+		return -- the minigun's barrels are still getting up to speed
+	end
 	local sounds = Sfx.WEAPON[id] or {}
-	if sounds.fire then
+	if sounds.fire and not require(script.Specials).hushed(weapon, player) then
 		Sfx.play(sounds.fire, origin, player) -- the shooter heard it already (useWeapon)
+	end
+	if id == "Shotgun" then -- racked for the next shell
+		task.delay(0.45, Sfx.play, { Sfx.SHOTGUN_PUMP, 1, 0.7 }, origin)
+	end
+	if require(script.Specials).fire(weapon, player, char, origin, dir, aimed == true) then
+		return
 	end
 	if weapon.kind == "bow" then
 		Arrows.fire(origin, dir, weapon.speed * (0.4 + 0.6 * bowCharge), char, function(result, direction)
 			Wanted.act(player, "Bow")
 			local damage = weapon.dmg * (0.25 + 0.75 * bowCharge)
-			if Monsters.damage(result.Instance, damage * 10, direction, player) then return end
 			local d = dummyOf(result.Instance)
+			local onBody = d ~= nil or Monsters.isMonster(result.Instance)
+			Sfx.play(onBody and Sfx.ARROW_HIT_BODY or Sfx.ARROW_HIT_WALL, result.Position)
+			if Monsters.damage(result.Instance, damage * 10, direction, player) then return end
 			if d and result.Instance.Parent then hit(d, result.Instance, direction, damage, weapon.push, "blade", result.Position, origin) end
 			fxRemote:FireAllClients("Shot", char, "Knife", result.Position - direction * 0.5, result.Position, true, false)
 		end)
@@ -3195,7 +3240,12 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			task.wait((target - origin).Magnitude / weapon.speed)
 		end
 		local blow = weapon.aimSwing and blowDir or aim -- which way it knocks things
-		if Monsters.damage(result.Instance, (weapon.dmg or 1) * dmgScale * 10, blow, player) then continue end
+		if Monsters.damage(result.Instance, (weapon.dmg or 1) * dmgScale * 10, blow, player) then
+			if sounds.hit then
+				Sfx.play(sounds.hit, target, weapon.kind == "melee" and player or nil)
+			end
+			continue
+		end
 		local d = dummyOf(result.Instance)
 		if d and weapon.kind == "melee" and not weapon.knockdown and tryDodge(d, player) then
 			return -- ducked under the swing
@@ -3210,6 +3260,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			if id == "Bat" and d.model.Parent then
 				batBlow(d, swing)
 			end
+			require(script.Specials).afterHit(weapon, d, target, swing, player, char) -- the crowbar's arm rip and disarm, the sledgehammer's shockwave
 			if weapon.knockdown and d.state ~= "Dead" then -- the heavy left: down every time it lands
 				knockDown(d, weapon.knockdown, "Knocked down")
 			end
@@ -3219,6 +3270,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			result.Instance:ApplyImpulse(blow * result.Instance.AssemblyMass * weapon.push * pushScale)
 		elseif weapon.chip and pellet == 1 then
 			Map.blast(target, weapon.chip, 30)
+		end
+		if not d and weapon.kind == "gun" and pellet == 1 then -- a wall, the floor, a car: its own ping
+			Sfx.play(Sfx.surface(result.Instance), target)
 		end
 	end
 end)
@@ -3233,6 +3287,10 @@ Players.PlayerAdded:Connect(function(player)
 		end
 		local hum = char:WaitForChild("Humanoid") :: Humanoid
 		hum.Died:Connect(function()
+			local body = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if body then
+				Sfx.play(Sfx.BODY_FALL, body.Position)
+			end
 			Wanted.clear(player)
 			clearBoxing(player)
 			if held[player] then
@@ -3866,6 +3924,7 @@ function ZOMBIE.swing(d, b, target, now: number)
 	end
 	b.busyUntil = now + claw.at + 0.15
 	b.swingAt = now + claw.recover + math.random() * 0.5
+	Sfx.play({ Sfx.ZOMBIE_ATTACK, 0.9 + math.random() * 0.2, 0.8 }, root.Position)
 	b.swingToken = (b.swingToken or 0) + 1
 	local token = b.swingToken
 	local function arms(at)
@@ -4719,10 +4778,10 @@ require(script.Admin).start(remotes, {
 	end,
 })
 ShopServer.start()
--- the first-time tutorial on the arena (server/Tutorial)
-Tutorial.start({
 -- the host's GRAVITY and GRAVE ZOMBIES settings (server/World)
 require(script.World).start({ spawn = spawnDummy, trim = trimDummies, play = playTrack })
+-- the first-time tutorial on the arena (server/Tutorial)
+Tutorial.start({
 	spawn = function(cf: CFrame, kind: string?): Model
 		trimDummies()
 		-- a Mourner: never hits back (only the Tough, Berserk and Hothead ones do, hit)

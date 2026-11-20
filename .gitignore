@@ -18,6 +18,9 @@ rojo.exe
 # Per-animation upload files (regenerate with assets/anims/split.py)
 /assets/anims/upload/
 
+# Local secrets (API keys)
+/.env
+
 # Reproducible skill-download staging and local machine configuration
 /tools/skill-download-batches/
 /.claude/skills/*/LOCAL.md

@@ -5,6 +5,7 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
+local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
 local Presentation = {}
 local function label(parent, name, size, position, textSize)
 	local l = Instance.new("TextLabel")
@@ -86,6 +87,7 @@ function Presentation.start(gui, remotes, api)
 			elseif kind == "Reward" then
 				toastUntil = os.clock() + 3
 				toast.Text, toast.TextColor3 = a .. " DEFEATED   +" .. b .. " XP", Color3.fromRGB(255, 211, 96)
+				Sfx.ui(Sfx.UI_NOTIFICATION, 0.7)
 			elseif kind == "Impact" then
 				if (workspace.CurrentCamera.CFrame.Position - a).Magnitude > 200 then return end
 				local pulse = Instance.new("Part")

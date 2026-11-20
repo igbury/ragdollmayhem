@@ -393,6 +393,15 @@ function KINDS.Generator(add)
 	add(-0.75, 2, 0, GREEN, Enum.Material.Metal, 2)
 end
 
+-- the Blender forklift (Map.SKINS), in the factory's studded plastic once it breaks; these bricks without the kit
+Map.SKINS.Forklift = { pieces = { "Factory_Forklift" }, material = Enum.Material.Plastic, boxes = {
+	{ CFrame.new(0, 2.3, 0), Vector3.new(4, 3.4, 12) }, { CFrame.new(0, 0.3, 0), Vector3.new(4, 0.6, 10) },
+	{ CFrame.new(0, 4.6, 4.6), Vector3.new(3.6, 1.6, 2.4) }, { CFrame.new(0, 4.5, 2), Vector3.new(2.6, 0.8, 2.6) },
+	{ CFrame.new(0, 12.6, 0.9), Vector3.new(4, 0.4, 6.4) }, { CFrame.new(0, 7, -7), Vector3.new(3.4, 14, 0.8) },
+	{ CFrame.new(0, 0.4, -9.8), Vector3.new(2.9, 0.4, 4.4) },
+	{ CFrame.new(-1.75, 8.2, -1.8), Vector3.new(0.4, 8.4, 0.4) }, { CFrame.new(1.75, 8.2, -1.8), Vector3.new(0.4, 8.4, 0.4) },
+	{ CFrame.new(-1.75, 8.2, 3.6), Vector3.new(0.4, 8.4, 0.4) }, { CFrame.new(1.75, 8.2, 3.6), Vector3.new(0.4, 8.4, 0.4) },
+} }
 function KINDS.Forklift(add)
 	for _, z in { -1, 0, 1 } do
 		add(0, 0, z, YELLOW, Enum.Material.Metal)
@@ -525,7 +534,7 @@ local function presses()
 			local p = (t + offset) % 3
 			local slam = p >= 1.72 and p < 1.86 -- a burst of sparks and a clang as it lands
 			if slam and not slamSparks.Enabled then
-				Sfx.play({ Sfx.METAL, 0.55, 1 }, head.Position - Vector3.new(0, 1.5, 0))
+				Sfx.play({ Sfx.FACTORY_PRESS_SLAM, 1, 0.9 }, head.Position - Vector3.new(0, 1.5, 0))
 			end
 			switch(slamSparks, slam)
 		end)

@@ -12,7 +12,8 @@ local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Progression = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
+local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local Progression =require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
@@ -44,6 +45,21 @@ local ABOUT = {
 	Molotov = "Breaks on impact, sets fire",
 	Tomato = "Harmless. Deeply humiliating",
 	Rocket = "Flies straight, blows up anything",
+	Crowbar = "Knocks the weapon out of their hands",
+	Sledgehammer = "Floors them, the ground shakes",
+	Spear = "Long thrust, skewers up to three",
+	Lightsaber = "Glows, slices limbs clean off",
+	Chainsaw = "Hold to saw: pins them down",
+	Lasso = "Rope them, yank them in, drag them along",
+	Taser = "Wires in: down and twitching",
+	Frostgun = "Freezes them solid for a few seconds",
+	Boilgun = "Scalding spray: shoves and burns",
+	Flamethrower = "Hold to spray fire, sets them alight",
+	Minigun = "Hold: spins up, then shreds",
+	Harpoon = "Spears them and reels them in",
+	TNT = "Three second fuse, huge blast",
+	C4 = "Click: stick a charge. Aim + click: BOOM",
+	Landmine = "Place it: blows when they step close",
 }
 local INK = Color3.fromRGB(16, 15, 20)
 -- hotbar only: these icons draw smaller in their slot (the camera backs off by this factor)
@@ -583,6 +599,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		local w = weapons[i]
 		local tint = w.color or GROUP[w.tag] or GROUP.melee
 		noticeCount += 1
+		Sfx.ui(Sfx.UI_NOTIFICATION, 0.6)
 		local slot = Instance.new("Frame") -- its place in the stack; the card slides about inside it
 		slot.Size = UDim2.fromOffset(340, 132)
 		slot.BackgroundTransparency = 1

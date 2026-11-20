@@ -2,10 +2,14 @@
 -- the bubble is built here so it can pop in and out smoothly. Images: assets/fx/make_bubbles.py.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
+local rng = Random.new()
 
 local Speech = {}
 
 local SHOW_TIME = 2.5
+local VOICE_GAP = 3 -- seconds between one dummy's voices (calibration knob)
+local VOICE_RANGE = 60 -- studs from the camera within which bubbles are voiced
 -- image, text box (centre x, y, size x, y as fractions of the 600x400 image)
 local KINDS = {
 	talk = { "rbxassetid://95011473481258", 0.517, 0.41, 0.68, 0.5, Enum.Font.Cartoon },
@@ -90,12 +94,25 @@ function Speech.start(folder: Instance)
 			return
 		end
 		local current: BillboardGui? = nil
+		local voicedAt = 0
 		model:GetAttributeChangedSignal("SayId"):Connect(function()
 			if current then
 				hide(current)
 			end
 			local text = model:GetAttribute("Say")
-			current = if text then show(model, text, model:GetAttribute("SayKind") or "talk") else nil
+			local kind = model:GetAttribute("SayKind") or "talk"
+			current = if text then show(model, text, kind) else nil
+			-- the voice under the bubble: gibberish (a zombie groans), each dummy a little higher or lower;
+			-- near the camera only and not more than once per VOICE_GAP, or a crowd is one long babble
+			local voice = Sfx.VOICE[kind] or Sfx.VOICE.talk
+			local head = text and (model:FindFirstChild("Head") or model:FindFirstChild("UpperTorso")) :: BasePart?
+			local camera = workspace.CurrentCamera
+			if head and os.clock() - voicedAt > VOICE_GAP and camera
+				and (camera.CFrame.Position - head.Position).Magnitude < VOICE_RANGE then
+				voicedAt = os.clock()
+				local id = if typeof(voice) == "table" then voice[rng:NextInteger(1, #voice)] else voice
+				Sfx.playLocal({ id, rng:NextNumber(0.85, 1.15), 0.45 }, head.Position)
+			end
 			local mine = current
 			task.delay(SHOW_TIME, function()
 				if mine and current == mine then

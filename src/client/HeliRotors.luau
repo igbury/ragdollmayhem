@@ -4,6 +4,8 @@
 -- piece's rest pose from that pivot): blades, grips and tips all turn about the same mast.
 local RunService = game:GetService("RunService")
 
+local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
+
 local folder = workspace:WaitForChild("Helicopters")
 
 RunService.RenderStepped:Connect(function()
@@ -12,6 +14,9 @@ RunService.RenderStepped:Connect(function()
 		local body = heli:FindFirstChild("Body") :: BasePart?
 		if not body then
 			continue
+		end
+		if not body:FindFirstChild("RotorSound") then -- the rotors' thump, heard from afar
+			Sfx.loop(body, Sfx.HELICOPTER_ROTOR_LOOP, 0.7, 400).Name = "RotorSound"
 		end
 		for _, p in heli:GetChildren() do
 			local spin = p:IsA("BasePart") and p:GetAttribute("Spin")

@@ -7,7 +7,12 @@ local TweenService = game:GetService("TweenService")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
+local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Monsters = {}
+-- a boss's voice: the zombie clips, pitched down to its size
+local function voice(d, id, volume)
+	Sfx.play({ id, 0.6 / math.max(d.def.scale or 1, 1) ^ 0.3, volume or 1 }, d.root.Position)
+end
 local actors = {}
 local folder, events, knockPlayer
 local groundParams = RaycastParams.new()
@@ -215,6 +220,11 @@ end
 local function openGate(d, open)
 	local gate = d.cage:FindFirstChild("Gate")
 	if not gate then return end
+	local first = gate:FindFirstChildWhichIsA("BasePart")
+	if first and (d.cage:GetAttribute("GateOpen") or false) ~= open then -- only when it really moves
+		Sfx.play({ Sfx.HEAVY_GATE_SLIDE, open and 1 or 0.85, 1 }, first.Position)
+	end
+	d.cage:SetAttribute("GateOpen", open)
 	for _, p in gate:GetChildren() do
 		local shut = p:GetAttribute("Shut")
 		local goal = open and shut + d.cage:GetAttribute("GateLift") or shut
@@ -281,6 +291,7 @@ local function reward(d)
 end
 local function die(d, direction)
 	if d.state == "Dead" then return end
+	voice(d, Sfx.ZOMBIE_DEATH)
 	state(d, "Dead", 20)
 	d.model:SetAttribute("HP", 0)
 	d.humanoid.Health = 0
@@ -310,6 +321,10 @@ function Monsters.damage(part, damage, direction, player)
 	d.model:SetAttribute("HP", d.hp)
 	d.humanoid.Health = d.hp
 	d.model:SetAttribute("HurtAt", workspace:GetServerTimeNow())
+	if d.hp > 0 and os.clock() >= (d.hurtVoiceAt or 0) then -- a grunt, not one per pellet
+		d.hurtVoiceAt = os.clock() + 0.6
+		voice(d, Sfx.ZOMBIE_HURT, 0.9)
+	end
 	if player and player.Parent == Players then
 		local credit = d.credit[player] or { damage = 0, at = 0 }
 		credit.damage += actual; credit.at = os.clock(); d.credit[player] = credit
@@ -321,6 +336,9 @@ function Monsters.damage(part, damage, direction, player)
 		state(d, "Stunned", 1.05)
 	end
 	return true
+end
+function Monsters.isMonster(part)
+	return folder ~= nil and part ~= nil and actorOf(part) ~= nil
 end
 function Monsters.blast(position, radius, damage, player)
 	for _, d in actors do
@@ -456,6 +474,7 @@ local function think(d, now)
 		d.nextAttack = now + d.def.windup + d.def.recovery + 1
 		d.moving = 0
 		state(d, "Windup", d.def.windup)
+		voice(d, Sfx.ZOMBIE_ATTACK)
 	else state(d, "Chase"); d.moving = 1 end
 end
 function Monsters.start(remotes, hurtPlayer)

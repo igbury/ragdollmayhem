@@ -124,6 +124,11 @@ local SFX = {
 	Kick = "111158906695255", -- assets/sfx/Kick.wav
 	Slam = "99067212893039", -- ground slam (R in the air) hitting the ground
 	Run = "112506453896973", -- assets/sfx/Run.wav, looped while sprinting on the ground or wall running
+	Walk = Sfx.WALK_LOOP, -- looped while walking (not sprinting) on the ground
+	Land = Sfx.LAND_SOFT, -- feet back on the ground after a fall
+	LandHard = Sfx.LAND_HARD, -- ... after a long one
+	Dash = Sfx.DASH_WHOOSH,
+	BowDraw = Sfx.BOW_DRAW, -- the string pulled back (cut when it is let go)
 }
 local sounds: { [string]: Sound } = {} -- the body keeps facing the wall it flipped off until the flip is done
 -- the same animations and sounds, played here on the other players' characters as they report them
@@ -256,6 +261,18 @@ local weaponIndex = 1 -- Weapons[1] is fists
 local heldAbility = nil -- an Attacks entry taken from the hotbar: the hands glow its colour, a click casts it
 local lastWeaponUse = 0
 local weaponVisual = { sway = WeaponSway.new(), bob = WeaponBob.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
+do -- the comic set's own moves (WeaponAnims): clips for the body, loaded onto each character below
+	weaponVisual.lib = require(script:WaitForChild("WeaponAnims"))
+	weaponVisual.anims, weaponVisual.animTracks = {}, {}
+	for name in weaponVisual.lib.CLIPS do
+		local anim = Instance.new("Animation")
+		anim.Name = name
+		anim.AnimationId = keyframeId(weaponVisual.lib.sequence(name))
+		if anim.AnimationId ~= "" then
+			weaponVisual.anims[name] = anim
+		end
+	end
+end
 -- A first-person hand pressed flat on a wall (normal n) at `at`, fingers along `fingers`, the
 -- forearm bent back from the wrist toward the shoulder; blended in over hand / arm by w.
 -- x: 1 right hand, -1 left; wrist: the wrist point in hand space.
@@ -884,11 +901,44 @@ local HOLD = {
 	Molotov = { grip = CFrame.new(0, 0.38, 0), hand = Vector3.new(0, 0.1, 0) },
 	Pan = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
 	Katana = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	Crowbar = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	Sledgehammer = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	Spear = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0), scale = 0.9 },
+	Lightsaber = { grip = CFrame.new(0, 0.05, 0), hand = Vector3.new(0.1, 0.05, 0) },
+	-- the comic set's guns (assets/weapons/comic_weapons.py): support = their front grip / under the barrel
+	Chainsaw = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.6, -0.62) },
+	Taser = { grip = CFrame.new(0, -0.08, 0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1) },
+	Frostgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.2, -0.95) },
+	Boilgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.25, -0.9) },
+	Flamethrower = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.05, -1.18) },
+	Minigun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0, -0.88), scale = 0.85 },
+	Harpoon = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.18, -1.2) },
+	-- held in the fist (thrown / placed)
+	Lasso = { grip = CFrame.new(0, 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
+	TNT = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
+	C4 = { grip = CFrame.new(0, 0.38, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 }, -- on the palm, not in the fist
+	Landmine = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.7 },
 	Shotgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.2, -1.3) },
 	Sniper = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.5), support = Vector3.new(0, 0.15, -1.3) },
 	Rocket = { grip = CFrame.new(0, -0.2, 0), hand = Vector3.new(-0.1, 0.35, 0.4), support = Vector3.new(0, 0, -0.85) },
 	Tomato = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 }
+do -- the minigun's barrels spin while the trigger is held, run up and wind down (WeaponMeshes.pose)
+	local speed, angle = 0, 0
+	RunService.RenderStepped:Connect(function(dt)
+		local firing = punching and Weapons[weaponIndex].id == "Minigun"
+		speed += ((firing and 30 or 0) - speed) * math.min(1, dt * (firing and 2.5 or 1.5))
+		if speed < 0.05 then
+			return
+		end
+		angle = (angle + speed * dt) % (math.pi * 2)
+		local c = WeaponMeshes.pieceCentre("Minigun", "Barrels")
+		if c then -- round the barrels' own axis (mesh Z, through their centre)
+			WeaponMeshes.pose("Minigun", "Barrels", CFrame.new(c) * CFrame.Angles(0, 0, angle) * CFrame.new(-c))
+		end
+	end)
+end
+
 -- Only the weapon in hand gets its mesh (a client may keep just 8 EditableMeshes alive); false =
 -- still building or failed, the blocks show meanwhile.
 local viewMeshes = {} -- [weaponId] = MeshPart | false
@@ -930,6 +980,16 @@ Fx.muzzle = function(id: string): Vector3?
 		return nil
 	end
 	return mesh.CFrame * Vector3.new((lo.X + hi.X) / 2, lo.Y + (hi.Y - lo.Y) * 0.7, lo.Z) -- barrel height, front end
+end
+
+-- A point of the weapon we hold (its mesh space, scaled as held) in the world this frame, first-person
+-- viewmodel or the body's: the crowbar's claw carries a torn-off arm there (Fx "Hang").
+Fx.weaponPoint = function(id: string, point: Vector3): CFrame?
+	local mesh = if isFirstPerson() then viewMeshes[id] else bodyWeapon.id == id and bodyWeapon.part
+	if not mesh then
+		return nil
+	end
+	return mesh.CFrame * CFrame.new(point * (HOLD[id] and HOLD[id].scale or 1))
 end
 
 -- Thrown grenades / molotovs are plain server parts; dress them in the same meshes locally.
@@ -1060,10 +1120,34 @@ local function useWeapon(weapon, swing: Vector3?)
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)
+	if weapon.spinUp then -- the minigun: the server fires only once the barrels have spun up; no bang before
+		if now - (weaponVisual.spinLast or 0) > 0.3 then
+			weaponVisual.spinSince = now
+		end
+		weaponVisual.spinLast = now
+		if now - weaponVisual.spinSince < weapon.spinUp then
+			return
+		end
+	end
+	-- the comic set's own moves (WeaponAnims): the body's clip, the viewmodel's timer; a gun fired from
+	-- the hip in third person comes up into the aim pose for a moment
+	local lib = weaponVisual.lib
+	local clipName = aimed > 0.95 and lib.USE_AIMED[weapon.id] or lib.USE[weapon.id]
+	local clip = clipName and weaponVisual.animTracks[clipName]
+	if clip then
+		clip:Play(0.05)
+	end
+	weaponVisual.useAt, weaponVisual.useId, weaponVisual.useAimed = now, weapon.id, aimed > 0.95
+	if weapon.kind == "gun" and not aiming then
+		weaponVisual.hipAimUntil = now + (weapon.auto and 0.4 or 0.8)
+	end
 	weaponVisual.swing = swing
 	-- our own sounds now, not a round trip later (the server leaves us out of these)
 	local sounds = Sfx.WEAPON[weapon.id] or {}
-	if sounds.fire then
+	-- the fast auto weapons (flamethrower, chainsaw) play their clip once every Sfx.HUSH s, as the server does
+	local hush = Sfx.HUSH[weapon.id]
+	if sounds.fire and (not hush or now - (weaponVisual.fireSoundAt or 0) >= hush) then
+		weaponVisual.fireSoundAt = now
 		Sfx.playLocal(sounds.fire, head.Position)
 	end
 	if weapon.kind == "melee" then -- the server's swing ray, guessed here; ponytail: a dodged swing still rings as a hit for us
@@ -1108,7 +1192,101 @@ end
 local toolbox
 
 -- Hotbar (bottom centre) + weapon wheel (hold Q); 1-5 / Q tap / F / L1 R1 / the mouse wheel step through.
-local barApi = {
+-- Studio only: a BindableFunction "WeaponTest" on the player for MCP playtests (another VM can call it):
+-- ("select", id) takes a weapon in hand as the bar does, ("use", swing?) uses it as a click would,
+-- ("view", "first" | "third") switches the camera, ("aim", on) holds / lets go of right mouse.
+local barApi
+if RunService:IsStudio() then
+	local test = Instance.new("BindableFunction")
+	test.Name = "WeaponTest"
+	test.OnInvoke = function(cmd: string, arg: any): any
+		if cmd == "select" then
+			for i, w in Weapons do
+				if w.id == arg then
+					barApi.set(i)
+					return true
+				end
+			end
+			return false
+		elseif cmd == "use" then
+			useWeapon(Weapons[weaponIndex], arg)
+			return Weapons[weaponIndex].id
+		elseif cmd == "view" then
+			player.CameraMode = if arg == "first" then Enum.CameraMode.LockFirstPerson else Enum.CameraMode.Classic
+			if arg ~= "first" then
+				player.CameraMaxZoomDistance, player.CameraMinZoomDistance = THIRD_PERSON_DIST, THIRD_PERSON_DIST
+			else
+				player.CameraMinZoomDistance = 0.5
+			end
+			return arg
+		elseif cmd == "aim" then
+			aiming = arg == true
+			return aiming
+		elseif cmd == "hold" then -- the trigger held (auto weapons, the minigun's spin, the chainsaw)
+			punching = arg == true
+			return punching
+		elseif cmd == "hangTest" then -- (seconds): a dummy's arm copied onto our crowbar's claw, as after a rip
+			local src -- a dummy streamed in whole (a far one may have no arms here yet)
+			for _, m in dummyFolder:GetChildren() do
+				if m:FindFirstChild("LeftUpperArm") and m:FindFirstChild("LeftLowerArm") and m:FindFirstChild("LeftHand") then
+					src = m
+					break
+				end
+			end
+			local gib = Instance.new("Model")
+			for _, name in { "LeftUpperArm", "LeftLowerArm", "LeftHand" } do
+				local p = src and src:FindFirstChild(name)
+				if p then
+					local c = p:Clone()
+					c.Anchored, c.CanCollide = true, false
+					c.Parent = gib
+				end
+			end
+			local arm = gib:FindFirstChild("LeftUpperArm") :: BasePart?
+			if not arm then
+				return false
+			end
+			gib.Parent = workspace
+			local dur = arg or 6
+			Fx.hookAt = os.clock() - 3.05 -- the claw just tore it free: held up (both views)
+			weaponVisual.hookSeen = Fx.hookAt
+			local rip = weaponVisual.animTracks.Rip_Crowbar
+			if rip then
+				rip:Play(0)
+				rip.TimePosition = 3.4
+				rip:AdjustSpeed(0)
+				task.delay(dur, rip.Stop, rip, 0.2)
+			end
+			Fx.play("Hang", player.Character, gib, arm, dur)
+			task.delay(dur + 0.2, gib.Destroy, gib)
+			return true
+		elseif cmd == "face" then -- (Vector3 | nil): the third-person body faces this way, not the camera's
+			weaponVisual.testFace = arg
+			return arg
+		elseif cmd == "freeze" then -- (u 0..1 | nil): the last use held still at that point, both views
+			weaponVisual.freezeU = arg
+			local lib, id = weaponVisual.lib, Weapons[weaponIndex].id
+			local name = weaponVisual.useAimed and lib.USE_AIMED[id] or lib.USE[id]
+			local track = name and weaponVisual.animTracks[name]
+			if track then
+				if arg then
+					if not track.IsPlaying then
+						track:Play(0)
+					end
+					track.TimePosition = arg * track.Length
+					track:AdjustSpeed(0)
+				else
+					track:AdjustSpeed(1)
+				end
+			end
+			weaponVisual.hipAimUntil = if arg and Weapons[weaponIndex].kind == "gun" then math.huge else 0
+			return name
+		end
+		return nil
+	end
+	test.Parent = player
+end
+barApi = {
 	get = function()
 		return weaponIndex
 	end,
@@ -1530,6 +1708,7 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		if weapon.kind == "bow" then
 			weaponVisual.bowDrawAt = os.clock()
 			if player.Character then player.Character:SetAttribute("LocalBowDrawAt", workspace:GetServerTimeNow()) end
+			if sounds.BowDraw then sounds.BowDraw:Play() end
 			actionRemote:FireServer("bowDraw")
 			return
 		end
@@ -1625,6 +1804,7 @@ UserInputService.InputEnded:Connect(function(input)
 		if weaponVisual.bowDrawAt then
 			local elapsed = os.clock() - weaponVisual.bowDrawAt
 			weaponVisual.bowDrawAt = nil
+			if sounds.BowDraw then sounds.BowDraw:Stop() end
 			if player.Character then player.Character:SetAttribute("LocalBowDrawAt", nil) end
 			if Weapons[weaponIndex].kind == "bow" and not Menu.active and elapsed >= 0.1 then useWeapon(Weapons[weaponIndex])
 			else actionRemote:FireServer("bowCancel") end
@@ -1710,13 +1890,23 @@ local function onCharacter(char: Model)
 	for name, id in SFX do
 		local sound = Instance.new("Sound")
 		sound.Name = name .. "Sfx"
-		sound.SoundId = id ~= "" and "rbxassetid://" .. id or ""
-		sound.Looped = name == "Run"
-		sound.Volume = name == "Run" and 0.4 or 0.7
+		sound.SoundId = if id and id ~= "" then "rbxassetid://" .. id else ""
+		sound.Looped = name == "Run" or name == "Walk"
+		sound.Volume = if name == "Walk" then 0.3 elseif name == "Run" then 0.4 else 0.7
 		Sfx.prepare(sound)
 		sound.Parent = root
 		sounds[name] = sound
 	end
+	-- Roblox's own footsteps and landing would double ours (Walk, Land): muted on this character
+	local function muteDefault(s: Instance)
+		if s:IsA("Sound") and (s.Name == "Running" or s.Name == "Landing") then
+			s.Volume = 0
+		end
+	end
+	for _, s in root:GetChildren() do
+		muteDefault(s)
+	end
+	root.ChildAdded:Connect(muteDefault)
 	sprintTrack = humanoid:WaitForChild("Animator"):LoadAnimation(sprintAnim)
 	sprintTrack.Priority = Enum.AnimationPriority.Movement -- over the default run (Core)
 	sprintTrack.Looped = true
@@ -1756,6 +1946,9 @@ local function onCharacter(char: Model)
 			track.Priority = Enum.AnimationPriority.Action4 -- the whole body, over everything
 		end
 		dragTracks[kind] = track
+	end
+	for name, anim in weaponVisual.anims do -- WeaponAnims: a use plays once, a hold loops
+		weaponVisual.animTracks[name] = humanoid.Animator:LoadAnimation(anim)
 	end
 	flipTrack = humanoid.Animator:LoadAnimation(flipAnim)
 	flipTrack.Priority = Enum.AnimationPriority.Action4
@@ -2189,6 +2382,12 @@ local function updateLanding(humanoid: Humanoid, root: BasePart, able: boolean)
 		end
 		return
 	end
+	if airPeak and fallSpeed > 18 then -- feet down: a soft step, or a heavy one after a long drop
+		local s = if fallSpeed > 55 then sounds.LandHard else sounds.Land
+		if s then
+			s:Play()
+		end
+	end
 	if airPeak and airPeak - y > ROLL_HEIGHT and able and not mv.crouchHeld then -- Ctrl held: slide out of it instead
 		local flat = root.CFrame.LookVector * XZ
 		startRoll(flat.Magnitude > 0.01 and flat.Unit or Vector3.zAxis, ROLL_SPEED)
@@ -2454,6 +2653,9 @@ function mv.dash()
 	flipUntil = math.max(flipUntil, now + 0.25) -- AutoRotate stays off for the burst
 	if dashTrack then
 		dashTrack:Play(0.03)
+	end
+	if sounds.Dash then
+		sounds.Dash:Play()
 	end
 	moveRemote:FireServer("shot", "dash")
 
@@ -2955,7 +3157,7 @@ RunService.RenderStepped:Connect(function(dt)
 	thirdWeapon = (out.kind ~= nil or heldAbility ~= nil) and not isFirstPerson() and not holding and not Menu.active
 		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
-		local look = camera.CFrame.LookVector * Vector3.new(1, 0, 1)
+		local look = (weaponVisual.testFace or camera.CFrame.LookVector) * Vector3.new(1, 0, 1) -- testFace: WeaponTest "face"
 		if look.Magnitude > 0.01 then
 			root.CFrame = CFrame.lookAlong(root.Position, look)
 		end
@@ -2966,8 +3168,29 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	thirdAim += (((thirdWeapon and aiming) and 1 or 0) - thirdAim) * math.min(dt * 12, 1)
 	Fx.cameraOffset = SHOULDER * (thirdWeapon and 0.5 + 0.5 * thirdAim or 0)
-	local pose = thirdWeapon and aiming and (out.kind == "gun" and "gun" or out.kind == "rocket" and "rocket"
+	-- a gun fired from the hip comes up into the aim pose for a moment (weaponVisual.hipAimUntil, useWeapon)
+	weaponVisual.hipAim = thirdWeapon and out.kind == "gun" and os.clock() < (weaponVisual.hipAimUntil or 0)
+	local pose = thirdWeapon and (aiming or weaponVisual.hipAim) and (out.kind == "gun" and "gun" or out.kind == "rocket" and "rocket"
 		or (out.kind == "knife" or out.kind == "thrown") and "throw") or nil
+	-- our crowbar's claw went into a shoulder (Fx.hookAt): the body heaves on it, then yanks the arm off
+	if Fx.hookAt and Fx.hookAt ~= weaponVisual.hookSeen then
+		weaponVisual.hookSeen = Fx.hookAt
+		local rip = weaponVisual.animTracks.Rip_Crowbar
+		if rip then
+			rip:Play(0.05)
+		end
+	end
+	-- the comic set's two-handed weapons are carried at the hip in both hands (WeaponAnims.HOLD)
+	local holdClip = thirdWeapon and out.id and weaponVisual.lib.HOLD[out.id] or nil
+	for name, track in weaponVisual.animTracks do
+		if weaponVisual.lib.CLIPS[name][1] and (name == holdClip) ~= track.IsPlaying then
+			if name == holdClip then
+				track:Play(0.2)
+			else
+				track:Stop(0.2)
+			end
+		end
+	end
 	for kind, track in aimTracks do
 		if (kind == pose) ~= track.IsPlaying then
 			if kind == pose then
@@ -3007,6 +3230,15 @@ RunService.RenderStepped:Connect(function(dt)
 			sounds.Run:Play()
 		else
 			sounds.Run:Stop()
+		end
+	end
+	local walking = humanoid ~= nil and root ~= nil and not footsteps and humanoid.FloorMaterial ~= Enum.Material.Air
+		and humanoid.MoveDirection.Magnitude > 0.1 and (root.AssemblyLinearVelocity * XZ).Magnitude > 3
+	if sounds.Walk and walking ~= sounds.Walk.IsPlaying then
+		if walking then
+			sounds.Walk:Play()
+		else
+			sounds.Walk:Stop()
 		end
 	end
 	if sprintTrack and running and not sprintTrack.IsPlaying then
@@ -3123,13 +3355,28 @@ RunService.RenderStepped:Connect(function(dt)
 	local jumpT = weaponVisual.jumpT or 0
 	weaponVisual.jumpT = jumpT + (rise - jumpT) * math.min(dt * (rise > jumpT and 25 or 5), 1) -- snap up, settle slowly
 	for side, h in hands do
-		h.t = math.min(h.t + dt / (h.heavy and 0.34 or 0.2), 1)
+		local viewTime = side == "right" and weaponVisual.lib.VIEW_TIME[weapon.id] or nil -- WeaponAnims: its own pace
+		h.t = math.min(h.t + dt / (h.heavy and 0.34 or viewTime or 0.2), 1)
+		if side == "right" and weaponVisual.freezeU then -- WeaponTest "freeze" (Studio): held at that point
+			h.t = weaponVisual.freezeU
+		end
 		local ext = math.sin(h.t * math.pi)
+		-- WeaponAnims.view: the comic set's own first-person moves; with a wrist angle it replaces the
+		-- generic punch-swing for this hand (the hand goes where it says, not out with the punch)
+		local special = side == "right" and hold and not dragView and weaponVisual.lib.view(weapon.id,
+			weaponVisual.freezeU or weaponVisual.useId == weapon.id and (now - weaponVisual.useAt) / (viewTime or 0.2) or 1,
+			punching, now, Fx.hookAt and now - Fx.hookAt or nil) or nil
+		if special and special.tilt then
+			ext = 0
+		end
 		local boxing = weapon.id == "BoxingGloves" and not dragView
 		-- the block holds the gloves up, except the hand throwing the heavy left out of it
 		local guard = guardT * (h.heavy and 1 - ext or 1)
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
 		local move = (side == "right" and hold) and hold.hand or Vector3.zero
+		if special and special.move then
+			move += special.move
+		end
 		if dragView and side == "left" then
 			-- the free arm pumps with your stride, as in any run
 			local pump = math.sin(os.clock() * (8 + 6 * sprint)) * moving
@@ -3263,6 +3510,9 @@ RunService.RenderStepped:Connect(function(dt)
 			elseif cutting then
 				yaw, roll = math.rad(-weaponVisual.slashSide * 65 * ext), math.rad(weaponVisual.slashSide * 45 * ext)
 			end
+			if special and special.tilt then
+				tilt, yaw, roll = special.tilt, math.rad(special.yaw or 0), math.rad(special.roll or 0)
+			end
 			if weapon.kind == "knife" and knifeT > 0 then -- cocked: the wrist tips the upturned knife's handle at the crosshair
 				tilt += (KNIFE_TILT - tilt) * smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1))
 			end
@@ -3346,8 +3596,14 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	-- weapon in the right hand
-	local thrown = weapon.kind == "thrown" or (weapon.kind == "knife" and weaponVisual.lastAction ~= "KnifeSlash")
-	local inHand = show and weaponCF and not (thrown and os.clock() - lastWeaponUse < weapon.cd) -- it left the hand
+	-- a thrown one has left the hand until its cooldown is over; the lasso keeps its coil, C4's detonator
+	-- (aim + click) throws nothing, the landmine is in the hand until it has been put down
+	local thrown = (weapon.kind == "thrown" and not weaponVisual.lib.KEEP[weapon.id]
+		and not (weapon.id == "C4" and weaponVisual.useAimed and weaponVisual.useId == "C4"))
+		or (weapon.kind == "knife" and weaponVisual.lastAction ~= "KnifeSlash")
+	local since = os.clock() - lastWeaponUse
+	weaponVisual.gone = thrown and since < weapon.cd and since >= (weapon.id == "Landmine" and 0.3 or 0)
+	local inHand = show and weaponCF and not weaponVisual.gone -- it left the hand
 	for _, v in viewParts do
 		local active = v.id == weapon.id and inHand and not viewMeshes[v.id]
 		v.part.Transparency = active and v.transparency or 1
@@ -3393,7 +3649,7 @@ RunService.RenderStepped:Connect(function(dt)
 	-- (none while a dummy is held with F or being punted: the right hand is busy with it)
 	local bodyId = not isFirstPerson() and humanoid and humanoid.Health > 0 and HOLD[weapon.id]
 		and not (holding and holding.drag) and os.clock() >= puntUntil
-		and not (thrown and os.clock() - lastWeaponUse < weapon.cd) and weapon.id or nil
+		and not weaponVisual.gone and weapon.id or nil
 	if bodyWeapon.id ~= bodyId then
 		if bodyWeapon.part then
 			bodyWeapon.part:Destroy()
@@ -3420,12 +3676,18 @@ RunService.RenderStepped:Connect(function(dt)
 		local grip = rightHand:FindFirstChild("RightGripAttachment") :: Attachment?
 		local meshCF = rightHand.CFrame * (grip and grip.CFrame or DEFAULT_GRIP) * BODY_GRIP * HOLD[bodyWeapon.id].grip
 		local leftHand = char:FindFirstChild("LeftHand") :: BasePart?
-		if thirdAim > 0.5 and leftHand and (weapon.kind == "gun" or weapon.kind == "rocket") then
+		-- aimed (or just fired from the hip), or one of the two-handed ones carried at the hip
+		-- (WeaponAnims.HOLD): held between the hands, pointing where the camera looks
+		local twoHands = weaponVisual.hipAim or weaponVisual.lib.HOLD[weapon.id] ~= nil
+		if (thirdAim > 0.5 or twoHands) and leftHand and (weapon.kind == "gun" or weapon.kind == "rocket" or twoHands) then
 			-- aimed, both hands on it: the gun sits halfway between the hands (the middle of its
 			-- grip-to-support span there) and points straight at the crosshair
 			local leftGrip = leftHand:FindFirstChild("LeftGripAttachment") :: Attachment?
 			local mid = ((grip and grip.WorldPosition or rightHand.Position) + (leftGrip and leftGrip.WorldPosition or leftHand.Position)) / 2
-			local rot = CFrame.lookAlong(Vector3.zero, camera.CFrame.LookVector) * HOLD[bodyWeapon.id].grip.Rotation
+			-- aimed: at the crosshair; carried at the hip: level, the way the body faces
+			local hipCarry = thirdAim <= 0.5 and not weaponVisual.hipAim and root ~= nil
+			local ahead = if hipCarry then root.CFrame.LookVector * Vector3.new(1, 0, 1) else camera.CFrame.LookVector
+			local rot = CFrame.lookAlong(Vector3.zero, ahead.Magnitude > 0.01 and ahead or camera.CFrame.LookVector) * HOLD[bodyWeapon.id].grip.Rotation
 			meshCF = rot + mid - rot:VectorToWorldSpace((HOLD[bodyWeapon.id].support or Vector3.zero) / 2)
 		end
 		bodyWeapon.part:PivotTo(meshCF)

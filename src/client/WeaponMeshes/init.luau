@@ -6,16 +6,17 @@
 -- blank when its EditableMesh is destroyed. So:
 --  * create(id): one EditableMesh per weapon, shared by every part made from it, freed once the
 --    last of those parts is destroyed (callers must :Destroy() what they stop using);
---  * icon(id): every weapon in ONE EditableMesh (an atlas, weapons stacked SPACING apart on Y),
---    for ViewportFrames, where the camera only ever frames one of them.
+--  * icon(id): every weapon in a few atlas EditableMeshes (weapons stacked SPACING apart on Y,
+--    ATLAS_CAP triangles per atlas), for ViewportFrames, where the camera only frames one of them.
 local AssetService = game:GetService("AssetService")
 
 local WeaponMeshes = {}
 
 local SPACING = 12
+local GLOW = { Lightsaber = Color3.fromRGB(110, 200, 255) } -- weapons that give off light (create)
 
 -- noOutline: skip the comic outline shell (the pure black faces), which doubles every weapon's
--- triangles; the icon atlas holds all weapons in one mesh and must stay under the 20k cap.
+-- triangles; each icon atlas must stay under the 20k cap.
 local function fill(mesh: EditableMesh, data, offset: Vector3, noOutline: boolean?)
 	local v, n, c = {}, {}, {}
 	local black = {}
@@ -132,6 +133,11 @@ function WeaponMeshes.create(id: string): MeshPart?
 		return nil
 	end
 	local clone = entry.part:Clone()
+	if GLOW[id] then -- the lightsaber's blade lights up whatever is round it
+		local light = Instance.new("PointLight")
+		light.Color, light.Range, light.Brightness = GLOW[id], 9, 2
+		light.Parent = clone
+	end
 	entry.users += 1
 	clone.Destroying:Once(function()
 		entry.users -= 1
@@ -169,7 +175,26 @@ function WeaponMeshes.pose(id: string, name: string, off: CFrame)
 	end
 end
 
-local atlas -- { part, at = { [id] = { centre, size } } } | true (being built) | false (failed)
+-- The icon atlases: { parts = { MeshPart }, at = { [id] = { part = index, centre, size } } } | true
+-- (being built) | false (failed). Each atlas mesh is filled up to ATLAS_CAP triangles (an EditableMesh
+-- holds 20k), outline shells left out, then the next one starts.
+local ATLAS_CAP = 19000
+local atlas
+
+-- The triangles fill() adds with noOutline (the pure black ones are the outline shell).
+local function visibleTris(data): number
+	local black = {}
+	for i = 1, #data.c, 3 do
+		black[(i + 2) // 3] = data.c[i] == 0 and data.c[i + 1] == 0 and data.c[i + 2] == 0
+	end
+	local n = 0
+	for i = 7, #data.f, 7 do
+		if not black[data.f[i]] then
+			n += 1
+		end
+	end
+	return n
+end
 
 -- A MeshPart for a ViewportFrame, placed so the weapon's bounding-box centre is at the origin,
 -- plus that box's size; the rest of the atlas sits SPACING studs and more above / below it. Yields.
@@ -180,19 +205,30 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 	if atlas == nil then
 		atlas = true
 		local ok, result = pcall(function()
-			local mesh = AssetService:CreateEditableMesh()
-			local at = {}
-			for k, data in script:GetChildren() do
+			local parts, at = {}, {}
+			local mesh, used, k = nil, 0, 0
+			for _, data in script:GetChildren() do
 				if data.Name == "BoxingGloveLeft" or data.Name == "Baton" then
-					continue -- never an icon (the glove's mirror, the cops' baton); keeps the atlas under the cap
+					continue -- never an icon (the glove's mirror, the cops' baton)
 				end
 				local d = require(data)
+				local tris = visibleTris(d)
+				if mesh and used + tris > ATLAS_CAP then -- full: this one starts the next atlas
+					table.insert(parts, meshPart(mesh, "WeaponAtlas"))
+					mesh, used, k = nil, 0, 0
+				end
+				mesh = mesh or AssetService:CreateEditableMesh()
+				k += 1
+				used += tris
 				local offset = Vector3.new(0, k * SPACING, 0)
 				local lo, hi = bounds(d)
 				fill(mesh, d, offset, true)
-				at[data.Name] = { centre = offset + (lo + hi) / 2, size = hi - lo }
+				at[data.Name] = { part = #parts + 1, centre = offset + (lo + hi) / 2, size = hi - lo }
 			end
-			return { part = meshPart(mesh, "WeaponAtlas"), at = at }
+			if mesh then
+				table.insert(parts, meshPart(mesh, "WeaponAtlas"))
+			end
+			return { parts = parts, at = at }
 		end)
 		if not ok then
 			warn(`WeaponMeshes: atlas failed, icons use blocks: {result}`)
@@ -203,7 +239,7 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 	if not spot then
 		return nil
 	end
-	local part = atlas.part:Clone()
+	local part = atlas.parts[spot.part]:Clone()
 	part.Name = id
 	part.CFrame = CFrame.new(-spot.centre)
 	return part, spot.size
