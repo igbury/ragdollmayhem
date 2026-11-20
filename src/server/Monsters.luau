@@ -1,8 +1,8 @@
--- Server-owned encounters. Reuses the game's weapon rays, blast path and player ragdoll callback.
+-- Server-owned bosses. They never fight players and cannot be killed: let out of their cage they hunt
+-- the dummies (init.server.luau hands over `prey`), crush them with their attack and eat them.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local Debris = game:GetService("Debris")
 local TweenService = game:GetService("TweenService")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
@@ -14,7 +14,7 @@ local function voice(d, id, volume)
 	Sfx.play({ id, 0.6 / math.max(d.def.scale or 1, 1) ^ 0.3, volume or 1 }, d.root.Position)
 end
 local actors = {}
-local folder, events, knockPlayer
+local folder, events, prey
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include
 -- Blender cages (assets/myth): invisible blocking volumes in cage space (x, y, z = Roblox axes, the
@@ -261,9 +261,7 @@ local function lineClear(d, from, to)
 	local offset = to - from
 	if offset.Magnitude < 0.01 then return true end
 	local result = workspace:Raycast(from, offset, d.ray)
-	local character = result and result.Instance:FindFirstAncestorOfClass("Model")
 	return not result or (result.Position - to).Magnitude < 4
-		or (character ~= nil and Players:GetPlayerFromCharacter(character) ~= nil)
 end
 local function playerRoot(player)
 	local c = player.Character
@@ -278,64 +276,18 @@ local function release(d)
 	openGate(d, true)
 	state(d, "Idle")
 end
-local function reward(d)
-	local now = os.clock()
-	for player, credit in d.credit do
-		if player.Parent == Players and now - credit.at < 30 and credit.damage >= d.def.hp * 0.05 then
-			local xp = (player:GetAttribute("MythXP") or 0) + d.def.reward
-			local kills = (player:GetAttribute("MonsterKills") or 0) + 1
-			player:SetAttribute("MythXP", xp)
-			player:SetAttribute("MonsterKills", kills)
-			events:FireClient(player, "Reward", d.def.name, d.def.reward, kills)
-		end
-	end
-	table.clear(d.credit)
-end
-local function die(d, direction)
-	if d.state == "Dead" then return end
-	voice(d, Sfx.ZOMBIE_DEATH)
-	state(d, "Dead", 20)
-	d.model:SetAttribute("HP", 0)
-	d.humanoid.Health = 0
-	d.root.Anchored = false
-	Ragdoll.set(d.model, true)
-	for _, p in d.model:GetDescendants() do
-		if p:IsA("BasePart") and p:CanSetNetworkOwnership() then p:SetNetworkOwner(nil) end
-	end
-	d.root.AssemblyLinearVelocity = flat(direction) * 16 + Vector3.yAxis * 7
-	reward(d)
-	actors[d.model] = nil
-	Debris:AddItem(d.model, 9)
-	task.delay(20, function()
-		if folder and folder.Parent then Monsters.spawn(d.kind, d.home, d.cage) end
-	end)
-end
-function Monsters.damage(part, damage, direction, player)
+-- A weapon hit on a boss: it flinches and lets itself out, nothing more. True when `part` is a boss's,
+-- so the shot stops there.
+function Monsters.damage(part, damage, _direction, _player)
 	if not folder or not part then return false end
 	local d = actorOf(part)
 	if not d then return false end
-	if d.state == "Dead" or damage <= 0 then return true end
+	if damage <= 0 then return true end
 	release(d)
-	local weak = part.Name == d.def.weak or part:GetAttribute("WeakPoint") == true
-	local multiplier = weak and 2.5 or d.state == "Recovery" and 1.5 or 1
-	local actual = math.min(d.hp, math.clamp(damage, 0, 350) * multiplier)
-	d.hp -= actual
-	d.model:SetAttribute("HP", d.hp)
-	d.humanoid.Health = d.hp
 	d.model:SetAttribute("HurtAt", workspace:GetServerTimeNow())
-	if d.hp > 0 and os.clock() >= (d.hurtVoiceAt or 0) then -- a grunt, not one per pellet
+	if os.clock() >= (d.hurtVoiceAt or 0) then -- a grunt, not one per pellet
 		d.hurtVoiceAt = os.clock() + 0.6
 		voice(d, Sfx.ZOMBIE_HURT, 0.9)
-	end
-	if player and player.Parent == Players then
-		local credit = d.credit[player] or { damage = 0, at = 0 }
-		credit.damage += actual; credit.at = os.clock(); d.credit[player] = credit
-		events:FireClient(player, "Hit", part.Position, math.round(actual), weak)
-	end
-	if d.hp <= 0 then die(d, direction or Vector3.zAxis)
-	elseif weak and os.clock() >= d.stunReady then
-		d.stunReady = os.clock() + 3
-		state(d, "Stunned", 1.05)
 	end
 	return true
 end
@@ -383,9 +335,11 @@ function Monsters.spawn(kind, home, cage)
 	local ray = RaycastParams.new()
 	-- a Blender cage's walls and closed gate stop the boss; the old bar cage is ignored as before
 	local kit = cage:FindFirstChild("Kit")
-	ray.FilterDescendantsInstances = kit and { model, kit, cage:FindFirstChild("Gate"), cage:FindFirstChild("Floors"), cage:FindFirstChild("Challenge"), cage:FindFirstChild("Sign") } or { model, cage }
-	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart, humanoid = model:FindFirstChildOfClass("Humanoid"), hp = def.hp,
-		home = home, cage = cage, prompt = prompt, ray = ray, credit = {}, stunReady = 0, moving = 0, target = nil, lostAt = 0, nextAttack = 0 }
+	-- the dummies never block it: it walks through them to its meal
+	local dummies = workspace:FindFirstChild("Dummies")
+	ray.FilterDescendantsInstances = kit and { model, kit, cage:FindFirstChild("Gate"), cage:FindFirstChild("Floors"), cage:FindFirstChild("Challenge"), cage:FindFirstChild("Sign"), dummies } or { model, cage, dummies }
+	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart,
+		home = home, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0 }
 	actors[model] = d
 	d.joints = {}
 	for _, obj in model:GetDescendants() do if obj:IsA("Motor6D") then d.joints[obj.Name] = obj end end
@@ -395,19 +349,19 @@ function Monsters.spawn(kind, home, cage)
 		local r = playerRoot(player)
 		if r and (r.Position - button.Position).Magnitude <= 14 and player:GetAttribute("Map") == "ARENA" then release(d) end
 	end)
-	model.Destroying:Connect(function() actors[model] = nil; connection:Disconnect(); table.clear(d.credit) end)
+	model.Destroying:Connect(function() actors[model] = nil; connection:Disconnect() end)
 	return model
 end
+-- The nearest dummy it can see near its dungeon: (model, torso).
 local function findTarget(d)
-	local best, distance = nil, 48
-	for _, player in Players:GetPlayers() do
-		local r = playerRoot(player)
-		if r and player:GetAttribute("Map") == "ARENA" and (r.Position - d.home).Magnitude < 65 then
-			local gap = (r.Position - d.root.Position).Magnitude
-			if gap < distance and lineClear(d, d.root.Position + Vector3.yAxis * 6 * d.def.scale, r.Position) then best, distance = player, gap end
-		end
-	end
-	return best
+	local best, torso, distance = nil, nil, 48
+	local eye = d.root.Position + Vector3.yAxis * 6 * d.def.scale
+	prey.each(function(model, part)
+		if (part.Position - d.home).Magnitude >= 65 then return end
+		local gap = (part.Position - d.root.Position).Magnitude
+		if gap < distance and lineClear(d, eye, part.Position) then best, torso, distance = model, part, gap end
+	end)
+	return best, torso
 end
 local function face(d, position)
 	local toward = (position - d.root.Position) * XZ
@@ -425,23 +379,54 @@ local function move(d, direction, speed, dt)
 	d.root.CFrame += step
 	return true
 end
+local CRUSH = 6 -- blow power on a dummy (init.server hit()): enough to break the bone it lands on
 local function strike(d)
 	local center = d.impact
-	for _, player in Players:GetPlayers() do
-		local r, h = playerRoot(player)
-		if not r or player:GetAttribute("Map") ~= "ARENA" then continue end
-		local horizontal = ((r.Position - center) * XZ).Magnitude
-		local height = r.Position.Y - center.Y
-		-- Jumping clears a cyclops shockwave; hammer and charge must be sidestepped.
-		if horizontal <= d.def.radius and math.abs(height) < (d.kind == "Cyclops" and 5.5 or 14)
-			and lineClear(d, center + Vector3.yAxis * 3, r.Position) then
-			knockPlayer(player, h, flat(r.Position - center) * 42 + Vector3.yAxis * 24, d.def.damage, 0.8)
+	Sfx.play({ Sfx.SLEDGEHAMMER_SLAM, 0.7, 1 }, center)
+	prey.each(function(model, torso)
+		if ((torso.Position - center) * XZ).Magnitude <= d.def.radius and math.abs(torso.Position.Y - center.Y) < 14 then
+			prey.crush(model, center, CRUSH)
 		end
-	end
+	end)
 	events:FireAllClients("Impact", center, d.def.radius, d.def.accent)
 end
+-- The dummy in its hands: lifted to the mouth (welded to the boss), bitten limb by limb, then gone.
+local EAT_TIME, BITE_EVERY = 3.2, 0.7
+local function drop(d)
+	if d.weld then d.weld:Destroy() end
+	d.meal, d.weld = nil, nil
+end
+local function startEating(d, model, torso)
+	if not prey.grab(model) then return false end
+	torso.CFrame = d.root.CFrame * CFrame.new(0, 4.6 * d.def.scale, -3.4 * d.def.scale) * CFrame.Angles(math.pi / 2, 0, 0)
+	local weld = Instance.new("WeldConstraint")
+	weld.Name, weld.Part0, weld.Part1, weld.Parent = "BossBite", d.root, torso, torso
+	d.meal, d.weld, d.nextBite = model, weld, os.clock() + 0.5
+	d.moving = 0
+	state(d, "Eat", EAT_TIME)
+	voice(d, Sfx.ZOMBIE_ATTACK)
+	return true
+end
+local function chew(d, now)
+	local model = d.meal
+	if not (model and model.Parent and d.weld and d.weld.Parent) or prey.held(model) then
+		drop(d) -- a player took it off it, or it is gone
+		state(d, "Idle")
+		return
+	end
+	if now >= d.untilTime then
+		drop(d)
+		prey.eat(model)
+		voice(d, Sfx.ZOMBIE_DEATH, 0.7) -- a satisfied belch
+		state(d, "Recovery", d.def.recovery)
+	elseif os.clock() >= d.nextBite then
+		d.nextBite = os.clock() + BITE_EVERY
+		prey.bite(model, d.root.Position + Vector3.yAxis * 5 * d.def.scale)
+	end
+end
 local function think(d, now)
-	if d.state == "Caged" or d.state == "Dead" then return end
+	if d.state == "Caged" then return end
+	if d.state == "Eat" then chew(d, now); return end
 	if d.state == "Windup" and now >= d.untilTime then
 		if d.kind == "Minotaur" then
 			d.chargeDirection = flat(d.impact - d.root.Position)
@@ -452,15 +437,14 @@ local function think(d, now)
 			state(d, "Strike", 0.2)
 		end
 		return
-	elseif (d.state == "Strike" or d.state == "Charge" or d.state == "Stunned") and now >= d.untilTime then
+	elseif (d.state == "Strike" or d.state == "Charge") and now >= d.untilTime then
 		state(d, "Recovery", d.def.recovery)
 		return
 	elseif d.state == "Recovery" then
 		if now < d.untilTime then return end
 		state(d, "Idle")
-	elseif d.state == "Windup" or d.state == "Strike" or d.state == "Charge" or d.state == "Stunned" then return end
-	d.target = findTarget(d)
-	local r = d.target and playerRoot(d.target)
+	elseif d.state == "Windup" or d.state == "Strike" or d.state == "Charge" then return end
+	local target, r = findTarget(d)
 	if not r then
 		if (d.root.Position - d.home).Magnitude < 1 then state(d, "Idle"); d.moving = 0
 		else state(d, "Return"); face(d, route(d, d.home)) end
@@ -468,7 +452,9 @@ local function think(d, now)
 	end
 	local dist = ((r.Position - d.root.Position) * XZ).Magnitude
 	face(d, route(d, r.Position))
-	if dist < (d.kind == "Minotaur" and 28 or d.kind == "Talos" and 26 or 16) and now >= d.nextAttack then
+	if dist < 7 * d.def.scale + 3 and startEating(d, target, r) then return end
+	-- one on its feet gets the attack first; one already down it just walks over to and eats
+	if not target:GetAttribute("Ragdolled") and dist < (d.kind == "Minotaur" and 28 or d.kind == "Talos" and 26 or 16) and now >= d.nextAttack then
 		local at = d.kind == "Talos" and r.Position or d.root.Position + flat(r.Position - d.root.Position) * (d.kind == "Cyclops" and 6 or 25)
 		d.impact = Vector3.new(at.X, (groundAt(Vector3.new(at.X, d.root.Position.Y, at.Z), 2) or 0) + 0.08, at.Z)
 		d.model:SetAttribute("ImpactAt", d.impact)
@@ -479,9 +465,11 @@ local function think(d, now)
 		voice(d, Sfx.ZOMBIE_ATTACK)
 	else state(d, "Chase"); d.moving = 1 end
 end
-function Monsters.start(remotes, hurtPlayer)
+-- `api` (init.server.luau) works on the dummies: each(fn(model, torso)), crush(model, from, power),
+-- grab(model) -> ok, held(model), bite(model, from), eat(model).
+function Monsters.start(remotes, api)
 	if folder then return end
-	knockPlayer = hurtPlayer
+	prey = api
 	folder = Instance.new("Folder"); folder.Name = "Monsters"; folder.Parent = workspace
 	events = Instance.new("RemoteEvent"); events.Name = "MythFx"; events.Parent = remotes
 	local ground = Instance.new("Folder"); ground.Name = "MythYard"; ground.Parent = workspace
@@ -500,7 +488,7 @@ function Monsters.start(remotes, hurtPlayer)
 	local entrance = block(ground, "EntranceSign", Vector3.new(19, 5, 0.8), Vector3.new(-84, 5, -88), Color3.fromRGB(28, 30, 33))
 	entrance.CFrame *= CFrame.Angles(0, math.pi, 0)
 	entrance.CanCollide = false
-	plaque(entrance, "MYTH YARD\nCHOOSE A CHALLENGE  /  SHOOT THE WEAK POINT", Color3.fromRGB(240, 193, 82))
+	plaque(entrance, "MYTH YARD\nLET ONE OUT  /  FEED IT DUMMIES", Color3.fromRGB(240, 193, 82))
 	local kitRoot = ReplicatedStorage:FindFirstChild("MythKit")
 	for _, kind in { "Cyclops", "Minotaur", "Talos" } do
 		local def = Definitions[kind]
@@ -559,7 +547,7 @@ function Monsters.start(remotes, hurtPlayer)
 		end
 		local button = block(cage, "Challenge", Vector3.new(3, 2.5, 2.5), base + Vector3.new(0, 1.25, front), def.accent)
 		local p = Instance.new("ProximityPrompt")
-		p.ActionText, p.ObjectText = "Release / Fight", def.name .. "  +" .. def.reward .. " XP"
+		p.ActionText, p.ObjectText = "Release", def.name
 		p.KeyboardKeyCode, p.HoldDuration, p.MaxActivationDistance = Enum.KeyCode.Y, 0.4, 12
 		p.RequiresLineOfSight, p.Parent = false, button
 		local board
@@ -591,14 +579,13 @@ function Monsters.start(remotes, hurtPlayer)
 			if d.state == "Chase" or d.state == "Return" then
 				d.moving = move(d, d.root.CFrame.LookVector, d.def.speed, math.min(dt, 0.1)) and 1 or 0
 			elseif d.state == "Charge" then
-				if not move(d, d.chargeDirection, 42, math.min(dt, 0.1)) then state(d, "Stunned", 1.2) end
-				for _, player in Players:GetPlayers() do
-					local r, h = playerRoot(player)
-					if r and not d.chargeVictims[player] and (r.Position - d.root.Position).Magnitude < 8 then
-						d.chargeVictims[player] = true
-						knockPlayer(player, h, d.chargeDirection * 55 + Vector3.yAxis * 18, d.def.damage, 0.8)
+				if not move(d, d.chargeDirection, 42, math.min(dt, 0.1)) then state(d, "Recovery", d.def.recovery) end
+				prey.each(function(model, torso)
+					if not d.chargeVictims[model] and (torso.Position - d.root.Position).Magnitude < 8 * d.def.scale then
+						d.chargeVictims[model] = true
+						prey.crush(model, d.root.Position - d.chargeDirection * 3, CRUSH)
 					end
-				end
+				end)
 			end
 			if tickBrain then d.model:SetAttribute("Moving", d.moving) end
 			if tickPose then
@@ -608,6 +595,5 @@ function Monsters.start(remotes, hurtPlayer)
 		end
 		debug.profileend()
 	end)
-	Players.PlayerRemoving:Connect(function(player) for _, d in actors do d.credit[player] = nil end end)
 end
 return Monsters

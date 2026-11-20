@@ -119,15 +119,13 @@ function Rig.build(kind)
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RequiresNeck, humanoid.BreakJointsOnDeath, humanoid.EvaluateStateMachine = false, false, false
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
-	humanoid.MaxHealth, humanoid.Health, humanoid.Parent = def.hp, def.hp, m
+	humanoid.Parent = m
 	Instance.new("Animator", humanoid)
 	m.PrimaryPart = root
 	local kit = kitFor(kind)
 	if kit then dress(m, kit) end
 	m:ScaleTo(def.scale)
 	m:SetAttribute("MonsterKind", kind)
-	m:SetAttribute("HP", def.hp)
-	m:SetAttribute("MaxHP", def.hp)
 	return m
 end
 
@@ -140,7 +138,10 @@ function Rig.pose(joints, state, kind, elapsed, moving, phase, hurt, authoritati
 	elseif state == "Strike" then lift, bend = 0.65, 0.4
 	elseif state == "Recovery" then lift, bend = 0.65 * (1 - phase), 0.4 * (1 - phase)
 	elseif state == "Charge" then lift, bend = -0.8, 0.35
-	elseif state == "Stunned" then lift, bend = 0.5, 0.5 end
+	elseif state == "Eat" then -- both hands at the mouth, chewing
+		local chomp = math.sin(elapsed * 9)
+		lift, bend = -1.5 + chomp * 0.15, 0.25 + chomp * 0.12
+	end
 	for name, j in joints do
 		local x, z = 0, 0
 		if name == "Waist" then x = breath + bend - hurt * 0.14

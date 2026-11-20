@@ -5,7 +5,6 @@ local Debris = game:GetService("Debris")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
-local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
 local Presentation = {}
 local function label(parent, name, size, position, textSize)
 	local l = Instance.new("TextLabel")
@@ -25,31 +24,19 @@ function Presentation.start(gui, remotes, api)
 	container.Parent = gui
 	local boss = Instance.new("Frame")
 	boss.Name, boss.AnchorPoint, boss.Position = "Encounter", Vector2.new(0.5, 0), UDim2.new(0.5, 0, 0, 65)
-	boss.Size, boss.BackgroundColor3, boss.BackgroundTransparency = UDim2.new(0.62, 0, 0, 66), Color3.fromRGB(22, 24, 29), 0.1
+	boss.Size, boss.BackgroundColor3, boss.BackgroundTransparency = UDim2.new(0.62, 0, 0, 50), Color3.fromRGB(22, 24, 29), 0.1
 	boss.Visible, boss.Parent = false, container
-	local cap = Instance.new("UISizeConstraint"); cap.MaxSize = Vector2.new(520, 66); cap.Parent = boss
+	local cap = Instance.new("UISizeConstraint"); cap.MaxSize = Vector2.new(520, 50); cap.Parent = boss
 	round(boss, 9)
 	local title = label(boss, "Title", UDim2.new(1, -16, 0, 24), UDim2.fromOffset(8, 3), 15)
-	local hint = label(boss, "Hint", UDim2.new(1, -16, 0, 19), UDim2.fromOffset(8, 40), 11)
+	local hint = label(boss, "Hint", UDim2.new(1, -16, 0, 19), UDim2.fromOffset(8, 26), 11)
 	hint.TextScaled = true
 	local textCap = Instance.new("UITextSizeConstraint"); textCap.MaxTextSize, textCap.MinTextSize, textCap.Parent = 11, 8, hint
-	local track = Instance.new("Frame")
-	track.Name, track.Position, track.Size = "HealthTrack", UDim2.fromOffset(12, 29), UDim2.new(1, -24, 0, 7)
-	track.BackgroundColor3, track.BorderSizePixel, track.Parent = Color3.fromRGB(56, 57, 61), 0, boss
-	round(track, 4)
-	local fill = track:Clone(); fill.Name, fill.Position, fill.Size, fill.Parent = "Health", UDim2.fromOffset(0, 0), UDim2.fromScale(1, 1), track
-	local progress = label(container, "MythProgress", UDim2.fromOffset(195, 45), UDim2.fromOffset(14, 130), 12)
-	progress.TextXAlignment, progress.TextYAlignment = Enum.TextXAlignment.Left, Enum.TextYAlignment.Top
-	local toast = label(container, "Reward", UDim2.new(0.9, 0, 0, 42), UDim2.new(0.5, 0, 0.3, 0), 21)
-	toast.AnchorPoint, toast.Visible = Vector2.new(0.5, 0), false
 	local ammo = Instance.new("TextLabel") -- the bow's draw meter
 	ammo.Name, ammo.AnchorPoint, ammo.Position = "BowDraw", Vector2.new(1, 1), UDim2.new(1, -18, 1, -175)
 	ammo.Size, ammo.BackgroundColor3, ammo.BackgroundTransparency = UDim2.fromOffset(128, 55), Color3.fromRGB(22, 24, 29), 0.18
 	ammo.Font, ammo.TextColor3, ammo.TextSize, ammo.Parent = Enum.Font.GothamBold, Color3.new(1, 1, 1), 16, container
 	round(ammo, 8)
-	local feedback = label(container, "ConfirmedHit", UDim2.fromOffset(100, 36), UDim2.new(0.5, 0, 0.5, 25), 17)
-	feedback.AnchorPoint, feedback.Visible = Vector2.new(0.5, 0), false
-	local hitUntil, toastUntil = 0, 0
 	local actors, folder = {}, nil
 	local function watch(model)
 		if not model:IsA("Model") then return end
@@ -81,14 +68,7 @@ function Presentation.start(gui, remotes, api)
 		local remote = remotes:WaitForChild("MythFx", 120)
 		if not remote then return end
 		remote.OnClientEvent:Connect(function(kind, a, b, c)
-			if kind == "Hit" then
-				hitUntil = os.clock() + 0.4
-				feedback.Text, feedback.TextColor3 = (c and "WEAK POINT  " or "+") .. tostring(b), c and Color3.fromRGB(255, 206, 76) or Color3.new(1, 1, 1)
-			elseif kind == "Reward" then
-				toastUntil = os.clock() + 3
-				toast.Text, toast.TextColor3 = a .. " DEFEATED   +" .. b .. " XP", Color3.fromRGB(255, 211, 96)
-				Sfx.ui(Sfx.UI_NOTIFICATION, 0.7)
-			elseif kind == "Impact" then
+			if kind == "Impact" then
 				if (workspace.CurrentCamera.CFrame.Position - a).Magnitude > 200 then return end
 				local pulse = Instance.new("Part")
 				pulse.Name, pulse.Shape = "MythImpact", Enum.PartType.Cylinder
@@ -132,7 +112,7 @@ function Presentation.start(gui, remotes, api)
 		local best, distance = nil, 58
 		for model in actors do
 			local r = model.PrimaryPart
-			if root and r and (model:GetAttribute("HP") or 0) > 0 then
+			if root and r then
 				local gap = (r.Position - root.Position).Magnitude
 				if gap < distance then best, distance = model, gap end
 			end
@@ -141,14 +121,9 @@ function Presentation.start(gui, remotes, api)
 		if best then
 			local def = Definitions[best:GetAttribute("MonsterKind")]
 			local state = best:GetAttribute("MonsterState")
-			title.Text = def.name .. "   " .. math.ceil(best:GetAttribute("HP")) .. " / " .. def.hp
-			hint.Text = state == "Caged" and "Press Y at the pedestal to start" or state == "Windup" and def.attack .. "!  MOVE OUT OF THE MARKER" or state == "Recovery" and "EXPOSED!  +50% DAMAGE" or state == "Stunned" and "STUNNED!  ATTACK NOW" or def.hint
-			fill.Size, fill.BackgroundColor3 = UDim2.fromScale(math.clamp(best:GetAttribute("HP") / def.hp, 0, 1), 1), def.accent
+			title.Text, title.TextColor3 = def.name, def.accent
+			hint.Text = state == "Caged" and "Press Y at the pedestal to let it out" or state == "Windup" and def.attack .. "!" or state == "Eat" and "CHOMP CHOMP" or def.hint
 		end
-		local kills, xp = player:GetAttribute("MonsterKills") or 0, player:GetAttribute("MythXP") or 0
-		local inYard = root and root.Position.Z < -80 and math.abs(root.Position.X) < 100 and root.Position.X < 250
-		progress.Visible = inYard == true
-		progress.Text = "MYTH HUNT   " .. xp .. " XP\nNext medal: " .. kills .. " / " .. (math.floor(kills / 3) + 1) * 3 .. " defeats"
 		local weapon = api.weapon()
 		ammo.Visible = weapon.kind == "bow"
 		if weapon.kind == "bow" and char then
@@ -156,7 +131,6 @@ function Presentation.start(gui, remotes, api)
 			local power = drawAt and math.clamp((now - drawAt) / 1.1, 0, 1) or 0
 			ammo.Text, ammo.TextColor3 = math.floor(power * 100) .. "% DRAW\nHOLD / RELEASE", power >= 1 and Color3.fromRGB(255, 206, 76) or Color3.new(1, 1, 1)
 		end
-		feedback.Visible, toast.Visible = os.clock() < hitUntil, os.clock() < toastUntil
 	end)
 end
 return Presentation

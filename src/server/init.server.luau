@@ -4750,7 +4750,84 @@ for _, spot in Factory.DUMMY_SPOTS do
 	spawnDummy(CFrame.new(spot) * CFrame.Angles(0, math.random() * math.pi * 2, 0))
 end
 Map.build(hazard)
-Monsters.start(remotes, knockPlayer)
+-- What the Myth bosses (server/Monsters) do to the dummies: they hunt them, never the players.
+-- A table straight in the call: this script is at Luau's 200-locals limit.
+Monsters.start(remotes, {
+	each = function(fn) -- fn(model, torso) for each dummy no one is carrying
+		for model, d in dummies do
+			local torso = model:FindFirstChild("UpperTorso")
+			if torso and not d.heldBy and not torso:FindFirstChild("BossBite") then -- not already in a boss's hands
+				fn(model, torso)
+			end
+		end
+	end,
+	crush = function(model, from: Vector3, power: number) -- a blow from `from`: the bone it lands on goes, the body flies
+		local d = dummies[model]
+		local part = d and nearestPart(d, from)
+		if not part then
+			return
+		end
+		if d.heldBy or d.looseOwner then -- the server flings it: it has to own it
+			release(d, Vector3.zero)
+		end
+		local away = (part.Position - from) * Vector3.new(1, 0, 1)
+		away = away.Magnitude > 0.1 and away.Unit or Vector3.zAxis
+		harm(d, 0, nil, from) -- knocks it down
+		hit(d, part, away, power, 0, "blunt", part.Position - away * 0.5)
+		for _, p in model:GetDescendants() do
+			if p:IsA("BasePart") then
+				p.AssemblyLinearVelocity = away * 22 + UP * 28 -- not too far: the boss comes to eat it next
+			end
+		end
+	end,
+	grab = function(model): boolean -- out cold in a boss's hands
+		local d = dummies[model]
+		local torso = d and d.model:FindFirstChild("UpperTorso")
+		if not torso or d.heldBy or torso:FindFirstChild("BossBite") then
+			return false
+		end
+		release(d, Vector3.zero)
+		knockDown(d, 30, "Out cold")
+		say(d, pick(Body.BEG), "shout")
+		return true
+	end,
+	held = function(model): boolean
+		local d = dummies[model]
+		return d ~= nil and d.heldBy ~= nil
+	end,
+	bite = function(model, from: Vector3) -- a crunch on a limb; now and then it comes off, swallowed
+		local d = dummies[model]
+		if not d then
+			return
+		end
+		local limbs = {}
+		for name, info in PARTS do
+			if info.limb and model:FindFirstChild(name) then
+				table.insert(limbs, name)
+			end
+		end
+		local part = model:FindFirstChild(limbs[math.random(math.max(#limbs, 1))] or "UpperTorso") :: BasePart?
+		if not part then
+			return
+		end
+		local dir = part.Position - from
+		dir = dir.Magnitude > 0.1 and dir.Unit or UP
+		Sfx.play(Sfx.ARM_RIP, part.Position)
+		hit(d, part, dir, 6, 0, "blunt", part.Position)
+		if PARTS[part.Name].limb and math.random() < 0.4 and part.Parent == model then
+			addInjury(d, PARTS[part.Name].label .. " bitten off")
+			sever(d, part, dir):Destroy()
+			Body.lost(d, part)
+		end
+	end,
+	eat = function(model) -- swallowed whole: dead and gone (RESPAWN runs first, it needs the body)
+		local d = dummies[model]
+		if d then
+			kill(d, "Dead: eaten")
+			task.defer(model.Destroy, model)
+		end
+	end,
+})
 if CITY_ENABLED then
 	City.build()
 	for _, spot in City.DUMMY_SPOTS do
