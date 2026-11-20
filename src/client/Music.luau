@@ -1,4 +1,4 @@
--- Background music (the note button, top right, turns it off): the tracks in assets/music (uploaded as Audio), one after another in random
+-- Background music (the toolbox SETTINGS page turns it off): the tracks in assets/music (uploaded as Audio), one after another in random
 -- order, for as long as the client runs. Every track plays once before any comes round again, and
 -- the same one never plays twice in a row. Local: each player hears their own playlist.
 
@@ -44,7 +44,7 @@ end
 sound.Ended:Connect(playNext)
 playNext()
 
--- Sound settings (the toolbox's SETTINGS page, client/Toolbox, and the note button): music on / off,
+-- Sound settings (the toolbox SETTINGS page, client/Toolbox): music on / off,
 -- music volume and effects volume, saved with the progress (server/Progress; the server keeps them
 -- as player attributes on "setting"). Every other sound in the world plays through the Effects group.
 local Players = game:GetService("Players")
@@ -102,29 +102,5 @@ for _, s in workspace:GetDescendants() do
 end
 workspace.DescendantAdded:Connect(route)
 apply()
-
--- A note button in the top-right corner, over the menu too: music on / off.
-local gui = Instance.new("ScreenGui")
-gui.Name, gui.ResetOnSpawn, gui.DisplayOrder = "MusicToggle", false, 20 -- above the menu (10)
-local button = Instance.new("TextButton")
-button.AnchorPoint, button.Position, button.Size = Vector2.new(1, 0), UDim2.new(1, -12, 0, 8), UDim2.fromOffset(44, 44)
-button.Font, button.TextSize, button.Text = Enum.Font.GothamBold, 26, "♪"
-button.TextColor3, button.Parent = Color3.fromRGB(20, 20, 24), gui
-local stroke = Instance.new("UIStroke")
-stroke.Thickness, stroke.ApplyStrokeMode, stroke.Parent = 3, Enum.ApplyStrokeMode.Border, button
-local slash = Instance.new("Frame") -- crossed out while off
-slash.AnchorPoint, slash.Position, slash.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.5), UDim2.new(1, 4, 0, 4)
-slash.Rotation, slash.BackgroundColor3, slash.BorderSizePixel, slash.Parent = -45, Color3.fromRGB(232, 70, 56), 0, button
-local function show()
-	local off = Music.get("MusicOff")
-	button.BackgroundColor3 = if off then Color3.fromRGB(150, 150, 156) else Color3.fromRGB(252, 200, 50)
-	slash.Visible = off
-end
-show()
-Music.changed:Connect(show)
-button.Activated:Connect(function()
-	Music.set("MusicOff", not Music.get("MusicOff"))
-end)
-gui.Parent = player:WaitForChild("PlayerGui")
 
 return Music

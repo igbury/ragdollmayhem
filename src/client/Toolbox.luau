@@ -692,7 +692,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end
 	volume("MUSIC VOLUME", "MusicVolume", 3)
 	volume("EFFECTS VOLUME", "SfxVolume", 4)
-	hint(settingsPage, "Saved with your progress. The note button in the top-right corner turns the music off too.", 5)
+	hint(settingsPage, "Saved with your progress.", 5)
 	local function showSound()
 		local off = Audio.get("MusicOff")
 		musicLabel.Text = if off then "OFF" else "ON"

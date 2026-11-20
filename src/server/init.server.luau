@@ -3387,6 +3387,9 @@ function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, dama
 		hazardRemote:FireClient(player, velocity * 0.2)
 		return
 	end
+	if char and char:GetAttribute("God") then
+		damage = 0 -- the admin panel's god mode: still thrown about, never hurt
+	end
 	humanoid:TakeDamage(damage)
 	if down > 0 and char and humanoid.Health > 0 then
 		Ragdoll.set(char, true)
@@ -4669,6 +4672,27 @@ Wanted.start({
 
 -- weapon progression: kill counters, loaded and saved per player (server/Progress)
 Progress.start()
+-- the admin panel (server/Admin, client/AdminPanel): owner and Studio only
+require(script.Admin).start(remotes, {
+	dummies = dummies,
+	spawn = spawnDummy,
+	revive = revive,
+	kill = function(d)
+		kill(d, "Dead")
+		syncAttributes(d)
+	end,
+	trim = trimDummies,
+	wanted = Wanted.set,
+	freeze = function(): boolean
+		Sandbox.userFrozen = not Sandbox.userFrozen -- the Heartbeat applies it
+		workspace:SetAttribute("TimeFrozen", Sandbox.userFrozen)
+		return Sandbox.userFrozen
+	end,
+	berserk = function(d)
+		d.trait, d.morale, d.baseMorale = "Berserk", 100, 100
+		d.nextLook = 0
+	end,
+})
 ShopServer.start()
 -- the first-time tutorial on the arena (server/Tutorial)
 Tutorial.start({

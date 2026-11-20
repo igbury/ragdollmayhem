@@ -74,6 +74,18 @@ function Wanted.weapon(): string?
 	return actingWith[coroutine.running()]
 end
 
+-- The admin panel (server/Admin): straight to `count` stars (0 clears), the wave for it soon after.
+function Wanted.set(player: Player, count: number)
+	if count <= 0 then
+		Wanted.clear(player)
+		return
+	end
+	heat[player] = STARS[math.min(count, #STARS)]
+	lastKill[player] = os.clock()
+	nextWave[player] = os.clock() + 2
+	player:SetAttribute("Wanted", stars(player))
+end
+
 function Wanted.clear(player: Player)
 	if heat[player] then
 		heat[player] = 0 -- the loop calls the hunters off next tick

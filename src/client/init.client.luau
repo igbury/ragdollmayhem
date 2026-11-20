@@ -32,6 +32,7 @@ local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
 task.spawn(require, script:WaitForChild("KoStars")) -- stars over dummies out cold
+task.spawn(require, script:WaitForChild("AdminPanel")) -- owner and Studio only (server/Admin)
 require(script:WaitForChild("DummyGear")) -- the cops' guns and the hooligans' bats
 require(script:WaitForChild("WantedHud")) -- the wanted stars
 require(script:WaitForChild("HeliRotors")) -- the army helicopters' rotors
@@ -2869,8 +2870,9 @@ RunService.RenderStepped:Connect(function(dt)
 	local sprinting = (mv.sprintHeld or mv.sprintToggle) and moving == 1 and (not holding or holding.drag) and root and not mv.low -- you can run dragging one
 		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if humanoid then
-		humanoid.WalkSpeed = (holding and holding.punt and 4)
-			or mv.low and MOVE.CROUCH_SPEED or sprinting and SPRINT_SPEED or WALK_SPEED
+		humanoid.WalkSpeed = ((holding and holding.punt and 4)
+			or mv.low and MOVE.CROUCH_SPEED or sprinting and SPRINT_SPEED or WALK_SPEED)
+			* (if player:GetAttribute("AdminFast") then 2 else 1) -- the admin panel's super speed
 	end
 	if humanoid and root and not Menu.active then
 		local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
