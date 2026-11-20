@@ -3237,6 +3237,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	end
 	-- one ray, or a shotgun's spray of them (each pellet hits on its own)
 	local rng = Random.new()
+	-- a melee swing's and a bullet's landing the attacker already heard (useWeapon); a knife only lands
+	-- after its flight, so it comes from here
+	local predicted = (weapon.kind == "melee" or weapon.hurt == "bullet") and player or nil
 	local cone = (weapon.spread or 0) * (aimed == true and AIMED_PELLETS or 1)
 	local dmgScale, pushScale, blowDir = aimedSwing(weapon, swing, dir)
 	if id == "KnifeSlash" then
@@ -3278,7 +3281,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 		local blow = weapon.aimSwing and blowDir or aim -- which way it knocks things
 		if Monsters.damage(result.Instance, (weapon.dmg or 1) * dmgScale * 10, blow, player) then
 			if sounds.hit then
-				Sfx.play(sounds.hit, target, weapon.kind == "melee" and player or nil)
+				Sfx.play(sounds.hit, target, predicted)
 			end
 			continue
 		end
@@ -3288,7 +3291,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 		end
 		if d then
 			if sounds.hit then -- a melee swinger predicted it; a knife only lands after its flight
-				Sfx.play(sounds.hit, target, weapon.kind == "melee" and player or nil)
+				Sfx.play(sounds.hit, target, predicted)
 			end
 			if result.Instance.Parent then
 				hit(d, result.Instance, blow, weapon.dmg and weapon.dmg * dmgScale, weapon.push and weapon.push * pushScale, weapon.hurt, target, origin)
@@ -3307,8 +3310,8 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 		elseif weapon.chip and pellet == 1 then
 			Map.blast(target, weapon.chip, 30)
 		end
-		if not d and weapon.kind == "gun" and pellet == 1 then -- a wall, the floor, a car: its own ping
-			Sfx.play(Sfx.surface(result.Instance), target)
+		if not d and weapon.kind == "gun" and pellet == 1 then -- a wall, the floor, a car: its own ping (a bullet: the shooter predicted it)
+			Sfx.play(Sfx.surface(result.Instance), target, predicted)
 		end
 	end
 end)

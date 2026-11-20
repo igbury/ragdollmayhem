@@ -121,6 +121,14 @@ Sfx.TRIM = {
 	[Sfx.BONE] = 1.34,
 	["122753128464765"] = 0.05, -- Jump (init.client)
 	["112506453896973"] = 0.09, -- Run, looped (init.client)
+	-- generated clips that open on near-silence (measured on assets/sfx/gen: where they get audible)
+	[Sfx.UI_CLICK] = 0.275,
+	[Sfx.UI_CLOSE] = 0.025,
+	[Sfx.CAR_DOOR] = 0.27,
+	[Sfx.SHOTGUN_PUMP] = 0.08,
+	[Sfx.HARPOON_FIRE] = 0.055,
+	[Sfx.RELOAD_RIFLE] = 0.235,
+	[Sfx.RELOAD_PISTOL] = 0.14,
 }
 
 -- Per weapon: fire (as it is used, before anything is hit), hit (on a body), swing (a melee miss).
