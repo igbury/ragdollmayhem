@@ -9,10 +9,15 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Shop = require(ReplicatedStorage.Shared.Shop)
+local Settings = require(ReplicatedStorage.Shared.Settings)
 
 local Progress = {}
--- Settings (client/Music; the toolbox SETTINGS page, NeverWanted on its WORLD page): attribute = its type. Saved as they are.
-Progress.SETTINGS = { MusicOff = "boolean", MusicVolume = "number", SfxVolume = "number", NeverWanted = "boolean" }
+-- Settings (shared/Settings; the toolbox SETTINGS page): attribute = its type. Saved as they are.
+Progress.Settings = Settings -- for the main server script, which is at Luau's 200-locals limit
+Progress.SETTINGS = {}
+for name, default in Settings.DEFAULTS do
+	Progress.SETTINGS[name] = type(default)
+end
 
 local SAVE_EVERY = 60
 local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, "WeaponProgress1")

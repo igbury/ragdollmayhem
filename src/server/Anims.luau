@@ -254,6 +254,17 @@ Anims.taunt = build("DummyTaunt", {
 -- down on its knees, both hands digging at the ground in front (burying)
 Anims.dig = polished("Dig")
 
+-- A zombie clawing its way up out of its grave (server/World raises the body through the mound):
+-- hunched, head down, each arm in turn reaching high and dragging down to the chest.
+local CLAW_UP, CLAW_UP_EL = rx(165), rx(15)
+local CLAW_DOWN, CLAW_DOWN_EL = rx(70), rx(95)
+local HUNCH = { LowerTorso = rx(-10), UpperTorso = rx(-15), Head = rx(-20) }
+Anims.rise = build("ZombieRise", {
+	{ 0, with(HUNCH, { LeftUpperArm = CLAW_UP, LeftLowerArm = CLAW_UP_EL, RightUpperArm = CLAW_DOWN, RightLowerArm = CLAW_DOWN_EL }), "snap" },
+	{ 0.4, with(HUNCH, { LeftUpperArm = CLAW_DOWN, LeftLowerArm = CLAW_DOWN_EL, RightUpperArm = CLAW_UP, RightLowerArm = CLAW_UP_EL }), "snap" },
+	{ 0.8, with(HUNCH, { LeftUpperArm = CLAW_UP, LeftLowerArm = CLAW_UP_EL, RightUpperArm = CLAW_DOWN, RightLowerArm = CLAW_DOWN_EL }) },
+}, true, Enum.AnimationPriority.Action4)
+
 -- a broken leg held stiff and a little out: the walk only moves the good one, so it drags
 Anims.limp = {}
 for _, side in { "Left", "Right" } do

@@ -52,8 +52,9 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local player = Players.LocalPlayer
 local action = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action") :: RemoteEvent
 
-local Music = { TRACKS = TRACKS }
-local DEFAULTS = { MusicOff = false, MusicVolume = 1, SfxVolume = 1, NeverWanted = false } -- NeverWanted: the toolbox WORLD page (server Wanted)
+local Settings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Settings"))
+local Music = { TRACKS = TRACKS, RANGE = Settings.RANGE }
+local DEFAULTS = Settings.DEFAULTS -- the game settings ride along on the same page (shared/Settings)
 local mine = {} -- set here and not yet back from the server: shows at once
 local changed = Instance.new("BindableEvent")
 Music.changed = changed.Event -- (name) after any setting changes

@@ -1584,6 +1584,11 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	elseif attacker and (attacker.gear or attacker.target == d) then
 		d.blame, d.blameAt, d.blameWeapon = false, os.clock(), nil
 	end
+	-- the SETTINGS page of whoever answers for the blow: HP it takes (DAMAGE), how easily bones go (BONES)
+	local by = blameOf(d)
+	local scaler = if typeof(by) == "Instance" then by else nil
+	local harmScale = Progress.Settings.get(scaler, "DamageScale")
+	local brittle = Progress.Settings.get(scaler, "BoneScale")
 	if not PARTS[part.Name] then -- the root box: count it as the torso
 		part = d.model:FindFirstChild("UpperTorso") or d.model:FindFirstChild("LowerTorso")
 		if not part then
@@ -1660,7 +1665,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 			else
 				addInjury(d, "head wound")
 				bleed(d, hole(), 2)
-				d.hp -= 60
+				d.hp -= 60 * harmScale
 				bone = "ok"
 			end
 		elseif info.limb then
@@ -1671,7 +1676,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 				addInjury(d, info.label .. " wound")
 				bleed(d, hole(), 0.8)
 			end
-			if heavy or p.trauma >= SHOT_BREAK then
+			if heavy or p.trauma >= SHOT_BREAK / brittle then
 				addInjury(d, info.label .. " bone")
 				breakBone()
 			else
@@ -1680,7 +1685,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		else
 			addInjury(d, info.label)
 			bleed(d, hole(), heavy and 2 or 1)
-			if heavy or p.trauma >= SHOT_BREAK then
+			if heavy or p.trauma >= SHOT_BREAK / brittle then
 				breakBone()
 			else
 				bone = "ok"
@@ -1697,7 +1702,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		elseif info.zone == "Head" then
 			addInjury(d, "head wound")
 			bleed(d, hole(), 2)
-			d.hp -= 50
+			d.hp -= 50 * harmScale
 			bone = "ok"
 		elseif heavy then
 			addInjury(d, info.label)
@@ -1711,7 +1716,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		addInjury(d, "bruised " .. info.area)
 		-- a blunt weapon comes with someone swinging it (`from`); a fall or a throw has nobody
 		local weapon = kind == "blunt" and from ~= nil
-		if p.trauma >= info.breakAt * (weapon and BONE_TOUGH_WEAPON or BONE_TOUGH) then
+		if p.trauma >= info.breakAt * (weapon and BONE_TOUGH_WEAPON or BONE_TOUGH) / brittle then
 			breakBone()
 		end
 		if power >= BRUISE_AT then
@@ -1743,7 +1748,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		if d.helping then
 			Body.stopHelping(d) -- hit while it tends someone: it has its own troubles now
 		end
-		d.hp -= zone.damage * power
+		d.hp -= zone.damage * power * harmScale
 		d.morale -= zone.damage * power * (d.trait == "Tough" and 0.5 or 1)
 		d.daze += zone.daze * (kind and kind ~= "blunt" and 1.5 or 1)
 		local root = d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -2341,7 +2346,8 @@ Players.PlayerRemoving:Connect(clearBlocks)
 local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true, setting = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
 	local building = action == "build" or action == "unbuild"
-	if not MENU_ACTIONS[action] or rateLimited(player, building and 0.08 or 0.25, building and "build" or "action") then
+	local quick = building or action == "setting" -- clicking + / - on the SETTINGS page fast
+	if not MENU_ACTIONS[action] or rateLimited(player, quick and 0.08 or 0.25, if building then "build" elseif quick then "setting" else "action") then
 		return
 	end
 	if action == "map" and player:GetAttribute("Tutorial") then
@@ -2449,7 +2455,8 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 	elseif action == "clearbuild" then
 		clearBlocks(player)
 	elseif action == "setting" and Progress.SETTINGS[arg] and type(extra) == Progress.SETTINGS[arg] and extra == extra then -- client/Music, saved (not NaN)
-		player:SetAttribute(arg, if type(extra) == "number" then math.clamp(math.round(extra * 10) / 10, 0, 1) else extra)
+		local range = Progress.Settings.RANGE[arg] or { 0, 1 }
+		player:SetAttribute(arg, if type(extra) == "number" then math.clamp(math.round(extra * 10) / 10, range[1], range[2]) else extra)
 		if arg == "NeverWanted" and extra == true then
 			Wanted.clear(player) -- the stars go now, and the hunters with them
 		end
@@ -2524,7 +2531,8 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 		end
 	end
 	if not dead then
-		d.hp -= damage
+		local by = blameOf(d)
+		d.hp -= damage * Progress.Settings.get(if typeof(by) == "Instance" then by else nil, "DamageScale")
 		d.hurtUntil = os.clock() + 2
 		d.daze += kind and 8 or 0
 		if d.zombie then
@@ -3560,7 +3568,9 @@ local function strike(d, b, name: string, target, now: number)
 			local char = (target :: Player).Character
 			local hum = char and char:FindFirstChildOfClass("Humanoid")
 			if hum and hum.Health > 0 and not char:GetAttribute("Ragdolled") then
-				knockPlayer(target, hum, dir * move.push + Vector3.yAxis * move.up, move.damage, move.down)
+				-- a cop hurts and shoves a player but never knocks them down
+				local down = if d.model:GetAttribute("Kind") == "Cop" then 0 else move.down
+				knockPlayer(target, hum, dir * move.push + Vector3.yAxis * move.up, move.damage, down)
 			end
 		elseif target.state ~= "Dead" then
 			local head = d.model:FindFirstChild("Head") :: BasePart?
@@ -4347,9 +4357,12 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 			Map.blast(at, PUNT_BLAST, PUNT_BLAST_POWER, nil, true) -- the wall, not the floor at its foot
 		end
 	end
-	d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
 	Sfx.play(Sfx.THUD, part.Position, skip)
-	hit(d, part, dir, power, 0, "blunt", part.Position + dir * 0.5) -- the side that struck the ground
+	-- RAGDOLL DAMAGE off (the host's SETTINGS page): it lands with a thud, nothing hurts or breaks
+	if Progress.Settings.get(Progress.Settings.host(), "RagdollDamage") then
+		d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
+		hit(d, part, dir, power, 0, "blunt", part.Position + dir * 0.5) -- the side that struck the ground
+	end
 	-- the tutorial's dummies (server/Tutorial) die of any blow against a wall, so a kick into one always
 	-- pays off: a wall is where the kicker saw it strike something standing (`at`), or anything it hit
 	-- going more sideways than down (a landing comes from above)
@@ -4708,6 +4721,8 @@ require(script.Admin).start(remotes, {
 ShopServer.start()
 -- the first-time tutorial on the arena (server/Tutorial)
 Tutorial.start({
+-- the host's GRAVITY and GRAVE ZOMBIES settings (server/World)
+require(script.World).start({ spawn = spawnDummy, trim = trimDummies, play = playTrack })
 	spawn = function(cf: CFrame, kind: string?): Model
 		trimDummies()
 		-- a Mourner: never hits back (only the Tough, Berserk and Hothead ones do, hit)

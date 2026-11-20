@@ -558,20 +558,6 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	wipe.Activated:Connect(function()
 		actionRemote:FireServer("clearspawn")
 	end)
-	-- NEVER WANTED: no stars, no cops or soldiers after you (server Wanted; saved like the sound, client/Music)
-	local calm = button(worldSide, "NEVER WANTED: OFF", Color3.fromRGB(40, 70, 140), 44, true)
-	calm.Size, calm.LayoutOrder, calm.Rotation = UDim2.new(1, -10, 0, 56), 4, -1
-	local calmLabel = calm:FindFirstChild("Label") :: TextLabel
-	calmLabel.TextSize = 26
-	local function showCalm()
-		calmLabel.Text = if Audio.get("NeverWanted") then "NEVER WANTED: ON" else "NEVER WANTED: OFF"
-		pick(calm, Audio.get("NeverWanted") == true)
-	end
-	showCalm()
-	Audio.changed:Connect(showCalm)
-	calm.Activated:Connect(function()
-		Audio.set("NeverWanted", not Audio.get("NeverWanted"))
-	end)
 	local paintHead = heading(worldSide, "TEAM PAINT", 5)
 	local paintRow = row(worldSide, 6, 48)
 	local paintChips = {}
@@ -624,9 +610,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	settingsTitle.Size, settingsTitle.Position, settingsTitle.Rotation = UDim2.fromOffset(190, 40), UDim2.fromOffset(250, -10), 3
 	local settingsLabel = settingsTitle:FindFirstChild("Label") :: TextLabel
 	settingsLabel.TextSize = 24
-	local settingsPage = Instance.new("Frame")
+	local settingsPage = Instance.new("ScrollingFrame") -- sound and game settings: more than fits, it scrolls
 	settingsPage.Name, settingsPage.BackgroundTransparency, settingsPage.Visible, settingsPage.ZIndex = "Settings", 1, false, 42
 	settingsPage.Position, settingsPage.Size, settingsPage.Parent = UDim2.fromOffset(30, 56), UDim2.new(1, -60, 1, -70), panel
+	settingsPage.BorderSizePixel, settingsPage.ScrollBarThickness, settingsPage.ScrollBarImageColor3 = 0, 8, INK
+	settingsPage.CanvasSize, settingsPage.AutomaticCanvasSize = UDim2.new(), Enum.AutomaticSize.Y
 	local settingsList = Instance.new("UIListLayout")
 	settingsList.Padding, settingsList.SortOrder, settingsList.Parent = UDim.new(0, 14), Enum.SortOrder.LayoutOrder, settingsPage
 	local function showSettings(on: boolean)
@@ -651,69 +639,84 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		l.Text, l.Font, l.TextSize, l.TextColor3, l.BackgroundTransparency = text, FONT, 26, INK, 1
 		l.TextXAlignment, l.Size, l.LayoutOrder, l.ZIndex, l.Parent = Enum.TextXAlignment.Left, UDim2.fromOffset(280, 44), 0, 44, parent
 	end
-	heading(settingsPage, "SOUND", 1)
-	local musicRow = row(settingsPage, 2, 50)
-	label(musicRow, "MUSIC")
-	local musicButton = button(musicRow, "ON", Color3.fromRGB(40, 140, 70), 44, true)
-	musicButton.Size, musicButton.LayoutOrder = UDim2.fromOffset(130, 44), 1
-	local musicLabel = musicButton:FindFirstChild("Label") :: TextLabel
-	musicLabel.TextSize = 24
-	musicButton.Activated:Connect(function()
-		Audio.set("MusicOff", not Audio.get("MusicOff"))
-	end)
-	-- a volume: - and + in tenths, a bar between them filled that far
-	local volumes = {}
-	local function volume(text: string, name: string, order: number)
+	local shows = {} -- each control's redraw, run whenever a setting changes
+	-- ON / OFF for a boolean setting; `off` names a setting that is on when false (MusicOff, NeverWanted)
+	local function toggle(text: string, name: string, order: number, off: boolean?)
 		local r = row(settingsPage, order, 50)
 		label(r, text)
-		local function step(sign: string, by: number, at: number)
+		local b = button(r, "ON", Color3.fromRGB(40, 140, 70), 44, true)
+		b.Size, b.LayoutOrder = UDim2.fromOffset(130, 44), 1
+		local l = b:FindFirstChild("Label") :: TextLabel
+		l.TextSize = 24
+		b.Activated:Connect(function()
+			Audio.set(name, not Audio.get(name))
+		end)
+		table.insert(shows, function()
+			local on = Audio.get(name) ~= (off == true)
+			l.Text = if on then "ON" else "OFF"
+			local fill = b:FindFirstChild("Fill")
+			local shade = fill and fill:FindFirstChildOfClass("UIGradient")
+			if shade then
+				local color = if on then Color3.fromRGB(40, 140, 70) else Color3.fromRGB(143, 46, 44)
+				shade.Color = ColorSequence.new({
+					ColorSequenceKeypoint.new(0, color:Lerp(WHITE, 0.25)),
+					ColorSequenceKeypoint.new(0.55, color),
+					ColorSequenceKeypoint.new(1, color:Lerp(INK, 0.35)),
+				})
+			end
+		end)
+	end
+	-- a number setting: - and + by `by`, a bar between them filled from its min to its max
+	-- (Audio.RANGE, else 0-1). `times`: shown as x1.5 instead of a percentage.
+	local function slider(text: string, name: string, order: number, by: number, times: boolean?)
+		local range = Audio.RANGE[name] or { 0, 1 }
+		local r = row(settingsPage, order, 50)
+		label(r, text)
+		local function step(sign: string, delta: number, at: number)
 			local b = button(r, sign, YELLOW, 44, true)
 			b.Size, b.LayoutOrder = UDim2.fromOffset(46, 44), at
 			local l = b:FindFirstChild("Label") :: TextLabel
 			l.TextSize, l.TextColor3, l.TextStrokeTransparency = 30, INK, 1
 			b.Activated:Connect(function()
-				Audio.set(name, math.clamp(math.round((Audio.get(name) + by) * 10) / 10, 0, 1))
+				Audio.set(name, math.clamp(math.round((Audio.get(name) + delta) * 10) / 10, range[1], range[2]))
 			end)
 		end
-		step("-", -0.1, 1)
+		step("-", -by, 1)
 		local bar = Instance.new("Frame")
 		bar.BackgroundColor3, bar.BorderSizePixel, bar.Size, bar.LayoutOrder, bar.ZIndex = WHITE, 0, UDim2.fromOffset(220, 34), 2, 44
 		bar.Parent = r
 		outline(bar, 3)
 		local fill = Instance.new("Frame")
 		fill.BackgroundColor3, fill.BorderSizePixel, fill.ZIndex, fill.Parent = Color3.fromRGB(40, 140, 70), 0, 45, bar
-		local percent = Instance.new("TextLabel")
-		percent.Font, percent.TextSize, percent.TextColor3, percent.BackgroundTransparency = FONT, 22, INK, 1
-		percent.Size, percent.Position, percent.ZIndex, percent.Parent = UDim2.fromScale(1, 1), UDim2.fromOffset(0, NUDGE), 46, bar
-		step("+", 0.1, 3)
-		volumes[name] = function()
+		local value = Instance.new("TextLabel")
+		value.Font, value.TextSize, value.TextColor3, value.BackgroundTransparency = FONT, 22, INK, 1
+		value.Size, value.Position, value.ZIndex, value.Parent = UDim2.fromScale(1, 1), UDim2.fromOffset(0, NUDGE), 46, bar
+		step("+", by, 3)
+		table.insert(shows, function()
 			local v = Audio.get(name)
-			fill.Size = UDim2.fromScale(v, 1)
-			percent.Text = `{math.round(v * 100)}%`
-		end
+			fill.Size = UDim2.fromScale((v - range[1]) / (range[2] - range[1]), 1)
+			value.Text = if times then `x{v}` else `{math.round(v * 100)}%`
+		end)
 	end
-	volume("MUSIC VOLUME", "MusicVolume", 3)
-	volume("EFFECTS VOLUME", "SfxVolume", 4)
-	hint(settingsPage, "Saved with your progress.", 5)
-	local function showSound()
-		local off = Audio.get("MusicOff")
-		musicLabel.Text = if off then "OFF" else "ON"
-		local fill = musicButton:FindFirstChild("Fill")
-		local shade = fill and fill:FindFirstChildOfClass("UIGradient")
-		if shade then
-			local color = if off then Color3.fromRGB(143, 46, 44) else Color3.fromRGB(40, 140, 70)
-			shade.Color = ColorSequence.new({
-				ColorSequenceKeypoint.new(0, color:Lerp(WHITE, 0.25)),
-				ColorSequenceKeypoint.new(0.55, color),
-				ColorSequenceKeypoint.new(1, color:Lerp(INK, 0.35)),
-			})
-		end
-		for _, show in volumes do
+	heading(settingsPage, "SOUND", 1)
+	toggle("MUSIC", "MusicOff", 2, true)
+	slider("MUSIC VOLUME", "MusicVolume", 3, 0.1)
+	slider("EFFECTS VOLUME", "SfxVolume", 4, 0.1)
+	heading(settingsPage, "GAME", 6)
+	toggle("WANTED STARS", "NeverWanted", 7, true)
+	toggle("RAGDOLL DAMAGE", "RagdollDamage", 8)
+	toggle("GRAVE ZOMBIES", "GraveZombies", 9)
+	slider("BONE BREAKING", "BoneScale", 10, 0.5, true)
+	slider("GRAVITY", "Gravity", 11, 0.1, true)
+	slider("DAMAGE", "DamageScale", 12, 0.5, true)
+	hint(settingsPage, "Saved with your progress. Gravity, ragdoll damage and grave zombies follow whoever joined the server first.", 13)
+	local function showSettingsValues()
+		for _, show in shows do
 			show()
 		end
 	end
-	showSound()
-	Audio.changed:Connect(showSound)
+	showSettingsValues()
+	Audio.changed:Connect(showSettingsValues)
 	showSettings(false)
 
 	close.Activated:Connect(function()

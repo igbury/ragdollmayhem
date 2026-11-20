@@ -663,6 +663,9 @@ local function repair(model: Model)
 	for _, b in model:GetChildren() do
 		if b:IsA("BasePart") then
 			keep[slot(origin, b.Position)] = true
+	model:SetAttribute("Spot", origin) -- where it stands, and who lies in it (server/World raises them)
+	model:SetAttribute("Buried", name)
+	model:SetAttribute("DugAt", os.clock())
 		end
 	end
 	buildStructure(model.Name, origin, true, keep)
