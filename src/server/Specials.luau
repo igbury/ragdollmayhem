@@ -736,6 +736,10 @@ local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 	setVelocity(d, Vector3.zero) -- the claw holds it: no flying off with the blow's shove
 	K.knockDown(d, RIP_TUG + 3, "Knocked down")
 	K.setOwner(d.model, player)
+	-- standing on or right by the body, the pinned limb dragged it under the attacker's feet; it lifted
+	-- them, the claw rose with them, the body chased it and shot them into the sky. It passes through
+	-- players while it hangs on the claw.
+	K.setGroup(d.model, "Held")
 	-- The claw is IN the limb: the top of it (where the claw went in) is pinned to the claw's point and
 	-- turned with it, stiffly, so the limb rides the crowbar and the body hangs off the limb. Only the
 	-- limb is driven (no reaction force), so the attacker's arm feels none of the body's weight.
@@ -750,11 +754,13 @@ local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 	hook.Parent = arm
 	local pull = Instance.new("AlignPosition")
 	pull.Attachment0, pull.Attachment1 = hook, tip
-	pull.MaxForce, pull.MaxVelocity, pull.Responsiveness = math.huge, math.huge, 200
+	-- capped speed: when the claw dips into a wall or the floor the limb can't chase it at any speed
+	-- and build up a launch
+	pull.MaxForce, pull.MaxVelocity, pull.Responsiveness = math.huge, 45, 200
 	pull.Parent = arm
 	local turn = Instance.new("AlignOrientation")
 	turn.Attachment0, turn.Attachment1 = hook, tip
-	turn.MaxTorque, turn.MaxAngularVelocity, turn.Responsiveness = math.huge, math.huge, 200
+	turn.MaxTorque, turn.MaxAngularVelocity, turn.Responsiveness = math.huge, 25, 200
 	turn.Parent = arm
 	K.fx:FireAllClients("Hook", char, hook.WorldPosition)
 	play("CROWBAR_HIT", hook.WorldPosition, 0.8)
@@ -770,8 +776,22 @@ local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 		turn:Destroy()
 		pull:Destroy()
 		hook:Destroy()
+		local function settle()
+			-- the server takes the body back and stills it: whatever speed the tug left in it on the
+			-- attacker's client was flinging it off as it let go
+			K.release(d, Vector3.zero)
+			for _, part in bodyParts(d) do
+				part.AssemblyLinearVelocity, part.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+			end
+			task.delay(0.6, function()
+				if not d.dragging and d.model.Parent then
+					K.setGroup(d.model, "Default")
+				end
+			end)
+		end
 		if arm.Parent ~= d.model or not hand.Parent then
 			tip:Destroy()
+			settle()
 			d.ripping = nil
 			return
 		end
@@ -786,7 +806,7 @@ local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 		end
 		K.fx:FireAllClients("Rip", char, arm.Position)
 		play("ARM_RIP", arm.Position)
-		K.release(d, Vector3.zero, player) -- the body drops off the claw; the attacker settles it, then the server
+		settle() -- the body drops off the claw where it hung
 		-- the arm on the claw: the server holds it on the third-person crowbar's point for everyone; the
 		-- attacker's client draws it on the crowbar it actually sees (Fx "Hang", first person too)
 		local parts, rel = {}, {}
