@@ -1,7 +1,8 @@
--- Toolbox (Tab): pick the character G puts down, a team a click puts a dummy in, BUILD (the block wheel
--- on Q and the trash, instead of the weapons) or time stopped. The server checks and does it all
--- (server/init.server.luau, "build" / "spawn" / "team" / "freeze"). Items with a `pass` are that game pass's
--- (shared/Shop): while it is locked they wear its sticker, and a click offers the pass instead.
+-- Toolbox (Tab): a page per tab down the left. SPAWN: a character on a stage, its team and how many,
+-- then SPAWN! (or G) where you aim. BUILD: the blocks, and building with them (the block wheel on Q and
+-- the trash, instead of the weapons). WORLD: time stop, clearing the dummies, team paint. The server
+-- checks and does it all (server/init.server.luau, "spawn" / "clearspawn" / "build" / "team" / "freeze").
+-- Items with a `pass` are that game pass's (shared/Shop): locked, they wear its sticker and offer it.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local UIS = game:GetService("UserInputService")
@@ -13,31 +14,26 @@ local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
-local GAP = 10 -- px between tiles, rows and sections
 
-local SECTIONS = {
-	{ name = "CHARACTERS", items = {
-		{ name = "Civilian", kind = "Normal", color = Color3.fromRGB(110, 170, 90) },
-		{ name = "Cop", kind = "Cop", color = Color3.fromRGB(60, 90, 160) },
-		{ name = "Hooligan", kind = "Hooligan", color = Color3.fromRGB(40, 40, 44) },
-		{ name = "Soldier", kind = "Soldier", color = Color3.fromRGB(96, 108, 70), pass = "SandboxPlus" },
-		{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
-		{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
-		{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
-	} },
-	{ name = "TEAMS", items = { -- a click puts a dummy in the team, and G spawns into it; teams fight each other
-		{ name = "Red team", team = 1, color = Color3.fromRGB(232, 70, 56), pass = "SandboxPlus" },
-		{ name = "Blue team", team = 2, color = Color3.fromRGB(40, 110, 220), pass = "SandboxPlus" },
-		{ name = "Green team", team = 3, color = Color3.fromRGB(90, 180, 60), pass = "SandboxPlus" },
-		{ name = "Yellow team", team = 4, color = Color3.fromRGB(230, 170, 30), pass = "SandboxPlus" },
-		{ name = "No team", team = 0, color = Color3.fromRGB(110, 110, 118), pass = "SandboxPlus" },
-	} },
-	{ name = "TOOLS", items = {
-		{ name = "Build", tool = "build", color = Color3.fromRGB(40, 140, 70) },
-		{ name = "Stop time", tool = "freeze", color = Color3.fromRGB(70, 60, 150), pass = "SandboxPlus" },
-		{ name = "Clear my blocks", tool = "clear", color = Color3.fromRGB(90, 40, 40) },
-	} },
+-- SPAWN tab: who G (or the SPAWN button) puts down, into which team, how many at once
+local CHARACTERS = {
+	{ name = "Civilian", kind = "Normal", color = Color3.fromRGB(110, 170, 90) },
+	{ name = "Cop", kind = "Cop", color = Color3.fromRGB(60, 90, 160) },
+	{ name = "Hooligan", kind = "Hooligan", color = Color3.fromRGB(40, 40, 44) },
+	{ name = "Soldier", kind = "Soldier", color = Color3.fromRGB(96, 108, 70), pass = "SandboxPlus" },
+	{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
+	{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
+	{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
 }
+-- a team: spawned into it (SPAWN), or a click puts a dummy in it (WORLD, team paint); teams fight each other
+local TEAMS = {
+	{ name = "No team", team = 0, color = Color3.fromRGB(110, 110, 118), pass = "SandboxPlus" },
+	{ name = "Red team", team = 1, color = Color3.fromRGB(232, 70, 56), pass = "SandboxPlus" },
+	{ name = "Blue team", team = 2, color = Color3.fromRGB(40, 110, 220), pass = "SandboxPlus" },
+	{ name = "Green team", team = 3, color = Color3.fromRGB(90, 180, 60), pass = "SandboxPlus" },
+	{ name = "Yellow team", team = 4, color = Color3.fromRGB(230, 170, 30), pass = "SandboxPlus" },
+}
+local MAX_SPAWN = 5 -- the server's Sandbox.MAX_SPAWN
 
 -- BUILD (TOOLS) puts these on the Q wheel instead of the weapons: the map's own blocks, colours and
 -- materials as server/Map.luau builds them. The trash sits on the build bar beside the block, always.
@@ -179,23 +175,6 @@ local function pictureTile(parent, item, color: Color3, fill: (ViewportFrame) ->
 	return b
 end
 
-local function characterTile(parent, item)
-	return pictureTile(parent, item, item.color, function(view)
-		local previews = ReplicatedStorage:WaitForChild("ToolboxPreviews", 30)
-		local source = previews and previews:WaitForChild(item.kind or item.look, 10)
-		if not source then
-			return
-		end
-		local model = source:Clone()
-		model.Parent = view
-		frame(view, model, Vector3.new(0, 0, -1)) -- it faces -Z, toward the camera
-		local base, phase = model:GetPivot(), #spinners * 0.7 -- tiles a little out of step
-		table.insert(spinners, function(t)
-			model:PivotTo(base * CFrame.Angles(0, SWAY * math.sin(t * SWAY_SPEED + phase), 0))
-		end)
-	end)
-end
-
 local function blockTile(parent, item)
 	return pictureTile(parent, item, item.block:Lerp(Color3.new(0, 0, 0), 0.55), function(view)
 		local cube = Instance.new("Part")
@@ -235,8 +214,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	-- the team, until a weapon or ability comes off the bar (stop).
 	-- BUILD swaps the weapons for the build bar (the block in hand and the trash, 1 / 2) and the
 	-- block wheel (hold Q); a click builds or deletes, until BUILD again.
-	local character = SECTIONS[1].items[1]
+	local character = CHARACTERS[1]
 	local team = 0 -- the team G spawns into (TEAMS), 0: none
+	local count = 1 -- how many one spawn puts down (SPAWN tab)
 	local tool = nil
 	local building = false
 	local buildMode, brick, trashing = false, BLOCKS[1], false
@@ -256,7 +236,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	panel.Size, panel.Position, panel.AnchorPoint = UDim2.fromScale(0.92, 0.75), UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5)
 	panel.BackgroundColor3, panel.BorderSizePixel, panel.ZIndex, panel.Parent = WHITE, 0, 41, cover
 	local max = Instance.new("UISizeConstraint")
-	max.MaxSize, max.Parent = Vector2.new(760, 560), panel
+	max.MaxSize, max.Parent = Vector2.new(900, 600), panel
 	outline(panel, 4)
 	local paper = Instance.new("Frame") -- clips the page's own drifting dots (the stickers stick out past the page)
 	paper.BackgroundTransparency, paper.Size, paper.ZIndex, paper.Parent = 1, UDim2.fromScale(1, 1), 41, panel
@@ -276,41 +256,29 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	local closeLabel = close.Label :: TextLabel
 	closeLabel.TextColor3, closeLabel.TextSize, closeLabel.TextStrokeTransparency = INK, 26, 1
 
-	local scroll = Instance.new("ScrollingFrame")
-	scroll.Position, scroll.Size = UDim2.fromOffset(10, 42), UDim2.new(1, -20, 1, -52)
-	scroll.BackgroundTransparency, scroll.BorderSizePixel, scroll.ScrollBarThickness, scroll.ZIndex = 1, 0, 6, 42
-	scroll.ScrollBarImageColor3, scroll.ScrollBarImageTransparency = INK, 0
-	scroll.CanvasSize, scroll.AutomaticCanvasSize, scroll.Parent = UDim2.new(), Enum.AutomaticSize.Y, panel
-	local list = Instance.new("UIListLayout")
-	list.Padding, list.SortOrder, list.Parent = UDim.new(0, GAP), Enum.SortOrder.LayoutOrder, scroll
-	local inner = Instance.new("UIPadding") -- room for the selection outline, and the scroll bar on the right
-	inner.PaddingTop, inner.PaddingBottom, inner.PaddingLeft, inner.PaddingRight = UDim.new(0, 8), UDim.new(0, 14), UDim.new(0, 8), UDim.new(0, 18)
-	inner.Parent = scroll
-
+	local refresh: () -> () -- below, once every page is built
 	local player = Players.LocalPlayer
 	-- a tilted yellow sticker naming the pass, on a tile while that pass is locked
-	local function passSticker(b: GuiObject, key: string)
+	local function passSticker(b: GuiObject, key: string, width: number?)
 		local sticker = Instance.new("TextLabel")
 		sticker.Text, sticker.Font, sticker.TextSize, sticker.TextColor3 = Shop.item(key).name, FONT, 15, INK
 		sticker.BackgroundColor3, sticker.BorderSizePixel, sticker.Rotation = YELLOW, 0, 6
-		sticker.AnchorPoint, sticker.Position, sticker.Size = Vector2.new(1, 0), UDim2.new(1, -4, 0, 4), UDim2.fromOffset(96, 22)
-		sticker.ZIndex, sticker.Parent = 47, b
+		sticker.AnchorPoint, sticker.Position, sticker.Size = Vector2.new(1, 0), UDim2.new(1, -4, 0, 4), UDim2.fromOffset(width or 96, 22)
+		sticker.ZIndex, sticker.Parent = 48, b
 		outline(sticker, 2)
 		local function show()
 			sticker.Visible = Shop.locked(player, key)
 		end
 		show()
 		player:GetAttributeChangedSignal(Shop.attribute(key)):Connect(show)
+		return sticker
 	end
-
-	local buildLabel = function() end -- the BUILD tile says what a click does now
-	local cards = {}
-	local function refresh()
-		for item, b in cards do
-			local stroke = b:FindFirstChildOfClass("UIStroke")
-			local picked = item == character or (building and item == tool) or (buildMode and item.tool == "build")
-			stroke.Color, stroke.Thickness = picked and YELLOW or INK, picked and 6 or 3
+	local function locked(item): boolean -- and offers the pass when it is
+		if item.pass and Shop.locked(player, item.pass) then
+			MarketplaceService:PromptGamePassPurchase(player, Shop.item(item.pass).pass)
+			return true
 		end
+		return false
 	end
 
 	local function setOpen(on: boolean)
@@ -326,68 +294,313 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		UIS.MouseIconEnabled = on
 	end
 
-	local order = 0
-	for _, section in SECTIONS do
-		order += 1
-		local header = Instance.new("TextLabel")
-		header.Text, header.Font, header.TextSize, header.TextColor3 = section.name, FONT, 24, INK
-		header.BackgroundTransparency, header.TextXAlignment, header.Size = 1, Enum.TextXAlignment.Left, UDim2.new(1, 0, 0, 28)
-		header.LayoutOrder, header.ZIndex, header.Parent = order, 43, scroll
-		order += 1
-		local grid = Instance.new("Frame")
-		grid.BackgroundTransparency, grid.Size, grid.AutomaticSize = 1, UDim2.fromScale(1, 0), Enum.AutomaticSize.Y
-		grid.LayoutOrder, grid.ZIndex, grid.Parent = order, 42, scroll
-		local layout = Instance.new("UIGridLayout")
-		local first = section.items[1]
-		layout.CellSize = if first.kind then UDim2.new(0.2, -GAP, 0, 180) -- characters: upright tiles
-			else UDim2.new(0.25, -GAP, 0, 52)
-		layout.CellPadding, layout.SortOrder = UDim2.fromOffset(GAP, GAP), Enum.SortOrder.LayoutOrder
-		layout.Parent = grid
-		for i, item in section.items do
-			local b = if item.kind then characterTile(grid, item)
-				else button(grid, item.name, item.color)
-			b.LayoutOrder = i
-			cards[item] = b
-			if item.tool == "freeze" then -- says what a click does now
-				local label = b:FindFirstChild("Label") :: TextLabel
-				local function show()
-					label.Text = if workspace:GetAttribute("TimeFrozen") then "RESUME TIME" else "STOP TIME"
-				end
-				show()
-				workspace:GetAttributeChangedSignal("TimeFrozen"):Connect(show)
+	-- Small pieces the pages are made of -------------------------------------------------------
+	local function heading(parent: Instance, text: string, order: number)
+		local h = Instance.new("TextLabel")
+		h.Text, h.Font, h.TextSize, h.TextColor3 = text, FONT, 22, INK
+		h.BackgroundTransparency, h.TextXAlignment, h.Size = 1, Enum.TextXAlignment.Left, UDim2.new(1, 0, 0, 24)
+		h.LayoutOrder, h.ZIndex, h.Parent = order, 44, parent
+		return h
+	end
+	local function row(parent: Instance, order: number, height: number): Frame
+		local r = Instance.new("Frame")
+		r.BackgroundTransparency, r.Size, r.LayoutOrder, r.ZIndex, r.Parent = 1, UDim2.new(1, 0, 0, height), order, 43, parent
+		local l = Instance.new("UIListLayout")
+		l.FillDirection, l.Padding, l.SortOrder = Enum.FillDirection.Horizontal, UDim.new(0, 6), Enum.SortOrder.LayoutOrder
+		l.VerticalAlignment, l.Parent = Enum.VerticalAlignment.Center, r
+		return r
+	end
+	local function column(parent: Instance): Frame -- the right half of a page, top to bottom
+		local c = Instance.new("Frame")
+		c.BackgroundTransparency, c.Position, c.Size, c.ZIndex, c.Parent = 1, UDim2.new(0.5, 6, 0, 0), UDim2.new(0.5, -6, 1, 0), 43, parent
+		local l = Instance.new("UIListLayout")
+		l.Padding, l.SortOrder, l.Parent = UDim.new(0, 8), Enum.SortOrder.LayoutOrder, c
+		return c
+	end
+	local function hint(parent: Instance, text: string, order: number)
+		local t = Instance.new("TextLabel")
+		t.Text, t.Font, t.TextSize, t.TextColor3, t.TextWrapped = text, FONT, 15, INK, true
+		t.TextTransparency, t.BackgroundTransparency, t.TextXAlignment = 0.35, 1, Enum.TextXAlignment.Left
+		t.Size, t.LayoutOrder, t.ZIndex, t.Parent = UDim2.new(1, 0, 0, 36), order, 44, parent
+		return t
+	end
+	local function pick(b: GuiObject, on: boolean) -- yellow, thicker outline on the chosen one
+		local stroke = b:FindFirstChildOfClass("UIStroke") :: UIStroke
+		stroke.Color, stroke.Thickness = on and YELLOW or INK, on and 5 or 3
+	end
+	-- A stage on the left half of a page: a comic panel in `color` with a 3D model turning in it and
+	-- a name plate along the bottom. Returns the stage, its viewport, setColor and setName.
+	local function stage(parent: Instance)
+		local s = Instance.new("Frame")
+		s.BackgroundTransparency, s.Size, s.ZIndex, s.Parent = 1, UDim2.new(0.5, -6, 1, -4), 43, parent
+		outline(s, 4)
+		local fill: Instance? = nil
+		local function setColor(color: Color3)
+			if fill then
+				fill:Destroy()
 			end
-			if item.tool == "build" then
-				local label = b:FindFirstChild("Label") :: TextLabel
-				buildLabel = function()
-					label.Text = if buildMode then "STOP BUILDING" else "BUILD"
-				end
-			end
-			if item.pass then
-				passSticker(b, item.pass)
-			end
-			b.Activated:Connect(function()
-				if item.pass and Shop.locked(player, item.pass) then
-					MarketplaceService:PromptGamePassPurchase(player, Shop.item(item.pass).pass)
-					return
-				end
-				if item.tool == "clear" then
-					actionRemote:FireServer("clearbuild")
-				elseif item.tool == "freeze" then
-					actionRemote:FireServer("freeze")
-				elseif item.tool == "build" then
-					setBuild(not buildMode)
-				elseif item.kind then
-					character = item
-				else
-					tool, building = item, true
-					team = item.team or team -- G spawns into the last team picked ("No team": 0)
-				end
-				refresh()
-				setOpen(false)
-			end)
+			comicFill(s, color, true)
+			fill = s:FindFirstChild("Fill")
+		end
+		local view = Instance.new("ViewportFrame")
+		view.BackgroundTransparency, view.ZIndex = 1, 45
+		view.Position, view.Size = UDim2.fromOffset(10, 10), UDim2.new(1, -20, 1, -74)
+		view.Ambient, view.LightColor, view.LightDirection = Color3.fromRGB(150, 150, 160), Color3.new(1, 1, 1), Vector3.new(-0.5, -1, -0.8)
+		view.Parent = s
+		local plate = Instance.new("TextLabel")
+		plate.Font, plate.TextSize, plate.TextColor3, plate.BackgroundColor3, plate.BorderSizePixel = FONT, 28, INK, WHITE, 0
+		plate.AnchorPoint, plate.Position, plate.Size = Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -12), UDim2.new(1, -40, 0, 44)
+		plate.Rotation, plate.ZIndex, plate.Parent = -2, 46, s
+		outline(plate, 3)
+		return s, view, setColor, function(text: string)
+			plate.Text = text:upper()
 		end
 	end
-	refresh()
+	-- turns whatever model `get` returns in a stage, while the toolbox is open
+	local function turning(get: () -> Instance?)
+		table.insert(spinners, function(t)
+			local m = get()
+			if m and m:IsA("Model") then
+				local base = m:GetAttribute("Base") or m:GetPivot()
+				m:SetAttribute("Base", base)
+				m:PivotTo(base * CFrame.Angles(0, t * 0.9, 0))
+			elseif m and m:IsA("BasePart") then
+				m.CFrame = CFrame.Angles(0, t * 0.9, 0)
+			end
+		end)
+	end
+
+	-- Tabs down the left, one page each on the right ---------------------------------------------
+	local SIDE = 150
+	local TABS = {
+		{ name = "SPAWN", color = RED },
+		{ name = "BUILD", color = Color3.fromRGB(40, 140, 70) },
+		{ name = "WORLD", color = Color3.fromRGB(70, 60, 150) },
+	}
+	local area = Instance.new("Frame")
+	area.BackgroundTransparency, area.Position, area.Size, area.ZIndex = 1, UDim2.fromOffset(SIDE + 30, 46), UDim2.new(1, -SIDE - 44, 1, -60), 42
+	area.Parent = panel
+	local rule = Instance.new("Frame") -- ink line between the tabs and the page
+	rule.BackgroundColor3, rule.BorderSizePixel, rule.ZIndex = INK, 0, 42
+	rule.Position, rule.Size, rule.Parent = UDim2.fromOffset(SIDE + 18, 40), UDim2.new(0, 3, 1, -52), panel
+	local tabs, pages = {}, {}
+	local shown = 1
+	local function showTab(k: number)
+		shown = k
+		for i, b in tabs do
+			local on = i == k
+			pages[i].Visible = on
+			pick(b, on)
+			b.Position = UDim2.fromOffset(on and 22 or 12, 56 + (i - 1) * 80)
+		end
+	end
+	for i, t in TABS do
+		local b = button(panel, t.name, t.color, 43, true)
+		b.Size, b.Rotation = UDim2.fromOffset(SIDE, 64), if i % 2 == 0 then 2 else -2
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize = 30
+		tabs[i] = b
+		local page = Instance.new("Frame")
+		page.Name, page.BackgroundTransparency, page.Size, page.ZIndex, page.Parent = t.name, 1, UDim2.fromScale(1, 1), 42, area
+		pages[i] = page
+		b.Activated:Connect(function()
+			showTab(i)
+		end)
+	end
+
+	-- SPAWN: the character turning on a stage, the choices beside it, SPAWN! ------------------------
+	local spawnNow: () -> () -- below, with use()
+	local spawnPage = pages[1]
+	local spawnStage, spawnView, spawnColor, spawnName = stage(spawnPage)
+	local shownModel: Instance? = nil
+	local shownFor = nil -- the character shownModel is
+	turning(function()
+		return shownModel
+	end)
+	local charLock = passSticker(spawnStage, "SandboxPlus", 120)
+	local teamTag = Instance.new("TextLabel") -- the team it goes into, on the stage's top-left corner
+	teamTag.Font, teamTag.TextSize, teamTag.TextColor3, teamTag.BorderSizePixel = FONT, 17, WHITE, 0
+	teamTag.TextStrokeTransparency, teamTag.Rotation, teamTag.ZIndex = 0, -6, 47
+	teamTag.Position, teamTag.Size, teamTag.Parent = UDim2.fromOffset(-8, -8), UDim2.fromOffset(120, 28), spawnStage
+	outline(teamTag, 2)
+	local function arrow(text: string, x: number, by: number)
+		local b = button(spawnStage, text, YELLOW, 47, true)
+		b.AnchorPoint, b.Position, b.Size = Vector2.new(0.5, 0.5), UDim2.new(x, 0, 0.45, 0), UDim2.fromOffset(40, 52)
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize, label.TextColor3, label.TextStrokeTransparency = 30, INK, 1
+		b.Activated:Connect(function()
+			local i = table.find(CHARACTERS, character) or 1
+			character = CHARACTERS[(i - 1 + by) % #CHARACTERS + 1]
+			refresh()
+		end)
+	end
+	arrow("<", 0.06, -1)
+	arrow(">", 0.94, 1)
+
+	local spawnSide = column(spawnPage)
+	heading(spawnSide, "CHARACTER", 1)
+	local charRow = row(spawnSide, 2, 40)
+	local charChips = {}
+	for i, item in CHARACTERS do
+		local b = button(charRow, "", item.color, 44, true)
+		b.Size, b.LayoutOrder = UDim2.fromOffset(34, 34), i
+		charChips[item] = b
+		b.Activated:Connect(function()
+			character = item
+			refresh()
+		end)
+	end
+	local teamHead = heading(spawnSide, "TEAM", 3)
+	local teamRow = row(spawnSide, 4, 44)
+	local teamChips = {}
+	for i, item in TEAMS do
+		local b = button(teamRow, if item.team == 0 then "-" else "", item.color, 44, true)
+		b.Size, b.LayoutOrder = UDim2.fromOffset(46, 40), i
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize = 30
+		teamChips[item] = b
+		b.Activated:Connect(function()
+			if item.team ~= 0 and locked(item) then
+				return
+			end
+			team = item.team
+			refresh()
+		end)
+	end
+	passSticker(teamHead, "SandboxPlus")
+	heading(spawnSide, "HOW MANY", 5)
+	local countRow = row(spawnSide, 6, 44)
+	local countLabel = Instance.new("TextLabel")
+	local function stepper(text: string, by: number, order: number)
+		local b = button(countRow, text, YELLOW, 44, true)
+		b.Size, b.LayoutOrder = UDim2.fromOffset(46, 40), order
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize, label.TextColor3, label.TextStrokeTransparency = 30, INK, 1
+		b.Activated:Connect(function()
+			count = math.clamp(count + by, 1, MAX_SPAWN)
+			refresh()
+		end)
+	end
+	stepper("-", -1, 1)
+	countLabel.Font, countLabel.TextSize, countLabel.TextColor3, countLabel.BackgroundColor3 = FONT, 30, INK, WHITE
+	countLabel.BorderSizePixel, countLabel.Size, countLabel.LayoutOrder, countLabel.ZIndex = 0, UDim2.fromOffset(70, 40), 2, 44
+	countLabel.Parent = countRow
+	outline(countLabel, 3)
+	stepper("+", 1, 3)
+	local spacer = Instance.new("Frame")
+	spacer.BackgroundTransparency, spacer.Size, spacer.LayoutOrder, spacer.Parent = 1, UDim2.new(1, 0, 0, 6), 7, spawnSide
+	local spawnButton = button(spawnSide, "SPAWN!", RED, 44, true)
+	spawnButton.Size, spawnButton.LayoutOrder, spawnButton.Rotation = UDim2.new(1, -10, 0, 78), 8, -2
+	local spawnLabel = spawnButton:FindFirstChild("Label") :: TextLabel
+	spawnLabel.TextSize, spawnLabel.TextColor3 = 44, YELLOW
+	spawnButton.Activated:Connect(function()
+		if locked(character) then
+			return
+		end
+		setOpen(false)
+		spawnNow()
+	end)
+	hint(spawnSide, `Where you aim. G spawns the same again. Up to {MAX_SPAWN} at once.`, 9)
+
+	local function showCharacter()
+		spawnColor(character.color)
+		spawnName(character.name)
+		charLock.Visible = character.pass ~= nil and Shop.locked(player, character.pass)
+		if shownFor == character then
+			return
+		end
+		shownFor = character
+		if shownModel then
+			shownModel:Destroy()
+			shownModel = nil
+		end
+		local wanted = character
+		task.spawn(function()
+			local previews = ReplicatedStorage:WaitForChild("ToolboxPreviews", 30)
+			local source = previews and previews:WaitForChild(wanted.kind, 10)
+			if not source or character ~= wanted or shownModel then
+				return
+			end
+			local model = source:Clone()
+			model.Parent = spawnView
+			frame(spawnView, model, Vector3.new(0, 0, -1)) -- it faces -Z, toward the camera
+			shownModel = model
+		end)
+	end
+
+	-- WORLD: time, clearing up, and team paint (a click on a dummy puts it in the team) ------------
+	local worldSide = pages[3]
+	local worldList = Instance.new("UIListLayout")
+	worldList.Padding, worldList.SortOrder, worldList.Parent = UDim.new(0, 10), Enum.SortOrder.LayoutOrder, worldSide
+	local freezeButton = button(worldSide, "STOP TIME", Color3.fromRGB(70, 60, 150), 44, true)
+	freezeButton.Size, freezeButton.LayoutOrder, freezeButton.Rotation = UDim2.new(1, -10, 0, 70), 1, -1
+	local freezeLabel = freezeButton:FindFirstChild("Label") :: TextLabel
+	freezeLabel.TextSize = 34
+	passSticker(freezeButton, "SandboxPlus")
+	local function showFrozen()
+		freezeLabel.Text = if workspace:GetAttribute("TimeFrozen") then "RESUME TIME" else "STOP TIME"
+	end
+	showFrozen()
+	workspace:GetAttributeChangedSignal("TimeFrozen"):Connect(showFrozen)
+	freezeButton.Activated:Connect(function()
+		if not locked({ pass = "SandboxPlus" }) then
+			actionRemote:FireServer("freeze")
+		end
+	end)
+	hint(worldSide, "Everything stands still: set the dummies up, then let them go.", 2)
+	local wipe = button(worldSide, "REMOVE ALL DUMMIES", Color3.fromRGB(143, 46, 44), 44, true)
+	wipe.Size, wipe.LayoutOrder, wipe.Rotation = UDim2.new(1, -10, 0, 56), 3, 1
+	local wipeLabel = wipe:FindFirstChild("Label") :: TextLabel
+	wipeLabel.TextSize = 26
+	wipe.Activated:Connect(function()
+		actionRemote:FireServer("clearspawn")
+	end)
+	local paintHead = heading(worldSide, "TEAM PAINT", 4)
+	local paintRow = row(worldSide, 5, 48)
+	local paintChips = {}
+	for i, item in TEAMS do
+		local b = button(paintRow, if item.team == 0 then "-" else "", item.color, 44, true)
+		b.Size, b.LayoutOrder = UDim2.fromOffset(60, 44), i
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize = 30
+		paintChips[item] = b
+		b.Activated:Connect(function()
+			if locked(item) then
+				return
+			end
+			tool, building = item, true
+			refresh()
+			setOpen(false)
+		end)
+	end
+	passSticker(paintHead, "SandboxPlus")
+	hint(worldSide, "Pick a colour, then click dummies to put them in that team. Teams fight each other.", 6)
+
+	local buildLabel = function() end -- the BUILD page, below
+	local showBlocks = function() end
+	refresh = function()
+		for item, b in charChips do
+			pick(b, item == character)
+		end
+		for item, b in teamChips do
+			pick(b, item.team == team)
+		end
+		for item, b in paintChips do
+			pick(b, building and not buildMode and item == tool)
+		end
+		local t = TEAMS[1]
+		for _, item in TEAMS do
+			if item.team == team then
+				t = item
+			end
+		end
+		teamTag.Visible, teamTag.Text, teamTag.BackgroundColor3 = team ~= 0, t.name:upper(), t.color
+		countLabel.Text = tostring(count)
+		spawnLabel.Text = if count > 1 then `SPAWN {count}!` else "SPAWN!"
+		showCharacter()
+		showBlocks()
+	end
+	showTab(1)
 
 	close.Activated:Connect(function()
 		setOpen(false)
@@ -397,6 +610,10 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Tab then
+			if not cover.Visible and buildMode then -- Tab ends building, and opens on BUILD
+				setBuild(false)
+				showTab(2)
+			end
 			setOpen(not cover.Visible)
 		elseif cover.Visible and input.KeyCode == Enum.KeyCode.Escape and not processed then
 			setOpen(false)
@@ -408,10 +625,10 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	buildBar.Name, buildBar.BackgroundTransparency, buildBar.Visible = "BuildBar", 1, false
 	buildBar.AnchorPoint, buildBar.Position, buildBar.Size = Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -16), UDim2.fromOffset(220, 130)
 	buildBar.ZIndex, buildBar.Parent = 30, gui
-	local hint = Instance.new("TextLabel")
-	hint.Text, hint.Font, hint.TextSize, hint.TextColor3 = "HOLD Q  BLOCKS     TAB  STOP BUILDING", FONT, 16, WHITE
-	hint.TextStrokeTransparency, hint.BackgroundTransparency = 0, 1
-	hint.Size, hint.Position, hint.ZIndex, hint.Parent = UDim2.new(1, 200, 0, 20), UDim2.new(0, -100, 0, -4), 31, buildBar
+	local barHint = Instance.new("TextLabel")
+	barHint.Text, barHint.Font, barHint.TextSize, barHint.TextColor3 = "HOLD Q  BLOCKS     TAB  STOP BUILDING", FONT, 16, WHITE
+	barHint.TextStrokeTransparency, barHint.BackgroundTransparency = 0, 1
+	barHint.Size, barHint.Position, barHint.ZIndex, barHint.Parent = UDim2.new(1, 200, 0, 20), UDim2.new(0, -100, 0, -4), 31, buildBar
 	local function trashTile(parent): TextButton
 		local b = button(parent, "🗑", TRASH.color)
 		local label = b:FindFirstChild("Label") :: TextLabel
@@ -472,6 +689,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end
 		brick, trashing = item, false
 		showBar()
+		refresh()
 	end
 	local function showWheel(on: boolean)
 		if on == wheel.Visible then
@@ -507,6 +725,73 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		refresh()
 	end
 	showBar()
+
+	-- BUILD: the block in hand turning on a stage, every block beside it, START BUILDING ------------
+	local buildPage = pages[2]
+	local _, buildView, buildColor, buildName = stage(buildPage)
+	local cube = Instance.new("Part")
+	cube.Size, cube.Anchored, cube.CFrame = Vector3.one * GRID, true, CFrame.new()
+	cube.TopSurface, cube.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
+	cube.Parent = buildView
+	frame(buildView, cube, Vector3.new(1, 0.9, -1.2)) -- from above a corner: three faces show
+	turning(function()
+		return cube
+	end)
+	local buildSide = column(buildPage)
+	heading(buildSide, "BLOCKS", 1)
+	local blockGrid = Instance.new("Frame")
+	blockGrid.BackgroundTransparency, blockGrid.Size, blockGrid.LayoutOrder, blockGrid.ZIndex = 1, UDim2.new(1, 0, 0, 196), 2, 43
+	blockGrid.Parent = buildSide
+	local gridLayout = Instance.new("UIGridLayout")
+	gridLayout.CellSize, gridLayout.CellPadding = UDim2.new(0.25, -6, 0, 92), UDim2.fromOffset(6, 8)
+	gridLayout.SortOrder, gridLayout.Parent = Enum.SortOrder.LayoutOrder, blockGrid
+	local blockChips = {}
+	for i, item in BLOCKS do
+		local b = blockTile(blockGrid, item)
+		b.LayoutOrder = i
+		blockChips[item] = b
+		if item.pass then
+			local sticker = passSticker(b, item.pass, 64)
+			sticker.TextSize = 11
+		end
+		b.Activated:Connect(function()
+			if locked(item) then
+				return
+			end
+			brick, trashing = item, false
+			showBar()
+			refresh()
+		end)
+	end
+	local startButton = button(buildSide, "START BUILDING!", Color3.fromRGB(40, 140, 70), 44, true)
+	startButton.Size, startButton.LayoutOrder, startButton.Rotation = UDim2.new(1, -10, 0, 66), 3, -2
+	local startLabel = startButton:FindFirstChild("Label") :: TextLabel
+	startLabel.TextSize, startLabel.TextColor3 = 32, YELLOW
+	startButton.Activated:Connect(function()
+		setBuild(not buildMode)
+		if buildMode then
+			setOpen(false)
+		end
+	end)
+	local clearButton = button(buildSide, "CLEAR MY BLOCKS", Color3.fromRGB(90, 40, 40), 44, true)
+	clearButton.Size, clearButton.LayoutOrder = UDim2.new(1, -10, 0, 44), 4
+	clearButton.Activated:Connect(function()
+		actionRemote:FireServer("clearbuild")
+	end)
+	hint(buildSide, "Hold Q: the block wheel. 1 block, 2 trash. Click to build or delete.", 5)
+	buildLabel = function()
+		startLabel.Text = if buildMode then "STOP BUILDING" else "START BUILDING!"
+	end
+	showBlocks = function()
+		for item, b in blockChips do
+			pick(b, item == brick)
+		end
+		buildColor(brick.block:Lerp(INK, 0.45))
+		buildName(brick.name)
+		cube.Color, cube.Material = brick.block, Enum.Material[brick.material]
+	end
+	buildLabel()
+	refresh()
 
 	UIS.InputBegan:Connect(function(input, processed)
 		if not buildMode or processed or cover.Visible or api.blocked() or UIS:GetFocusedTextBox() then
@@ -596,13 +881,14 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end
 	end)
 
+	spawnNow = function() -- G, and SPAWN!: the picked character, team and count where the aim is
+		local result = aim(RANGE)
+		if result then
+			actionRemote:FireServer("spawn", result.Position, character.kind, team, count)
+		end
+	end
 	return {
-		use = function() -- G
-			local result = aim(RANGE)
-			if result then
-				actionRemote:FireServer("spawn", result.Position, character.kind, team)
-			end
-		end,
+		use = spawnNow,
 		click = function(): boolean -- left click: true when the build tool took it
 			local tool = current()
 			if not tool then

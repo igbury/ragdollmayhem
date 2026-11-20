@@ -745,6 +745,7 @@ local Sandbox: any = { frozen = false, userFrozen = false, frozenParts = {}, fro
 -- TEAMS (Toolbox, SANDBOX + in shared/Shop): up to 4; a dummy in one goes after the nearest dummy of
 -- another (behave, nearestDummy), never a teammate, and does not lose its nerve. A coloured dot over
 -- its head shows which.
+Sandbox.MAX_SPAWN = 5 -- dummies one SPAWN (Toolbox) puts down at most
 Sandbox.TEAM_COLORS = { Color3.fromRGB(232, 70, 56), Color3.fromRGB(40, 110, 220), Color3.fromRGB(90, 180, 60), Color3.fromRGB(252, 200, 50) }
 function Sandbox.setTeam(d, team: number?)
 	d.team = team
@@ -2099,8 +2100,8 @@ local function clearBlocks(player: Player)
 end
 Players.PlayerRemoving:Connect(clearBlocks)
 
-local MENU_ACTIONS = { map = true, menu = true, spawn = true, dress = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true } -- slam / kick / dive: the handler below
-actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
+local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true } -- slam / kick / dive: the handler below
+actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
 	local building = action == "build" or action == "unbuild"
 	if not MENU_ACTIONS[action] or rateLimited(player, building and 0.08 or 0.25, building and "build" or "action") then
 		return
@@ -2155,10 +2156,21 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2)
 		if kind and Shop.SANDBOX.kinds[kind] and not plus then
 			return
 		end
-		trimDummies(Shop.SANDBOX.dummies[plus and 2 or 1])
-		local d = spawnDummy(CFrame.new(arg + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
-		if plus and d and Sandbox.TEAM_COLORS[extra2] then -- spawned straight into the picked team
-			Sandbox.setTeam(d, extra2)
+		local count = math.clamp(math.floor(tonumber(extra3) or 1), 1, Sandbox.MAX_SPAWN) -- the Toolbox's HOW MANY
+		for i = 1, count do -- the first on the spot, the rest in a ring round it
+			local a = i * 2.4
+			local at = arg + (if i == 1 then Vector3.zero else Vector3.new(math.cos(a), 0, math.sin(a)) * 5)
+			trimDummies(Shop.SANDBOX.dummies[plus and 2 or 1])
+			local d = spawnDummy(CFrame.new(at + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
+			if plus and d and Sandbox.TEAM_COLORS[extra2] then -- spawned straight into the picked team
+				Sandbox.setTeam(d, extra2)
+			end
+		end
+	elseif action == "clearspawn" then -- Toolbox WORLD: every dummy goes, the tutorial's stay
+		for _, d in table.clone(dummies) do
+			if not d.model:GetAttribute("TutorialFor") and not d.heldBy then
+				d.model:Destroy()
+			end
 		end
 	elseif action == "team" and plus and typeof(arg) == "Instance" and (extra == 0 or Sandbox.TEAM_COLORS[extra]) then
 		local d = dummyOf(arg)

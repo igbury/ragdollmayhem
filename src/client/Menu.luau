@@ -31,6 +31,7 @@ local YELLOW = Color3.fromRGB(252, 200, 50)
 local RED = Color3.fromRGB(232, 70, 56)
 local BLUE = Color3.fromRGB(40, 70, 140)
 local ORANGE = Color3.fromRGB(255, 170, 40)
+local PURPLE = Color3.fromRGB(135, 70, 210)
 local IDLE = Color3.fromRGB(228, 228, 228) -- panel tint at rest; hover lifts it to white
 local FONT = Enum.Font.LuckiestGuy
 local BURST_IMAGE = "rbxassetid://121244599706688" -- same starburst as Fx.pop
@@ -358,8 +359,8 @@ type Panel = {
 	seams: any,
 }
 local PANELS: { Panel } = {
-	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) },
-	{ edges = { "TOP", "RIGHT", "HS", "V1" }, inside = Vector2.new(0.75, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = PURPLE, ink = Color3.fromRGB(45, 15, 90) },
+	{ edges = { "TOP", "RIGHT", "HS", "V1" }, inside = Vector2.new(0.75, 0.15), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }, -- SHOP: green, money's colour (not yellow: PLAY below it is)
 	{ edges = { "H2", SHOW_MODES and "VM" or "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, bottom left
 	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
 	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
@@ -581,10 +582,10 @@ local function title(p: Panel, n: number, text: string, color: Color3, withValue
 end
 
 local statP, shopP, mapP, playP, sceneP = PANELS[1], PANELS[2], PANELS[3], PANELS[4], PANELS[5]
-statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(150, 205, 80), 0.3, 14) -- PLAY's rays, light green
-title(statP, 1, "STATS", YELLOW, false) -- yellow on green
-shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(240, 100, 70), 0.3, 14) -- PLAY's rays, red
-title(shopP, 2, "SHOP", RED, false) -- red on yellow
+statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(185, 130, 245), 0.3, 14) -- light purple
+title(statP, 1, "STATS", YELLOW, false) -- yellow on purple
+shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(150, 205, 80), 0.3, 14) -- light green
+title(shopP, 2, "SHOP", YELLOW, false) -- yellow on green
 mapP.burst = rays(mapP.content :: GuiObject, 0.5, 0.5, 18, 70, 0, Color3.fromRGB(255, 120, 100), 0.35, -10)
 local mapValue = title(mapP, 3, "MAP", WHITE, true) :: TextLabel -- white on red
 local modeP: Panel? = PANELS[6]
