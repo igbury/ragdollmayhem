@@ -1,0 +1,63 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: M,Arial Black,88,&H0028E6FF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,7,4,2,60,60,440,1
+Style: F,Arial Black,88,&H00B469FF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,7,4,2,60,60,440,1
+Style: Title,Arial Black,96,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,9,4,5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.00,0:00:02.30,Title,,0,0,0,,{\pos(540,600)\c&H28E6FF&\fs160}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}RAGDOLL
+Dialogue: 1,0:00:00.10,0:00:02.30,Title,,0,0,0,,{\pos(540,750)\c&H28E6FF&\fs160}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MAYHEM
+Dialogue: 1,0:00:00.35,0:00:02.30,Title,,0,0,0,,{\pos(540,1250)\c&H50FF78&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}OUT NOW!
+Dialogue: 1,0:00:02.30,0:00:04.59,Title,,0,0,0,,{\pos(540,230)\c&HFFFFFF&\fs92}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}NOT JUST ANOTHER
+Dialogue: 1,0:00:02.40,0:00:04.59,Title,,0,0,0,,{\pos(540,340)\c&H28E6FF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}RAGDOLL GAME
+Dialogue: 1,0:00:04.59,0:00:06.65,Title,,0,0,0,,{\pos(540,640)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}REAL PHYSICS
+Dialogue: 1,0:00:06.65,0:00:10.84,Title,,0,0,0,,{\pos(540,210)\c&H28E6FF&\fs200}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}30+
+Dialogue: 1,0:00:06.75,0:00:10.84,Title,,0,0,0,,{\pos(540,370)\c&HFFFFFF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}WEAPONS
+Dialogue: 1,0:00:10.84,0:00:12.85,Title,,0,0,0,,{\pos(540,600)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}SEND THEM
+Dialogue: 1,0:00:10.94,0:00:12.85,Title,,0,0,0,,{\pos(540,740)\c&HFFFFFF&\fs150}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FLYING
+Dialogue: 1,0:00:12.85,0:00:16.49,Title,,0,0,0,,{\pos(540,640)\c&H28E6FF&\fs115}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}REAL INJURIES
+Dialogue: 1,0:00:16.49,0:00:19.85,Title,,0,0,0,,{\pos(540,230)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}HUGE MAPS
+Dialogue: 1,0:00:19.85,0:00:22.46,Title,,0,0,0,,{\pos(540,230)\c&H28E6FF&\fs125}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MYTH BOSSES
+Dialogue: 1,0:00:22.46,0:00:24.43,Title,,0,0,0,,{\pos(540,600)\c&H28E6FF&\fs150}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TOTAL
+Dialogue: 1,0:00:22.56,0:00:24.43,Title,,0,0,0,,{\pos(540,750)\c&H28E6FF&\fs150}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MAYHEM
+Dialogue: 1,0:00:24.43,0:00:27.60,Title,,0,0,0,,{\pos(540,230)\c&H50FF78&\fs150}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}PLAY NOW
+Dialogue: 1,0:00:24.58,0:00:27.60,Title,,0,0,0,,{\pos(540,380)\c&HFFFFFF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}ON ROBLOX
+Dialogue: 1,0:00:25.63,0:00:27.60,Title,,0,0,0,,{\pos(540,1150)\c&HFFFFFF&\fs80}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}SEARCH:
+Dialogue: 1,0:00:25.73,0:00:27.60,Title,,0,0,0,,{\pos(540,1260)\c&H28E6FF&\fs105}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}RAGDOLL MAYHEM
+Dialogue: 0,0:00:00.05,0:00:00.96,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf41}RAGDOLL {\kf27}MAYHEM {\kf6}IS
+Dialogue: 0,0:00:00.96,0:00:02.30,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf10}OUT {\kf5}ON {\kf84}ROBLOX!
+Dialogue: 0,0:00:02.35,0:00:02.99,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf16}AND {\kf13}IT'S {\kf19}NOT
+Dialogue: 0,0:00:02.99,0:00:03.97,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf21}JUST {\kf25}ANOTHER {\kf37}RAGDOLL
+Dialogue: 0,0:00:03.97,0:00:04.69,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf46}GAME.
+Dialogue: 0,0:00:04.64,0:00:05.55,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf31}EVERY {\kf21}HIT {\kf15}IS
+Dialogue: 0,0:00:05.55,0:00:06.75,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf21}REAL {\kf68}PHYSICS!
+Dialogue: 0,0:00:06.70,0:00:07.92,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf30}THIRTY {\kf22}PLUS {\kf50}WEAPONS:
+Dialogue: 0,0:00:07.92,0:00:08.47,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf51}LASSOS,
+Dialogue: 0,0:00:08.47,0:00:09.04,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf55}HARPOONS,
+Dialogue: 0,0:00:09.04,0:00:09.77,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}FREEZE {\kf40}GUNS,
+Dialogue: 0,0:00:09.77,0:00:10.94,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf92}C4!
+Dialogue: 0,0:00:10.89,0:00:11.68,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf24}SEND {\kf12}THEM {\kf29}FLYING
+Dialogue: 0,0:00:11.68,0:00:12.95,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf29}ACROSS {\kf7}THE {\kf58}MAP!
+Dialogue: 0,0:00:12.90,0:00:13.72,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf27}BREAK {\kf14}THEIR {\kf29}BONES
+Dialogue: 0,0:00:13.72,0:00:14.56,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf10}AND {\kf15}THEY {\kf34}LIMP,
+Dialogue: 0,0:00:14.56,0:00:15.14,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf46}CRAWL...
+Dialogue: 0,0:00:15.14,0:00:16.59,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf17}OR {\kf22}FIGHT {\kf66}BACK!
+Dialogue: 0,0:00:16.54,0:00:17.42,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf35}HUGE {\kf41}MAPS:
+Dialogue: 0,0:00:17.42,0:00:18.22,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}A {\kf63}VOLCANO,
+Dialogue: 0,0:00:18.22,0:00:18.78,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}A {\kf41}PORT,
+Dialogue: 0,0:00:18.78,0:00:19.95,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}A {\kf23}WHOLE {\kf51}CITY!
+Dialogue: 0,0:00:19.90,0:00:20.81,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf29}MYTH {\kf37}BOSSES {\kf12}THAT
+Dialogue: 0,0:00:20.81,0:00:21.41,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf9}EAT {\kf28}DUMMIES {\kf11}FOR
+Dialogue: 0,0:00:21.41,0:00:22.56,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf91}BREAKFAST!
+Dialogue: 0,0:00:22.51,0:00:23.02,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf15}AND {\kf9}YOU {\kf13}CAN
+Dialogue: 0,0:00:23.02,0:00:24.53,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf20}BLOW {\kf9}UP {\kf82}EVERYTHING!
+Dialogue: 0,0:00:24.48,0:00:25.60,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf27}PLAY {\kf37}RAGDOLL {\kf31}MAYHEM
+Dialogue: 0,0:00:25.60,0:00:26.40,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf55}NOW!
+Dialogue: 0,0:00:26.20,0:00:26.74,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf29}SEARCH {\kf6}IT {\kf7}ON
+Dialogue: 0,0:00:26.74,0:00:27.70,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf71}ROBLOX!
