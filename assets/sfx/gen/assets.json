@@ -709,5 +709,59 @@
     "operation": "1acea399-fb5b-4d18-afe7-57148bee1545",
     "error": null,
     "sha256": "e59294d9bf5b70b83e26514ce2a523816f9af41a7e13c3dcdfa5027d95e6156d"
+  },
+  "harpoon_reel": {
+    "assetId": "132479081664639",
+    "assetType": "Audio",
+    "displayName": "harpoon_reel",
+    "moderation": "Approved",
+    "operation": "0d9ad4a0-671f-4078-8306-bf78fd671c1a",
+    "error": null,
+    "sha256": "a0de7ee21663dfa022e35600a4a009d030aa82e044981d2971eb597da1676a53"
+  },
+  "c4_stick": {
+    "assetId": "93374716716764",
+    "assetType": "Audio",
+    "displayName": "c4_stick",
+    "moderation": "Approved",
+    "operation": "2c8834e8-d691-4f15-b7a3-748989bdfe53",
+    "error": null,
+    "sha256": "409b183961c05116436400e5504363c1dcf7697534ecc7df015b3a74e4f30688"
+  },
+  "c4_beep": {
+    "assetId": "117636856606826",
+    "assetType": "Audio",
+    "displayName": "c4_beep",
+    "moderation": "Approved",
+    "operation": "f9087f35-be16-4710-879d-1e8bd44b2e58",
+    "error": null,
+    "sha256": "4c7cd55123fdbe240708b1f387ffea9ea517c7b7d8e78d6c143f8dbf257494a1"
+  },
+  "landmine_arm": {
+    "assetId": "127518349798319",
+    "assetType": "Audio",
+    "displayName": "landmine_arm",
+    "moderation": "Approved",
+    "operation": "a95c85ce-87f1-4374-9cb4-df01ff785f83",
+    "error": null,
+    "sha256": "99583af4142733da196fe35bdbe51c84c0a5e581d81764fc4538d52d4a9cdc19"
+  },
+  "tnt_fuse": {
+    "assetId": "120888223565853",
+    "assetType": "Audio",
+    "displayName": "tnt_fuse",
+    "moderation": "Approved",
+    "operation": "aecdbb50-2ace-4aeb-8210-136a158a168f",
+    "error": null,
+    "sha256": "2c16d638b39c5062515be08bda2f03f7a9642d88987cfaa0538f2fa6d6b2dac4"
+  },
+  "arm_rip": {
+    "assetId": "77640094945176",
+    "assetType": "Audio",
+    "displayName": "arm_rip",
+    "moderation": "Approved",
+    "operation": "81e1d229-a652-4179-9f4f-daf8e0810831",
+    "error": null,
+    "sha256": "d626a776f61ccafaed52ccf29f11b48b93dd44eda1385957278c8490b570ad97"
   }
 }
