@@ -1,7 +1,9 @@
 -- Toolbox (Tab): a page per tab down the left. SPAWN: a character on a stage, its team and how many,
 -- then SPAWN! (or G) where you aim. BUILD: the blocks, and building with them (the block wheel on Q and
--- the trash, instead of the weapons). WORLD: time stop, clearing the dummies, team paint. The server
--- checks and does it all (server/init.server.luau, "spawn" / "clearspawn" / "build" / "team" / "freeze").
+-- the trash, instead of the weapons). WORLD: time stop, clearing the dummies, team paint. WARDROBE: a style
+-- of catalog clothes (shared/Wardrobe) on a mannequin, then SELECT: the bar's 1 dresses the dummy you
+-- click in it, 2 puts its own clothes back. The server
+-- checks and does it all (server/init.server.luau, "spawn" / "clearspawn" / "build" / "team" / "freeze" / "dress").
 -- Items with a `pass` are that game pass's (shared/Shop): locked, they wear its sticker and offer it.
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -12,6 +14,7 @@ local StarterGui = game:GetService("StarterGui")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
 local Audio =require(script.Parent:WaitForChild("Music")) -- the sound settings (SETTINGS page)
 
 local GRID = 4 -- block size in studs; the server builds the same size
@@ -51,6 +54,10 @@ local BLOCKS = {
 	{ name = "Rocks", block = Color3.fromRGB(120, 122, 130), material = "Slate", pass = "SandboxPlus" },
 }
 local TRASH = { name = "Trash", tool = "delete", color = Color3.fromRGB(143, 46, 44) }
+-- WARDROBE's bar: a click on a dummy dresses it in your style (1) or back in its own clothes (2)
+local PINK = Color3.fromRGB(200, 70, 140)
+local DRESS = { name = "Outfit", dress = true }
+local UNDRESS = { name = "Reset", dress = false }
 
 local Toolbox = {}
 
@@ -225,13 +232,16 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	local tool = nil
 	local building = false
 	local buildMode, brick, trashing = false, BLOCKS[1], false
-	local function current() -- what a click does now: a block, the trash, a team, or nothing
-		if buildMode then
+	local wardrobe = false -- the bar is WARDROBE's (dress / reset), not the blocks
+	local function current() -- what a click does now: a block, the trash, a team, an outfit, or nothing
+		if buildMode and wardrobe then
+			return if trashing then UNDRESS else DRESS
+		elseif buildMode then
 			return if trashing then TRASH else brick
 		end
 		return if building then tool else nil
 	end
-	local setBuild: (boolean) -> () -- below, with the build bar
+	local setBuild: (boolean, boolean?) -> () -- below, with the build bar
 
 	local cover = Instance.new("Frame")
 	cover.Name, cover.Size = "Toolbox", UDim2.fromScale(1, 1)
@@ -382,6 +392,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		{ name = "SPAWN", color = RED },
 		{ name = "BUILD", color = Color3.fromRGB(40, 140, 70) },
 		{ name = "WORLD", color = Color3.fromRGB(70, 60, 150) },
+		{ name = "WARDROBE", color = PINK },
 	}
 	local area = Instance.new("Frame")
 	area.BackgroundTransparency, area.Position, area.Size, area.ZIndex = 1, UDim2.fromOffset(SIDE + 30, 46), UDim2.new(1, -SIDE - 44, 1, -60), 42
@@ -404,7 +415,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		local b = button(panel, t.name, t.color, 43, true)
 		b.Size, b.Rotation = UDim2.fromOffset(SIDE, 64), if i % 2 == 0 then 2 else -2
 		local label = b:FindFirstChild("Label") :: TextLabel
-		label.TextSize = 30
+		label.TextSize = if #t.name > 6 then 24 else 30
 		tabs[i] = b
 		local page = Instance.new("Frame")
 		page.Name, page.BackgroundTransparency, page.Size, page.ZIndex, page.Parent = t.name, 1, UDim2.fromScale(1, 1), 42, area
@@ -731,9 +742,10 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Tab then
-			if not cover.Visible and buildMode then -- Tab ends building, and opens on BUILD
+			if not cover.Visible and buildMode then -- Tab ends building (or dressing), and opens on BUILD (WARDROBE)
+				local page = if wardrobe then 4 else 2
 				setBuild(false)
-				showTab(2)
+				showTab(page)
 				showSettings(false)
 			end
 			setOpen(not cover.Visible)
@@ -751,19 +763,19 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	barHint.Text, barHint.Font, barHint.TextSize, barHint.TextColor3 = "HOLD Q  MORE BLOCKS", FONT, 16, WHITE
 	barHint.TextStrokeTransparency, barHint.BackgroundTransparency = 0, 1
 	barHint.Size, barHint.Position, barHint.ZIndex, barHint.Parent = UDim2.new(1, 200, 0, 20), UDim2.new(0, -100, 0, -4), 31, buildBar
-	local function trashTile(parent): TextButton
-		local b = button(parent, "🗑", TRASH.color)
+	local function iconTile(parent, icon: string, caption: string, color: Color3): TextButton
+		local b = button(parent, icon, color)
 		local label = b:FindFirstChild("Label") :: TextLabel
 		label.TextSize, label.Size = 40, UDim2.new(1, 0, 1, -CAPTION)
 		local name = Instance.new("TextLabel")
-		name.Text, name.Font, name.TextSize, name.TextColor3 = "TRASH", FONT, 17, WHITE
+		name.Name, name.Text, name.Font, name.TextSize, name.TextColor3 = "Caption", caption, FONT, 17, WHITE
 		name.TextStrokeTransparency, name.BackgroundTransparency, name.ZIndex = 0, 1, b.ZIndex + 1
 		name.AnchorPoint, name.Position, name.Size = Vector2.new(0, 1), UDim2.fromScale(0, 1), UDim2.new(1, 0, 0, CAPTION)
 		name.Parent = b
 		return b
 	end
 	local brickSlot: GuiObject
-	local trashSlot = trashTile(buildBar)
+	local trashSlot = iconTile(buildBar, "🗑", "TRASH", TRASH.color)
 	trashSlot.Size, trashSlot.Position, trashSlot.ZIndex = UDim2.fromOffset(100, 100), UDim2.fromOffset(115, 24), 31
 	local function keyBadge(slot: GuiObject, key: string) -- the number key, on the slot's top-left corner
 		local k = Instance.new("TextLabel")
@@ -788,7 +800,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		if brickSlot then
 			brickSlot:Destroy()
 		end
-		brickSlot = blockTile(buildBar, brick)
+		brickSlot = if wardrobe then iconTile(buildBar, "👕", "OUTFIT", PINK) else blockTile(buildBar, brick)
 		brickSlot.Size, brickSlot.Position = UDim2.fromOffset(100, 100), UDim2.fromOffset(5, 24)
 		keyBadge(brickSlot, "1")
 		brickSlot.Activated:Connect(function()
@@ -797,6 +809,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end)
 		mark(brickSlot, not trashing)
 		mark(trashSlot, trashing)
+		;(trashSlot:FindFirstChild("Label") :: TextLabel).Text = if wardrobe then "🔄" else "🗑"
+		;(trashSlot:FindFirstChild("Caption") :: TextLabel).Text = if wardrobe then "RESET" else "TRASH"
+		barHint.Text = if wardrobe then "CLICK A DUMMY TO DRESS IT" else "HOLD Q  MORE BLOCKS"
 	end
 	trashSlot.Activated:Connect(function()
 		trashing = true
@@ -845,11 +860,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end)
 	end
 
-	setBuild = function(on: boolean)
+	setBuild = function(on: boolean, wear: boolean?) -- wear: the WARDROBE bar instead of the blocks
 		if on and not buildMode then
 			api.set(1) -- the fists, so no weapon is left drawn; this also stops a team tool
 		end
-		buildMode = on
+		buildMode, wardrobe, trashing = on, on and wear == true, false
 		if not on then
 			showWheel(false)
 		end
@@ -906,7 +921,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	local startLabel = startButton:FindFirstChild("Label") :: TextLabel
 	startLabel.TextSize, startLabel.TextColor3 = 32, YELLOW
 	startButton.Activated:Connect(function()
-		setBuild(not buildMode)
+		setBuild(wardrobe or not buildMode)
 		if buildMode then
 			setOpen(false)
 		end
@@ -918,7 +933,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end)
 	hint(buildSide, "Hold Q: the block wheel. 1 block, 2 trash. Click to build or delete.", 5)
 	buildLabel = function()
-		startLabel.Text = if buildMode then "STOP BUILDING" else "START BUILDING!"
+		startLabel.Text = if buildMode and not wardrobe then "STOP BUILDING" else "START BUILDING!"
 	end
 	showBlocks = function()
 		for item, b in blockChips do
@@ -931,11 +946,121 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	buildLabel()
 	refresh()
 
+	-- WARDROBE: the mannequin in your style on a stage (server/Dresser builds it into PlayerGui), the
+	-- catalog beside it, SELECT ----------------------------------------------------------------------
+	do
+		local page = pages[4]
+		local _, view, setColor, setName = stage(page)
+		setColor(PINK:Lerp(INK, 0.3))
+		setName("Mannequin")
+		local shown: Model? = nil
+		turning(function()
+			return shown
+		end)
+		local playerGui = player:WaitForChild("PlayerGui")
+		local function showPreview(source: Instance)
+			if source.Name ~= "WardrobePreview" or not source:IsA("Model") then
+				return
+			end
+			if shown then
+				shown:Destroy()
+			end
+			local model = source:Clone()
+			model.Parent = view
+			frame(view, model, Vector3.new(0, 0, -1)) -- it faces -Z, toward the camera
+			shown = model
+		end
+		playerGui.ChildAdded:Connect(showPreview)
+		local first = playerGui:FindFirstChild("WardrobePreview")
+		if first then
+			showPreview(first)
+		end
+
+		local side = Instance.new("ScrollingFrame") -- three catalogs and their colours: more than fits
+		side.BackgroundTransparency, side.BorderSizePixel, side.ZIndex = 1, 0, 43
+		side.ScrollBarThickness, side.ScrollBarImageColor3 = 8, INK
+		side.CanvasSize, side.AutomaticCanvasSize = UDim2.new(), Enum.AutomaticSize.Y
+		side.Position, side.Size, side.Parent = UDim2.new(0.5, 6, 0, 0), UDim2.new(0.5, -6, 1, 0), page
+		local list = Instance.new("UIListLayout")
+		list.Padding, list.SortOrder, list.Parent = UDim.new(0, 8), Enum.SortOrder.LayoutOrder, side
+
+		local style = Wardrobe.parse(Audio.get("Wardrobe"))
+		local itemChips, colorChips = {}, {} -- [category] = { [index] = chip }
+		local function showStyle()
+			for i, chips in itemChips do
+				for k, b in chips do
+					pick(b, style.items[i] == k)
+				end
+			end
+			for i, chips in colorChips do
+				for k, b in chips do
+					pick(b, style.colors[i] == k)
+				end
+			end
+		end
+		local function choose(i: number, field: string, k: number)
+			style[field][i] = k
+			showStyle()
+			Audio.set("Wardrobe", Wardrobe.format(style)) -- kept, and saved with the progress
+		end
+		for i, category in Wardrobe.CATEGORIES do
+			heading(side, category.name, i * 10)
+			local grid = Instance.new("Frame")
+			grid.BackgroundTransparency, grid.Size, grid.AutomaticSize = 1, UDim2.new(1, -12, 0, 0), Enum.AutomaticSize.Y
+			grid.LayoutOrder, grid.ZIndex, grid.Parent = i * 10 + 1, 43, side
+			local layout = Instance.new("UIGridLayout")
+			layout.CellSize, layout.CellPadding = UDim2.new(0.25, -6, 0, 72), UDim2.fromOffset(6, 6)
+			layout.SortOrder, layout.Parent = Enum.SortOrder.LayoutOrder, grid
+			itemChips[i], colorChips[i] = {}, {}
+			for k = 0, #category.items do
+				local item = category.items[k]
+				local b = button(grid, if item then "" else "NONE", if item then WHITE else Color3.fromRGB(110, 110, 118), 44, true)
+				b.LayoutOrder = k
+				if item then
+					local thumb = Instance.new("ImageLabel")
+					thumb.BackgroundTransparency, thumb.ZIndex = 1, 45
+					thumb.Image = `rbxthumb://type=Asset&id={item.id}&w=150&h=150`
+					thumb.Position, thumb.Size = UDim2.fromOffset(3, 3), UDim2.new(1, -6, 1, -6)
+					thumb.ScaleType, thumb.Parent = Enum.ScaleType.Fit, b
+				end
+				itemChips[i][k] = b
+				b.Activated:Connect(function()
+					choose(i, "items", k)
+				end)
+			end
+			local colors = row(side, i * 10 + 2, 34)
+			for k, color in Wardrobe.COLORS do
+				local b = button(colors, if k == 1 then "-" else "", color, 44, true)
+				b.Size, b.LayoutOrder = UDim2.fromOffset(28, 28), k
+				local l = b:FindFirstChild("Label") :: TextLabel
+				l.TextColor3, l.TextStrokeTransparency = INK, 1
+				colorChips[i][k] = b
+				b.Activated:Connect(function()
+					choose(i, "colors", k)
+				end)
+			end
+		end
+		local selectButton = button(side, "SELECT", PINK, 44, true)
+		selectButton.Size, selectButton.LayoutOrder, selectButton.Rotation = UDim2.new(1, -20, 0, 66), 100, -2
+		local selectLabel = selectButton:FindFirstChild("Label") :: TextLabel
+		selectLabel.TextSize, selectLabel.TextColor3 = 36, YELLOW
+		selectButton.Activated:Connect(function()
+			setOpen(false)
+			setBuild(true, true)
+		end)
+		hint(side, "Then click dummies: 1 dresses them in this, 2 puts their own clothes back, 3 weapons.", 101)
+		player:GetAttributeChangedSignal("Wardrobe"):Connect(function() -- the saved one, once loaded
+			style = Wardrobe.parse(Audio.get("Wardrobe"))
+			showStyle()
+		end)
+		showStyle()
+	end
+
 	UIS.InputBegan:Connect(function(input, processed)
 		if not buildMode or processed or cover.Visible or api.blocked() or UIS:GetFocusedTextBox() then
 			return
 		end
-		if input.KeyCode == Enum.KeyCode.Q and not wheel.Visible then
+		if input.KeyCode == Enum.KeyCode.Q and not wheel.Visible and not wardrobe then
 			showWheel(true)
 		elseif input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.Two then
 			trashing = input.KeyCode == Enum.KeyCode.Two
@@ -1012,7 +1137,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		elseif tool.block then
 			ghost.Color, ghost.Material = tool.block, Enum.Material[tool.material]
 			ghost.Position, ghost.Parent, outline.Adornee = blockSpot(result, built), workspace, nil
-		elseif tool.team then
+		elseif tool.team or tool.dress ~= nil then
 			ghost.Parent = nil
 			outline.Adornee = dummyAt(result)
 		else
@@ -1044,6 +1169,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 				local dummy = dummyAt(result)
 				if dummy then
 					actionRemote:FireServer("team", dummy, tool.team)
+				end
+			elseif tool.dress ~= nil then
+				local dummy = dummyAt(result)
+				if dummy then
+					actionRemote:FireServer("dress", dummy, tool.dress)
 				end
 			elseif built and result.Instance.Parent == built then
 				actionRemote:FireServer("unbuild", result.Instance)

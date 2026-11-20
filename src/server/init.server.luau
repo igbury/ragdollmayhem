@@ -2349,7 +2349,7 @@ local function clearBlocks(player: Player)
 end
 Players.PlayerRemoving:Connect(clearBlocks)
 
-local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true, setting = true } -- slam / kick / dive: the handler below
+local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true, setting = true, dress = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
 	local building = action == "build" or action == "unbuild"
 	local quick = building or action == "setting" -- clicking + / - on the SETTINGS page fast
@@ -2460,7 +2460,22 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		Map.dropUnbuilt(at, BLOCK_SIZE) -- what it held up comes down
 	elseif action == "clearbuild" then
 		clearBlocks(player)
+	elseif action == "dress" and typeof(arg) == "Instance" then -- Toolbox WARDROBE: 1 dresses in the style, 2 resets (server/Dresser)
+		local d = dummyOf(arg)
+		local root = d and d.model:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if root and (root.Position - head.Position).Magnitude < 200 then
+			if extra == true then
+				require(script.Dresser).dress(d.model, player)
+			else
+				local look = d.model:GetAttribute("Look") or d.model:GetAttribute("Kind")
+				local kind = KINDS[look] or KINDS.Normal
+				require(script.Dresser).reset(d.model, if KINDS[look] then look else "Normal", kind.description)
+			end
+		end
 	elseif action == "setting" and Progress.SETTINGS[arg] and type(extra) == Progress.SETTINGS[arg] and extra == extra then -- client/Music, saved (not NaN)
+		if arg == "Wardrobe" then
+			extra = require(script.Dresser).clean(extra) -- only real catalog picks are kept (shared/Wardrobe)
+		end
 		local range = Progress.Settings.RANGE[arg] or { 0, 1 }
 		player:SetAttribute(arg, if type(extra) == "number" then math.clamp(math.round(extra * 10) / 10, range[1], range[2]) else extra)
 		if arg == "NeverWanted" and extra == true then
@@ -3278,6 +3293,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 end)
 
 Players.PlayerAdded:Connect(function(player)
+	require(script.Dresser).watch(player, description) -- the Toolbox WARDROBE mannequin, in their style
 	player.CharacterAdded:Connect(function(char)
 		clearBoxing(player)
 		-- dying or respawning with a dummy in hand used to leave it "Held" for good: hanging in the

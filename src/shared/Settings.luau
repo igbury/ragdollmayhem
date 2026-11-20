@@ -18,6 +18,7 @@ Settings.DEFAULTS = {
 	BoneScale = 1, -- how easily bones break
 	Gravity = 1, -- times the normal workspace gravity
 	DamageScale = 1, -- times the HP a blow takes
+	Wardrobe = "", -- the Toolbox WARDROBE style (shared/Wardrobe)
 }
 
 Settings.RANGE = {
