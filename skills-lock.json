@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "skills": {
+    "roblox-animation": {
+      "source": "nonlooped/roblox-suite",
+      "commit": "c714ea4809857161350995c70b30a878024010b9",
+      "sourceType": "github",
+      "skillPath": "roblox-animation/SKILL.md",
+      "computedHash": "fef2d3d31dec99b2c6cd94ed431d6173d48f5ec08c4307c206ab6b1f2e85cd95"
+    },
+    "roblox-vfx": {
+      "source": "nonlooped/roblox-suite",
+      "commit": "c714ea4809857161350995c70b30a878024010b9",
+      "sourceType": "github",
+      "skillPath": "roblox-vfx/SKILL.md",
+      "computedHash": "b9cc67990c9c07f2158396b96a4ff560df7722ee97c05559ba8c76bbb6aedf69"
+    }
+  }
+}
