@@ -11,6 +11,15 @@ local player = Players.LocalPlayer
 
 local STEER_ANGLE = math.rad(32) -- full lock
 local STEER_TIME = 0.35 -- seconds from centre to full lock
+local CENTRE_TIME = 0.2 -- seconds back to straight when let go
+local FAST_LOCK = 0.35 -- share of full lock left at top speed: no twitchy swerves on the straight
+local THROTTLE_TIME = 0.45 -- seconds the pedal takes from 0 to full: no wheelspin, no lurch
+-- Grip (on the ground only): how fast the sideways slide is taken out (per second), the push down
+-- per stud/s of speed, and how fast the body's roll is damped. Calibration knobs: try them in play.
+local GRIP = 6
+local DOWNFORCE = 0.6
+local ROLL_DAMP = 4
+local GROUND_RAY = 5 -- studs under the chassis centre that still count as on the ground
 local IDLE_TORQUE = 2500 -- engine brake with no throttle
 local DRIVE_SIGN = -1 -- motor direction that moves the car along its LookVector (checked in play)
 local CAMERA_DIST = 24
@@ -20,16 +29,27 @@ local RIGHT_AFTER = 1.5 -- seconds tipped over before the car is put back on its
 local Driving = {}
 
 -- One drive step on the machine that owns the car. Throttle and steer are -1..1 (the seat's floats).
-local steerNow = 0
+local steerNow, throttleNow = 0, 0
 local function apply(car: Model, seat: VehicleSeat, throttle: number, steer: number, dt: number)
 	local maxW = seat.MaxSpeed / ((car:GetAttribute("WheelRadius") :: number?) or 1.4)
-	local step = STEER_ANGLE / STEER_TIME * dt
-	steerNow += math.clamp(-steer * STEER_ANGLE - steerNow, -step, step) -- minus: a positive turn of the hub steers left (checked in play)
+	-- the pedal eases in; let go (or the other way) and it comes off at once
+	if throttle == 0 or math.sign(throttle) ~= math.sign(throttleNow) then
+		throttleNow = 0
+	end
+	throttleNow += math.clamp(throttle - throttleNow, -dt / THROTTLE_TIME, dt / THROTTLE_TIME)
+	-- less lock the faster it goes
+	local chassis = car:FindFirstChild("Chassis") :: BasePart?
+	local speed = if chassis then chassis.AssemblyLinearVelocity.Magnitude else 0
+	local lock = STEER_ANGLE * (1 - (1 - FAST_LOCK) * math.clamp(speed / seat.MaxSpeed, 0, 1))
+	local target = -steer * lock -- minus: a positive turn of the hub steers left (checked in play)
+	local rate = (if math.abs(target) < math.abs(steerNow) then STEER_ANGLE / CENTRE_TIME else STEER_ANGLE / STEER_TIME) * dt
+	steerNow += math.clamp(target - steerNow, -rate, rate)
 	for _, d in car:GetDescendants() do
 		if d:IsA("CylindricalConstraint") then
 			if d:GetAttribute("Drive") then
-				d.AngularVelocity = DRIVE_SIGN * math.sign(throttle) * maxW
-				d.MotorMaxTorque = if throttle == 0 then IDLE_TORQUE else math.abs(throttle) * seat.Torque
+				-- a target speed that rises with the pedal: the wheels pull up to it instead of spinning
+				d.AngularVelocity = DRIVE_SIGN * throttleNow * maxW
+				d.MotorMaxTorque = if throttle == 0 then IDLE_TORQUE else seat.Torque
 			elseif d:GetAttribute("Steer") then
 				local hub = d.Attachment0 :: Attachment
 				hub.CFrame = (hub:GetAttribute("BaseCFrame") :: CFrame) * CFrame.Angles(steerNow, 0, 0)
@@ -62,12 +82,26 @@ local function onSeat(part: BasePart?)
 	saved = { player.CameraMode, player.CameraMinZoomDistance, player.CameraMaxZoomDistance }
 	player.CameraMode = Enum.CameraMode.Classic
 	player.CameraMaxZoomDistance, player.CameraMinZoomDistance = CAMERA_DIST, CAMERA_DIST
-	steerNow = 0
+	steerNow, throttleNow = 0, 0
+	local ray = RaycastParams.new()
+	ray.FilterDescendantsInstances = { car, player.Character :: Model }
 	local chassis = car:FindFirstChild("Chassis") :: BasePart
 	local tipped = 0
 	driving = RunService.Heartbeat:Connect(function(dt)
 		if seat.Parent then
 			apply(car, seat, seat.ThrottleFloat, seat.SteerFloat, dt)
+		end
+		-- grip: on its wheels on the ground, the slide sideways dies out, speed presses it down and
+		-- the body stops rocking side to side (we own its physics, so we may push it)
+		local cf = chassis.CFrame
+		if cf.UpVector.Y > 0.7 and workspace:Raycast(chassis.Position, -cf.UpVector * GROUND_RAY, ray) then
+			local v = chassis.AssemblyLinearVelocity
+			local side = cf.RightVector:Dot(v)
+			v -= cf.RightVector * side * math.min(1, GRIP * dt)
+			v -= cf.UpVector * DOWNFORCE * v.Magnitude * dt
+			chassis.AssemblyLinearVelocity = v
+			local w = chassis.AssemblyAngularVelocity
+			chassis.AssemblyAngularVelocity = w - cf.LookVector * cf.LookVector:Dot(w) * math.min(1, ROLL_DAMP * dt)
 		end
 		-- on its side or roof and nearly still for a moment: back on its wheels (we own its physics)
 		local still = chassis.AssemblyLinearVelocity.Magnitude < 4
