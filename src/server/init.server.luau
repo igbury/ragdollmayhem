@@ -44,7 +44,8 @@ local ZONES = {
 	Arm = { damage = 5, daze = 5, lines = { "Why the arm?", "Ow, my arm!" } },
 	Leg = { damage = 5, daze = 6, lines = { "My leg!", "Ow, ow!" } },
 }
-local IDLE_LINES = { "I could really go for a sandwich.", "Who is winning? I can't tell.", "Back off a bit, will you?", "Nice weather today." }
+local IDLE_LINES = { "I could really go for a sandwich.", "Who is winning? I can't tell.", "Back off a bit, will you?", "Nice weather today.",
+	"Did I leave the oven on?", "I feel like someone is watching me.", "My knees still hurt from last time.", "Is it Friday yet?" }
 local GRAB_LINES = { "Put me down!", "I said put me down!", "Whoa, whoa!" }
 local STATE_RANK = { Awake = 0, ["Knocked down"] = 1, Held = 1, ["Out cold"] = 2, Dead = 3 }
 
