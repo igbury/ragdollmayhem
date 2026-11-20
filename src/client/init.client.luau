@@ -1146,6 +1146,9 @@ local function useWeapon(weapon, swing: Vector3?)
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)
+	if weapon.id == "Sniper" and aimed > 0.95 then
+		Fx.scopedShotAt = now -- through the scope: its hit gets the impact frames (Fx)
+	end
 	if weapon.spinUp then -- the minigun: the server fires only once the barrels have spun up; no bang before
 		if now - (weaponVisual.spinLast or 0) > 0.3 then
 			weaponVisual.spinSince = now

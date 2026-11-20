@@ -3285,7 +3285,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			if id == "Bat" and d.model.Parent then
 				batBlow(d, swing)
 			end
-			require(script.Specials).afterHit(weapon, d, target, swing, player, char) -- the crowbar's arm rip and disarm, the sledgehammer's shockwave
+			require(script.Specials).afterHit(weapon, d, target, swing, player, char, result.Instance) -- the crowbar's limb rip and disarm, the sledgehammer's shockwave
 			if weapon.knockdown and d.state ~= "Dead" then -- the heavy left: down every time it lands
 				knockDown(d, weapon.knockdown, "Knocked down")
 			end

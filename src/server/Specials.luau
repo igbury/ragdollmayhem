@@ -45,10 +45,10 @@ local SPREAD_REACH, SPREAD_CHANCE = 4.5, 0.3 -- a burning body catches a neighbo
 local BOIL_TICKS, BOIL_TICK = 10, 0.3 -- one blast boils for 3 s
 local BOIL_BLOOD = 8 -- blood (of 100) boiled off per tick: one blast leaves it pale, two boil it dry
 local BOIL_DEAD = 10 -- blood left at which it dies of it
--- The crowbar's arm rip: an aimed swing at least RIP_POWER charged and pointing down (swing.Y) hooks
--- the claw into the top of the shoulder, tugs RIP_TUG s against the body, tears the arm off and
--- carries it on the claw RIP_HANG s before it drops.
-local RIP_POWER, RIP_DOWN = 0.6, -0.6
+-- The crowbar's limb rip: a hit on an arm or a leg has a RIP_CHANCE of hooking the claw into the top of
+-- that limb, tugging RIP_TUG s against the body, tearing it off and carrying it on the claw RIP_HANG s
+-- before it drops. A hit on the torso or the head never does.
+local RIP_CHANCE = 0.2
 local RIP_TUG, RIP_HANG = 3, 1.4
 -- where the claw is, from the right hand: the grip attachment (init.client DEFAULT_GRIP when there is
 -- none), HOLD.Crowbar.grip, then the claw's tip in the crowbar mesh (assets/weapons/comic_weapons.py)
@@ -678,18 +678,19 @@ end
 -- arm tears off at the shoulder and hangs on the claw's point RIP_HANG s, then drops.
 -- The attacker's client simulates the body meanwhile (setOwner), so the tug follows its hand smoothly.
 local RIP_LINES = { "AAH! Let go!", "Not the arm! NOT THE ARM!", "Hey, that's attached!" }
-local function ripArm(d, player: Player, char: Model, target: Vector3)
+-- the limb a body part belongs to, by the part it tears off from (nil: the torso or the head)
+local LIMB_ROOT = {
+	LeftHand = "LeftUpperArm", LeftLowerArm = "LeftUpperArm", LeftUpperArm = "LeftUpperArm",
+	RightHand = "RightUpperArm", RightLowerArm = "RightUpperArm", RightUpperArm = "RightUpperArm",
+	LeftFoot = "LeftUpperLeg", LeftLowerLeg = "LeftUpperLeg", LeftUpperLeg = "LeftUpperLeg",
+	RightFoot = "RightUpperLeg", RightLowerLeg = "RightUpperLeg", RightUpperLeg = "RightUpperLeg",
+}
+local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 	if d.ripping or d.frozenUntil then
 		return
 	end
-	local arm, best = nil, math.huge
-	for _, name in { "LeftUpperArm", "RightUpperArm" } do
-		local p = not d.lost[name] and d.model:FindFirstChild(name) :: BasePart?
-		local dist = p and (p.Position - target).Magnitude
-		if dist and dist < best then
-			arm, best = p, dist
-		end
-	end
+	local rootName = LIMB_ROOT[hitPart.Name]
+	local arm = rootName and not d.lost[rootName] and d.model:FindFirstChild(rootName) :: BasePart?
 	local hand, claw = clawOf(char)
 	if not arm or not hand or not claw then
 		return
@@ -699,31 +700,38 @@ local function ripArm(d, player: Player, char: Model, target: Vector3)
 	setVelocity(d, Vector3.zero) -- the claw holds it: no flying off with the blow's shove
 	K.knockDown(d, RIP_TUG + 3, "Knocked down")
 	K.setOwner(d.model, player)
-	local hook = Instance.new("Attachment") -- in the top of the shoulder, where the claw went in
-	hook.Name = "Claw"
-	hook.Position = Vector3.new(0, arm.Size.Y * 0.4, 0)
-	hook.Parent = arm
+	-- The claw is IN the limb: the top of it (where the claw went in) is pinned to the claw's point and
+	-- turned with it, stiffly, so the limb rides the crowbar and the body hangs off the limb. Only the
+	-- limb is driven (no reaction force), so the attacker's arm feels none of the body's weight.
 	local tip = Instance.new("Attachment")
 	tip.Name = "Claw"
 	tip.CFrame = hand.CFrame:ToObjectSpace(claw)
 	tip.Parent = hand
+	local hook = Instance.new("Attachment")
+	hook.Name = "Claw"
+	-- the limb keeps the angle it had to the claw as it went in
+	hook.CFrame = CFrame.new(0, arm.Size.Y * 0.4, 0) * arm.CFrame.Rotation:ToObjectSpace(claw.Rotation)
+	hook.Parent = arm
 	local pull = Instance.new("AlignPosition")
 	pull.Attachment0, pull.Attachment1 = hook, tip
-	pull.MaxForce, pull.Responsiveness = 6000, 25 -- lifts the arm and drags the body, not enough to fling it
+	pull.MaxForce, pull.MaxVelocity, pull.Responsiveness = math.huge, math.huge, 200
 	pull.Parent = arm
+	local turn = Instance.new("AlignOrientation")
+	turn.Attachment0, turn.Attachment1 = hook, tip
+	turn.MaxTorque, turn.MaxAngularVelocity, turn.Responsiveness = math.huge, math.huge, 200
+	turn.Parent = arm
 	K.fx:FireAllClients("Hook", char, hook.WorldPosition)
 	play("CROWBAR_HIT", hook.WorldPosition, 0.8)
 	K.say(d, RIP_LINES[math.random(#RIP_LINES)])
 	task.spawn(function()
+		-- the tug: the body hangs off the pinned limb and swings with the crowbar's heaves (the attacker's
+		-- client plays them and owns the body, so it moves smoothly); nothing spins it any more (that was
+		-- the flailing)
 		local t0 = os.clock()
-		while os.clock() - t0 < RIP_TUG and arm.Parent == d.model do -- it fights the claw: the body jerks
-			for _, part in bodyParts(d) do
-				if part ~= arm then
-					part.AssemblyAngularVelocity += Random.new():NextUnitVector() * 4
-				end
-			end
+		while os.clock() - t0 < RIP_TUG and arm.Parent == d.model do
 			task.wait(0.1)
 		end
+		turn:Destroy()
 		pull:Destroy()
 		hook:Destroy()
 		if arm.Parent ~= d.model or not hand.Parent then
@@ -735,7 +743,7 @@ local function ripArm(d, player: Player, char: Model, target: Vector3)
 		local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 		local gib = K.sever(d, arm, UP)
 		K.Body.lost(d, arm)
-		K.addInjury(d, (left and "left" or "right") .. " arm torn off")
+		K.addInjury(d, (left and "left" or "right") .. (arm.Name:find("Leg") and " leg" or " arm") .. " torn off")
 		K.sync(d)
 		if torso then
 			K.fx:FireAllClients("Wound", nil, torso, arm.Position, UP, 3, nil, "cut")
@@ -781,10 +789,9 @@ end
 
 -- A generic blow (init.server's ray loop) has just landed on dummy `d` at `target`; `swing` is the
 -- aimed swing (x, y on the circle, z the charge) when there was one.
-function Specials.afterHit(weapon, d, target: Vector3, swing: Vector3?, player: Player?, char: Model?)
-	if weapon.id == "Crowbar" and typeof(swing) == "Vector3" and swing.Z >= RIP_POWER and swing.Y <= RIP_DOWN
-		and player and char then
-		ripArm(d, player, char, target)
+function Specials.afterHit(weapon, d, target: Vector3, swing: Vector3?, player: Player?, char: Model?, hitPart: Instance?)
+	if weapon.id == "Crowbar" and player and char and hitPart and math.random() < RIP_CHANCE then
+		ripArm(d, player, char, hitPart) -- the limb it landed on comes off (an arm or a leg; never the head)
 	end
 	if weapon.id == "Crowbar" and d.gear and d.state ~= "Dead" then
 		K.setGear(d, nil)
