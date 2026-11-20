@@ -20,6 +20,7 @@ local dummyFolder = workspace:WaitForChild("Dummies")
 local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Attacks"))
 local Weapons = require(ReplicatedStorage.Shared:WaitForChild("Weapons"))
 local Sfx = require(ReplicatedStorage.Shared:WaitForChild("Sfx"))
+local SwingArc = require(ReplicatedStorage.Shared:WaitForChild("SwingArc"))
 local Impact = require(ReplicatedStorage.Shared:WaitForChild("Impact"))
 local Fx = require(script:WaitForChild("Fx"))
 local WeaponMeshes = require(script:WaitForChild("WeaponMeshes"))
@@ -382,7 +383,7 @@ local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0
 -- and the mouse or right stick (the camera turns at 15% meanwhile) draws a line from its centre. Direction = where
 -- the blow goes, length = power. Released, it swings.
 -- (one table: the script is at Luau's 200-local limit)
-local swingUi = { R = 70, aim = nil :: { weapon: any, x: number, y: number }? } -- aim: x right, y up, pixels (0..R)
+local swingUi = { R = 70, HOLD = 0.18, aim = nil :: { weapon: any, x: number, y: number, shown: boolean }? } -- aim: x right, y up, pixels (0..R); HOLD: seconds held before the circle shows
 do
 	local ring = Instance.new("Frame")
 	ring.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -408,8 +409,8 @@ do
 	Instance.new("UICorner", tip).CornerRadius = UDim.new(0.5, 0)
 	function swingUi.draw()
 		local a = swingUi.aim
-		ring.Visible = a ~= nil
-		if not a then return end
+		ring.Visible = a ~= nil and a.shown
+		if not a or not a.shown then return end
 		local len = math.sqrt(a.x * a.x + a.y * a.y)
 		local colour = Color3.new(1, 1, 1):Lerp(Color3.fromRGB(255, 70, 40), len / swingUi.R) -- white weak, red full
 		line.Size = UDim2.fromOffset(len, 4)
@@ -448,6 +449,21 @@ do
 		return Vector3.new(a.x / len, a.y / len, len / swingUi.R)
 	end
 end
+-- How each aimed-swing weapon moves in first person along the drawn line:
+-- time: seconds per swing; split: share of it spent sweeping through (the rest recovers);
+-- cock: how far it is drawn back; reach: studs swept across the view; push: lunge ahead;
+-- tilt: degrees the head turns round per unit of sweep (the edge always leads: see the wrist below);
+-- sink: drops through the target at the end (heavy heads); spin: a twirl round the handle on the
+-- recovery (degrees).
+local SWING_STYLE = {
+	Bat = { time = 0.2, split = 0.55, cock = 1, reach = 0.8, push = 0.35, tilt = 85 },
+	Pan = { time = 0.17, split = 0.42, cock = 0.6, reach = 0.6, push = 0.5, tilt = 60 },
+	Katana = { time = 0.16, split = 0.38, cock = 1.2, reach = 1.15, push = 0.2, tilt = 95 },
+	Axe = { time = 0.3, split = 0.62, cock = 1.4, reach = 0.85, push = 0.45, tilt = 100, sink = 0.3 },
+	Crowbar = { time = 0.22, split = 0.48, cock = 0.7, reach = 0.55, push = 0.5, tilt = 70 },
+	Sledgehammer = { time = 0.45, split = 0.68, cock = 1.6, reach = 1, push = 0.3, tilt = 100, sink = 0.45 },
+	Lightsaber = { time = 0.18, split = 0.36, cock = 1, reach = 1.2, push = 0.25, tilt = 90, spin = 360 },
+}
 -- sniper scope: a clear circle (a huge black stroke round a round frame blacks out the rest) and a cross
 local scope = Instance.new("Frame")
 scope.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1153,7 +1169,9 @@ local function useWeapon(weapon, swing: Vector3?)
 	if weapon.kind == "melee" then -- the server's swing ray, guessed here; ponytail: a dodged swing still rings as a hit for us
 		local params = RaycastParams.new()
 		params.FilterDescendantsInstances = { char }
-		local swing = workspace:Raycast(head.Position, dir * weapon.range, params)
+		local swing = if weapon.aimSwing
+			then SwingArc.cast(head.Position, dir, swing, weapon.range, params, function(inst) return inst:IsDescendantOf(dummyFolder) end)
+			else workspace:Raycast(head.Position, dir * weapon.range, params)
 		local onBody = swing and swing.Instance:IsDescendantOf(dummyFolder)
 		local sound = if not swing then sounds.swing elseif onBody then sounds.hit else nil
 		if sound then
@@ -1713,14 +1731,21 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			return
 		end
 		if weapon.aimSwing then -- the swing comes on release (InputEnded); meanwhile the mouse draws it
-			swingUi.aim = { weapon = weapon, x = 0, y = 0 }
-			swingUi.draw()
-			swingUi.holdCamera(true)
+			-- a quick click is a plain swing: the circle (and the slowed camera) only come up once the
+			-- button has been held for swingUi.HOLD; until then the mouse turns the camera as usual
+			local aim = { weapon = weapon, x = 0, y = 0, shown = false }
+			swingUi.aim = aim
+			task.delay(swingUi.HOLD, function()
+				if swingUi.aim ~= aim then return end -- let go already
+				aim.shown = true
+				swingUi.draw()
+				swingUi.holdCamera(true)
+			end)
 			-- reads the mouse/stick for the line; the camera barely turns meanwhile (holdCamera), so the
 			-- crosshair stays on what you aimed at
 			ContextActionService:BindActionAtPriority("SwingAim", function(_, _, inp)
 				local a = swingUi.aim
-				if not a then return Enum.ContextActionResult.Pass end
+				if not a or not a.shown then return Enum.ContextActionResult.Pass end
 				if inp.UserInputType == Enum.UserInputType.MouseMovement then
 					a.x += inp.Delta.X
 					a.y -= inp.Delta.Y
@@ -3355,7 +3380,8 @@ RunService.RenderStepped:Connect(function(dt)
 	local jumpT = weaponVisual.jumpT or 0
 	weaponVisual.jumpT = jumpT + (rise - jumpT) * math.min(dt * (rise > jumpT and 25 or 5), 1) -- snap up, settle slowly
 	for side, h in hands do
-		local viewTime = side == "right" and weaponVisual.lib.VIEW_TIME[weapon.id] or nil -- WeaponAnims: its own pace
+		local viewTime = side == "right" and (SWING_STYLE[weapon.id] and SWING_STYLE[weapon.id].time
+			or weaponVisual.lib.VIEW_TIME[weapon.id]) or nil -- its own pace (an aimed swing's style, else WeaponAnims)
 		h.t = math.min(h.t + dt / (h.heavy and 0.34 or viewTime or 0.2), 1)
 		if side == "right" and weaponVisual.freezeU then -- WeaponTest "freeze" (Studio): held at that point
 			h.t = weaponVisual.freezeU
@@ -3400,17 +3426,22 @@ RunService.RenderStepped:Connect(function(dt)
 		local aimed = drawing and swingUi.value() or side == "right" and weapon.aimSwing
 			and weaponVisual.lastAction == weapon.id and h.t < 1 and weaponVisual.swing or nil
 		if aimed and aimed.X == 0 and aimed.Y == 0 then aimed = nil end
-		local sweep = 0
+		local sweep, style, recover = 0, nil, 0
 		if aimed then
+			style = SWING_STYLE[weapon.id] or SWING_STYLE.Bat
+			local cocked, split = aimed.Z * style.cock, style.split
 			if drawing then
-				sweep = -aimed.Z
-			elseif h.t < 0.55 then
-				sweep = -aimed.Z + (1 + aimed.Z) * smooth(h.t / 0.55)
+				sweep = -cocked
+			elseif h.t < split then
+				sweep = -cocked + (1 + cocked) * smooth(h.t / split)
 			else
-				sweep = 1 - smooth((h.t - 0.55) / 0.45)
+				recover = smooth((h.t - split) / (1 - split))
+				sweep = 1 - recover
 			end
-			move += Vector3.new(aimed.X, aimed.Y, 0) * 0.8 * sweep
-				+ Vector3.new(0, 0, drawing and 0.15 * aimed.Z or 0.15 * aimed.Z * (1 - smooth(h.t)) - 0.35 * ext)
+			local through = math.max(sweep, 0) -- past the middle, on the follow-through
+			move += Vector3.new(aimed.X, aimed.Y, 0) * style.reach * sweep
+				+ Vector3.new(0, -(style.sink or 0) * through * through,
+					drawing and 0.15 * aimed.Z or 0.15 * aimed.Z * (1 - smooth(h.t)) - style.push * ext)
 		end
 		if boxing then
 			-- At rest the gloves land where the bare fists are (a glove sits back on the forearm, so the
@@ -3503,15 +3534,33 @@ RunService.RenderStepped:Connect(function(dt)
 			-- guns point at the crosshair, melee and throwables stand upright and tip forward to swing.
 			local tilt = (weapon.kind == "gun" or weapon.kind == "rocket" or weapon.kind == "bow") and 0 or -25 - 75 * ext
 			local yaw, roll = 0, 0
-			if aimed then -- the head leads along the line: down chops, up comes from below, sideways sweeps flat
-				local sx, sy = aimed.X, aimed.Y
-				tilt = -25 + sy * 85 * sweep - 50 * math.abs(sx * sweep)
-				yaw, roll = math.rad(-sx * 30 * sweep), math.rad(-sx * 70 * sweep)
+			local swingRot = nil
+			if aimed then
+				-- The edge leads, whichever way the line goes. The mesh's handle is +Y and its edge (the axe's
+				-- blade, the katana's cutting side, the crowbar's claw, the pan's face, the hammer's face) is
+				-- -Z. The handle turns through the plane of the swing (the view's forward and the line):
+				-- pointing back against the line when cocked, at the crosshair at the hit, along the line on
+				-- the follow-through; the edge faces where the head is moving, square to the handle.
+				local st = style :: any
+				local m = Vector3.new(aimed.X, aimed.Y, 0).Unit
+				local th = math.rad(math.clamp(sweep * st.tilt, -115, 115))
+				local fwd = Vector3.new(0, 0, -1)
+				local handle = (fwd * math.cos(th) + m * math.sin(th) + Vector3.new(0, 0.35, 0)).Unit -- a little up: the head stays over the hand
+				local edge = m * math.cos(th) - fwd * math.sin(th)
+				edge = (edge - handle * edge:Dot(handle)).Unit
+				swingRot = CFrame.fromMatrix(Vector3.zero, handle:Cross(-edge), handle, -edge)
+				if st.spin then -- a twirl round the handle on the recovery
+					swingRot *= CFrame.Angles(0, math.rad(st.spin * recover), 0)
+				end
+				-- in from the rest pose as the line is drawn, back to it over the recovery
+				local w = if drawing then math.clamp(aimed.Z * 3, 0, 1) else 1 - recover
+				swingRot = CFrame.Angles(math.rad(-25), 0, 0):Lerp(swingRot, w)
 			elseif cutting then
 				yaw, roll = math.rad(-weaponVisual.slashSide * 65 * ext), math.rad(weaponVisual.slashSide * 45 * ext)
 			end
 			if special and special.tilt then
 				tilt, yaw, roll = special.tilt, math.rad(special.yaw or 0), math.rad(special.roll or 0)
+				swingRot = nil
 			end
 			if weapon.kind == "knife" and knifeT > 0 then -- cocked: the wrist tips the upturned knife's handle at the crosshair
 				tilt += (KNIFE_TILT - tilt) * smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1))
@@ -3520,7 +3569,7 @@ RunService.RenderStepped:Connect(function(dt)
 			hand = CFrame.new(arm * pivot)
 				* viewCF.Rotation
 				* inspectRot
-				* CFrame.Angles(math.rad(tilt), yaw, roll)
+				* (swingRot or CFrame.Angles(math.rad(tilt), yaw, roll))
 				* CFrame.Angles(math.rad(90), 0, 0)
 				* CFrame.new(-pivot)
 			weaponCF = hand * (real and real.grip or DEFAULT_GRIP)

@@ -718,7 +718,8 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 end
 MELEE.Baton = true -- the cops' baton: a dummy weapon, not in Weapons
 
-function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?)
+function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?,
+	swing: Vector3?, center: Vector3?)
 	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
 	-- model however we move (the server's position for us lags a little behind)
 	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
@@ -761,7 +762,13 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		local katana = weaponId == "Katana"
 		local knife = weaponId == "KnifeSlash"
 		local tilt = (weaponId == "Axe" or katana) and rng:NextNumber(1.0, 1.6) * (rng:NextNumber() < 0.5 and -1 or 1) or rng:NextNumber(-0.4, 0.4)
-		Fx.ring(aimCf * CFrame.Angles(0, 0, knife and -0.65 or tilt), knife and 2.4 or katana and 5 or 4.5,
+		local ringCf = aimCf
+		if typeof(swing) == "Vector3" and (swing.X ~= 0 or swing.Y ~= 0) then
+			-- an aimed swing: the crescent lies along the drawn line (x right, y up), round the crosshair
+			tilt = math.atan2(swing.Y, swing.X)
+			if typeof(center) == "Vector3" and center.Magnitude > 0.5 then ringCf = CFrame.lookAlong(from, center) end
+		end
+		Fx.ring(ringCf * CFrame.Angles(0, 0, knife and -0.65 or tilt), knife and 2.4 or katana and 5 or 4.5,
 			knife and 4 or katana and 8 or 6, knife and 0.12 or katana and 0.16 or 0.2, (katana or knife) and SLASH or WHITE,
 			{ arc = katana and 2.8 or 2.2, thick = (katana or knife) and 0.5 or 1.4, height = 0.3, ink = false })
 		if landed then
