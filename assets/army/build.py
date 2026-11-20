@@ -60,8 +60,12 @@ def material(h):
 class Piece:
     """Collects shapes for one object, in Roblox space, then bakes it into Blender."""
 
-    def __init__(self, name):
+    def __init__(self, name, exact=False):
         self.name = name
+        # exact: bevelled shapes keep their colour on every face. Off for the pieces made before it
+        # existed: there bevel's shrunk big faces fell back to the piece's first colour, and that is
+        # how they look in the game (the police car is exact).
+        self.exact = exact
         self.bm = bmesh.new()
         self.cols = []  # material order
         self.layer = None
@@ -88,11 +92,19 @@ class Piece:
         b = min(bevel, 0.45 * min(size))
         if b > 0.005:
             edges = list({e for f in faces for e in f.edges})
-            out = bmesh.ops.bevel(self.bm, geom=edges, offset=b, segments=2, profile=0.5, affect="EDGES")
-            faces = [f for f in set(faces) | set(out["faces"]) if f.is_valid]
-            vs = list({v for f in faces for v in f.verts})
-        faces = [f for f in faces if f.is_valid]
+            faces, vs = self._bevel(edges, b)
         self._place(vs, faces, at, rot, h)
+
+    def _bevel(self, edges, offset, clamp=False):
+        """Rounds `edges`; returns the faces and vertices of their shape afterwards (see `exact`)."""
+        shape = {f for e in edges for f in e.link_faces}
+        others = set(self.bm.faces) - shape  # untouched by the bevel: everything else is this shape now
+        out = bmesh.ops.bevel(self.bm, geom=edges, offset=offset, segments=2, profile=0.5, affect="EDGES", clamp_overlap=clamp)
+        if self.exact:
+            faces = [f for f in self.bm.faces if f not in others]
+        else:
+            faces = [f for f in shape | set(out["faces"]) if f.is_valid]
+        return faces, list({v for f in faces for v in f.verts})
 
     def cyl(self, diameter, length, at, h, axis="y", rot=(0, 0, 0), segs=16, d2=None, bevel=0.0):
         """A cylinder (or cone, to `d2`) along Roblox `axis`, centred `at`."""
@@ -107,10 +119,7 @@ class Piece:
         faces = list({f for v in vs for f in v.link_faces})
         if bevel > 0:
             caps = [e for e in {e for f in faces for e in f.edges} if len(e.link_faces) == 2 and abs(e.link_faces[0].normal.dot(e.link_faces[1].normal)) < 0.5]
-            out = bmesh.ops.bevel(self.bm, geom=caps, offset=bevel, segments=2, profile=0.5, affect="EDGES")
-            faces = [f for f in set(faces) | set(out["faces"]) if f.is_valid]
-            vs = list({v for f in faces for v in f.verts})
-        faces = [f for f in faces if f.is_valid]
+            faces, vs = self._bevel(caps, bevel)
         self._place(vs, faces, at, rot, h)
 
     def ball(self, size, at, h, rot=(0, 0, 0), cut=None, segs=18, rings=10):
@@ -197,6 +206,52 @@ class Piece:
         # place without the R2B on the points twice: they are already in Blender space
         m = Matrix.Translation(R2B @ Vector(at)) @ (R2B @ Euler([math.radians(a) for a in rot], "XYZ").to_matrix() @ R2B.inverted()).to_4x4()
         bmesh.ops.transform(self.bm, matrix=m, verts=vs)
+        i = self._col(h)
+        for f in faces:
+            f.material_index = i
+
+    def prism(self, profile, width, at, h, bevel=0.1):
+        """A side profile (Roblox (z, y) points, in order round the outline) pushed `width` studs
+        across X, centred `at`. Corners sharper than 25 degrees get rounded by `bevel` studs."""
+        sides = [[self.bm.verts.new(R2B @ Vector((x, y, z))) for z, y in profile] for x in (-width / 2, width / 2)]
+        n = len(profile)
+        faces = [self.bm.faces.new(sides[0]), self.bm.faces.new(sides[1][::-1])]
+        for i in range(n):
+            j = (i + 1) % n
+            faces.append(self.bm.faces.new((sides[0][i], sides[1][i], sides[1][j], sides[0][j])))
+        bmesh.ops.recalc_face_normals(self.bm, faces=faces)
+        vs = sides[0] + sides[1]
+        if bevel > 0:
+            self.bm.normal_update()
+            edges = [e for e in {e for f in faces for e in f.edges} if len(e.link_faces) == 2 and e.calc_face_angle(0) > math.radians(25)]
+            faces, vs = self._bevel(edges, bevel, clamp=True)
+        self._place(vs, faces, at, (0, 0, 0), h)
+
+    def text(self, s, width, depth, at, h, side):
+        """Raised lettering `width` studs long on a car side: `side` +1 faces +X, -1 faces -X; it reads
+        front to back on either side, as a viewer standing there sees it."""
+        font = None
+        for f in ("ariblk.ttf", "impact.ttf", "arialbd.ttf"):
+            path = os.path.join(os.environ.get("WINDIR", r"C:\Windows"), "Fonts", f)
+            if os.path.exists(path):
+                font = bpy.data.fonts.load(path, check_existing=True)
+                break
+        cu = bpy.data.curves.new("_txt", "FONT")
+        cu.body, cu.align_x, cu.align_y, cu.extrude, cu.resolution_u = s, "CENTER", "CENTER", depth / 2, 3
+        if font:
+            cu.font = font
+        ob = bpy.data.objects.new("_txt", cu)
+        bpy.context.scene.collection.objects.link(ob)
+        me = ob.evaluated_get(bpy.context.evaluated_depsgraph_get()).to_mesh()
+        xs = [v.co.x for v in me.vertices]
+        k = width / (max(xs) - min(xs))
+        # text (u along, v up, w out of the page) -> Roblox: on +X it reads toward -Z, on -X toward +Z
+        vmap = [self.bm.verts.new(R2B @ (Vector(at) + Vector((side * v.co.z, v.co.y * k, -side * v.co.x * k)))) for v in me.vertices]
+        faces = [self.bm.faces.new([vmap[i] for i in p.vertices]) for p in me.polygons]
+        ob.to_mesh_clear()
+        bpy.data.objects.remove(ob)
+        bpy.data.curves.remove(cu)
+        bmesh.ops.recalc_face_normals(self.bm, faces=faces)
         i = self._col(h)
         for f in faces:
             f.material_index = i
@@ -671,12 +726,88 @@ def baton():
     p.finish()
 
 
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton")
+# ---------------------------------------------------------------- Police car -----------------
+# A comic patrol car (black and white, light bar, push bar). Cop_Body's origin is the ground under
+# the middle of the car; Cop_Wheel is one wheel round its hub, tyre face out to +X (the left ones
+# are it turned half round). client/server PoliceCar.luau puts them on a constraint chassis.
+COP_BODY, COP_WHITE, COP_TRIM, COP_BLUE = "2A2D36", "F2F2EE", "1C1C20", "3060FF"
+WHEEL_AT = ((3.25, 1.4, -5.2), (3.25, 1.4, 5.3))  # right front, right rear hub (mirror x for left)
+
+
+def police_car():
+    p = Piece("Cop_Body", exact=True)
+    # lower body: one side profile with both wheel arches cut out of it, across the car
+    prof = [(8.2, 3.35), (8.55, 2.95), (8.6, 1.5), (8.3, 0.85)]
+    for zc in (WHEEL_AT[1][2], WHEEL_AT[0][2]):  # rear arch, then front, going forward
+        r = 1.8
+        prof.append((zc + r, 0.85))
+        prof += [(zc + r * math.cos(t * math.pi / 10), 1.35 + r * math.sin(t * math.pi / 10)) for t in range(11)]
+        prof.append((zc - r, 0.85))
+    prof += [(-8.3, 0.85), (-8.65, 1.5), (-8.6, 2.5), (-8.2, 2.95), (-4.3, 3.35), (5.4, 3.45)]
+    p.prism(prof, 7.4, (0, 0, 0), COP_BODY, bevel=0.18)
+    p.box((5.2, 1.3, 15.6), (0, 1.6, 0), "141416", bevel=0)  # underbody, seen through the arches
+    # cabin: tinted glass all round, the roof, pillars
+    p.prism([(-4.3, 3.3), (-1.5, 5.25), (2.7, 5.25), (5.5, 3.4)], 6.3, (0, 0, 0), GLASS, bevel=0.12)
+    p.prism([(-1.65, 5.15), (-1.35, 5.5), (2.65, 5.5), (2.9, 5.15)], 6.45, (0, 0, 0), COP_BODY, bevel=0.1)
+    for x in (-1, 1):
+        p.box((0.3, 0.3, 3.45), (x * 3.08, 4.3, -2.9), COP_BODY, rot=(-34, 0, 0), bevel=0.06)  # A
+        p.box((0.3, 1.95, 0.5), (x * 3.08, 4.3, 0.0), COP_BODY, bevel=0.06)  # B
+        p.box((0.3, 0.3, 3.4), (x * 3.08, 4.33, 4.1), COP_BODY, rot=(33.5, 0, 0), bevel=0.06)  # C
+        p.box((0.3, 0.32, 9.6), (x * 3.08, 3.45, 0.6), COP_BODY, bevel=0.06)  # window sill
+        # white doors, front and rear, with the lettering across them, a seam, handles, the badge
+        p.box((0.06, 2.3, 6.6), (x * 3.735, 2.15, 0), COP_WHITE, bevel=0.03)
+        p.box((0.04, 2.2, 0.07), (x * 3.77, 2.15, 0.05), COP_TRIM, bevel=0)
+        for z in (-0.65, 2.75):
+            p.box((0.1, 0.16, 0.6), (x * 3.8, 2.95, z), "8A8E98", bevel=0.03)
+        p.text("POLICE", 5.0, 0.06, (x * 3.79, 1.95, 0.25), COP_TRIM, x)
+        p.star(0.42, 0.06, (x * 3.79, 2.9, -2.55), YELLOW)
+        p.box((0.6, 0.4, 0.5), (x * 3.55, 3.75, -3.7), COP_BODY, bevel=0.1)  # mirror
+        # lights: head, indicator, tail; bumpers carry the plates
+        p.box((1.5, 0.45, 0.2), (x * 2.55, 2.45, -8.52), WHITE, rot=(0, x * 8, 0), bevel=0.08)
+        p.box((0.4, 0.4, 0.2), (x * 3.45, 2.45, -8.32), ORANGE, bevel=0.06)
+        p.box((1.6, 0.5, 0.2), (x * 2.55, 2.75, 8.56), RED, bevel=0.08)
+        p.ball((0.32, 0.32, 0.12), (x * 0.75, 1.55, -9.33), x < 0 and COP_BLUE or RED)  # push-bar strobes
+        # interior through the glass: front seats, the steering wheel on the left
+        p.box((1.7, 1.6, 0.4), (x * 1.4, 4.0, 0.7), "34343A", rot=(-12, 0, 0), bevel=0.15)
+        p.box((1.0, 0.5, 0.35), (x * 1.4, 5.0, 0.85), "34343A", bevel=0.12)
+    p.box((5.6, 1.3, 0.4), (0, 3.95, 3.6), "34343A", rot=(-12, 0, 0), bevel=0.15)  # rear bench
+    p.box((6.0, 0.55, 1.1), (0, 3.6, -3.3), COP_TRIM, bevel=0.15)  # dash
+    p.ring(0.5, 0.08, (-1.4, 3.95, -2.55), COP_TRIM, rot=(-25, 0, 0))
+    # nose: grille with slats, bumper, plate, push bar
+    p.box((3.4, 0.75, 0.12), (0, 2.1, -8.62), "3A3C44", bevel=0.04)
+    for y in (1.9, 2.1, 2.3):
+        p.box((3.2, 0.07, 0.06), (0, y, -8.7), COP_TRIM, bevel=0)
+    for z in (-1, 1):
+        p.box((7.6, 0.7, 0.6), (0, 1.2, z * 8.62), COP_TRIM, bevel=0.15)
+        p.box((1.5, 0.45, 0.08), (0, 1.2, z * 8.96), COP_WHITE, bevel=0.03)
+    for x in (-1, 1):
+        p.box((0.36, 1.9, 0.36), (x * 1.7, 1.75, -9.35), COP_TRIM, bevel=0.08)
+        p.box((0.3, 0.3, 0.6), (x * 1.7, 1.3, -9.0), COP_TRIM, bevel=0.05)
+    for y in (1.15, 2.35):
+        p.box((4.2, 0.3, 0.3), (0, y, -9.45), COP_TRIM, bevel=0.08)
+    # light bar: blue, white, red on a black base
+    p.box((5.0, 0.22, 1.1), (0, 5.6, 0.6), COP_TRIM, bevel=0.06)
+    p.box((1.9, 0.45, 0.95), (-1.45, 5.92, 0.6), COP_BLUE, bevel=0.12)
+    p.box((0.85, 0.4, 0.9), (0, 5.9, 0.6), WHITE, bevel=0.12)
+    p.box((1.9, 0.45, 0.95), (1.45, 5.92, 0.6), RED, bevel=0.12)
+    p.finish()
+
+    p = Piece("Cop_Wheel", exact=True)  # a right-hand wheel round its hub, axle along X
+    p.cyl(2.8, 1.1, (0, 0, 0), COP_TRIM, axis="x", segs=24, bevel=0.22)
+    p.cyl(1.75, 1.14, (0, 0, 0), "C8CCD4", axis="x", segs=24, bevel=0.05)
+    p.cyl(0.55, 1.2, (0, 0, 0), "8A8E98", axis="x", segs=12, bevel=0.04)
+    for i in range(5):
+        a = i * 2 * math.pi / 5
+        p.cyl(0.42, 1.17, (0, math.cos(a) * 0.58, math.sin(a) * 0.58), "3A3C44", axis="x", segs=10)
+    p.finish()
+
+
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_")
 
 
 def build_all():
     for ob in list(bpy.data.objects):
-        if ob.name in ("Cube",) or ob.name.startswith(PREFIXES):
+        if ob.name in ("Cube",) or ob.name.startswith(PREFIXES + ("_wheel_view",)):
             bpy.data.objects.remove(ob)
     soldier()
     heavy()
@@ -684,6 +815,7 @@ def build_all():
     zombie()
     helicopter()
     baton()
+    police_car()
     # lay them out for a look (object origins stay at the attach point; only the display moves)
     x = 0
     for prefix in ("Soldier_", "Heavy_", "Worker_", "Zombie_"):
@@ -696,6 +828,14 @@ def build_all():
     bpy.data.objects["Heli_Rotor"].location = Vector((12, 0, 4)) + R2B @ Vector(ROTOR_PIVOT)
     bpy.data.objects["Heli_TailRotor"].location = Vector((12, 0, 4)) + R2B @ Vector(TAIL_PIVOT)
     bpy.data.objects["Baton"].location = (4, 0, 0.5)
+    bpy.data.objects["Cop_Body"].location = (40, 0, 0)
+    for i, (x, z) in enumerate(((1, 0), (1, 1), (-1, 0), (-1, 1))):  # a look at all four wheels
+        w = bpy.data.objects["Cop_Wheel"] if i == 0 else bpy.data.objects["Cop_Wheel"].copy()
+        if i:
+            bpy.context.scene.collection.objects.link(w)
+            w.name = "_wheel_view"
+        w.location = Vector((40, 0, 0)) + R2B @ Vector((x * WHEEL_AT[z][0], WHEEL_AT[z][1], WHEEL_AT[z][2]))
+        w.rotation_euler = (0, 0, 0 if x > 0 else math.pi)
 
 
 # where each body part sits on the standing dummy, relative to the UpperTorso (measured), for the layout only

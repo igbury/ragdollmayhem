@@ -19,8 +19,8 @@ import bpy
 from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton")
-NEON = {"FF3030", "30FF60", "FFFFFF", "FF8A20", "FFF6D0"}
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_")
+NEON = {"FF3030", "30FF60", "FFFFFF", "FF8A20", "FFF6D0", "3060FF"}
 SEE_THROUGH = {"8FD0F0": 0.55, "2AA8D8": 0.15, "5AB4E0": 0.1}
 TRI_CAP = 19000
 

@@ -25,6 +25,7 @@ local CHARACTERS = {
 	{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
 	{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
 	{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
+	{ name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
 }
 -- a team: spawned into it (SPAWN), or a click puts a dummy in it (WORLD, team paint); teams fight each other
 local TEAMS = {
@@ -140,7 +141,8 @@ local function frame(view: ViewportFrame, model: Instance, from: Vector3)
 	end
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
-	local fit = if model:IsA("Model") then size.Y * 1.15 else size.Magnitude * 1.05 -- a figure by its height, a cube from any side
+	-- a figure by its height (a car by its length: it turns on the stage), a cube from any side
+	local fit = if model:IsA("Model") then math.max(size.X, size.Y, size.Z) * 1.15 else size.Magnitude * 1.05
 	local distance = fit / 2 / math.tan(math.rad(camera.FieldOfView / 2))
 	camera.CFrame = CFrame.lookAt(cf.Position + from.Unit * distance, cf.Position)
 	camera.Parent = view

@@ -24,6 +24,7 @@ local Progress = require(script.Progress)
 local ShopServer = require(script.Shop)
 local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
+local PoliceCar = require(script.PoliceCar)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -1981,6 +1982,7 @@ task.spawn(function()
 			warn("toolbox preview", kindName, err)
 		end
 	end
+	PoliceCar.preview().Parent = previews
 	previews.Parent = ReplicatedStorage
 end)
 
@@ -2387,7 +2389,15 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		return
 	end
 	local plus = not Shop.locked(player, "SandboxPlus") -- SANDBOX + (shared/Shop): every kind, higher caps
-	if action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
+	if action == "spawn" and extra == "PoliceCar" and finite(arg) and (arg - head.Position).Magnitude < 200 then
+		-- one drivable car where the aim is, nose away from the player (server/PoliceCar)
+		local flat = (arg - head.Position) * Vector3.new(1, 0, 1)
+		local look = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zAxis
+		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look) -- no room (a wall, someone): no car
+		if spot then
+			PoliceCar.spawn(spot, player)
+		end
+	elseif action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
 		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
 		if kind and Shop.SANDBOX.kinds[kind] and not plus then
 			return
@@ -2402,7 +2412,8 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 				Sandbox.setTeam(d, extra2)
 			end
 		end
-	elseif action == "clearspawn" then -- Toolbox WORLD: every dummy goes, the tutorial's stay
+	elseif action == "clearspawn" then -- Toolbox WORLD: every dummy goes, the tutorial's stay, and the cars
+		PoliceCar.clear()
 		for _, d in table.clone(dummies) do
 			if not d.model:GetAttribute("TutorialFor") and not d.heldBy then
 				d.model:Destroy()

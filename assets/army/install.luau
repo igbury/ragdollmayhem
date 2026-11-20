@@ -3,7 +3,10 @@
 --  * uploaded through Open Cloud as a Model: set MODEL_ID to its asset id;
 --  * imported with Studio's File > Import 3D: leave MODEL_ID 0, the imported "ArmyKit" in Workspace is used.
 -- Then save the place. Each MeshPart gets a "Place" attribute: its CFrame in its piece's space.
+-- MERGE true: the import holds only some pieces (e.g. PoliceCar.glb): those replace their folders and
+-- the rest of the kit stays.
 local MODEL_ID = 0
+local MERGE = false
 
 local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space (studs), neon, transparency }
 	["Baton__9EA2AC"] = { "Baton", "9EA2AC", Vector3.new(-0.0, 0.88, 0.19), false, 0 },
@@ -12,6 +15,25 @@ local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space 
 	["Baton__17171C"] = { "Baton", "17171C", Vector3.new(-0.0, 1.31, 0.0), false, 0 },
 	["Baton__7A5434"] = { "Baton", "7A5434", Vector3.new(-0.0, -0.78, 0.0), false, 0 },
 	["Baton__000000"] = { "Baton", "000000", Vector3.new(-0.0, 0.6675, 0.1372), false, 0 },
+	["Cop_Body__2A2D36"] = { "Cop_Body", "2A2D36", Vector3.new(-0.0, 3.175, -0.0236), false, 0 },
+	["Cop_Body__141416"] = { "Cop_Body", "141416", Vector3.new(-0.0, 1.6, 0.0), false, 0 },
+	["Cop_Body__8FD0F0"] = { "Cop_Body", "8FD0F0", Vector3.new(-0.0, 4.2756, 0.5998), false, 0.55 },
+	["Cop_Body__F2F2EE"] = { "Cop_Body", "F2F2EE", Vector3.new(-0.0, 2.1375, 0.0), false, 0 },
+	["Cop_Body__1C1C20"] = { "Cop_Body", "1C1C20", Vector3.new(-0.0, 3.255, -0.34), false, 0 },
+	["Cop_Body__8A8E98"] = { "Cop_Body", "8A8E98", Vector3.new(-0.0, 2.95, 1.05), false, 0 },
+	["Cop_Body__FFCC22"] = { "Cop_Body", "FFCC22", Vector3.new(-0.0, 2.9, -2.5099), false, 0 },
+	["Cop_Body__FFFFFF"] = { "Cop_Body", "FFFFFF", Vector3.new(-0.0, 4.1625, -3.8311), true, 0 },
+	["Cop_Body__FF8A20"] = { "Cop_Body", "FF8A20", Vector3.new(-0.0, 2.45, -8.32), true, 0 },
+	["Cop_Body__FF3030"] = { "Cop_Body", "FF3030", Vector3.new(-0.0, 3.7675, -0.365), true, 0 },
+	["Cop_Body__3060FF"] = { "Cop_Body", "3060FF", Vector3.new(-1.45, 3.7675, -4.1575), true, 0 },
+	["Cop_Body__34343A"] = { "Cop_Body", "34343A", Vector3.new(-0.0, 4.2285, 2.1344), false, 0 },
+	["Cop_Body__3A3C44"] = { "Cop_Body", "3A3C44", Vector3.new(-0.0, 2.1, -8.62), false, 0 },
+	["Cop_Body__000000"] = { "Cop_Body", "000000", Vector3.new(-0.0, 3.4725, -0.3), false, 0 },
+	["Cop_Wheel__1C1C20"] = { "Cop_Wheel", "1C1C20", Vector3.new(-0.0, 0.0, 0.0), false, 0 },
+	["Cop_Wheel__C8CCD4"] = { "Cop_Wheel", "C8CCD4", Vector3.new(-0.0, 0.0, 0.0), false, 0 },
+	["Cop_Wheel__8A8E98"] = { "Cop_Wheel", "8A8E98", Vector3.new(-0.0, 0.0, 0.0), false, 0 },
+	["Cop_Wheel__3A3C44"] = { "Cop_Wheel", "3A3C44", Vector3.new(-0.0, 0.0554, 0.0), false, 0 },
+	["Cop_Wheel__000000"] = { "Cop_Wheel", "000000", Vector3.new(-0.0, 0.0, 0.0), false, 0 },
 	["Heavy_Head__343844"] = { "Heavy_Head", "343844", Vector3.new(-0.0, 0.099, -0.03), false, 0 },
 	["Heavy_Head__7A8296"] = { "Heavy_Head", "7A8296", Vector3.new(-0.0, 0.1484, -0.1284), false, 0 },
 	["Heavy_Head__4E5566"] = { "Heavy_Head", "4E5566", Vector3.new(-0.0, -0.1829, -0.1096), false, 0 },
@@ -216,15 +238,13 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local loaded = if MODEL_ID ~= 0 then game:GetObjects("rbxassetid://" .. MODEL_ID)[1] else workspace:FindFirstChild("ArmyKit") or workspace:FindFirstChild("Scene")
 assert(loaded, "no ArmyKit: set MODEL_ID, or import ArmyKit.glb with File > Import 3D first")
 local old = ReplicatedStorage:FindFirstChild("ArmyKit")
-if old then
-	old:Destroy()
-end
 local kit = Instance.new("Folder")
 kit.Name = "ArmyKit"
-local found, missing = 0, {}
+local found, missing, pieces = 0, {}, {}
 for _, p in loaded:GetDescendants() do
 	local info = p:IsA("MeshPart") and KIT[p.Name]
 	if info then
+		pieces[info[1]] = true
 		local folder = kit:FindFirstChild(info[1]) or Instance.new("Folder")
 		folder.Name = info[1]
 		folder.Parent = kit
@@ -243,13 +263,23 @@ for _, p in loaded:GetDescendants() do
 		found += 1
 	end
 end
+if MERGE and old then -- keep every piece this import did not bring
+	for _, folder in old:GetChildren() do
+		if not pieces[folder.Name] then
+			folder.Parent = kit
+		end
+	end
+end
+if old then
+	old:Destroy()
+end
 for name in KIT do
 	local piece = string.split(name, "__")[1]
 	local colour = string.split(name, "__")[2]
-	if not (kit:FindFirstChild(piece) and kit[piece]:FindFirstChild(colour)) then
+	if (not MERGE or pieces[piece]) and not (kit:FindFirstChild(piece) and kit[piece]:FindFirstChild(colour)) then
 		table.insert(missing, name)
 	end
 end
 loaded:Destroy()
 kit.Parent = ReplicatedStorage
-return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 204, table.concat(missing, ", "))
+return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 223, table.concat(missing, ", "))
