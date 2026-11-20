@@ -11,6 +11,7 @@ local Shop = require(ReplicatedStorage.Shared.Shop)
 local BoxingGloves = require(ReplicatedStorage.Shared.BoxingGloves)
 local Map = require(script.Map)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
+local SwingArc = require(ReplicatedStorage.Shared.SwingArc)
 local Impact = require(ReplicatedStorage.Shared.Impact)
 local Factory = require(script.Factory)
 local City = require(script.City)
@@ -3047,7 +3048,7 @@ local AIMED_PELLETS = 0.3 -- an aimed shotgun throws its pellets in this share o
 
 -- An aimed swing (aimSwing weapons): swing = (side, up, power) from the client's circle. Power 0..1
 -- scales damage 0.6..1.4x and knockback 0.5..1.5x (0.5 = the plain swing); the knockback leans the
--- way the line points. The hit ray itself stays on the crosshair.
+-- way the line points. The hit sweeps along the line (shared/SwingArc).
 local function aimedSwing(weapon, swing, dir: Vector3): (number, number, Vector3)
 	if not weapon.aimSwing or typeof(swing) ~= "Vector3" or not finite(swing) then return 1, 1, dir end
 	local p = math.clamp(swing.Z, 0, 1)
@@ -3242,9 +3243,18 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			local up = right:Cross(dir).Unit
 			aim = (dir + right * rng:NextNumber(-1, 1) * cone + up * rng:NextNumber(-1, 1) * cone).Unit
 		end
-		local result = workspace:Raycast(origin, aim * weapon.range, params)
+		local result
+		if weapon.aimSwing then -- the hit runs along the drawn arc, not just down the crosshair
+			result, aim = SwingArc.cast(origin, aim, swing, weapon.range, params, function(inst)
+				return dummyOf(inst) ~= nil or Monsters.isMonster(inst)
+			end)
+		else
+			result = workspace:Raycast(origin, aim * weapon.range, params)
+		end
 		local target = result and result.Position or origin + aim * weapon.range
-		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil, pellet == 1)
+		-- an aimed swing also sends its line and the crosshair: the crescent is drawn along them (Fx)
+		fxRemote:FireAllClients("Shot", char, id, origin, target, result ~= nil, pellet == 1,
+			weapon.aimSwing and typeof(swing) == "Vector3" and finite(swing) and swing or nil, weapon.aimSwing and dir or nil)
 		if not result then
 			if sounds.swing then
 				Sfx.play(sounds.swing, origin, player) -- the swinger predicted it (useWeapon)
@@ -3275,7 +3285,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			if id == "Bat" and d.model.Parent then
 				batBlow(d, swing)
 			end
-			require(script.Specials).afterHit(weapon, d, target, swing, player, char) -- the crowbar's arm rip and disarm, the sledgehammer's shockwave
+			require(script.Specials).afterHit(weapon, d, target, swing, player, char, result.Instance) -- the crowbar's limb rip and disarm, the sledgehammer's shockwave
 			if weapon.knockdown and d.state ~= "Dead" then -- the heavy left: down every time it lands
 				knockDown(d, weapon.knockdown, "Knocked down")
 			end
@@ -3514,6 +3524,11 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 	end
 	if action == "bowCancel" then
 		if player.Character then player.Character:SetAttribute("BowDrawAt", nil) end
+		return
+	end
+	if action == "lassoCut" then -- the right mouse with the lasso: the dummy caught last comes free
+		if rateLimited(player, 0.15, "lassoCut") then return end
+		require(script.Specials).lassoCut(player)
 		return
 	end
 	if action == "bowDraw" then

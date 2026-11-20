@@ -29,6 +29,55 @@ local tint = Instance.new("ColorCorrectionEffect")
 tint.Parent = Lighting
 
 local Fx = {}
+
+-- Impact frames (test, on our own scoped sniper hits): a few frames of anime "impact" - the screen
+-- goes hard black and white with whoever the round hit as a solid black silhouette ringed in white,
+-- then the same inverted with a red cast, then black once more, then back. ~0.13 s in all. A miss,
+-- a hip shot or a round that hits no body gets none.
+Fx.IMPACT_FRAMES = true
+Fx.scopedShotAt = -math.huge -- os.clock() of our last sniper shot fired through the scope (set by the client)
+local impactCC = Instance.new("ColorCorrectionEffect")
+impactCC.Name, impactCC.Enabled, impactCC.Parent = "ImpactFrames", false, Lighting
+local impactToken = 0
+function Fx.impactFrames(at: Vector3)
+	impactToken += 1
+	local token = impactToken
+	-- the body the round landed in (a dummy, a player, a monster): the nearest thing with a Humanoid to
+	-- `at`. Not just what touches it: a sniper round has usually flung the body clear by the time the
+	-- server's Shot reaches us.
+	local victim: Model? = nil
+	local best = 8
+	for _, p in workspace:GetPartBoundsInRadius(at, best) do
+		local m = p:FindFirstAncestorOfClass("Model")
+		while m and not m:FindFirstChildOfClass("Humanoid") do m = m:FindFirstAncestorOfClass("Model") end
+		local dist = m and m ~= player.Character and (p.Position - at).Magnitude
+		if dist and dist < best then victim, best = m, dist end
+	end
+	if not victim then return end -- the round hit a wall or the floor: no impact frames
+	local glow = Instance.new("Highlight")
+	glow.DepthMode, glow.FillTransparency, glow.OutlineTransparency = Enum.HighlightDepthMode.AlwaysOnTop, 0, 0
+	glow.Adornee, glow.Parent = victim, folder
+	-- { seconds, brightness, tint, silhouette fill, silhouette outline }; contrast this high leaves
+	-- nearly pure black and white (manga ink), the brightness picks which way the greys fall
+	local FRAMES = {
+		{ 0.05, -0.25, WHITE, BLACK, WHITE },
+		{ 0.05, 0.35, Color3.fromRGB(255, 90, 80), WHITE, BLACK },
+		{ 0.035, -0.25, WHITE, BLACK, WHITE },
+	}
+	impactCC.Saturation, impactCC.Contrast, impactCC.Enabled = -1, 12, true
+	task.spawn(function()
+		for _, f in FRAMES do
+			if token ~= impactToken then break end -- a newer shot took over
+			impactCC.Brightness, impactCC.TintColor = f[2], f[3]
+			glow.FillColor, glow.OutlineColor = f[4], f[5]
+			task.wait(f[1])
+		end
+		glow:Destroy()
+		if token == impactToken then impactCC.Enabled = false end
+	end)
+	Fx.shake(at, 0.6, 0.18)
+end
+
 Fx.fovBoost = 0 -- extra FOV set by the client (sprint)
 Fx.muzzle = nil :: ((weaponId: string) -> Vector3?)? -- set by the client: our held weapon's muzzle, now
 Fx.weaponPoint = nil :: ((weaponId: string, point: Vector3) -> CFrame?)? -- set by the client: a point on it
@@ -718,7 +767,8 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 end
 MELEE.Baton = true -- the cops' baton: a dummy weapon, not in Weapons
 
-function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?)
+function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?,
+	swing: Vector3?, center: Vector3?)
 	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
 	-- model however we move (the server's position for us lags a little behind)
 	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
@@ -761,7 +811,13 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		local katana = weaponId == "Katana"
 		local knife = weaponId == "KnifeSlash"
 		local tilt = (weaponId == "Axe" or katana) and rng:NextNumber(1.0, 1.6) * (rng:NextNumber() < 0.5 and -1 or 1) or rng:NextNumber(-0.4, 0.4)
-		Fx.ring(aimCf * CFrame.Angles(0, 0, knife and -0.65 or tilt), knife and 2.4 or katana and 5 or 4.5,
+		local ringCf = aimCf
+		if typeof(swing) == "Vector3" and (swing.X ~= 0 or swing.Y ~= 0) then
+			-- an aimed swing: the crescent lies along the drawn line (x right, y up), round the crosshair
+			tilt = math.atan2(swing.Y, swing.X)
+			if typeof(center) == "Vector3" and center.Magnitude > 0.5 then ringCf = CFrame.lookAlong(from, center) end
+		end
+		Fx.ring(ringCf * CFrame.Angles(0, 0, knife and -0.65 or tilt), knife and 2.4 or katana and 5 or 4.5,
 			knife and 4 or katana and 8 or 6, knife and 0.12 or katana and 0.16 or 0.2, (katana or knife) and SLASH or WHITE,
 			{ arc = katana and 2.8 or 2.2, thick = (katana or knife) and 0.5 or 1.4, height = 0.3, ink = false })
 		if landed then
@@ -799,6 +855,11 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		-- a dummy's shot already leaves from its hand
 		local muzzle = ownMuzzle or (shooter and shooter:GetAttribute("Gear") and from) or (aimCf * CFrame.new(0.7, -0.6, -2.5)).Position
 		local sniper = weaponId == "Sniper"
+		-- only a scoped shot of ours (the client stamps Fx.scopedShotAt as it fires) that lands on a body
+		if sniper and Fx.IMPACT_FRAMES and primary ~= false and landed and shooter ~= nil and shooter == player.Character
+			and os.clock() - Fx.scopedShotAt < 1.5 then
+			Fx.impactFrames(to)
+		end
 		local big = weaponId == "Revolver" or sniper
 		local pellet = weaponId == "Shotgun"
 		local tracer = part(Enum.PartType.Block, TRACER)
