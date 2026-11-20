@@ -3125,7 +3125,7 @@ end
 -- the comic set's own mechanics (Specials: flamethrower, frostgun, lasso, C4, ...), with the helpers above
 require(script.Specials).init({
 	dummies = dummies, dummyOf = dummyOf, hit = hit, harm = harm, knockDown = knockDown, release = release,
-	setOwner = setOwner, smash = smash, explode = explode, setGear = setGear, say = say,
+	setOwner = setOwner, setGroup = setGroup, smash = smash, explode = explode, setGear = setGear, say = say,
 	kill = kill, addInjury = addInjury, sync = syncAttributes, sever = sever, Body = Body,
 	Monsters = Monsters, Map = Map, Sfx = Sfx, fx = fxRemote,
 })
