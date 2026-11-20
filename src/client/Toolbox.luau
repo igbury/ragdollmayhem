@@ -11,6 +11,7 @@ local RunService = game:GetService("RunService")
 local StarterGui = game:GetService("StarterGui")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local Audio = require(script.Parent:WaitForChild("Music")) -- the sound settings (SETTINGS page)
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
@@ -555,8 +556,22 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	wipe.Activated:Connect(function()
 		actionRemote:FireServer("clearspawn")
 	end)
-	local paintHead = heading(worldSide, "TEAM PAINT", 4)
-	local paintRow = row(worldSide, 5, 48)
+	-- NEVER WANTED: no stars, no cops or soldiers after you (server Wanted; saved like the sound, client/Music)
+	local calm = button(worldSide, "NEVER WANTED: OFF", Color3.fromRGB(40, 70, 140), 44, true)
+	calm.Size, calm.LayoutOrder, calm.Rotation = UDim2.new(1, -10, 0, 56), 4, -1
+	local calmLabel = calm:FindFirstChild("Label") :: TextLabel
+	calmLabel.TextSize = 26
+	local function showCalm()
+		calmLabel.Text = if Audio.get("NeverWanted") then "NEVER WANTED: ON" else "NEVER WANTED: OFF"
+		pick(calm, Audio.get("NeverWanted") == true)
+	end
+	showCalm()
+	Audio.changed:Connect(showCalm)
+	calm.Activated:Connect(function()
+		Audio.set("NeverWanted", not Audio.get("NeverWanted"))
+	end)
+	local paintHead = heading(worldSide, "TEAM PAINT", 5)
+	local paintRow = row(worldSide, 6, 48)
 	local paintChips = {}
 	for i, item in TEAMS do
 		local b = button(paintRow, if item.team == 0 then "-" else "", item.color, 44, true)
@@ -574,7 +589,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end)
 	end
 	passSticker(paintHead, "SandboxPlus")
-	hint(worldSide, "Pick a colour, then click dummies to put them in that team. Teams fight each other.", 6)
+	hint(worldSide, "Pick a colour, then click dummies to put them in that team. Teams fight each other.", 7)
 
 	local buildLabel = function() end -- the BUILD page, below
 	local showBlocks = function() end
@@ -602,6 +617,103 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end
 	showTab(1)
 
+	-- SETTINGS: a second title beside TOOLBOX!, its own page in place of the tabs (the sound, client/Music)
+	local settingsTitle = button(panel, "SETTINGS", Color3.fromRGB(70, 60, 150), 46, true)
+	settingsTitle.Size, settingsTitle.Position, settingsTitle.Rotation = UDim2.fromOffset(190, 40), UDim2.fromOffset(250, -10), 3
+	local settingsLabel = settingsTitle:FindFirstChild("Label") :: TextLabel
+	settingsLabel.TextSize = 24
+	local settingsPage = Instance.new("Frame")
+	settingsPage.Name, settingsPage.BackgroundTransparency, settingsPage.Visible, settingsPage.ZIndex = "Settings", 1, false, 42
+	settingsPage.Position, settingsPage.Size, settingsPage.Parent = UDim2.fromOffset(30, 56), UDim2.new(1, -60, 1, -70), panel
+	local settingsList = Instance.new("UIListLayout")
+	settingsList.Padding, settingsList.SortOrder, settingsList.Parent = UDim.new(0, 14), Enum.SortOrder.LayoutOrder, settingsPage
+	local function showSettings(on: boolean)
+		settingsPage.Visible = on
+		area.Visible, rule.Visible = not on, not on
+		for _, b in tabs do
+			b.Visible = not on
+		end
+		pick(title, not on)
+		pick(settingsTitle, on)
+		titleLabel.TextTransparency = if on then 0.4 else 0
+		settingsLabel.TextTransparency = if on then 0 else 0.4
+	end
+	title.Activated:Connect(function()
+		showSettings(false)
+	end)
+	settingsTitle.Activated:Connect(function()
+		showSettings(true)
+	end)
+	local function label(parent: Instance, text: string)
+		local l = Instance.new("TextLabel")
+		l.Text, l.Font, l.TextSize, l.TextColor3, l.BackgroundTransparency = text, FONT, 26, INK, 1
+		l.TextXAlignment, l.Size, l.LayoutOrder, l.ZIndex, l.Parent = Enum.TextXAlignment.Left, UDim2.fromOffset(280, 44), 0, 44, parent
+	end
+	heading(settingsPage, "SOUND", 1)
+	local musicRow = row(settingsPage, 2, 50)
+	label(musicRow, "MUSIC")
+	local musicButton = button(musicRow, "ON", Color3.fromRGB(40, 140, 70), 44, true)
+	musicButton.Size, musicButton.LayoutOrder = UDim2.fromOffset(130, 44), 1
+	local musicLabel = musicButton:FindFirstChild("Label") :: TextLabel
+	musicLabel.TextSize = 24
+	musicButton.Activated:Connect(function()
+		Audio.set("MusicOff", not Audio.get("MusicOff"))
+	end)
+	-- a volume: - and + in tenths, a bar between them filled that far
+	local volumes = {}
+	local function volume(text: string, name: string, order: number)
+		local r = row(settingsPage, order, 50)
+		label(r, text)
+		local function step(sign: string, by: number, at: number)
+			local b = button(r, sign, YELLOW, 44, true)
+			b.Size, b.LayoutOrder = UDim2.fromOffset(46, 44), at
+			local l = b:FindFirstChild("Label") :: TextLabel
+			l.TextSize, l.TextColor3, l.TextStrokeTransparency = 30, INK, 1
+			b.Activated:Connect(function()
+				Audio.set(name, math.clamp(math.round((Audio.get(name) + by) * 10) / 10, 0, 1))
+			end)
+		end
+		step("-", -0.1, 1)
+		local bar = Instance.new("Frame")
+		bar.BackgroundColor3, bar.BorderSizePixel, bar.Size, bar.LayoutOrder, bar.ZIndex = WHITE, 0, UDim2.fromOffset(220, 34), 2, 44
+		bar.Parent = r
+		outline(bar, 3)
+		local fill = Instance.new("Frame")
+		fill.BackgroundColor3, fill.BorderSizePixel, fill.ZIndex, fill.Parent = Color3.fromRGB(40, 140, 70), 0, 45, bar
+		local percent = Instance.new("TextLabel")
+		percent.Font, percent.TextSize, percent.TextColor3, percent.BackgroundTransparency = FONT, 22, INK, 1
+		percent.Size, percent.Position, percent.ZIndex, percent.Parent = UDim2.fromScale(1, 1), UDim2.fromOffset(0, NUDGE), 46, bar
+		step("+", 0.1, 3)
+		volumes[name] = function()
+			local v = Audio.get(name)
+			fill.Size = UDim2.fromScale(v, 1)
+			percent.Text = `{math.round(v * 100)}%`
+		end
+	end
+	volume("MUSIC VOLUME", "MusicVolume", 3)
+	volume("EFFECTS VOLUME", "SfxVolume", 4)
+	hint(settingsPage, "Saved with your progress. The note button in the top-right corner turns the music off too.", 5)
+	local function showSound()
+		local off = Audio.get("MusicOff")
+		musicLabel.Text = if off then "OFF" else "ON"
+		local fill = musicButton:FindFirstChild("Fill")
+		local shade = fill and fill:FindFirstChildOfClass("UIGradient")
+		if shade then
+			local color = if off then Color3.fromRGB(143, 46, 44) else Color3.fromRGB(40, 140, 70)
+			shade.Color = ColorSequence.new({
+				ColorSequenceKeypoint.new(0, color:Lerp(WHITE, 0.25)),
+				ColorSequenceKeypoint.new(0.55, color),
+				ColorSequenceKeypoint.new(1, color:Lerp(INK, 0.35)),
+			})
+		end
+		for _, show in volumes do
+			show()
+		end
+	end
+	showSound()
+	Audio.changed:Connect(showSound)
+	showSettings(false)
+
 	close.Activated:Connect(function()
 		setOpen(false)
 	end)
@@ -613,6 +725,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			if not cover.Visible and buildMode then -- Tab ends building, and opens on BUILD
 				setBuild(false)
 				showTab(2)
+				showSettings(false)
 			end
 			setOpen(not cover.Visible)
 		elseif cover.Visible and input.KeyCode == Enum.KeyCode.Escape and not processed then
@@ -620,13 +733,13 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end
 	end)
 
-	-- Build bar (in place of the weapons' hotbar): the block in hand (1) and the trash (2) -------------
+	-- Build bar (in place of the weapons' hotbar): the block in hand (1), the trash (2), back to the weapons (3)
 	local buildBar = Instance.new("Frame")
 	buildBar.Name, buildBar.BackgroundTransparency, buildBar.Visible = "BuildBar", 1, false
-	buildBar.AnchorPoint, buildBar.Position, buildBar.Size = Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -16), UDim2.fromOffset(220, 130)
+	buildBar.AnchorPoint, buildBar.Position, buildBar.Size = Vector2.new(0.5, 1), UDim2.new(0.5, 0, 1, -16), UDim2.fromOffset(330, 130)
 	buildBar.ZIndex, buildBar.Parent = 30, gui
 	local barHint = Instance.new("TextLabel")
-	barHint.Text, barHint.Font, barHint.TextSize, barHint.TextColor3 = "HOLD Q  BLOCKS     TAB  STOP BUILDING", FONT, 16, WHITE
+	barHint.Text, barHint.Font, barHint.TextSize, barHint.TextColor3 = "HOLD Q  MORE BLOCKS", FONT, 16, WHITE
 	barHint.TextStrokeTransparency, barHint.BackgroundTransparency = 0, 1
 	barHint.Size, barHint.Position, barHint.ZIndex, barHint.Parent = UDim2.new(1, 200, 0, 20), UDim2.new(0, -100, 0, -4), 31, buildBar
 	local function trashTile(parent): TextButton
@@ -643,6 +756,21 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	local brickSlot: GuiObject
 	local trashSlot = trashTile(buildBar)
 	trashSlot.Size, trashSlot.Position, trashSlot.ZIndex = UDim2.fromOffset(100, 100), UDim2.fromOffset(115, 24), 31
+	local function keyBadge(slot: GuiObject, key: string) -- the number key, on the slot's top-left corner
+		local k = Instance.new("TextLabel")
+		k.Text, k.Font, k.TextSize, k.TextColor3, k.BackgroundColor3 = key, FONT, 18, INK, WHITE
+		k.BorderSizePixel, k.Position, k.Size, k.ZIndex, k.Parent = 0, UDim2.fromOffset(-8, -8), UDim2.fromOffset(24, 24), 48, slot
+		outline(k, 2)
+	end
+	keyBadge(trashSlot, "2")
+	local weaponsSlot = button(buildBar, "WEAPONS", RED, 31, true) -- out of building, like Tab
+	weaponsSlot.Size, weaponsSlot.Position = UDim2.fromOffset(100, 100), UDim2.fromOffset(225, 24)
+	local weaponsLabel = weaponsSlot:FindFirstChild("Label") :: TextLabel
+	weaponsLabel.TextSize, weaponsLabel.TextColor3 = 20, YELLOW
+	keyBadge(weaponsSlot, "3")
+	weaponsSlot.Activated:Connect(function()
+		setBuild(false)
+	end)
 	local function mark(slot: GuiObject, on: boolean)
 		local stroke = slot:FindFirstChildOfClass("UIStroke") :: UIStroke
 		stroke.Color, stroke.Thickness = on and YELLOW or INK, on and 6 or 3
@@ -653,6 +781,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end
 		brickSlot = blockTile(buildBar, brick)
 		brickSlot.Size, brickSlot.Position = UDim2.fromOffset(100, 100), UDim2.fromOffset(5, 24)
+		keyBadge(brickSlot, "1")
 		brickSlot.Activated:Connect(function()
 			trashing = false
 			showBar()
@@ -802,6 +931,8 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		elseif input.KeyCode == Enum.KeyCode.One or input.KeyCode == Enum.KeyCode.Two then
 			trashing = input.KeyCode == Enum.KeyCode.Two
 			showBar()
+		elseif input.KeyCode == Enum.KeyCode.Three then
+			task.defer(setBuild, false) -- after this key's other handlers: the hotbar must not take its 3 too
 		end
 	end)
 	UIS.InputEnded:Connect(function(input)

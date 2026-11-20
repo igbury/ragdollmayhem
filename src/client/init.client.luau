@@ -31,6 +31,7 @@ local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
+task.spawn(require, script:WaitForChild("KoStars")) -- stars over dummies out cold
 require(script:WaitForChild("DummyGear")) -- the cops' guns and the hooligans' bats
 require(script:WaitForChild("WantedHud")) -- the wanted stars
 require(script:WaitForChild("HeliRotors")) -- the army helicopters' rotors

@@ -1,5 +1,5 @@
--- Dummy animations built in memory: getting up off the ground (from the front or the back) and
--- the stiff leg of a limp. Signs, as in DummyPoses: +X swings a limb forward and bends an elbow,
+-- Dummy animations built in memory: getting up off the ground (from the front or the back), the
+-- stiff leg of a limp, crawling and hopping on one leg (Body.mobility). Signs, as in DummyPoses: +X swings a limb forward and bends an elbow,
 -- -X bends a knee and pitches a torso forward. The LowerTorso pose moves the body against the
 -- standing root (the root is already up, invisible): at the start it lies on the ground.
 -- ponytail: KeyframeSequenceProvider ids only play in Studio, like the other animations here;
@@ -258,6 +258,56 @@ Anims.dig = polished("Dig")
 Anims.limp = {}
 for _, side in { "Left", "Right" } do
 	Anims.limp[side:lower()] = polished("Limp" .. side)
+end
+
+
+-- No leg to stand on (server Body.mobility "crawl"): face down on the ground, pulling itself along
+-- hand over hand. Lying flat like the start of GetUpFront (the root stays up, invisible), head up
+-- to see where it goes; each arm in turn reaches out ahead and drags the body up to it, and the
+-- shoulders roll with every pull. A lost arm simply is not there: the other one keeps pulling.
+local REACH, REACH_EL = rx(150), rx(10) -- out ahead, the hand on the ground in front of the head
+local PULL, PULL_EL = rx(95), rx(70) -- under the chest, elbow bent: the body has come up to it
+local function prone(roll: number, lift: number): CFrame
+	return body(LIE - lift, -90) * CFrame.Angles(0, math.rad(roll), 0) -- Y is along the body here: a roll
+end
+local DRAG = { LeftUpperLeg = rx(-6), RightUpperLeg = rx(-6), LeftLowerLeg = rx(-12), RightLowerLeg = rx(-12) }
+Anims.crawl = build("DummyCrawl", {
+	{ 0, with(DRAG, { LowerTorso = prone(8, 0), Head = rx(45),
+		LeftUpperArm = REACH, LeftLowerArm = REACH_EL, RightUpperArm = PULL, RightLowerArm = PULL_EL }) },
+	{ 0.3, with(DRAG, { LowerTorso = prone(0, 0.12), Head = rx(40),
+		LeftUpperArm = rx(120), LeftLowerArm = rx(45), RightUpperArm = rx(125), RightLowerArm = rx(35) }) },
+	{ 0.6, with(DRAG, { LowerTorso = prone(-8, 0), Head = rx(45),
+		LeftUpperArm = PULL, LeftLowerArm = PULL_EL, RightUpperArm = REACH, RightLowerArm = REACH_EL }) },
+	{ 0.9, with(DRAG, { LowerTorso = prone(0, 0.12), Head = rx(40),
+		LeftUpperArm = rx(125), LeftLowerArm = rx(35), RightUpperArm = rx(120), RightLowerArm = rx(45) }) },
+	{ 1.2, with(DRAG, { LowerTorso = prone(8, 0), Head = rx(45),
+		LeftUpperArm = REACH, LeftLowerArm = REACH_EL, RightUpperArm = PULL, RightLowerArm = PULL_EL }) },
+}, true, Enum.AnimationPriority.Action)
+
+-- One leg left (Body.mobility "hop"): it hops along on it, crouching into every landing and
+-- springing off again, the stump of the other held up out of the way and both arms flung out for
+-- balance. `side` is the leg it stands on.
+Anims.hop = {}
+for _, side in { "Left", "Right" } do
+	local stand, stump = side, side == "Left" and "Right" or "Left"
+	local function arms(x: number, out: number)
+		return { LeftUpperArm = rxy(x, 0, -out), RightUpperArm = rxy(x, 0, out), LeftLowerArm = rx(25), RightLowerArm = rx(25) }
+	end
+	local landed = with(arms(10, 65), {
+		LowerTorso = body(0.3, -10), UpperTorso = rx(-6),
+		[stand .. "UpperLeg"] = rx(32), [stand .. "LowerLeg"] = rx(-58), [stand .. "Foot"] = rx(26),
+		[stump .. "UpperLeg"] = rx(40), [stump .. "LowerLeg"] = rx(-30),
+	})
+	local up = with(arms(25, 35), {
+		LowerTorso = body(-0.45, -4), UpperTorso = rx(-2), Head = rx(-6),
+		[stand .. "UpperLeg"] = rx(8), [stand .. "LowerLeg"] = rx(-14), [stand .. "Foot"] = rx(-18),
+		[stump .. "UpperLeg"] = rx(50), [stump .. "LowerLeg"] = rx(-40),
+	})
+	Anims.hop[side:lower()] = build("DummyHop" .. side, {
+		{ 0, landed, "snap" }, -- the spring off the bent knee is quick
+		{ 0.25, up, "load" }, -- and the drop back onto it speeds up
+		{ 0.55, landed },
+	}, true, Enum.AnimationPriority.Action)
 end
 
 return Anims

@@ -11,6 +11,8 @@ local Progression = require(ReplicatedStorage.Shared.Progression)
 local Shop = require(ReplicatedStorage.Shared.Shop)
 
 local Progress = {}
+-- Settings (client/Music; the toolbox SETTINGS page, NeverWanted on its WORLD page): attribute = its type. Saved as they are.
+Progress.SETTINGS = { MusicOff = "boolean", MusicVolume = "number", SfxVolume = "number", NeverWanted = "boolean" }
 
 local SAVE_EVERY = 60
 local ok, store = pcall(DataStoreService.GetDataStore, DataStoreService, "WeaponProgress1")
@@ -38,6 +40,10 @@ local function snapshot(player: Player)
 	end
 	data.tutorial = player:GetAttribute("Tutorial") == false -- done (server/Tutorial)
 	data.hints = player:GetAttribute("HintsDone") == true -- the controls hints too
+	data.settings = {}
+	for name in Progress.SETTINGS do
+		data.settings[name] = player:GetAttribute(name)
+	end
 	return data
 end
 
@@ -89,6 +95,12 @@ local function load(player: Player)
 	end
 	player:SetAttribute("Tutorial", not (type(data) == "table" and data.tutorial == true))
 	player:SetAttribute("HintsDone", type(data) == "table" and data.hints == true)
+	local settings = type(data) == "table" and type(data.settings) == "table" and data.settings or {}
+	for name, kind in Progress.SETTINGS do
+		if type(settings[name]) == kind and player:GetAttribute(name) == nil then -- not changed while loading
+			player:SetAttribute(name, settings[name])
+		end
+	end
 	loaded[player] = true
 	player:SetAttribute("ProgressLoaded", true)
 end

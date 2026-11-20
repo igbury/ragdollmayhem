@@ -43,6 +43,9 @@ end
 
 -- `kind`: the dead dummy's kind (its "Kind" attribute).
 function Wanted.crime(player: Player, kind: string?)
+	if player:GetAttribute("NeverWanted") then
+		return -- NEVER WANTED (the toolbox WORLD page): nobody comes for this player
+	end
 	local before = stars(player)
 	heat[player] = math.min((heat[player] or 0) + (HEAT[kind] or 1), STARS[#STARS] + 10)
 	lastKill[player] = os.clock()
