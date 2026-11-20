@@ -113,7 +113,7 @@ WeaponAnims.USE = {
 	Crowbar = "Swing_Crowbar", Sledgehammer = "Swing_Sledgehammer", Lightsaber = "Swing_Lightsaber",
 	Spear = "Thrust_Spear", Lasso = "Throw_Lasso", TNT = "Throw_Bomb", C4 = "Throw_Bomb", Landmine = "Place_Landmine",
 }
--- C4 with aim held: the detonator, not a throw
+-- C4 with right click (the remote in the left hand): the detonator, not a throw
 WeaponAnims.USE_AIMED = { C4 = "Detonate_C4" }
 -- looping while the weapon is in hand (third person)
 WeaponAnims.HOLD = { Minigun = "Hold_Twohand", Flamethrower = "Hold_Twohand", Chainsaw = "Hold_Twohand" }

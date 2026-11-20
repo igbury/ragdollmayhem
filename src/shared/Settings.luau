@@ -19,6 +19,7 @@ Settings.DEFAULTS = {
 	Gravity = 1, -- times the normal workspace gravity
 	DamageScale = 1, -- times the HP a blow takes
 	Wardrobe = "", -- the Toolbox WARDROBE style (shared/Wardrobe)
+	TouchSimple = true, -- touch screens: EASY controls (aim assist, fewer moves) or PRO (client/TouchControls)
 }
 
 Settings.RANGE = {

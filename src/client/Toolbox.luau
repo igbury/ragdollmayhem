@@ -485,7 +485,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		end)
 	end
 	passSticker(teamHead, "SandboxPlus")
-	heading(spawnSide, "HOW MANY", 5)
+	passSticker(heading(spawnSide, "HOW MANY", 5), "SandboxPlus")
 	local countRow = row(spawnSide, 6, 44)
 	local countLabel = Instance.new("TextLabel")
 	local function stepper(text: string, by: number, order: number)
@@ -494,6 +494,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		local label = b:FindFirstChild("Label") :: TextLabel
 		label.TextSize, label.TextColor3, label.TextStrokeTransparency = 30, INK, 1
 		b.Activated:Connect(function()
+			if by > 0 and locked({ pass = "SandboxPlus" }) then -- more than 1 at once is SANDBOX +
+				return
+			end
 			count = math.clamp(count + by, 1, MAX_SPAWN)
 			refresh()
 		end)

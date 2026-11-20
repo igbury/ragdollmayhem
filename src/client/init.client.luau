@@ -226,6 +226,7 @@ local MOVE = {
 }
 -- State of those moves, and the functions that start them (filled in further down).
 local mv = {
+	simple = function(): boolean return false end, -- the easy touch controls are on (TouchControls replaces it)
 	sprintHeld = false, -- Shift
 	sprintToggle = false, -- gamepad / touch: press to run, stops when you stop moving
 	crouchHeld = false,
@@ -264,6 +265,7 @@ local lastWeaponUse = 0
 local weaponVisual = { sway = WeaponSway.new(), bob = WeaponBob.new(), recoil = WeaponRecoil.new(), equipToken = 0, lastAction = "", slashSide = 1 }
 do -- the comic set's own moves (WeaponAnims): clips for the body, loaded onto each character below
 	weaponVisual.lib = require(script:WaitForChild("WeaponAnims"))
+	weaponVisual.detonator = require(script:WaitForChild("Detonator"))
 	weaponVisual.anims, weaponVisual.animTracks = {}, {}
 	for name in weaponVisual.lib.CLIPS do
 		local anim = Instance.new("Animation")
@@ -629,8 +631,12 @@ local function aim(range: number)
 	local char = player.Character
 	local head = char and char:FindFirstChild("Head")
 	rayParams.FilterDescendantsInstances = { char, camera }
-	local mouse = UserInputService:GetMouseLocation()
+	-- on a touch screen the last touch is a button, never the target: the crosshair in the middle
+	local mouse = if UserInputService:GetLastInputType() == Enum.UserInputType.Touch then camera.ViewportSize / 2 else UserInputService:GetMouseLocation()
 	local ray = camera:ViewportPointToRay(mouse.X, mouse.Y)
+	if mv.assist then -- easy touch controls: bend to a dummy just off the crosshair (TouchControls)
+		ray = Ray.new(ray.Origin, mv.assist(ray.Origin, ray.Direction, range) or ray.Direction)
+	end
 	-- in third person the camera sits behind the head: start the ray level with the head, so
 	-- nothing between the camera and the body (a dummy walking behind you) can be the target
 	-- and a shot from the head never goes backwards
@@ -1107,7 +1113,7 @@ local function drawArc(weapon)
 	end
 end
 
-local function useWeapon(weapon, swing: Vector3?)
+local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonate: C4's remote (right mouse)
 	if gui:GetAttribute("WeaponPickerOpen") then return end
 	weapon = weapon.slash and not aiming and weapon.slash or weapon.heavy and aiming and weapon.heavy or weapon
 	local now = os.clock()
@@ -1137,7 +1143,7 @@ local function useWeapon(weapon, swing: Vector3?)
 	end
 	-- hip fire: the shot leaves somewhere in a wide cone round the crosshair; aiming (first or third
 	-- person) closes it, and once fully up the shot goes exactly to the crosshair
-	local aimed = math.max(ads, thirdAim)
+	local aimed = if detonate then 1 else math.max(ads, thirdAim)
 	local spread = aimed > 0.95 and 0 or (weapon.hip or 0) * (1 - aimed)
 	if spread > 0 then
 		dir = (CFrame.lookAlong(Vector3.zero, dir)
@@ -1172,7 +1178,7 @@ local function useWeapon(weapon, swing: Vector3?)
 	end
 	weaponVisual.swing = swing
 	-- our own sounds now, not a round trip later (the server leaves us out of these)
-	local sounds = Sfx.WEAPON[weapon.id] or {}
+	local sounds = if detonate then {} else Sfx.WEAPON[weapon.id] or {} -- the server beeps the remote
 	-- the fast auto weapons (flamethrower, chainsaw) play their clip once every Sfx.HUSH s, as the server does
 	local hush = Sfx.HUSH[weapon.id]
 	if sounds.fire and (not hush or now - (weaponVisual.fireSoundAt or 0) >= hush) then
@@ -1407,6 +1413,9 @@ require(script:WaitForChild("WeaponBar")).start(gui, Weapons, VIEWMODELS, {
 	{ BLOCK, Vector3.new(0.5, 0.5, 1.4), CFrame.new(0, 0, 0.9), SKIN },
 }, barApi)
 toolbox = require(script:WaitForChild("Toolbox")).start(gui, actionRemote, barApi, aim)
+require(script:WaitForChild("TouchControls")).start(mv, dummyFolder, function(): boolean
+	return aiming
+end)
 
 -- Actions ---------------------------------------------------------------------
 local function punch()
@@ -1705,7 +1714,8 @@ function mv.armSlam(): boolean
 	return true
 end
 
-UserInputService.InputBegan:Connect(function(input, processed)
+-- mv.began / mv.ended: also pressed by the touch buttons (TouchControls) with a stand-in input
+mv.began = function(input, processed)
 	if processed or Menu.active or gui:GetAttribute("WeaponPickerOpen") then
 		return
 	end
@@ -1791,6 +1801,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
 		aiming = true
+		if Weapons[weaponIndex].id == "C4" and (player:GetAttribute("C4Out") or 0) > 0 and not Menu.active then
+			useWeapon(Weapons[weaponIndex], nil, true) -- the remote in the left hand: every charge goes off
+		end
 		if Weapons[weaponIndex].id == "Lasso" and not Menu.active then
 			actionRemote:FireServer("lassoCut") -- lets go of the dummy caught last
 		end
@@ -1829,9 +1842,10 @@ UserInputService.InputBegan:Connect(function(input, processed)
 			player.CameraMinZoomDistance = 0.5
 		end
 	end
-end)
+end
+UserInputService.InputBegan:Connect(mv.began)
 
-UserInputService.InputEnded:Connect(function(input)
+mv.ended = function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
 		if swingUi.aim then
@@ -1856,7 +1870,8 @@ UserInputService.InputEnded:Connect(function(input)
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
 		aiming = false
 	end
-end)
+end
+UserInputService.InputEnded:Connect(mv.ended)
 
 UserInputService.InputChanged:Connect(function(input)
 	if holding and input.UserInputType == Enum.UserInputType.MouseWheel then
@@ -2177,6 +2192,10 @@ local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: 
 			end
 			mantle = nil
 		end
+		return
+	end
+	if mv.simple() then -- easy touch controls: no wall runs, clings or vaults
+		wall = nil
 		return
 	end
 	if wall then
@@ -2546,7 +2565,8 @@ local function jumpPressed()
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
-	if not (root and humanoid) or humanoid.Health <= 0 or char:GetAttribute("Ragdolled") or mantle or slamming then
+	if not (root and humanoid) or humanoid.Health <= 0 or char:GetAttribute("Ragdolled") or mantle or slamming
+		or mv.simple() then -- easy touch controls: the plain jump only (no double jump, no ledge leap)
 		return
 	end
 	local now = os.clock()
@@ -2870,11 +2890,14 @@ local wallTilt = 0
 -- place would be fed back into it (the view stays turned after the roll). Put the camera's own
 -- frame back before it runs; the offset is re-applied after it.
 local cleanCamera: CFrame? = nil
-RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Value - 1, function()
+RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Value - 1, function(dt)
 	if cleanCamera and camera.CameraType ~= Enum.CameraType.Scriptable then
 		camera.CFrame = cleanCamera
 	end
 	cleanCamera = nil
+	if mv.magnet and camera.CameraType ~= Enum.CameraType.Scriptable then
+		mv.magnet(dt) -- easy touch controls: the view drifts onto a target near the crosshair (TouchControls)
+	end
 end)
 RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
 	if gui:GetAttribute("WeaponPickerOpen") then
@@ -3111,7 +3134,8 @@ RunService.RenderStepped:Connect(function(dt)
 	if moving == 0 then
 		mv.sprintToggle = false
 	end
-	local sprinting = (mv.sprintHeld or mv.sprintToggle) and moving == 1 and (not holding or holding.drag) and root and not mv.low -- you can run dragging one
+	-- easy touch controls (mv.simple) always run; you can run dragging one
+	local sprinting = (mv.sprintHeld or mv.sprintToggle or mv.simple()) and moving == 1 and (not holding or holding.drag) and root and not mv.low
 		and humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if humanoid then
 		humanoid.WalkSpeed = ((holding and holding.punt and 4)
@@ -3656,6 +3680,7 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		BoxingGloves.update(glove, gloveCF, show == true and boxingNow)
 	end
+	weaponVisual.detonator.update(isFirstPerson(), show and weapon.id == "C4" and gloveCFs.left or nil)
 	-- Hide replicated body gloves locally in first person (the anchored pair above draws instead) and
 	-- while holding one with F or kicking it, when the hands are bare
 	local bodyGloves = char and char:FindFirstChild("BoxingGloves")
@@ -3668,7 +3693,7 @@ RunService.RenderStepped:Connect(function(dt)
 
 	-- weapon in the right hand
 	-- a thrown one has left the hand until its cooldown is over; the lasso keeps its coil, C4's detonator
-	-- (aim + click) throws nothing, the landmine is in the hand until it has been put down
+	-- (right click) throws nothing, the landmine is in the hand until it has been put down
 	local thrown = (weapon.kind == "thrown" and not weaponVisual.lib.KEEP[weapon.id]
 		and not (weapon.id == "C4" and weaponVisual.useAimed and weaponVisual.useId == "C4"))
 		or (weapon.kind == "knife" and weaponVisual.lastAction ~= "KnifeSlash")

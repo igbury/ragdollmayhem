@@ -10,6 +10,7 @@ local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local Players = game:GetService("Players")
+local GuiService = game:GetService("GuiService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
@@ -17,6 +18,7 @@ local Progression =require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
+local TouchControls = require(script.Parent:WaitForChild("TouchControls")) -- active(): playing by touch
 
 local WeaponBar = {}
 
@@ -26,7 +28,7 @@ local GROUP = { -- outline colour per weapon group (Weapons `tag`)
 	thrown = Color3.fromRGB(120, 230, 140),
 	heavy = Color3.fromRGB(255, 90, 80),
 }
-local CATEGORY = { melee = "MELEE", gun = "GUNS", thrown = "THROWN", heavy = "HEAVY" } -- wheel page per group
+local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVES", heavy = "EXPLOSIVES" } -- wheel page per group
 local ABOUT = {
 	Bow = "Hold attack to draw; release to shoot. Arrows drop.",
 	Fists = "Punches, kicks, dive kicks",
@@ -58,7 +60,7 @@ local ABOUT = {
 	Minigun = "Hold: spins up, then shreds",
 	Harpoon = "Spears them and reels them in",
 	TNT = "Three second fuse, huge blast",
-	C4 = "Click: stick a charge. Aim + click: BOOM",
+	C4 = "Click: stick a charge. Right click: BOOM",
 	Landmine = "Place it: blows when they step close",
 }
 local INK = Color3.fromRGB(16, 15, 20)
@@ -221,7 +223,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	bar.Name = "Hotbar"
 	bar.AnchorPoint = Vector2.new(0.5, 1)
 	bar.Position = UDim2.new(0.5, 0, 1, -12)
-	bar.Size = UDim2.fromOffset(MAX_SLOTS * 56 + 16, 70)
+	bar.Size = UDim2.fromOffset((MAX_SLOTS + 1) * 56 + 16, 70) -- the weapons, then the backpack
 	bar.BackgroundTransparency = 1
 	bar.Parent = gui
 	local list = Instance.new("UIListLayout")
@@ -310,6 +312,29 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	for k in loadout do
 		addSlot(k)
 	end
+	-- the backpack, always last: a tap / click opens the wheel (as holding Q does)
+	local show: (boolean) -> () -- the wheel, below
+	local open = false
+	local backpack = Instance.new("TextButton")
+	backpack.Name = "Backpack"
+	backpack.Text = "🎒"
+	backpack.TextSize = 26
+	backpack.AutoButtonColor = false
+	backpack.Size = UDim2.fromOffset(50, 50)
+	backpack.BackgroundColor3 = INK
+	backpack.BackgroundTransparency = 0.35
+	backpack.LayoutOrder = 1000
+	corner(backpack, 10)
+	local packStroke = Instance.new("UIStroke")
+	packStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+	packStroke.Color, packStroke.Thickness, packStroke.Transparency = Color3.fromRGB(196, 226, 244), 1.5, 0.45
+	packStroke.Parent = backpack
+	backpack.Parent = bar
+	backpack.Activated:Connect(function()
+		if not api.blocked() and not (api.building and api.building()) then
+			show(not open)
+		end
+	end)
 
 	-- Wheel --------------------------------------------------------------------------------
 	local wheel = Instance.new("Frame")
@@ -333,6 +358,12 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	ring.Parent = wheel
 	local ringScale = Instance.new("UIScale")
 	ringScale.Parent = ring
+	-- the wheel's labels and their full-size TextSize: shrunk onto a phone they grow back to stay readable
+	local readable: { [TextLabel]: number } = {}
+	local function legible(l: TextLabel): TextLabel
+		readable[l] = l.TextSize
+		return l
+	end
 	local canvas = Instance.new("CanvasGroup") -- slices overlap; drawn as one so the overlap never shows
 	canvas.Size = UDim2.fromScale(1, 1)
 	canvas.BackgroundTransparency = 1
@@ -394,10 +425,10 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		local vp, place = icon(viewmodels[w.id] or fistSpec, holder, w.id)
 		vp.ZIndex = 24
 		local lock = text(holder, { Size = UDim2.new(1, 0, 1, -14), Text = "🔒", TextSize = 26, ZIndex = 26, Visible = false })
-		text(holder, {
-			AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(110, 14),
+		legible(text(holder, {
+			AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 1, -10), Size = UDim2.fromOffset(110, 18),
 			TextSize = 12, Font = Enum.Font.GothamBold, Text = w.short or w.id:upper(), TextStrokeTransparency = 0.3, ZIndex = 25,
-		})
+		}))
 		petals[i] = { holder = holder, place = place, page = where[i][1], seg = where[i][2], vp = vp, lock = lock }
 	end
 	for k, a in attacks do
@@ -411,10 +442,10 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		holder.BackgroundTransparency = 1
 		holder.ZIndex = 24
 		holder.Parent = ring
-		local name = text(holder, {
+		local name = legible(text(holder, {
 			Size = UDim2.fromScale(1, 1), TextSize = 13, TextWrapped = true, Font = Enum.Font.GothamBlack,
 			Text = a.name, TextColor3 = a.color, TextStrokeTransparency = 0.2, ZIndex = 25,
-		})
+		}))
 		petals[i] = { holder = holder, page = where[i][1], seg = where[i][2],
 			place = function() name.TextTransparency = os.clock() < (a.readyAt or 0) and 0.6 or 0 end }
 	end
@@ -453,22 +484,22 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	local hub = Instance.new("Frame")
 	hub.AnchorPoint = Vector2.new(0.5, 0.5)
 	hub.Position = UDim2.fromScale(0.5, 0.5)
-	hub.Size = UDim2.fromOffset(R_IN * 2 - 20, 110)
+	hub.Size = UDim2.fromOffset(R_IN * 2 - 20, 124)
 	hub.BackgroundTransparency = 1
 	hub.ZIndex = 24
 	hub.Parent = ring
-	local hubName = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(1, 0, 0, 22), TextSize = 20, Font = Enum.Font.GothamBold, ZIndex = 25 })
-	local hubPage = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.fromOffset(94, 24), TextSize = 16, Font = Enum.Font.GothamBlack, ZIndex = 25 })
-	local hubAbout = text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 62), Size = UDim2.new(1, -20, 0, 30), TextSize = 12, Font = Enum.Font.GothamMedium, TextWrapped = true, TextColor3 = Color3.fromRGB(225, 225, 232), ZIndex = 25 })
+	local hubName = legible(text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 0), Size = UDim2.new(1, 0, 0, 22), TextSize = 20, Font = Enum.Font.GothamBold, ZIndex = 25 }))
+	local hubPage = legible(text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 30), Size = UDim2.fromOffset(94, 24), TextSize = 16, Font = Enum.Font.GothamBlack, ZIndex = 25 }))
+	local hubAbout = legible(text(hub, { AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 62), Size = UDim2.new(1, -20, 0, 60), TextSize = 12, Font = Enum.Font.GothamMedium, TextWrapped = true, TextColor3 = Color3.fromRGB(225, 225, 232), ZIndex = 25 }))
 	local arrows = {}
 	for _, dirn in { -1, 1 } do
 		local b = Instance.new("TextButton")
 		b.AnchorPoint = Vector2.new(0.5, 0)
-		b.Position = UDim2.new(0.5, dirn * 62, 0, 28)
-		b.Size = UDim2.fromOffset(28, 28)
+		b.Position = UDim2.new(0.5, dirn * 82, 0, 10)
+		b.Size = UDim2.fromOffset(64, 64) -- a finger's worth, still once the wheel is shrunk onto a phone
 		b.BackgroundTransparency = 1
 		b.Font = Enum.Font.GothamBlack
-		b.TextSize = 26
+		b.TextSize = 34
 		b.TextColor3 = RIM
 		b.TextStrokeTransparency = 0.6
 		b.Text = dirn < 0 and "‹" or "›"
@@ -478,13 +509,12 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		arrows[dirn] = b
 	end
 
-	local open = false
 	local pick: number? = inHand()
 	local page = 1
 	local aimAcc = Vector2.zero
 	local stick = Vector2.zero
 	local qDownAt: number? = nil
-	local function show(on: boolean)
+	show = function(on: boolean)
 		if on == open then
 			return
 		end
@@ -496,9 +526,22 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		page = petals[if tutorialPick() then tutorialGun else pick].page
 		api.freeze(on)
 		TweenService:Create(wheel, TweenInfo.new(0.12), { BackgroundTransparency = on and 0.45 or 1 }):Play()
+		packStroke.Transparency = on and 0 or 0.45
 		if on then
-			ringScale.Scale = 0.75
-			TweenService:Create(ringScale, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 }):Play()
+			-- fit the screen below the top bar (a phone is shorter than the wheel, portrait narrower);
+			-- the labels grow back so none reads under 12 px
+			local screen, inset = gui.AbsoluteSize, GuiService:GetGuiInset().Y
+			local fit = math.min(1, (screen.X - 16) / (R_OUT * 2), (screen.Y - inset * 2 - 16) / (R_OUT * 2))
+			for l, size in readable do
+				l.TextSize = math.max(size, math.ceil(12 / fit))
+			end
+			local reach = math.max(64, math.ceil(46 / fit)) -- the page arrows stay a finger's size too
+			for _, b in arrows do
+				b.Size = UDim2.fromOffset(reach, reach)
+				b.Position = UDim2.new(0.5, (b.Text == "‹" and -1 or 1) * (50 + reach / 2), 0, 42 - reach / 2)
+			end
+			ringScale.Scale = 0.75 * fit
+			TweenService:Create(ringScale, TweenInfo.new(0.16, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = fit }):Play()
 		end
 	end
 	local function step(by: number)
@@ -572,7 +615,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- disc of its group's colour, its name, its group - sliding in, stacking under the last one, gone
 	-- after NOTICE_TIME (the stack closes up).
 	local NOTICE_TIME = 4.5
-	local CATEGORY = { melee = "MELEE", gun = "GUN", thrown = "THROWABLE", heavy = "HEAVY" }
+	local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVE", heavy = "EXPLOSIVE" }
 	local PAPER = Color3.fromRGB(255, 248, 228)
 	local CAPTION = Color3.fromRGB(252, 200, 50)
 	local COMIC = Enum.Font.LuckiestGuy -- the menu's lettering
@@ -711,6 +754,27 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			choose(pick) -- the backpack opened by a click closes on one (the page arrows are buttons)
 			return
 		end
+		if open and input.UserInputType == Enum.UserInputType.Touch and not processed then
+			-- a tap: the segment under the finger; in the hub nothing, outside the ring it closes
+			local off = Vector2.new(input.Position.X, input.Position.Y) - (ring.AbsolutePosition + ring.AbsoluteSize / 2)
+			local r = off.Magnitude / ringScale.Scale
+			if r > R_OUT * 1.15 then
+				choose(nil)
+			elseif r > R_IN * 0.8 then
+				local angle = math.atan2(off.Y, off.X)
+				local best, bestGap = 1, math.huge
+				for k, seg in segs do
+					local gap = math.abs((angle - seg.angle + math.pi) % (math.pi * 2) - math.pi)
+					if gap < bestGap then
+						best, bestGap = k, gap
+					end
+				end
+				if slotAt[page][best] then
+					choose(slotAt[page][best])
+				end
+			end
+			return
+		end
 		if open and (input.KeyCode == Enum.KeyCode.ButtonL1 or input.KeyCode == Enum.KeyCode.ButtonR1) then
 			flip(input.KeyCode == Enum.KeyCode.ButtonL1 and -1 or 1)
 			return
@@ -761,6 +825,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end)
 
 	RunService.RenderStepped:Connect(function(dt)
+		-- the backpack is for phones and tablets (the keyboard holds Q, the mouse is locked in first person)
+		backpack.Visible = TouchControls.active()
 		local current = inHand()
 		local cooldown = api.cooldown()
 		for k, s in slots do

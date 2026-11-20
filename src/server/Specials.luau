@@ -6,7 +6,7 @@
 --  * Boilgun: a short spray of boiling water: knocks back and scalds for a while after (burns).
 --  * Taser: two wires; the dummy drops and twitches.
 --  * Lasso / Harpoon: a rope to the dummy that yanks it in; the lasso then drags it along behind.
---  * C4: click sticks a charge to what it hits (MAX_C4), aim + click sets all of them off.
+--  * C4: click sticks a charge to what it hits (MAX_C4), right click sets all of them off.
 --  * Landmine: placed on the floor ahead; armed after a moment, it blows when a dummy steps close.
 --  * Spear: a long thrust that runs through up to SPEAR_PIERCE dummies in a line.
 --  * Minigun: needs weapon.spinUp seconds of the trigger held before the first round (spinning()).
@@ -47,8 +47,8 @@ local BOIL_BLOOD = 8 -- blood (of 100) boiled off per tick: one blast leaves it 
 local BOIL_DEAD = 10 -- blood left at which it dies of it
 -- The crowbar's limb rip: a hit on an arm or a leg has a RIP_CHANCE of hooking the claw into the top of
 -- that limb, tugging RIP_TUG s against the body, tearing it off and carrying it on the claw RIP_HANG s
--- before it drops. A hit on the torso or the head never does.
-local RIP_CHANCE = 0.2
+-- before it drops. A hit on the torso or the head hooks the limb nearest the blow.
+local RIP_CHANCE = 0.8
 local RIP_TUG, RIP_HANG = 3, 1.4
 -- where the claw is, from the right hand: the grip attachment (init.client DEFAULT_GRIP when there is
 -- none), HOLD.Crowbar.grip, then the claw's tip in the crowbar mesh (assets/weapons/comic_weapons.py)
@@ -493,6 +493,7 @@ local function placeC4(weapon, player: Player, char: Model, origin: Vector3, dir
 	charges[player] = list
 	if aimed then -- the detonator: every charge of ours goes off
 		charges[player] = {}
+		player:SetAttribute("C4Out", nil) -- clients drop the detonator from the left hand
 		play("C4_BEEP", origin)
 		for i, p in list do
 			if p.Parent then
@@ -517,12 +518,37 @@ local function placeC4(weapon, player: Player, char: Model, origin: Vector3, dir
 	p:SetNetworkOwner(nil)
 	p.AssemblyLinearVelocity = dir * weapon.speed + UP * 10
 	table.insert(list, p)
+	player:SetAttribute("C4Out", #list) -- clients put the detonator in the left hand
+	p.Destroying:Once(function() -- fizzled out, timed out or set off
+		local now = charges[player]
+		local i = now and table.find(now, p)
+		if i then
+			table.remove(now, i)
+			player:SetAttribute("C4Out", if #now > 0 then #now else nil)
+		end
+	end)
 	local stuck = false
 	p.Touched:Connect(function(other)
 		if stuck or other:IsDescendantOf(char) or not other.CanCollide and not K.dummyOf(other) then
 			return
 		end
+		-- the real surface it hit, back along the flight: the charge goes flat on it, putty side down
+		-- (the mesh's base is 0.13 under its origin), not left hanging where the ball first touched
+		local v = p.AssemblyLinearVelocity
+		local along = if v.Magnitude > 1 then v.Unit else (other.Position - p.Position).Unit
+		local params = exclude(char, p, table.unpack(list))
+		local hit = workspace:Raycast(p.Position - along * 1.5, along * 3, params)
+			or workspace:Raycast(p.Position + UP, -UP * 3, params)
+		if not hit then
+			return -- brushed something the rays can't find (an invisible trigger): keep flying
+		end
+		other = hit.Instance
 		stuck = true
+		local n = hit.Normal
+		local side = n:Cross(along)
+		side = if side.Magnitude > 0.05 then side.Unit else n:Cross(Vector3.xAxis).Unit
+		p.AssemblyLinearVelocity, p.AssemblyAngularVelocity = Vector3.zero, Vector3.zero
+		p.CFrame = CFrame.fromMatrix(hit.Position + n * 0.13, side, n)
 		play("C4_STICK", p.Position)
 		if other.Anchored then
 			p.Anchored = true
@@ -691,6 +717,16 @@ local function ripArm(d, player: Player, char: Model, hitPart: Instance)
 	end
 	local rootName = LIMB_ROOT[hitPart.Name]
 	local arm = rootName and not d.lost[rootName] and d.model:FindFirstChild(rootName) :: BasePart?
+	if not arm and hitPart:IsA("BasePart") then -- the torso or the head: the limb nearest the blow
+		local best = math.huge
+		for _, name in { "LeftUpperArm", "RightUpperArm", "LeftUpperLeg", "RightUpperLeg" } do
+			local limb = not d.lost[name] and d.model:FindFirstChild(name) :: BasePart?
+			local gap = limb and (limb.Position - hitPart.Position).Magnitude
+			if gap and gap < best then
+				arm, best = limb, gap
+			end
+		end
+	end
 	local hand, claw = clawOf(char)
 	if not arm or not hand or not claw then
 		return
@@ -791,7 +827,7 @@ end
 -- aimed swing (x, y on the circle, z the charge) when there was one.
 function Specials.afterHit(weapon, d, target: Vector3, swing: Vector3?, player: Player?, char: Model?, hitPart: Instance?)
 	if weapon.id == "Crowbar" and player and char and hitPart and math.random() < RIP_CHANCE then
-		ripArm(d, player, char, hitPart) -- the limb it landed on comes off (an arm or a leg; never the head)
+		ripArm(d, player, char, hitPart) -- the limb it landed on (or the nearest one) comes off
 	end
 	if weapon.id == "Crowbar" and d.gear and d.state ~= "Dead" then
 		K.setGear(d, nil)

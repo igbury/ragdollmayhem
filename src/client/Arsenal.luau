@@ -47,7 +47,8 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		local query = search.Text:lower()
 		for i, card in cards do
 			local w = weapons[i]
-			card.frame.Visible = (selectedCategory == "all" or w.tag == selectedCategory) and w.name:lower():find(query, 1, true) ~= nil
+			local group = if w.tag == "heavy" then "thrown" else w.tag -- EXPLOSIVES holds both
+			card.frame.Visible = (selectedCategory == "all" or group == selectedCategory) and w.name:lower():find(query, 1, true) ~= nil
 			local equipped = api.get() == i
 			local lock = api.locked and api.locked(i) -- weapon progression: what it still needs
 			card.button.Text = lock and `🔒 {lock}` or equipped and "EQUIPPED" or "EQUIP"
@@ -55,8 +56,8 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		end
 		for category, b in buttons do b.BackgroundColor3 = category == selectedCategory and Color3.fromRGB(132, 83, 50) or Color3.fromRGB(45, 48, 57) end
 	end
-	for _, entry in { {"all", "ALL"}, {"melee", "MELEE"}, {"gun", "GUNS"}, {"thrown", "THROW"}, {"heavy", "HEAVY"} } do
-		local b = textButton(tabs, entry[2], UDim2.new(0.2, -4, 1, 0), UDim2.new())
+	for _, entry in { {"all", "ALL"}, {"melee", "MELEE"}, {"gun", "RANGED"}, {"thrown", "EXPLOSIVES"} } do
+		local b = textButton(tabs, entry[2], UDim2.new(0.25, -4, 1, 0), UDim2.new())
 		buttons[entry[1]] = b
 		b.Activated:Connect(function() selectedCategory = entry[1]; scroll.CanvasPosition = Vector2.zero; refresh() end)
 	end

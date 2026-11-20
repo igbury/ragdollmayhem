@@ -871,6 +871,9 @@ local function release(d, velocity: Vector3, owner: Player?)
 		d.grab = nil
 	end
 	if d.heldBy then
+		if d.dragging then
+			Tutorial.event(d.heldBy, "drop") -- let go without the kick: back to "grab it with F"
+		end
 		held[d.heldBy] = nil
 		d.heldBy = nil
 	end
@@ -2415,7 +2418,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		if kind and Shop.SANDBOX.kinds[kind] and not plus then
 			return
 		end
-		local count = math.clamp(math.floor(tonumber(extra3) or 1), 1, Sandbox.MAX_SPAWN) -- the Toolbox's HOW MANY
+		local count = math.clamp(math.floor(tonumber(extra3) or 1), 1, if plus then Sandbox.MAX_SPAWN else 1) -- the Toolbox's HOW MANY (SANDBOX +)
 		for i = 1, count do -- the first on the spot, the rest in a ring round it
 			local a = i * 2.4
 			local at = arg + (if i == 1 then Vector3.zero else Vector3.new(math.cos(a), 0, math.sin(a)) * 5)
@@ -2896,6 +2899,10 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		p.Size = Vector3.one * 0.85
 		p.Color = TOMATO_RED
 		p.Material = Enum.Material.SmoothPlastic
+	elseif weapon.id == "TNT" then -- a flat-sided box round the sticks: it lands and stays, no rolling off
+		p.Size = Vector3.new(0.55, 1.3, 0.3)
+		p.Color = Color3.fromRGB(200, 40, 30)
+		p.CustomPhysicalProperties = PhysicalProperties.new(1.5, 2, 0, 100, 100)
 	elseif FUSED[weapon.id] then
 		p.Shape = Enum.PartType.Ball
 		p.Size = Vector3.one * 1.1
@@ -2930,6 +2937,10 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 	if fuse then
 		if weapon.id == "TNT" then -- the lit fuse fizzes all the way
 			Instance.new("Sparkles").Parent = p
+			local smoke = Instance.new("Smoke")
+			smoke.Size, smoke.RiseVelocity, smoke.Opacity = 1.2, 3, 0.4
+			smoke.Color = Color3.fromRGB(150, 146, 140)
+			smoke.Parent = p
 			if Sfx.TNT_FUSE then
 				Sfx.loop(p, Sfx.TNT_FUSE, 0.6, 90)
 			end
