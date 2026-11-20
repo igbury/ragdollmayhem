@@ -5,6 +5,7 @@
 -- Shading: gradient fills, a tiled halftone (assets/fx/make_halftone.py), drop shadows, 3D lettering.
 -- Motion: one render step drives spinning / streaming rays, bobbing titles, hover and the PLAY burst.
 -- Menu.active is true until Play is pressed; the rest of the client ignores input while it is.
+-- M in the game brings it back (Menu.reopen).
 -- STATS and SHOP are their own pages under the menu: the menu page turns off by its corner (turn()).
 local ContextActionService = game:GetService("ContextActionService")
 local GuiService = game:GetService("GuiService")
@@ -17,6 +18,7 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 
 local MenuPuppet = require(script.Parent:WaitForChild("MenuPuppet"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -29,6 +31,7 @@ local YELLOW = Color3.fromRGB(252, 200, 50)
 local RED = Color3.fromRGB(232, 70, 56)
 local BLUE = Color3.fromRGB(40, 70, 140)
 local ORANGE = Color3.fromRGB(255, 170, 40)
+local PURPLE = Color3.fromRGB(135, 70, 210)
 local IDLE = Color3.fromRGB(228, 228, 228) -- panel tint at rest; hover lifts it to white
 local FONT = Enum.Font.LuckiestGuy
 local BURST_IMAGE = "rbxassetid://121244599706688" -- same starburst as Fx.pop
@@ -46,30 +49,36 @@ local INK = 4 -- px, outline thickness
 -- Seam lines across the page, each through two points in page scale (extended to infinity).
 -- The player scene is a plain rectangle (HS, VS); H1 meets HS on VS so LOADOUT stays convex.
 local SEAMS = {
-	H1 = { Vector2.new(0, 0.24), Vector2.new(0.6, 0.31) }, -- under MAP, over STATS
+	H1 = { Vector2.new(0, 0.31), Vector2.new(0.6, 0.31) }, -- under STATS, over PLAY: level with HS, so V1 is the only
+	-- slanted edge of STATS and SHOP (two nest a CanvasGroup in another; those came out white now and then)
 	HS = { Vector2.new(0, 0.31), Vector2.new(1, 0.31) }, -- under LOADOUT, over the scene
 	VS = { Vector2.new(0.6, 0), Vector2.new(0.6, 1) }, -- STATS / PLAY | scene
 	V1 = { Vector2.new(0.52, 0), Vector2.new(0.42, 0.29) }, -- MAP | LOADOUT
 	H2 = { Vector2.new(0, 0.66), Vector2.new(0.6, 0.74) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
 	VM = { Vector2.new(0.31, 0.7), Vector2.new(0.29, 1) }, -- MAP | MODE
 }
--- The shop page: two slanted rows of panels round a big red one, like a blank comic page.
+-- The shop page: three rows of three. Only the top seam slants: a panel with two slanted edges nests
+-- one CanvasGroup in another, and those came out plain white now and then (STATS did too). One cut
+-- each always renders.
 local SHOP_SEAMS = {
-	R1 = { Vector2.new(0, 0.27), Vector2.new(1, 0.35) }, -- under the top row
-	V1 = { Vector2.new(0.63, 0), Vector2.new(0.58, 0.31) }, -- top row: blue | yellow
-	V2 = { Vector2.new(0.3, 0.3), Vector2.new(0.34, 0.8) }, -- tall green | red
-	R2 = { Vector2.new(0, 0.8), Vector2.new(1, 0.72) }, -- over the bottom row
-	V3 = { Vector2.new(0.27, 0), Vector2.new(0.27, 1) }, -- bottom row: blue | yellow (upright: one cut fewer)
-	V4 = { Vector2.new(0.67, 0.75), Vector2.new(0.71, 1) }, -- bottom row: yellow | green
+	R1 = { Vector2.new(0, 0.35), Vector2.new(1, 0.3) }, -- under the top row
+	R2 = { Vector2.new(0, 0.7), Vector2.new(1, 0.7) }, -- over the bottom row (level: one slanted cut per panel at most)
+	VA = { Vector2.new(0.34, 0), Vector2.new(0.34, 1) }, -- top row
+	VB = { Vector2.new(0.68, 0), Vector2.new(0.68, 1) },
+	VC = { Vector2.new(0.31, 0), Vector2.new(0.31, 1) }, -- middle row
+	VD = { Vector2.new(0.65, 0), Vector2.new(0.65, 1) },
+	VE = { Vector2.new(0.33, 0), Vector2.new(0.33, 1) }, -- bottom row
+	VF = { Vector2.new(0.69, 0), Vector2.new(0.69, 1) },
 }
--- The stats page: three columns between a slanted top and bottom row, tilted the other way.
+-- The stats page: three columns between a top and a bottom row, tilted the other way from the shop;
+-- one slanted edge per panel at most, like the shop (SHOP_SEAMS says why).
 local STATS_SEAMS = {
 	R1 = { Vector2.new(0, 0.3), Vector2.new(1, 0.24) }, -- under the top row
-	V1 = { Vector2.new(0.42, 0), Vector2.new(0.46, 0.27) }, -- top row: left | right
-	V2 = { Vector2.new(0.33, 0.27), Vector2.new(0.3, 0.72) }, -- middle: left | centre
-	V3 = { Vector2.new(0.66, 0.25), Vector2.new(0.7, 0.75) }, -- middle: centre | right
-	R2 = { Vector2.new(0, 0.7), Vector2.new(1, 0.76) }, -- over the bottom row
-	V4 = { Vector2.new(0.55, 0.7), Vector2.new(0.5, 1) }, -- bottom row: left | right
+	V1 = { Vector2.new(0.44, 0), Vector2.new(0.44, 1) }, -- top row: left | right
+	V2 = { Vector2.new(0.32, 0), Vector2.new(0.32, 1) }, -- middle: left | centre
+	V3 = { Vector2.new(0.68, 0), Vector2.new(0.68, 1) }, -- middle: centre | right
+	R2 = { Vector2.new(0, 0.73), Vector2.new(1, 0.73) }, -- over the bottom row
+	V4 = { Vector2.new(0.52, 0), Vector2.new(0.52, 1) }, -- bottom row: left | right
 }
 for _, seams in { SEAMS, SHOP_SEAMS, STATS_SEAMS } do
 	seams.TOP = { Vector2.new(0, 0), Vector2.new(1, 0) }
@@ -86,8 +95,15 @@ local function slanted(seams, name: string): boolean
 	return a.X ~= b.X and a.Y ~= b.Y
 end
 
-local Menu = { active = true }
-local mapIndex = 1
+-- One state table for every build of the menu: Menu.reopen runs a fresh copy of this module, and the
+-- rest of the client keeps reading Menu.active off the table it required first.
+local SHARED: any = shared
+local Menu = SHARED.RagdollMenu or {}
+SHARED.RagdollMenu = Menu
+local source = SHARED.RagdollMenuSource or script -- the original, to copy from
+SHARED.RagdollMenuSource = source
+Menu.active = true
+local mapIndex = Menu.mapIndex or 1 -- back from the game: the map it was on
 local modeIndex = 1
 local tickers: { (number) -> () } = {} -- run every frame with the time since the menu opened
 local start = os.clock()
@@ -343,8 +359,8 @@ type Panel = {
 	seams: any,
 }
 local PANELS: { Panel } = {
-	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) },
-	{ edges = { "TOP", "RIGHT", "HS", "H1", "V1" }, inside = Vector2.new(0.75, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = PURPLE, ink = Color3.fromRGB(45, 15, 90) },
+	{ edges = { "TOP", "RIGHT", "HS", "V1" }, inside = Vector2.new(0.75, 0.15), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }, -- SHOP: green, money's colour (not yellow: PLAY below it is)
 	{ edges = { "H2", SHOW_MODES and "VM" or "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, bottom left
 	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
 	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
@@ -355,13 +371,15 @@ end
 local SKY = Color3.fromRGB(60, 140, 225)
 local LIME = Color3.fromRGB(110, 190, 60)
 local SHOP_PANELS: { Panel } = {
-	{ edges = { "TOP", "V1", "R1", "LEFT" }, inside = Vector2.new(0.3, 0.12), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
-	{ edges = { "TOP", "RIGHT", "R1", "V1" }, inside = Vector2.new(0.8, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
-	{ edges = { "R1", "V2", "R2", "LEFT" }, inside = Vector2.new(0.15, 0.55), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
-	{ edges = { "R1", "RIGHT", "R2", "V2" }, inside = Vector2.new(0.65, 0.52), color = RED, ink = Color3.fromRGB(140, 15, 30) },
-	{ edges = { "R2", "V3", "BOTTOM", "LEFT" }, inside = Vector2.new(0.13, 0.9), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
-	{ edges = { "R2", "V4", "BOTTOM", "V3" }, inside = Vector2.new(0.48, 0.9), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
-	{ edges = { "R2", "RIGHT", "BOTTOM", "V4" }, inside = Vector2.new(0.85, 0.88), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
+	{ edges = { "TOP", "VA", "R1", "LEFT" }, inside = Vector2.new(0.15, 0.15), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "TOP", "VB", "R1", "VA" }, inside = Vector2.new(0.5, 0.15), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "TOP", "RIGHT", "R1", "VB" }, inside = Vector2.new(0.85, 0.15), color = RED, ink = Color3.fromRGB(140, 15, 30) },
+	{ edges = { "R1", "VC", "R2", "LEFT" }, inside = Vector2.new(0.15, 0.5), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
+	{ edges = { "R1", "VD", "R2", "VC" }, inside = Vector2.new(0.5, 0.5), color = RED, ink = Color3.fromRGB(140, 15, 30) },
+	{ edges = { "R1", "RIGHT", "R2", "VD" }, inside = Vector2.new(0.85, 0.5), color = SKY, ink = Color3.fromRGB(15, 50, 120) },
+	{ edges = { "R2", "VE", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.85), color = SKY, ink = Color3.fromRGB(15, 50, 120) }, -- BACK
+	{ edges = { "R2", "VF", "BOTTOM", "VE" }, inside = Vector2.new(0.5, 0.85), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) },
+	{ edges = { "R2", "RIGHT", "BOTTOM", "VF" }, inside = Vector2.new(0.85, 0.85), color = LIME, ink = Color3.fromRGB(30, 90, 25) },
 }
 local STATS_PANELS: { Panel } = {
 	{ edges = { "TOP", "V1", "R1", "LEFT" }, inside = Vector2.new(0.2, 0.12), color = RED, ink = Color3.fromRGB(140, 15, 30) },
@@ -564,10 +582,10 @@ local function title(p: Panel, n: number, text: string, color: Color3, withValue
 end
 
 local statP, shopP, mapP, playP, sceneP = PANELS[1], PANELS[2], PANELS[3], PANELS[4], PANELS[5]
-statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(150, 205, 80), 0.3, 14) -- PLAY's rays, light green
-title(statP, 1, "STATS", YELLOW, false) -- yellow on green
-shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(240, 100, 70), 0.3, 14) -- PLAY's rays, red
-title(shopP, 2, "SHOP", RED, false) -- red on yellow
+statP.burst = rays(statP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(185, 130, 245), 0.3, 14) -- light purple
+title(statP, 1, "STATS", YELLOW, false) -- yellow on purple
+shopP.burst = rays(shopP.content :: GuiObject, 0.5, 0.5, 22, 60, 0, Color3.fromRGB(150, 205, 80), 0.3, 14) -- light green
+title(shopP, 2, "SHOP", YELLOW, false) -- yellow on green
 mapP.burst = rays(mapP.content :: GuiObject, 0.5, 0.5, 18, 70, 0, Color3.fromRGB(255, 120, 100), 0.35, -10)
 local mapValue = title(mapP, 3, "MAP", WHITE, true) :: TextLabel -- white on red
 local modeP: Panel? = PANELS[6]
@@ -591,47 +609,71 @@ local burstScale = new("UIScale", burst, {})
 local playText, playTextBack = bigLetters(playO, "PLAY!", YELLOW, { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.48), Size = UDim2.fromScale(0.55, 0.5), Rotation = -4, ZIndex = 2 })
 playP.words = { playText, playTextBack }
 
--- Shop page: one item per panel, the big red one featured, BACK in the corner.
--- ponytail: template items; put real developer product ids in `product` (0 = not on sale yet, the
--- click just says SOON!) and grant them in a server MarketplaceService.ProcessReceipt.
-local SHOP_ITEMS = {
-	{ name = "DOUBLE CASH", price = 149, product = 0, color = YELLOW },
-	{ name = "VIP", price = 399, product = 0, color = RED },
-	{ name = "GOLD BAT", price = 99, product = 0, color = YELLOW },
-	{ name = "STARTER PACK", price = 199, product = 0, color = YELLOW },
-	"BACK",
-	{ name = "FIRE FISTS", price = 75, product = 0, color = RED },
-	{ name = "1000 COINS", price = 49, product = 0, color = YELLOW },
-}
-for i, item in SHOP_ITEMS do
-	local p = SHOP_PANELS[i]
-	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, i == 4 and 30 or 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, i % 2 == 0 and 14 or -14)
-	if item == "BACK" then
-		title(p, i, "< BACK", WHITE, false)
-		p.word = "BACK!"
-		continue
+-- Shop page: the game passes (shared/Shop), one per panel in list order, BACK bottom-left.
+-- A pass not on sale yet (id 0) says SOON!, an owned one OWNED; a click on the rest opens the purchase.
+local SHOP_BACK = 7 -- bottom-left, like BACK on the stats page
+local SHOP_NEXT = 9 -- bottom-right: the next page of passes, not there yet
+local SHOP_SLOTS = { 1, 2, 3, 4, 5, 6, 8 }
+local SHOP_TITLE = { YELLOW, RED, YELLOW, YELLOW, YELLOW, YELLOW, WHITE, RED, YELLOW } -- per panel, against its colour
+for n, item in Shop.PASSES do
+	local i = SHOP_SLOTS[n]
+	if not i then
+		break
 	end
-	local price = title(p, i, item.name, item.color, true) :: TextLabel
-	price.Text = "R$ " .. item.price
-	p.word = if item.product > 0 then nil else "SOON!"
+	local p = SHOP_PANELS[i]
+	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, i % 2 == 0 and 14 or -14)
+	local price = title(p, i, item.name, SHOP_TITLE[i], true) :: TextLabel
+	local robux = item.price
+	local function show()
+		local owned = Shop.owns(player, item.key)
+		price.Text = if owned then "OWNED" else "R$ " .. robux
+		p.word = if owned then "OWNED!" elseif item.pass > 0 then nil else "SOON!"
+	end
+	show()
+	player:GetAttributeChangedSignal(Shop.attribute(item.key)):Connect(show)
+	if item.pass > 0 then
+		task.spawn(function() -- the real price, as set in Creator Hub
+			local ok, info = pcall(MarketplaceService.GetProductInfo, MarketplaceService, item.pass, Enum.InfoType.GamePass)
+			if ok and info and info.PriceInRobux then
+				robux = info.PriceInRobux
+				show()
+			end
+		end)
+	end
 	p.onClick = function()
-		if item.product > 0 then
-			MarketplaceService:PromptProductPurchase(player, item.product)
+		if item.pass > 0 and not Shop.owns(player, item.key) then
+			MarketplaceService:PromptGamePassPurchase(player, item.pass)
 		end
 	end
 end
+do
+	local p = SHOP_PANELS[SHOP_BACK]
+	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, -14)
+	title(p, SHOP_BACK, "< BACK", WHITE, false)
+	p.word = "BACK!"
+end
+do
+	local p = SHOP_PANELS[SHOP_NEXT]
+	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, 14)
+	local soon = title(p, SHOP_NEXT, "NEXT PAGE >", SHOP_TITLE[SHOP_NEXT], true) :: TextLabel
+	soon.Text = "COMING SOON"
+	p.word = "SOON!"
+end
 
--- Stats page: one number per panel, BACK bottom-left like on the shop.
--- ponytail: template numbers; nothing is tracked yet. Fill them from the server (attributes or
--- leaderstats) once it keeps them.
+-- Stats page: one number per panel, BACK bottom-left like on the shop. The numbers are the
+-- player's attributes, kept and saved by server/Progress; `show` turns one into its text.
+local STUD_METRES = 0.28
 local STATS = {
-	{ name = "KNOCKOUTS", value = "0", color = YELLOW },
-	{ name = "BONES BROKEN", value = "0", color = YELLOW },
-	{ name = "DUMMIES THROWN", value = "0", color = RED },
-	{ name = "BEST COMBO", value = "0x", color = YELLOW },
-	{ name = "LONGEST FALL", value = "0 m", color = YELLOW },
+	{ name = "KILLS", attribute = "Kills", show = tostring, color = YELLOW },
+	{ name = "BONES BROKEN", attribute = "StatBones", show = tostring, color = YELLOW },
+	{ name = "DUMMIES THROWN", attribute = "StatThrown", show = tostring, color = RED },
+	{ name = "BEST COMBO", attribute = "StatCombo", show = function(n) return n .. "x" end, color = YELLOW },
+	{ name = "LONGEST THROW", attribute = "StatThrow", show = function(n) return math.floor(n * STUD_METRES) .. " m" end, color = YELLOW },
 	"BACK",
-	{ name = "PLAYTIME", value = "0 min", color = RED },
+	{ name = "PLAYTIME", attribute = "StatPlaytime", show = function(n)
+		local minutes = math.floor(n / 60)
+		return if minutes >= 60 then `{minutes // 60} h {minutes % 60} min` else `{minutes} min`
+	end, color = RED },
 }
 for i, stat in STATS do
 	local p = STATS_PANELS[i]
@@ -642,7 +684,11 @@ for i, stat in STATS do
 		continue
 	end
 	local value = title(p, i, stat.name, stat.color, true) :: TextLabel
-	value.Text = stat.value
+	local function show()
+		value.Text = stat.show(math.floor(tonumber(player:GetAttribute(stat.attribute)) or 0))
+	end
+	show()
+	player:GetAttributeChangedSignal(stat.attribute):Connect(show)
 end
 
 layout() -- again, now the bursts exist
@@ -688,12 +734,9 @@ end
 
 -- The first-time tutorial (server/Tutorial): a player who has not done it never sees the menu (the
 -- end of this file sends them straight to the arena).
-local function inTutorial(): boolean
-	return player:GetAttribute("Tutorial") == true
-end
-
 local function refresh()
 	mapValue.Text = "< " .. MAPS[mapIndex] .. " >"
+	Menu.mapIndex = mapIndex
 	if modeValue then
 		modeValue.Text = "< " .. MODES[modeIndex] .. " >"
 	end
@@ -890,7 +933,7 @@ end
 local function backToMenu()
 	task.spawn(turn, MENU_FACE)
 end
-SHOP_PANELS[5].onClick = backToMenu
+SHOP_PANELS[SHOP_BACK].onClick = backToMenu
 STATS_PANELS[6].onClick = backToMenu
 
 local hit = new("TextButton", back, { Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 10 })
@@ -965,22 +1008,26 @@ RunService:BindToRenderStep("MenuCamera", Enum.RenderPriority.Camera.Value + 1, 
 	end
 end)
 
--- Hidden until the saved progress is in (a moment): then a first-time player goes straight to the
--- arena and its tutorial, with no menu and no walk-off, and everyone else gets the menu.
-gui.Enabled = false
-task.spawn(function()
-	local waitFrom = os.clock()
-	while player:GetAttribute("ProgressLoaded") == nil and os.clock() - waitFrom < 8 do
-		task.wait(0.1)
+-- Back to the menu from the game (M, client/init): the server takes the character off the map
+-- ("menu") and this builds the whole menu again from a fresh copy of the module.
+function Menu.reopen()
+	if Menu.active then
+		return
 	end
-	if inTutorial() and Menu.active then
-		local _ = player.Character or player.CharacterAdded:Wait()
-		leaving = true
-		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("map", "ARENA")
-		handOff()
-	else
-		gui.Enabled = true
+	if SHARED.RagdollMenuCopy then -- the last copy has run; nothing needs the instance any more
+		SHARED.RagdollMenuCopy:Destroy()
 	end
-end)
+	local copy = source:Clone()
+	copy.Name = "MenuAgain"
+	copy.Parent = source.Parent
+	SHARED.RagdollMenuCopy = copy
+	local _ = require(copy)
+end
+
+-- Everyone gets the menu first. A first-time player used to skip it straight into the tutorial once
+-- the saved progress was in, but that wait had a time limit, so whether the menu showed depended on
+-- how fast the DataStore answered. PLAY takes them to the tutorial anyway: the server sends anyone
+-- still in it to the arena ("map").
+gui.Enabled = true
 
 return Menu

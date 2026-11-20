@@ -521,6 +521,9 @@ Map.structure = buildStructure
 -- A grave a dummy dug: a mound and a headstone with the name on it, at `origin` (on the ground,
 -- the stone at its -Z end). Built of small bricks so a hit shatters it like the rest of the map;
 -- once broken it does not come back.
+-- Only the newest MAX_GRAVES stand; the oldest goes when a new one is dug.
+local MAX_GRAVES = 10
+local graves: { Model } = {}
 function Map.grave(origin: CFrame, name: string)
 	local model = Instance.new("Model")
 	model.Name = "Grave"
@@ -555,6 +558,10 @@ function Map.grave(origin: CFrame, name: string)
 	model:SetAttribute("Total", bulk(model:GetChildren()))
 	link(model:GetChildren(), origin)
 	model.Parent = folder
+	table.insert(graves, model)
+	while #graves > MAX_GRAVES do
+		table.remove(graves, 1):Destroy()
+	end
 	return model
 end
 

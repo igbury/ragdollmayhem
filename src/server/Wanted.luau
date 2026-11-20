@@ -43,6 +43,9 @@ end
 
 -- `kind`: the dead dummy's kind (its "Kind" attribute).
 function Wanted.crime(player: Player, kind: string?)
+	if player:GetAttribute("NeverWanted") then
+		return -- NEVER WANTED (the toolbox WORLD page): nobody comes for this player
+	end
 	local before = stars(player)
 	heat[player] = math.min((heat[player] or 0) + (HEAT[kind] or 1), STARS[#STARS] + 10)
 	lastKill[player] = os.clock()
@@ -69,6 +72,18 @@ function Wanted.culprit(): Player | false | nil
 end
 function Wanted.weapon(): string?
 	return actingWith[coroutine.running()]
+end
+
+-- The admin panel (server/Admin): straight to `count` stars (0 clears), the wave for it soon after.
+function Wanted.set(player: Player, count: number)
+	if count <= 0 then
+		Wanted.clear(player)
+		return
+	end
+	heat[player] = STARS[math.min(count, #STARS)]
+	lastKill[player] = os.clock()
+	nextWave[player] = os.clock() + 2
+	player:SetAttribute("Wanted", stars(player))
 end
 
 function Wanted.clear(player: Player)

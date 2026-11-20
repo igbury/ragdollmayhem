@@ -13,6 +13,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Progression = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
 
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
 
@@ -169,10 +170,13 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		return k and attackFrom + k or api.get()
 	end
 	-- Weapon progression (shared/Progression; the server refuses a locked one too): what a weapon
-	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities are never locked.
+	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities: only by the ANIME ATTACKS pass.
 	local player = Players.LocalPlayer
 	local function missing(i: number?): string?
 		local w = i and i <= #weapons and weapons[i]
+		if i and i > attackFrom and Shop.locked(player, "Anime") then
+			return "ANIME ATTACKS PASS" -- the abilities (shared/Shop)
+		end
 		return w and Progression.missing(player, w.id) or nil
 	end
 	local flash: (string) -> () -- the banner over the hotbar, below
@@ -680,7 +684,11 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	for _, attribute in Progression.ATTRIBUTE do
 		player:GetAttributeChangedSignal(attribute):Connect(relock)
 	end
+	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime" } do -- passes that unlock (shared/Shop)
+		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
+	end
 	UserInputService.InputBegan:Connect(function(input, processed)
+		if api.building and api.building() and input.KeyCode ~= Enum.KeyCode.F then return end -- BUILD (F still drags): Q, 1-5 are the build bar's (Toolbox)
 		if gui:GetAttribute("WeaponPickerOpen") and not open then return end
 		if open and input.UserInputType == Enum.UserInputType.MouseButton1 and not processed then
 			choose(pick) -- the backpack opened by a click closes on one (the page arrows are buttons)
@@ -714,6 +722,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)
+		if api.building and api.building() then return end
 		if input.KeyCode ~= Enum.KeyCode.Q or not qDownAt then
 			return
 		end
@@ -727,7 +736,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	UserInputService.InputChanged:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.MouseWheel and open then
 			flip(input.Position.Z > 0 and -1 or 1)
-		elseif input.UserInputType == Enum.UserInputType.MouseWheel and not processed and api.scrollable() and not api.blocked() then
+		elseif input.UserInputType == Enum.UserInputType.MouseWheel and not processed and api.scrollable() and not api.blocked() and not (api.building and api.building()) then
 			step(input.Position.Z > 0 and -1 or 1)
 		elseif input.KeyCode == Enum.KeyCode.Thumbstick2 then
 			stick = Vector2.new(input.Position.X, -input.Position.Y)

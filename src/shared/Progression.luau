@@ -5,6 +5,7 @@
 --  * ranged: killed with a gun, the bow, a thrown knife or the rocket (Weapons kind gun / bow / knife / rocket);
 --  * thrown: killed with a grenade, a molotov or a tomato (kind thrown).
 local Weapons = require(script.Parent:WaitForChild("Weapons"))
+local Shop = require(script.Parent:WaitForChild("Shop")) -- ALL WEAPONS and STARTER PACK unlock too
 
 local Progression = {}
 
@@ -33,8 +34,10 @@ Progression.LABEL = { kills = "kills", ranged = "ranged kills", thrown = "thrown
 
 local RANGED = { gun = true, bow = true, knife = true, rocket = true }
 local kindOf = {} -- [weapon id, its slash / heavy too] = kind
+local tagOf = {} -- [weapon id] = its shop tag (Shop.UNLOCKS)
 for _, w in Weapons do
 	kindOf[w.id] = w.kind
+	tagOf[w.id] = w.tag
 	for _, sub in { w.slash, w.heavy } do
 		if sub then
 			kindOf[sub.id] = sub.kind
@@ -56,7 +59,8 @@ end
 
 -- nil when `player` may use weapon `id`, else what is still missing ("12 / 25 ranged kills").
 function Progression.missing(player: Player, id: string): string?
-	if Progression.START[id] then
+	local pass = tagOf[id] and Shop.UNLOCKS[tagOf[id]]
+	if Progression.START[id] or Shop.owns(player, "AllWeapons") or (pass and Shop.owns(player, pass)) then
 		return nil
 	end
 	local rule = Progression.UNLOCK[id]
