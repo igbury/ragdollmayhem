@@ -422,23 +422,33 @@ do
 	-- The camera turns at CAMERA_SLOW of the player's sensitivity while the line is drawn: the
 	-- PlayerModule turns it through the bindings of its CameraRotationAction (InputActions, which a
 	-- CAS sink does not reach), so their Scale is cut and put back on release.
-	swingUi.CAMERA_SLOW, swingUi.scales = 0.15, {} :: { [Instance]: number }
-	function swingUi.holdCamera(hold: boolean)
-		for binding, scale in swingUi.scales do -- put back first, so a second hold never stacks
-			binding.Scale = scale
-		end
-		table.clear(swingUi.scales)
-		if not hold then
-			return
-		end
-		local module = player.PlayerScripts:FindFirstChild("PlayerModule") or game:GetService("StarterPlayer"):FindFirstChild("PlayerModule")
-		local action = module and module:FindFirstChild("CameraRotationAction", true)
-		for _, binding in action and action:GetChildren() or {} do
-			if binding:IsA("InputBinding") then
-				swingUi.scales[binding] = binding.Scale
-				binding.Scale *= swingUi.CAMERA_SLOW
+	-- The same goes for aiming (the sniper's scope above all): UserInputService.MouseDeltaSensitivity
+	-- never reaches those bindings either. cameraScale(f) sets every binding to f times its own Scale
+	-- (read once); false while the PlayerModule has no such action (then the caller falls back).
+	swingUi.CAMERA_SLOW, swingUi.slow = 0.15, false
+	local cameraBindings: { InputBinding }?, cameraBase, cameraLast = nil, {} :: { [Instance]: number }, 1
+	function swingUi.cameraScale(f: number): boolean
+		if not cameraBindings then
+			local module = player.PlayerScripts:FindFirstChild("PlayerModule") or game:GetService("StarterPlayer"):FindFirstChild("PlayerModule")
+			local action = module and module:FindFirstChild("CameraRotationAction", true)
+			if not action then return false end
+			cameraBindings = {}
+			for _, binding in action:GetChildren() do
+				if binding:IsA("InputBinding") then
+					table.insert(cameraBindings :: any, binding)
+					cameraBase[binding] = binding.Scale
+				end
 			end
 		end
+		local list = cameraBindings :: { InputBinding }
+		if f ~= cameraLast then
+			cameraLast = f
+			for _, binding in list do binding.Scale = cameraBase[binding] * f end
+		end
+		return #list > 0
+	end
+	function swingUi.holdCamera(hold: boolean) -- applied with the aim's own slow-down every frame (below)
+		swingUi.slow = hold
 	end
 	-- The line as (side, up, power): side/up the unit direction (0, 0 if barely moved), power 0..1;
 	-- an unmoved line is a plain swing (0.5).
@@ -1778,6 +1788,9 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
 		aiming = true
+		if Weapons[weaponIndex].id == "Lasso" and not Menu.active then
+			actionRemote:FireServer("lassoCut") -- lets go of the dummy caught last
+		end
 	elseif input.KeyCode == Enum.KeyCode.Y or input.KeyCode == Enum.KeyCode.DPadUp then
 		local weapon = Weapons[weaponIndex]
 		if (HOLD[weapon.id] or weapon.id == "BoxingGloves") and isFirstPerson() and not holding then
@@ -3282,7 +3295,13 @@ RunService.RenderStepped:Connect(function(dt)
 	local wantAds = aiming and show and (held.kind == "gun" or held.kind == "rocket")
 	ads += ((wantAds and 1 or 0) - ads) * math.min(dt * 14, 1)
 	Fx.fovBoost = (14 * MOVE_FX * sprint + moveFov) * (1 - ads) - ads * (sniper and 52 or 22)
-	UserInputService.MouseDeltaSensitivity = 1 - ads * (sniper and 0.7 or 0.35)
+	-- the scope zooms ~4x, so it turns at a fifth; other sights a little slower; a drawn swing line slower still
+	local adsSlow = 1 - ads * (sniper and 0.8 or 0.35)
+	if swingUi.cameraScale(adsSlow * (swingUi.slow and swingUi.CAMERA_SLOW or 1)) then
+		UserInputService.MouseDeltaSensitivity = 1
+	else
+		UserInputService.MouseDeltaSensitivity = adsSlow
+	end
 	crosshair.TextSize = 22 + math.min((held.hip or 0) * (1 - math.max(ads, thirdAim)) * 300, 50) -- a wide cross for a wide spread
 	local scoped = sniper and ads > 0.85
 	scope.Visible = scoped

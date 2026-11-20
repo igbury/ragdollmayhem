@@ -3526,6 +3526,11 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 		if player.Character then player.Character:SetAttribute("BowDrawAt", nil) end
 		return
 	end
+	if action == "lassoCut" then -- the right mouse with the lasso: the dummy caught last comes free
+		if rateLimited(player, 0.15, "lassoCut") then return end
+		require(script.Specials).lassoCut(player)
+		return
+	end
 	if action == "bowDraw" then
 		if rateLimited(player, 0.15, "bowDraw") then return end
 		local char = player.Character

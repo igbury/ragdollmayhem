@@ -408,6 +408,26 @@ local function tase(weapon, player: Player, char: Model, origin: Vector3, dir: V
 	end)
 end
 
+-- Each player's lassoed dummies, oldest first: { d, rope }. A tie comes off when its time is up or
+-- when the right mouse lets it go (Specials.lassoCut), whichever is first.
+local tied = {} :: { [Player]: { { d: any, rope: Instance } } }
+local function untie(player: Player, tie)
+	local list = tied[player]
+	local i = list and table.find(list, tie)
+	if not i then return end -- already let go
+	table.remove(list, i)
+	if #list == 0 then tied[player] = nil end
+	tie.rope:Destroy()
+	local d = tie.d
+	d.lassoed = nil
+	if d.model.Parent and not d.heldBy then
+		K.release(d, Vector3.zero, player) -- the thrower keeps it until it settles, then the server
+	end
+end
+game:GetService("Players").PlayerRemoving:Connect(function(player)
+	for _, tie in table.clone(tied[player] or {}) do untie(player, tie) end
+end)
+
 local function lasso(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
 	local result = workspace:Spherecast(origin, 1.2, dir * weapon.range, exclude(char))
 	local target = result and result.Position or origin + dir * weapon.range
@@ -430,13 +450,18 @@ local function lasso(weapon, player: Player, char: Model, origin: Vector3, dir: 
 	reel(d, char, 50, 0.6)
 	r.Length = LASSO_LENGTH -- now it trails behind on the rope; the thrower simulates it, so it drags smoothly
 	K.setOwner(d.model, player)
-	task.delay(LASSO_DRAG, function()
-		r:Destroy()
-		d.lassoed = nil
-		if d.model.Parent and not d.heldBy then
-			K.release(d, Vector3.zero, player) -- the thrower keeps it until it settles, then the server
-		end
-	end)
+	local tie = { d = d, rope = r }
+	local list = tied[player] or {}
+	tied[player] = list
+	table.insert(list, tie)
+	task.delay(LASSO_DRAG, untie, player, tie)
+end
+
+-- Right mouse with the lasso: lets go of the dummy caught last (the next one before it on the next click).
+function Specials.lassoCut(player: Player)
+	local list = tied[player]
+	local tie = list and list[#list]
+	if tie then untie(player, tie) end
 end
 
 local function harpoon(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
