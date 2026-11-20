@@ -8,13 +8,13 @@ local Shop = {}
 
 -- in shop order: the menu's shop panels left to right, top to bottom, BACK in the bottom-left
 Shop.PASSES = {
-	{ key = "AllGuns", name = "ALL GUNS", price = 199, pass = 2093482820 },
-	{ key = "AllMelee", name = "ALL MELEE", price = 149, pass = 2092594925 },
-	{ key = "AllExplosives", name = "ALL EXPLOSIVES", price = 199, pass = 2092612886 },
-	{ key = "AllWeapons", name = "ALL WEAPONS", price = 399, pass = 2093656889 },
-	{ key = "DoubleKO", name = "2X KO", price = 249, pass = 2096772828 }, -- kills count double toward unlocks
-	{ key = "Anime", name = "ANIME ATTACKS", price = 299, pass = 2093668861 }, -- the abilities (shared/Attacks)
-	{ key = "SandboxPlus", name = "SANDBOX +", price = 199, pass = 2094442786 }, -- every Toolbox kind, teams, spawning more than 1, higher caps
+	{ key = "AllGuns", name = "ALL GUNS", price = 65, pass = 2093482820 },
+	{ key = "AllMelee", name = "ALL MELEE", price = 55, pass = 2092594925 },
+	{ key = "AllExplosives", name = "ALL EXPLOSIVES", price = 100, pass = 2092612886 },
+	{ key = "AllWeapons", name = "ALL WEAPONS", price = 200, pass = 2093656889 },
+	{ key = "DoubleKO", name = "2X KO", price = 150, pass = 2096772828 }, -- kills count double toward unlocks
+	{ key = "Anime", name = "ANIME ATTACKS", price = 150, pass = 2093668861 }, -- the abilities (shared/Attacks)
+	{ key = "SandboxPlus", name = "SANDBOX +", price = 100, pass = 2094442786 }, -- every Toolbox kind, teams, spawning more than 1, higher caps
 }
 
 -- [weapon tag (shared/Weapons)] = the pass that unlocks every weapon with it

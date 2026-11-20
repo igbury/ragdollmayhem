@@ -1185,6 +1185,19 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 		weaponVisual.fireSoundAt = now
 		Sfx.playLocal(sounds.fire, head.Position)
 	end
+	if weapon.hurt == "bullet" and not detonate then -- where the round lands, guessed here too: no round trip for our own hits
+		local params = RaycastParams.new()
+		params.FilterDescendantsInstances = { char }
+		local shot = workspace:Raycast(head.Position, dir * (weapon.range or 300), params)
+		if shot then
+			local monsters = workspace:FindFirstChild("Monsters")
+			local onBody = shot.Instance:IsDescendantOf(dummyFolder) or (monsters ~= nil and shot.Instance:IsDescendantOf(monsters))
+			local sound = if onBody then sounds.hit else Sfx.surface(shot.Instance)
+			if sound then
+				Sfx.playLocal(sound, shot.Position)
+			end
+		end
+	end
 	if weapon.kind == "melee" then -- the server's swing ray, guessed here; ponytail: a dodged swing still rings as a hit for us
 		local params = RaycastParams.new()
 		params.FilterDescendantsInstances = { char }
