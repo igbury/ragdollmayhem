@@ -385,7 +385,7 @@ local crosshair = label({ Text = "+", TextSize = 22, AnchorPoint = Vector2.new(0
 -- and the mouse or right stick (the camera turns at 15% meanwhile) draws a line from its centre. Direction = where
 -- the blow goes, length = power. Released, it swings.
 -- (one table: the script is at Luau's 200-local limit)
-local swingUi = { R = 70, HOLD = 0.18, aim = nil :: { weapon: any, x: number, y: number, shown: boolean }? } -- aim: x right, y up, pixels (0..R); HOLD: seconds held before the circle shows
+local swingUi = { R = 70, HOLD = 0.1, aim = nil :: { weapon: any, x: number, y: number, shown: boolean }? } -- aim: x right, y up, pixels (0..R); HOLD: seconds held before the circle shows
 do
 	local ring = Instance.new("Frame")
 	ring.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -1781,7 +1781,9 @@ mv.began = function(input, processed)
 			-- crosshair stays on what you aimed at
 			ContextActionService:BindActionAtPriority("SwingAim", function(_, _, inp)
 				local a = swingUi.aim
-				if not a or not a.shown then return Enum.ContextActionResult.Pass end
+				if not a then return Enum.ContextActionResult.Pass end
+				-- counted from the press, not from when the circle shows: a line drawn straight away is
+				-- already there when it comes up (a release before that is still a plain swing, mv.ended)
 				if inp.UserInputType == Enum.UserInputType.MouseMovement then
 					a.x += inp.Delta.X
 					a.y -= inp.Delta.Y
@@ -1862,7 +1864,9 @@ mv.ended = function(input)
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
 		punching = false
 		if swingUi.aim then
-			local weapon, swing = swingUi.aim.weapon, swingUi.value()
+			-- let go before the circle came up: a plain click, whatever the mouse did meanwhile
+			local weapon = swingUi.aim.weapon
+			local swing = if swingUi.aim.shown then swingUi.value() else Vector3.new(0, 0, 0.5)
 			swingUi.aim = nil
 			swingUi.draw()
 			ContextActionService:UnbindAction("SwingAim")
