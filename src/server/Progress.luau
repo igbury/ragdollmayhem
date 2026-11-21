@@ -204,6 +204,7 @@ function Progress.buy(player: Player, id: any): boolean
 	player:SetAttribute(Progression.CASH, cash - price)
 	player:SetAttribute(Progression.own(id), true)
 	dirty[player] = true
+	Funnels.bought(player, id, price)
 	return true
 end
 

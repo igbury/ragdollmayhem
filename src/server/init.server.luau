@@ -106,7 +106,7 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 	if budget.count > MOVE_RATE then
 		return
 	end
-	Progress.Funnels.move(player, name) -- the Movement funnel (server/Funnels)
+	Progress.Funnels.move(player, name) -- the Moves funnel (server/Funnels)
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			moveRemote:FireClient(other, player, kind, name)
@@ -2457,6 +2457,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			if plus and d and Sandbox.TEAM_COLORS[extra2] then -- spawned straight into the picked team
 				Sandbox.setTeam(d, extra2)
 			end
+			if d then
+				Progress.Funnels.spawned(player) -- the Sandbox funnel
+			end
 		end
 	elseif action == "clearspawn" then -- Toolbox WORLD: every dummy goes, the tutorial's stay, and the cars
 		PoliceCar.clear()
@@ -2487,6 +2490,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		block:SetAttribute("Owner", player.UserId)
 		block:SetAttribute("Piece", Vector3.one * (BLOCK_SIZE / 4)) -- breaks into bricks like the map's cubes
 		block.Parent = builtFolder
+		Progress.Funnels.built(player) -- the Sandbox funnel
 	elseif action == "unbuild" and typeof(arg) == "Instance" and arg.Parent == builtFolder
 		and (arg.Position - head.Position).Magnitude < 200 then
 		local at = arg.Position
@@ -2832,6 +2836,7 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	char:SetAttribute("BowDrawAt", nil)
 	clearBoxing(player)
 	char:SetAttribute("EquippedWeapon", id)
+	Progress.Funnels.equipped(player, id) -- the Arsenal funnel: a bought weapon in hand
 	if id ~= "BoxingGloves" then return end
 	local model = BoxingGloves.attach(char)
 	if not model then
