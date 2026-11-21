@@ -304,6 +304,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			return -- the main menu, dead, or the weapon wheel is up
 		end
 		cover.Visible = on
+		if on then
+			actionRemote:FireServer("opened", "Toolbox") -- the Menus funnel (server/Funnels)
+		end
 		Sfx.ui(if on then Sfx.UI_OPEN else Sfx.UI_CLOSE, 0.5)
 		gui:SetAttribute("WeaponPickerOpen", on) -- frees the cursor and stops attacks (init, WeaponBar)
 		api.freeze(on)
@@ -422,6 +425,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		pages[i] = page
 		b.Activated:Connect(function()
 			showTab(i)
+			actionRemote:FireServer("opened", if i == 1 then "Toolbox" else string.upper(t.name:sub(1, 1)) .. string.lower(t.name:sub(2)))
 		end)
 	end
 
@@ -650,6 +654,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end)
 	settingsTitle.Activated:Connect(function()
 		showSettings(true)
+		actionRemote:FireServer("opened", "Settings")
 	end)
 	local function label(parent: Instance, text: string)
 		local l = Instance.new("TextLabel")

@@ -521,6 +521,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		open = on
 		gui:SetAttribute("WeaponPickerOpen", on)
 		wheel.Visible = on
+		if on then
+			ReplicatedStorage.Remotes.Action:FireServer("opened", "WeaponWheel") -- the Menus funnel (server/Funnels)
+		end
 		aimAcc = Vector2.zero
 		pick = inHand()
 		page = petals[if tutorialPick() then tutorialGun else pick].page

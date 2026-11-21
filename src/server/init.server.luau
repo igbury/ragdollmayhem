@@ -105,6 +105,7 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 	if budget.count > MOVE_RATE then
 		return
 	end
+	Progress.Funnels.move(player, name) -- the Movement funnel (server/Funnels)
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			moveRemote:FireClient(other, player, kind, name)
@@ -2365,6 +2366,10 @@ Players.PlayerRemoving:Connect(clearBlocks)
 
 local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true, setting = true, dress = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
+	if action == "opened" then -- a menu opened, for the Menus funnel (server/Funnels checks the name)
+		Progress.Funnels.menu(player, arg)
+		return
+	end
 	local building = action == "build" or action == "unbuild"
 	local quick = building or action == "setting" -- clicking + / - on the SETTINGS page fast
 	if not MENU_ACTIONS[action] or rateLimited(player, quick and 0.08 or 0.25, if building then "build" elseif quick then "setting" else "action") then

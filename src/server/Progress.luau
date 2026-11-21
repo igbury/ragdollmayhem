@@ -10,9 +10,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Shop = require(ReplicatedStorage.Shared.Shop)
 local Settings = require(ReplicatedStorage.Shared.Settings)
+local Funnels = require(script.Parent.Funnels)
 
 local Progress = {}
 -- Settings (shared/Settings; the toolbox SETTINGS page): attribute = its type. Saved as they are.
+Progress.Funnels = Funnels -- reached through here by the main server script (its locals limit)
 Progress.Settings = Settings -- for the main server script, which is at Luau's 200-locals limit
 Progress.SETTINGS = {}
 for name, default in Settings.DEFAULTS do
@@ -49,6 +51,7 @@ local function snapshot(player: Player)
 	for name in Progress.SETTINGS do
 		data.settings[name] = player:GetAttribute(name)
 	end
+	data.funnels = Funnels.save(player)
 	return data
 end
 
@@ -77,6 +80,7 @@ local function load(player: Player)
 		player:SetAttribute("Tutorial", true) -- nothing saved: every session starts with it
 		player:SetAttribute("HintsDone", false)
 		player:SetAttribute("ProgressLoaded", true)
+		Funnels.load(player, nil)
 		return
 	end
 	local done, data = pcall(store.GetAsync, store, tostring(player.UserId))
@@ -85,6 +89,7 @@ local function load(player: Player)
 		player:SetAttribute("Tutorial", true)
 		player:SetAttribute("HintsDone", false)
 		player:SetAttribute("ProgressLoaded", true) -- the client stops waiting for it all the same
+		Funnels.load(player, nil) -- this session's only: it is never saved
 		return
 	end
 	if player.Parent and type(data) == "table" then
@@ -108,6 +113,7 @@ local function load(player: Player)
 	end
 	loaded[player] = true
 	player:SetAttribute("ProgressLoaded", true)
+	Funnels.load(player, type(data) == "table" and data.funnels)
 end
 
 -- `player` killed a dummy with `weapon` (a Weapons id; nil, "Body" or an ability count as a plain kill).
@@ -128,6 +134,7 @@ function Progress.credit(player: Player, weapon: string?)
 		combo[player] = c
 	end
 	Progress.best(player, "StatCombo", c.count)
+	Funnels.kill(player, weapon)
 	dirty[player] = true
 end
 
@@ -156,6 +163,7 @@ function Progress.has(player: Player, id: string): boolean
 end
 
 function Progress.start()
+	Funnels.changed = Progress.touch
 	for _, player in Players:GetPlayers() do
 		task.spawn(load, player)
 	end
@@ -163,6 +171,7 @@ function Progress.start()
 	Players.PlayerRemoving:Connect(function(player)
 		save(player)
 		loaded[player], dirty[player], combo[player] = nil, nil, nil
+		Funnels.forget(player)
 	end)
 	game:BindToClose(function()
 		for _, player in Players:GetPlayers() do

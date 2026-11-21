@@ -64,6 +64,9 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	local function setOpen(on)
 		if on and api.blocked() then return end
 		if on then closeWheel() end
+		if on and not cover.Visible then
+			game:GetService("ReplicatedStorage").Remotes.Action:FireServer("opened", "Arsenal") -- the Menus funnel (server/Funnels)
+		end
 		cover.Visible = on
 		gui:SetAttribute("WeaponPickerOpen", on)
 		api.freeze(on)

@@ -10,6 +10,8 @@
 -- The step is the player's "TutorialStep" attribute ("kill" / "pick").
 local Players = game:GetService("Players")
 
+local Funnels = require(script.Parent.Funnels)
+
 local Tutorial = {}
 
 local COUNT = 5 -- dummies put out
@@ -48,6 +50,7 @@ local function finish(player: Player, completed: boolean)
 	if completed and player.Parent then
 		player:SetAttribute("Tutorial", false)
 		hooks.done(player) -- saved: it never comes again
+		Funnels.tutorial(player, 4)
 	end
 	player:SetAttribute("TutorialStep", nil)
 end
@@ -75,6 +78,7 @@ function Tutorial.begin(player: Player)
 		table.insert(run.dummies, model)
 	end
 	player:SetAttribute("TutorialStep", "kill")
+	Funnels.tutorial(player, 2)
 end
 
 function Tutorial.start(h)
@@ -98,6 +102,7 @@ function Tutorial.start(h)
 						-- the kill unlocks the pistol; one stolen by someone else must not lock them out
 						player:SetAttribute("Kills", math.max(player:GetAttribute("Kills") or 0, KILLS))
 						player:SetAttribute("TutorialStep", "pick")
+						Funnels.tutorial(player, 3)
 					end
 				elseif step == "pick" then
 					local char = player.Character
