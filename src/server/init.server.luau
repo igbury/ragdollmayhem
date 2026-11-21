@@ -2157,7 +2157,7 @@ aimRemote.OnServerEvent:Connect(function(player, part)
 	local d = typeof(part) == "Instance" and dummyOf(part)
 	local head = headOf(player)
 	if not d or not head or d.state ~= "Awake" or d.target or d.zombie or (d.model:GetPivot().Position - head.Position).Magnitude > 60
-		or player:GetAttribute("NeverWanted") then -- NEVER WANTED: a cop in your sights does not draw on you
+		or Progress.Settings.get(player, "NeverWanted") then -- NEVER WANTED: a cop in your sights does not draw on you
 		return
 	end
 	local now = os.clock()
