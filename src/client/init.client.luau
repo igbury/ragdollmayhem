@@ -28,6 +28,7 @@ local GloveMeshes = require(script:WaitForChild("GloveMeshes"))
 local Inspect = require(script:WaitForChild("Inspect"))
 local WeaponSway = require(script:WaitForChild("WeaponSway"))
 require(script:WaitForChild("Driving")) -- the police car: runs itself (no local: this script is at the 200-local limit)
+require(script:WaitForChild("TankClient")) -- the tank: driving, the turret, the gun; runs itself
 local WeaponBob = require(script:WaitForChild("WeaponBob"))
 local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
@@ -1733,6 +1734,10 @@ mv.began = function(input, processed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		local seated = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if seated and seated.SeatPart then
+			return -- in a vehicle: no swing (its lunge shoved the welded vehicle); the tank's gun is client/TankClient
+		end
 		if os.clock() < puntUntil then
 			return -- mid-punt: no swing, shot or throw until the kick is done
 		end
@@ -2185,6 +2190,11 @@ end
 
 local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: BasePart)
 	wallParams.FilterDescendantsInstances = { char, workspace:FindFirstChild("Dummies") }
+	if humanoid.SeatPart then -- in a vehicle the root is welded to it: none of this may push it (the tank flew off)
+		hold(root, nil)
+		wall, mantle, carry = nil, nil, Vector3.zero
+		return
+	end
 	local grounded = humanoid.FloorMaterial ~= Enum.Material.Air
 	local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if grounded then
@@ -3238,6 +3248,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local out = Weapons[weaponIndex]
 	thirdWeapon = (out.kind ~= nil or heldAbility ~= nil) and not isFirstPerson() and not holding and not Menu.active
 		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
+		and humanoid.SeatPart == nil -- seated, the root is welded to the vehicle: turning it would turn (and tear) the vehicle
 	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
 		local look = (weaponVisual.testFace or camera.CFrame.LookVector) * Vector3.new(1, 0, 1) -- testFace: WeaponTest "face"
 		if look.Magnitude > 0.01 then

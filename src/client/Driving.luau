@@ -87,7 +87,7 @@ end
 local function onSeat(part: BasePart?)
 	stop()
 	local car = part and part:IsA("VehicleSeat") and part.Parent
-	if not (car and car:IsA("Model") and CollectionService:HasTag(car, "Car")) then
+	if not (car and car:IsA("Model") and CollectionService:HasTag(car, "Car")) or car:GetAttribute("Tank") then -- the tank: client/TankClient
 		return
 	end
 	local seat = part :: VehicleSeat
@@ -196,7 +196,7 @@ end
 RunService.Heartbeat:Connect(function()
 	local now = os.clock()
 	for _, car in CollectionService:GetTagged("Car") do
-		if not car:IsA("Model") then
+		if not car:IsA("Model") or car:GetAttribute("Tank") then -- the tank sounds itself (client/TankClient)
 			continue
 		end
 		local chassis = (car:FindFirstChild("Chassis") or car.PrimaryPart) :: BasePart?

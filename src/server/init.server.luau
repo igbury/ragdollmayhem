@@ -26,6 +26,7 @@ local ShopServer = require(script.Shop)
 local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
 local PoliceCar = require(script.PoliceCar)
+require(script.Tank) -- adds the tank to PoliceCar.KINDS (its hooks are set below, by explode)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -2424,7 +2425,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		-- one drivable car where the aim is, nose away from the player (server/PoliceCar)
 		local flat = (arg - head.Position) * Vector3.new(1, 0, 1)
 		local look = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zAxis
-		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look) -- no room (a wall, someone): no car
+		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look, extra) -- no room (a wall, someone): no car
 		if spot then
 			PoliceCar.spawn(spot, player, extra)
 		end
@@ -2844,6 +2845,23 @@ local function explode(position: Vector3, sound: string, scale: number?)
 	fxRemote:FireAllClients("Boom", nil, position, 9 * s)
 	Map.blast(position, 9 * s, 70)
 	smash(position, 13 * s, 45 * s, Vector3.zero, 80 * math.sqrt(s), "blast")
+end
+
+do -- the tank (server/Tank): its shells blow up like a big rocket, it bowls dummies over, a wreck throws its driver
+	local Tank = require(script.Tank)
+	Tank.explode = explode
+	function Tank.act(player: Player?)
+		Wanted.act(player, "Tank")
+	end
+	function Tank.ram(player: Player?, position: Vector3, dir: Vector3, speed: number)
+		task.spawn(function()
+			Wanted.act(player, "Tank") -- whatever this does to a dummy is on the driver
+			smash(position, 5.5, speed * 0.6, dir * speed * 1.6 + UP * 30, 15)
+		end)
+	end
+	function PoliceCar.fling(player: Player, velocity: Vector3)
+		hazardRemote:FireClient(player, velocity)
+	end
 end
 
 local function ignite(position: Vector3)
