@@ -5,17 +5,20 @@
 --     outlines them in yellow through walls). They never hit back (Mourners), the player's blows count
 --     double until it is done, one slammed into a wall always dies, and their deaths bring no police
 --     (main script: spawnDummy, hit, landImpact, kill).
---  2. "pick": once one of them is dead, hold Q and take the pistol (unlocked by that kill; made sure of).
+--  2. "pick": once one of them is dead, hold Q and take the pistol (given for that kill).
 --  3. done: the tutorial dummies go and the arena fills up again the way the server starts it.
 -- The step is the player's "TutorialStep" attribute ("kill" / "pick").
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Funnels = require(script.Parent.Funnels)
+local Progress = require(script.Parent.Progress)
+local Progression = require(ReplicatedStorage.Shared.Progression)
 
 local Tutorial = {}
 
 local COUNT = 5 -- dummies put out
-local KILLS = 1 -- of them to kill (and what the pistol takes, shared/Progression)
+local KILLS = 1 -- of them to kill (they earn the pistol)
 local ARENA_REACH = 260 -- a dummy this close to the arena's centre belongs to it (the other maps are far off)
 
 local hooks -- set by Tutorial.start
@@ -99,8 +102,9 @@ function Tutorial.start(h)
 						end
 					end
 					if dead >= KILLS then
-						-- the kill unlocks the pistol; one stolen by someone else must not lock them out
-						player:SetAttribute("Kills", math.max(player:GetAttribute("Kills") or 0, KILLS))
+						-- the kill earns the pistol (a gift, shared/Progression); one stolen by someone else must not lock them out
+						player:SetAttribute(Progression.own("Handgun"), true)
+						Progress.touch(player)
 						player:SetAttribute("TutorialStep", "pick")
 						Funnels.tutorial(player, 3)
 					end

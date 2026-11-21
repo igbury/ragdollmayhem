@@ -1092,7 +1092,11 @@ local function kill(d, cause: string)
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
 		if by then -- a kill for the weapon progression (zombies count)
-			Progress.credit(by, weapon)
+			local paid = Progress.credit(by, weapon)
+			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+			if torso then -- the cash flies out of the body to the killer's counter (client/CashHud)
+				fxRemote:FireClient(by, "Cash", nil, torso.Position, paid)
+			end
 		end
 		local head = d.zombie and d.model:FindFirstChild("Head") :: BasePart?
 		if head then
@@ -2375,6 +2379,12 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		Progress.Funnels.menu(player, arg)
 		return
 	end
+	if action == "buy" then -- a weapon for cash (server/Progress checks the id and the price)
+		if not rateLimited(player, 0.25, "buy") then
+			Progress.buy(player, arg)
+		end
+		return
+	end
 	local building = action == "build" or action == "unbuild"
 	local quick = building or action == "setting" -- clicking + / - on the SETTINGS page fast
 	if not MENU_ACTIONS[action] or rateLimited(player, quick and 0.08 or 0.25, if building then "build" elseif quick then "setting" else "action") then
@@ -2497,6 +2507,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			end
 		end
 	elseif action == "setting" and Progress.SETTINGS[arg] and type(extra) == Progress.SETTINGS[arg] and extra == extra then -- client/Music, saved (not NaN)
+		if arg == "PerfMode" and extra ~= "auto" and extra ~= "on" and extra ~= "off" then
+			return
+		end
 		if arg == "Wardrobe" then
 			extra = require(script.Dresser).clean(extra) -- only real catalog picks are kept (shared/Wardrobe)
 		end

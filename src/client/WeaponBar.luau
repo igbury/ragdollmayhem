@@ -2,10 +2,10 @@
 --  * a hotbar, bottom centre: every weapon as a small 3D icon (its own viewmodel, rendered in a
 --    ViewportFrame), the one in hand bigger, outlined in its group's colour, its cooldown filling
 --    it from the bottom, its name above the bar;
---  * a weapon wheel (the backpack): hold Q and a segmented ring of 8 weapons a page opens; move the
---    mouse (or the right stick) toward one and let go of Q to take it; scroll / L1 R1 / the arrows
---    turn the page. The view stops turning while it is open (it still follows the body).
---  * tap Q / F for the next / previous one, or turn the mouse wheel.
+--  * the Arsenal (client/Arsenal): Q, the backpack or J; Q again closes it.
+--    ponytail: the old weapon wheel below is no longer opened (nothing calls show(true)); delete it
+--    once the Arsenal has settled in (petals still carry the lock marks relock() updates)
+--  * F for the previous one, or turn the mouse wheel.
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -66,7 +66,6 @@ local ABOUT = {
 local INK = Color3.fromRGB(16, 15, 20)
 -- hotbar only: these icons draw smaller in their slot (the camera backs off by this factor)
 local SLOT_ZOOM = { Fists = 1.35, BoxingGloves = 1.35, Handgun = 1.35, Grenade = 1.35, Revolver = 1.35 }
-local HOLD_TIME = 0.18 -- a Q held this long opens the wheel; shorter is a tap (next weapon)
 
 -- A 3D picture of a weapon: its viewmodel parts (as init.client builds them) in a ViewportFrame,
 -- with the camera fitted to them and the long side laid across the frame diagonally.
@@ -188,7 +187,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		return k and attackFrom + k or api.get()
 	end
 	-- Weapon progression (shared/Progression; the server refuses a locked one too): what a weapon
-	-- still needs ("3 / 5 kills"), nil once it is unlocked. Abilities: only by the ANIME ATTACKS pass.
+	-- still needs ("1000$"), nil once it is unlocked. Abilities: only by the ANIME ATTACKS pass.
 	local player = Players.LocalPlayer
 	local function missing(i: number?): string?
 		local w = i and i <= #weapons and weapons[i]
@@ -198,8 +197,29 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		return w and Progression.missing(player, w.id) or nil
 	end
 	local flash: (string) -> () -- the banner over the hotbar, below
+	-- Buying (server/Progress checks it): picking a weapon you can afford asks first, picking it again
+	-- within CONFIRM_TIME buys it; the Arsenal's BUY button buys at once.
+	local CONFIRM_TIME = 4
+	local asked, askedAt = nil, 0
+	local function buy(i: number)
+		ReplicatedStorage.Remotes.Action:FireServer("buy", weapons[i].id)
+	end
 	local function take(i: number)
 		local need = missing(i)
+		local price = need and i <= #weapons and Progression.PRICE[weapons[i].id]
+		if price then
+			local cash = player:GetAttribute(Progression.CASH) or 0
+			if cash < price then
+				flash(`{weapons[i].name}: {cash} / {price}$`)
+			elseif asked == i and os.clock() - askedAt < CONFIRM_TIME then
+				asked = nil
+				buy(i)
+			else
+				asked, askedAt = i, os.clock()
+				flash(`BUY {weapons[i].name} FOR {price}$? PICK AGAIN`)
+			end
+			return
+		end
 		if need then
 			flash(`LOCKED: {need}`)
 			if need == Progression.GROUP_NEED and game.CreatorType == Enum.CreatorType.Group then
@@ -318,6 +338,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- the backpack, always last: a tap / click opens the wheel (as holding Q does)
 	local show: (boolean) -> () -- the wheel, below
 	local open = false
+	local arsenal: (on: boolean?, query: boolean?) -> boolean -- client/Arsenal: open / close / toggle, or (nil, true): is it open
 	local backpack = Instance.new("TextButton")
 	backpack.Name = "Backpack"
 	backpack.Text = "🎒"
@@ -335,7 +356,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	backpack.Parent = bar
 	backpack.Activated:Connect(function()
 		if not api.blocked() and not (api.building and api.building()) then
-			show(not open)
+			arsenal() -- the Arsenal took the wheel's place (client/Arsenal)
 		end
 	end)
 
@@ -516,7 +537,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	local page = 1
 	local aimAcc = Vector2.zero
 	local stick = Vector2.zero
-	local qDownAt: number? = nil
 	show = function(on: boolean)
 		if on == open then
 			return
@@ -570,7 +590,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end)
 	end
 	local function choose(i: number?)
-		qDownAt = nil -- a click while Q is held must not turn the Q release into a tap
 		if not i then
 			show(false)
 			return
@@ -597,8 +616,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 
 	-- the Arsenal grid asks the same locks
-	local bagApi = setmetatable({ locked = missing }, { __index = api })
-	require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, bagApi, choose, function() show(false) end)
+	local bagApi = setmetatable({ locked = missing, buy = buy, attackFrom = attackFrom }, { __index = api })
+	arsenal = require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, bagApi, choose, function() show(false) end)
 
 	-- Unlocks: a notice (below) and the locks redrawn (a new weapon goes on the bar once it is taken).
 	-- The banner is for what a locked weapon still needs.
@@ -747,15 +766,21 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end
 	relock()
-	for _, attribute in Progression.ATTRIBUTE do
-		player:GetAttributeChangedSignal(attribute):Connect(relock)
-	end
+	player.AttributeChanged:Connect(function(attribute) -- a weapon bought (shared/Progression)
+		if attribute:sub(1, 3) == "Own" then
+			relock()
+		end
+	end)
 	player:GetAttributeChangedSignal(Progression.GROUP_ATTRIBUTE):Connect(relock)
 	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime" } do -- passes that unlock (shared/Shop)
 		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if api.building and api.building() and input.KeyCode ~= Enum.KeyCode.F then return end -- BUILD (F still drags): Q, 1-5 are the build bar's (Toolbox)
+		if input.KeyCode == Enum.KeyCode.Q and arsenal(nil, true) and not UserInputService:GetFocusedTextBox() then
+			arsenal(false) -- Q again closes the Arsenal
+			return
+		end
 		if gui:GetAttribute("WeaponPickerOpen") and not open then return end
 		if open and input.UserInputType == Enum.UserInputType.MouseButton1 and not processed then
 			choose(pick) -- the backpack opened by a click closes on one (the page arrows are buttons)
@@ -790,13 +815,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			return
 		end
 		if input.KeyCode == Enum.KeyCode.Q then
-			local at = os.clock()
-			qDownAt = at
-			task.delay(HOLD_TIME, function()
-				if qDownAt == at and not api.blocked() then
-					show(true)
-				end
-			end)
+			arsenal(true) -- the Arsenal took the wheel's place
 		elseif input.KeyCode == Enum.KeyCode.F then
 			if not (api.drag and api.drag()) then -- on a dummy in reach F drags it instead
 				step(-1)
@@ -807,18 +826,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			step(-1)
 		elseif input.KeyCode == Enum.KeyCode.ButtonR1 then
 			step(1)
-		end
-	end)
-	UserInputService.InputEnded:Connect(function(input)
-		if api.building and api.building() then return end
-		if input.KeyCode ~= Enum.KeyCode.Q or not qDownAt then
-			return
-		end
-		qDownAt = nil
-		if open then
-			choose(pick)
-		elseif not api.blocked() then
-			step(1) -- a tap
 		end
 	end)
 	UserInputService.InputChanged:Connect(function(input, processed)
@@ -898,7 +905,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			hubAbout.Text = wait > 0 and string.format("Ready in %.1f s", wait) or `Ability · click to use · {chosen.cd} s cooldown`
 		else
 			local need = missing(pick)
-			hubAbout.Text = need == Progression.GROUP_NEED and `🔒 {need} to unlock` or need and `🔒 Unlocks at {need}` or chosen and ABOUT[chosen.id] or ""
+			hubAbout.Text = need == Progression.GROUP_NEED and `🔒 {need} to unlock` or need and `🔒 {need} · you have {player:GetAttribute(Progression.CASH) or 0}$ · pick twice to buy` or chosen and ABOUT[chosen.id] or ""
 		end
 		hubPage.Text = pageName[page]
 		hubPage.TextColor3 = pageColor[page] or Color3.new(1, 1, 1)

@@ -2,10 +2,10 @@
 --  Onboarding (the tutorial, server/Tutorial): 1 joined, 2 in the arena, 3 first kill, 4 took the pistol.
 --  MeleeKills / RangedKills / ExplosiveKills: lifetime kills with that group's weapons, a step per
 --    KILL_STEPS milestone. Group = the weapon's hotbar tag (shared/Weapons): melee (and a thrown body),
---    gun, thrown + heavy (the rocket). Real kills: 2X KO does not double them.
---  MeleeWeapons / RangedWeapons / ExplosiveWeapons: the group's unlockable weapons in unlock order
---    (shared/Progression); step N = the first N of them all unlocked, so a weapon unlocked out of order
---    (another counter, a pass) waits until the ones before it are in too.
+--    gun, thrown + heavy (the rocket). Real kills: 2X CASH does not double them.
+--  MeleeWeapons / RangedWeapons / ExplosiveWeapons: the group's weapons for sale, cheapest first
+--    (shared/Progression); step N = the first N of them all owned, so a weapon bought out of order
+--    (or by a pass) waits until the cheaper ones are in too.
 --  Movement / Menus: a step per move / menu, named after it, in MOVE_ORDER / MENU_ORDER; like the
 --    weapons, step N = the first N of them all used / opened. The order players really take them in:
 --    the MoveUsed / MenuOpened custom events, once per player per name, the name in CustomField01.
@@ -54,9 +54,9 @@ for i, w in Weapons do
 			groupOf[sub.id] = group
 		end
 	end
-	local rule = Progression.UNLOCK[w.id]
-	if group and rule and rule[1] ~= "group" then -- the group one is not a step
-		table.insert(unlockOrder[group], { id = w.id, need = rule[2], at = i })
+	local price = Progression.PRICE[w.id]
+	if group and price then -- the group one is not for sale, not a step
+		table.insert(unlockOrder[group], { id = w.id, need = price, at = i })
 	end
 end
 for group, list in unlockOrder do
@@ -209,8 +209,8 @@ function Funnels.load(player: Player, saved: any)
 	weaponStep[player] = {}
 	checkWeapons(player)
 	player.AttributeChanged:Connect(function(attribute)
-		-- a kill counter (shared/Progression) or a pass (shared/Shop) can unlock weapons
-		if attribute == "Kills" or attribute == "RangedKills" or attribute == "ThrownKills" or attribute == Progression.GROUP_ATTRIBUTE or attribute:sub(1, 4) == "Pass" then
+		-- a bought weapon (shared/Progression) or a pass (shared/Shop) unlocks weapons
+		if attribute:sub(1, 3) == "Own" or attribute == Progression.GROUP_ATTRIBUTE or attribute:sub(1, 4) == "Pass" then
 			checkWeapons(player)
 		end
 	end)

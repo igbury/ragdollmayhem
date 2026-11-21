@@ -12,14 +12,14 @@ Shop.PASSES = {
 	{ key = "AllMelee", name = "ALL MELEE", price = 55, pass = 2092594925 },
 	{ key = "AllExplosives", name = "ALL EXPLOSIVES", price = 100, pass = 2092612886 },
 	{ key = "AllWeapons", name = "ALL WEAPONS", price = 200, pass = 2093656889 },
-	{ key = "DoubleKO", name = "2X KO", price = 150, pass = 2096772828 }, -- kills count double toward unlocks
+	{ key = "DoubleKO", name = "2X CASH", price = 150, pass = 2096772828 }, -- each kill pays double cash (shared/Progression)
 	{ key = "Anime", name = "ANIME ATTACKS", price = 150, pass = 2093668861 }, -- the abilities (shared/Attacks)
 	{ key = "SandboxPlus", name = "SANDBOX +", price = 100, pass = 2094442786 }, -- every Toolbox kind, teams, spawning more than 1, higher caps
 }
 
 -- [weapon tag (shared/Weapons)] = the pass that unlocks every weapon with it
 Shop.UNLOCKS = { gun = "AllGuns", melee = "AllMelee", thrown = "AllExplosives", heavy = "AllExplosives" }
--- 2X KO: each kill counts this many times toward the weapon unlocks
+-- 2X CASH (key DoubleKO): each kill pays this many times the cash
 Shop.KO_WORTH = 2
 -- SANDBOX +: what the Toolbox (client/Toolbox, server "spawn" / "build") keeps for the pass, and the
 -- caps without it / with it (blocks per player, living dummies)

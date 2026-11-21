@@ -1,6 +1,6 @@
--- Kill counters behind the weapon progression (shared/Progression has the rules). They live on the
--- player as attributes (Kills, RangedKills, ThrownKills), so the client sees its locks change at once,
--- and are saved in a DataStore: loaded on joining, written on leaving, every SAVE_EVERY while they
+-- Cash, bought weapons and kill counters behind the weapon progression (shared/Progression has the
+-- rules). They live on the player as attributes (Cash, Own<id>, Kills, RangedKills, ThrownKills), so the
+-- client sees its locks change at once, and are saved in a DataStore: loaded on joining, written on leaving, every SAVE_EVERY while they
 -- change, and when the server shuts down. Without DataStore access (Studio with API access off) they
 -- only last the session.
 local DataStoreService = game:GetService("DataStoreService")
@@ -36,6 +36,18 @@ local STATS = { StatBones = "add", StatThrown = "add", StatWalked = "add", StatT
 local PLAYTIME_STEP = 10
 local WALK_STEP = 0.5 -- seconds between position samples for StatWalked
 local WALK_MAX = 30 -- studs per sample above which it was not walking (a teleport, a respawn, a fling)
+-- ponytail: the old kill-count unlocks, only to hand saves from before the cash (no `owned` in them)
+-- the weapons they had; drop once those players have all been back
+local LEGACY = {
+	Handgun = { "kills", 1 }, Crowbar = { "kills", 5 }, Axe = { "kills", 10 }, Tomato = { "kills", 10 },
+	Sledgehammer = { "kills", 15 }, BoxingGloves = { "kills", 20 }, Lasso = { "kills", 20 }, Pan = { "kills", 25 },
+	Spear = { "kills", 40 }, Lightsaber = { "kills", 60 }, Chainsaw = { "kills", 80 }, Katana = { "kills", 100 },
+	Bow = { "ranged", 15 }, Knife = { "ranged", 25 }, Revolver = { "ranged", 30 }, Taser = { "ranged", 40 },
+	Rifle = { "ranged", 50 }, Harpoon = { "ranged", 60 }, Shotgun = { "ranged", 100 }, Boilgun = { "ranged", 120 },
+	Sniper = { "ranged", 150 }, Flamethrower = { "ranged", 150 }, Minigun = { "ranged", 200 }, Rocket = { "ranged", 250 },
+	Grenade = { "thrown", 15 }, Molotov = { "thrown", 25 }, TNT = { "thrown", 30 }, C4 = { "thrown", 40 },
+	Landmine = { "thrown", 45 },
+}
 local lastAt = {} -- [player] = where their root was at the last walk sample
 local loaded = {} -- [player] = true once their saved counters are in (no save before that: it would wipe them)
 local dirty = {} -- [player] = true: changed since the last save
@@ -44,6 +56,13 @@ local function snapshot(player: Player)
 	local data = {}
 	for counter, attribute in Progression.ATTRIBUTE do
 		data[counter] = player:GetAttribute(attribute) or 0
+	end
+	data.cash = player:GetAttribute(Progression.CASH) or 0
+	data.owned = {}
+	for id in Progression.PRICE do
+		if player:GetAttribute(Progression.own(id)) then
+			table.insert(data.owned, id)
+		end
 	end
 	data.stats = {}
 	for stat in STATS do
@@ -79,6 +98,7 @@ local function load(player: Player)
 	for stat in STATS do
 		player:SetAttribute(stat, player:GetAttribute(stat) or 0)
 	end
+	player:SetAttribute(Progression.CASH, player:GetAttribute(Progression.CASH) or 0)
 	if not store then
 		loaded[player] = true
 		player:SetAttribute("Tutorial", true) -- nothing saved: every session starts with it
@@ -101,6 +121,21 @@ local function load(player: Player)
 			-- kills made while loading add to the saved ones
 			player:SetAttribute(attribute, (player:GetAttribute(attribute) or 0) + (tonumber(data[counter]) or 0))
 		end
+		player:SetAttribute(Progression.CASH, player:GetAttribute(Progression.CASH) + (tonumber(data.cash) or 0))
+		if type(data.owned) == "table" then
+			for _, id in data.owned do
+				if Progression.PRICE[id] then
+					player:SetAttribute(Progression.own(id), true)
+				end
+			end
+		else -- a save from the kill-count unlocks: keep what it had unlocked
+			for id, rule in LEGACY do
+				if (tonumber(data[rule[1]]) or 0) >= rule[2] then
+					player:SetAttribute(Progression.own(id), true)
+				end
+			end
+			dirty[player] = true
+		end
 		local saved = type(data.stats) == "table" and data.stats or {}
 		for stat, how in STATS do
 			local have, old = player:GetAttribute(stat) or 0, tonumber(saved[stat]) or 0
@@ -121,15 +156,18 @@ local function load(player: Player)
 end
 
 -- `player` killed a dummy with `weapon` (a Weapons id; nil, "Body" or an ability count as a plain kill).
--- 2X KO counts each kill Shop.KO_WORTH times.
-function Progress.credit(player: Player, weapon: string?)
-	local worth = Shop.owns(player, "DoubleKO") and Shop.KO_WORTH or 1
+-- Pays Progression.cash(weapon), Shop.KO_WORTH times that with 2X KO; the counters take the real kill.
+-- Returns the cash paid.
+function Progress.credit(player: Player, weapon: string?): number
+	local paid = Progression.cash(weapon) * (Shop.owns(player, "DoubleKO") and Shop.KO_WORTH or 1)
+	player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + paid)
 	for _, counter in Progression.counters(weapon) do
 		local attribute = Progression.ATTRIBUTE[counter]
-		player:SetAttribute(attribute, (player:GetAttribute(attribute) or 0) + worth)
+		player:SetAttribute(attribute, (player:GetAttribute(attribute) or 0) + 1)
 	end
 	Funnels.kill(player, weapon)
 	dirty[player] = true
+	return paid
 end
 
 -- One more of a summed stat (StatBones, StatThrown).
@@ -154,6 +192,19 @@ end
 -- Whether `player` has weapon `id` unlocked (the server's check on equipping it).
 function Progress.has(player: Player, id: string): boolean
 	return Progression.missing(player, id) == nil
+end
+
+-- `player` buys weapon `id` (the client's "buy" action, so anything may come in): true when it is theirs now.
+function Progress.buy(player: Player, id: any): boolean
+	local price = type(id) == "string" and Progression.PRICE[id]
+	local cash = player:GetAttribute(Progression.CASH) or 0
+	if not price or not player:GetAttribute("ProgressLoaded") or Progression.missing(player, id) == nil or cash < price then
+		return false -- not for sale, saves not in yet, already theirs, or too poor
+	end
+	player:SetAttribute(Progression.CASH, cash - price)
+	player:SetAttribute(Progression.own(id), true)
+	dirty[player] = true
+	return true
 end
 
 -- InGroup (shared/Progression's group rule): GetGroupsAsync, not IsInGroup, which caches a "no"

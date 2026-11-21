@@ -13,7 +13,6 @@ local Progression = require(ReplicatedStorage.Shared.Progression)
 local Admin = {}
 
 local ADMINS = {} -- [UserId] = true: extra admins besides the owner
-local UNLOCK_KILLS = 100000 -- enough of every counter for every weapon (shared/Progression)
 local SPAWN_COUNT = 5
 local STATS = { "StatBones", "StatThrown", "StatWalked", "StatThrow", "StatPlaytime" }
 
@@ -62,8 +61,8 @@ function Admin.start(remotes: Folder, api)
 
 	local ACTIONS = {
 		weapons = function(player)
-			for _, attribute in Progression.ATTRIBUTE do
-				player:SetAttribute(attribute, UNLOCK_KILLS)
+			for id in Progression.PRICE do
+				player:SetAttribute(Progression.own(id), true)
 			end
 			return "Every weapon unlocked."
 		end,
@@ -74,7 +73,11 @@ function Admin.start(remotes: Folder, api)
 			for _, stat in STATS do
 				player:SetAttribute(stat, 0)
 			end
-			return "Kills and stats back to zero."
+			player:SetAttribute(Progression.CASH, 0)
+			for id in Progression.PRICE do
+				player:SetAttribute(Progression.own(id), nil)
+			end
+			return "Kills, cash, weapons and stats back to zero."
 		end,
 		god = function(player)
 			local char = player.Character

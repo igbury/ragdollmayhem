@@ -16,6 +16,7 @@ local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
 local Audio =require(script.Parent:WaitForChild("Music")) -- the sound settings (SETTINGS page)
+local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
@@ -663,8 +664,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		l.TextXAlignment, l.Size, l.LayoutOrder, l.ZIndex, l.Parent = Enum.TextXAlignment.Left, UDim2.fromOffset(280, 44), 0, 44, parent
 	end
 	local shows = {} -- each control's redraw, run whenever a setting changes
-	-- ON / OFF for a boolean setting; `off` names a setting that is on when false (MusicOff, NeverWanted)
-	local function toggle(text: string, name: string, order: number, off: boolean?)
+	-- ON / OFF for a boolean setting; `off` names a setting that is on when false (MusicOff, NeverWanted).
+	-- `get` / `set`: for a setting that is not a plain boolean (PerfMode: "auto" / "on" / "off").
+	local function toggle(text: string, name: string, order: number, off: boolean?, get: (() -> boolean)?, set: ((boolean) -> ())?)
 		local r = row(settingsPage, order, 50)
 		label(r, text)
 		local b = button(r, "ON", Color3.fromRGB(40, 140, 70), 44, true)
@@ -672,10 +674,14 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		local l = b:FindFirstChild("Label") :: TextLabel
 		l.TextSize = 24
 		b.Activated:Connect(function()
-			Audio.set(name, not Audio.get(name))
+			if set and get then
+				set(not get())
+			else
+				Audio.set(name, not Audio.get(name))
+			end
 		end)
 		table.insert(shows, function()
-			local on = Audio.get(name) ~= (off == true)
+			local on = if get then get() else Audio.get(name) ~= (off == true)
 			l.Text = if on then "ON" else "OFF"
 			local fill = b:FindFirstChild("Fill")
 			local shade = fill and fill:FindFirstChildOfClass("UIGradient")
@@ -733,7 +739,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	slider("BONE BREAKING", "BoneScale", 11, 0.5, true)
 	slider("GRAVITY", "Gravity", 12, 0.1, true)
 	slider("DAMAGE", "DamageScale", 13, 0.5, true)
-	hint(settingsPage, "Saved with your progress. Gravity, ragdoll damage, grave zombies and burning dummies follow whoever joined the server first.", 14)
+	heading(settingsPage, "GRAPHICS", 15)
+	toggle("PERFORMANCE MODE", "PerfMode", 16, false, PerfMode.wanted, function(v: boolean)
+		Audio.set("PerfMode", if v then "on" else "off")
+	end)
+	hint(settingsPage, "Saved with your progress. Gravity, ragdoll damage, grave zombies and burning dummies follow whoever joined the server first. Performance mode turns itself on for phones.", 17)
 	local function showSettingsValues()
 		for _, show in shows do
 			show()

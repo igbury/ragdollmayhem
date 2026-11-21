@@ -3,7 +3,7 @@
 -- what to do (the player's "TutorialStep" attribute) and the controls hints under it ("Hint"). When a
 -- line changes, the old text shrinks away and the new one pops in. On a phone the steps name the
 -- touch buttons, and the F-drag hints are left out (the GRAB button grabs, it does not drag).
--- After the tutorial a goal line top right names the weapon closest to unlocking ("NEXT: CROWBAR 3 / 5 kills").
+-- After the tutorial a goal line top right, under the cash (client/CashHud), names the cheapest weapon not owned yet.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -92,7 +92,7 @@ function TutorialHud.start()
 
 	local STEPS = {
 		kill = "Take out one of the glowing dummies!",
-		pick = "Hold Q to open your inventory and pick the HANDGUN",
+		pick = "Press Q to open your inventory and pick the HANDGUN",
 	}
 	local TOUCH_STEPS = {
 		kill = "Tap ATTACK to take out a glowing dummy!",
@@ -127,26 +127,26 @@ function TutorialHud.start()
 		end)
 	end)
 
-	-- The goal line: once the tutorial is done, the locked weapon with the fewest kills still to go.
+	-- The goal line: once the tutorial is done, the cheapest weapon not owned yet (the cash is client/CashHud).
 	local goal = line(46, 26, 0.34, Color3.new(1, 1, 1), 3)
-	goal.AnchorPoint, goal.Position = Vector2.new(1, 0), UDim2.new(1, -16, 0, 46) -- under the wanted stars
+	goal.AnchorPoint, goal.Position = Vector2.new(1, 0), UDim2.new(1, -16, 0, 92) -- under the wanted stars and the cash (client/CashHud)
 	goal.TextXAlignment = Enum.TextXAlignment.Right
 	local function nextGoal(): string?
 		if player:GetAttribute("Tutorial") ~= false then
 			return nil -- not loaded, or still in the tutorial
 		end
-		local best, bestLeft, bestText = nil, math.huge, nil
+		local cash = player:GetAttribute(Progression.CASH) or 0
+		local best, bestPrice = nil, math.huge
 		for _, w in Weapons do
-			local rule = Progression.UNLOCK[w.id]
-			local missing = rule and rule[1] ~= "group" and Progression.missing(player, w.id)
-			if missing then
-				local left = rule[2] - (player:GetAttribute(Progression.ATTRIBUTE[rule[1]]) or 0)
-				if left < bestLeft then
-					best, bestLeft, bestText = w, left, missing
-				end
+			local price = Progression.PRICE[w.id]
+			if price and price < bestPrice and Progression.missing(player, w.id) then
+				best, bestPrice = w, price
 			end
 		end
-		return best and `NEXT: {best.name}  {bestText}`
+		if not best then
+			return nil
+		end
+		return if cash >= bestPrice then `BUY {best.name}!` else `NEXT: {best.name} {bestPrice}$`
 	end
 	local function showGoal()
 		local text = nextGoal()
@@ -160,7 +160,7 @@ function TutorialHud.start()
 		end
 	end
 	player.AttributeChanged:Connect(function(attribute)
-		if attribute == "Tutorial" or attribute == "Kills" or attribute == "RangedKills" or attribute == "ThrownKills" or attribute:sub(1, 4) == "Pass" then
+		if attribute == "Tutorial" or attribute == Progression.CASH or attribute:sub(1, 3) == "Own" or attribute:sub(1, 4) == "Pass" then
 			showGoal()
 		end
 	end)
