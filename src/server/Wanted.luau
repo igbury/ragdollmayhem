@@ -9,6 +9,7 @@
 -- The main script owns the dummies: start() gets what it needs from it (api).
 local Players = game:GetService("Players")
 local Helicopter = require(script.Parent.Helicopter)
+local Settings = require(game:GetService("ReplicatedStorage").Shared.Settings)
 
 local Wanted = {}
 
@@ -43,7 +44,7 @@ end
 
 -- `kind`: the dead dummy's kind (its "Kind" attribute).
 function Wanted.crime(player: Player, kind: string?)
-	if player:GetAttribute("NeverWanted") then
+	if Settings.get(player, "NeverWanted") then
 		return -- NEVER WANTED (the toolbox WORLD page): nobody comes for this player
 	end
 	local before = stars(player)
