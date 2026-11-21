@@ -319,10 +319,10 @@ end
 local KINDS = {}
 
 local function kind(name: string, build)
-	Map.KINDS[name] = function(add)
+	Map.KINDS[name] = function(add, rng)
 		build(function(x, y, z, color, _, size)
 			add(x, y, z, color, Enum.Material.Plastic, size)
-		end)
+		end, rng)
 	end
 end
 

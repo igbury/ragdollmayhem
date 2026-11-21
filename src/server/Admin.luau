@@ -15,7 +15,7 @@ local Admin = {}
 local ADMINS = {} -- [UserId] = true: extra admins besides the owner
 local UNLOCK_KILLS = 100000 -- enough of every counter for every weapon (shared/Progression)
 local SPAWN_COUNT = 5
-local STATS = { "StatBones", "StatThrown", "StatCombo", "StatThrow", "StatPlaytime" }
+local STATS = { "StatBones", "StatThrown", "StatWalked", "StatThrow", "StatPlaytime" }
 
 local function isAdmin(player: Player): boolean
 	if RunService:IsStudio() or ADMINS[player.UserId] then

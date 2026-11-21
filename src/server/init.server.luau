@@ -115,6 +115,10 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 end)
 
 local CITY_ENABLED = false -- City Square is in development: not built, not in the menu. Flip to test it.
+local VEHICLES_ENABLED = false -- the police car, sport car and tank: off for now (no Toolbox entry, no preview, no spawn). Flip with client/Toolbox CHARACTERS
+if not VEHICLES_ENABLED then
+	PoliceCar.KINDS.PoliceCar, PoliceCar.KINDS.SportCar, PoliceCar.KINDS.Tank = nil, nil, nil
+end
 local PORT_ENABLED = true -- the Port (Port.luau) is new: false hides it again (and leave it out of client/Menu.luau MAPS)
 local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil, PORT = PORT_ENABLED and Port.SPAWN or nil }
 -- Until PLAY picks a map the character waits here, anchored, away from every map (they lie on X, the port at +640 Z).
@@ -2884,6 +2888,8 @@ end
 -- and says something about it; the touchy ones come for you. A player it hits gets red all over
 -- the screen ("Splatted", only on that player's client).
 local TOMATO_RED = Color3.fromRGB(215, 30, 25)
+-- its pop on a hit: fx size, Map.blast radius, smash radius / damage / outward shove (a grenade: 9, 9, 13, 45, 80)
+Sandbox.TOMATO_POP = { boom = 2.5, crater = 1.2, radius = 4, damage = 10, shove = 28 }
 local TOMATO_LINES = { "My shirt!", "Did you just...", "A TOMATO?!", "Ew! EW!", "You'll pay for that!", "Who does that?!", "It's in my eyes!" }
 local function tomato(p: BasePart, char: Model, owner: Player?)
 	local done = false
@@ -2896,6 +2902,17 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 		p:Destroy()
 		local dir = velocity.Magnitude > 1 and velocity.Unit or -UP
 		fxRemote:FireAllClients("Splat", nil, position, dir, other)
+		local function pop() -- a small pop where it hit: a puff, a dent, a shove (plain force, no shrapnel)
+			if not other then
+				return -- burst in the air on its timer
+			end
+			local c = Sandbox.TOMATO_POP
+			Wanted.act(owner, "Tomato") -- a kill by it is the thrower's (explosive kills)
+			Sfx.play({ Sfx.GRENADE_BOOM, 1.8, 0.35 }, position)
+			fxRemote:FireAllClients("Boom", nil, position, c.boom)
+			Map.blast(position, c.crater, 20)
+			smash(position, c.radius, c.damage, Vector3.zero, c.shove)
+		end
 		local d = other and dummyOf(other)
 		if d and d.state ~= "Dead" and not d.model:GetAttribute("Ragdolled") then
 			reactToHit(d, dir)
@@ -2907,12 +2924,14 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 			if owner and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.6)) then
 				d.target = owner
 			end
+			pop() -- after the line: knocked down, it would not say it
 			return
 		end
 		local victim = other and other.Parent and Players:GetPlayerFromCharacter(other.Parent)
 		if victim then
 			fxRemote:FireClient(victim, "Splatted", nil)
 		end
+		pop()
 	end
 	p.Touched:Connect(function(other)
 		if not other:IsDescendantOf(char) and not other:IsDescendantOf(p) then

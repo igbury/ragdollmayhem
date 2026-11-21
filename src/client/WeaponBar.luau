@@ -202,6 +202,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		local need = missing(i)
 		if need then
 			flash(`LOCKED: {need}`)
+			if need == Progression.GROUP_NEED and game.CreatorType == Enum.CreatorType.Group then
+				task.spawn(pcall, game:GetService("GroupService").PromptJoinAsync, game:GetService("GroupService"), game.CreatorId)
+			end
 			return
 		end
 		if i > #weapons then
@@ -747,6 +750,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	for _, attribute in Progression.ATTRIBUTE do
 		player:GetAttributeChangedSignal(attribute):Connect(relock)
 	end
+	player:GetAttributeChangedSignal(Progression.GROUP_ATTRIBUTE):Connect(relock)
 	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime" } do -- passes that unlock (shared/Shop)
 		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
 	end
@@ -894,7 +898,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			hubAbout.Text = wait > 0 and string.format("Ready in %.1f s", wait) or `Ability · click to use · {chosen.cd} s cooldown`
 		else
 			local need = missing(pick)
-			hubAbout.Text = need and `🔒 Unlocks at {need}` or chosen and ABOUT[chosen.id] or ""
+			hubAbout.Text = need == Progression.GROUP_NEED and `🔒 {need} to unlock` or need and `🔒 Unlocks at {need}` or chosen and ABOUT[chosen.id] or ""
 		end
 		hubPage.Text = pageName[page]
 		hubPage.TextColor3 = pageColor[page] or Color3.new(1, 1, 1)

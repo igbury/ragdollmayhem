@@ -3,7 +3,9 @@
 -- weapon unlocks once one of three kill counters reaches its number:
 --  * kills: any dummy killed;
 --  * ranged: killed with a gun, the bow, a thrown knife or the rocket (Weapons kind gun / bow / knife / rocket);
---  * thrown: killed with a grenade, a molotov or a tomato (kind thrown).
+--  * thrown ("explosive kills"): killed with a grenade, a molotov, a tomato, TNT, ... (kind thrown).
+-- A "group" rule is different: only joining the game's group unlocks it (no pass, no kills). The
+-- server keeps membership in the InGroup attribute (server/Progress).
 local Weapons = require(script.Parent:WaitForChild("Weapons"))
 local Shop = require(script.Parent:WaitForChild("Shop")) -- ALL WEAPONS and STARTER PACK unlock too
 
@@ -16,7 +18,7 @@ Progression.UNLOCK = {
 	Axe = { "kills", 10 },
 	BoxingGloves = { "kills", 20 },
 	Pan = { "kills", 25 },
-	Grenade = { "kills", 50 },
+	Grenade = { "thrown", 15 },
 	Katana = { "kills", 100 },
 	Bow = { "ranged", 15 },
 	Knife = { "ranged", 25 },
@@ -25,7 +27,7 @@ Progression.UNLOCK = {
 	Shotgun = { "ranged", 100 },
 	Sniper = { "ranged", 150 },
 	Rocket = { "ranged", 250 },
-	Tomato = { "thrown", 10 },
+	Tomato = { "kills", 10 }, -- the first explosive: it starts the explosive kills counter
 	Molotov = { "thrown", 25 },
 	Crowbar = { "kills", 5 },
 	Sledgehammer = { "kills", 15 },
@@ -35,7 +37,7 @@ Progression.UNLOCK = {
 	Chainsaw = { "kills", 80 },
 	Taser = { "ranged", 40 },
 	Harpoon = { "ranged", 60 },
-	Frostgun = { "ranged", 80 },
+	Frostgun = { "group", 0 }, -- only for joining the group
 	Boilgun = { "ranged", 120 },
 	Flamethrower = { "ranged", 150 },
 	Minigun = { "ranged", 200 },
@@ -45,7 +47,9 @@ Progression.UNLOCK = {
 }
 -- the player attribute each counter is kept in, and how a lock names it
 Progression.ATTRIBUTE = { kills = "Kills", ranged = "RangedKills", thrown = "ThrownKills" }
-Progression.LABEL = { kills = "kills", ranged = "ranged kills", thrown = "thrown kills" }
+Progression.LABEL = { kills = "kills", ranged = "ranged kills", thrown = "explosive kills" }
+Progression.GROUP_ATTRIBUTE = "InGroup"
+Progression.GROUP_NEED = "JOIN THE GROUP"
 
 local RANGED = { gun = true, bow = true, knife = true, rocket = true }
 local kindOf = {} -- [weapon id, its slash / heavy too] = kind
@@ -74,11 +78,14 @@ end
 
 -- nil when `player` may use weapon `id`, else what is still missing ("12 / 25 ranged kills").
 function Progression.missing(player: Player, id: string): string?
+	local rule = Progression.UNLOCK[id]
+	if rule and rule[1] == "group" then
+		return if player:GetAttribute(Progression.GROUP_ATTRIBUTE) then nil else Progression.GROUP_NEED
+	end
 	local pass = tagOf[id] and Shop.UNLOCKS[tagOf[id]]
 	if Progression.START[id] or Shop.owns(player, "AllWeapons") or (pass and Shop.owns(player, pass)) then
 		return nil
 	end
-	local rule = Progression.UNLOCK[id]
 	if not rule then
 		return nil -- not part of the progression (abilities)
 	end

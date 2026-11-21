@@ -154,71 +154,191 @@ end
 local KINDS = {}
 Map.KINDS = KINDS
 
-function KINDS.Pillar(add)
-	for y = 0, 6 do
-		for x = 0, 1 do
-			for z = 0, 1 do
-				add(x - 0.5, y, z - 0.5, STONE, Enum.Material.Slate)
-			end
-		end
+-- Lopsided shapes: a kind fills a set of cube-grid cells (put), then `grow` adds only the cells joined face to
+-- face to the one at the origin, so a shape trimmed at random has no floating cubes.
+local FACES = { { 1, 0, 0 }, { -1, 0, 0 }, { 0, 1, 0 }, { 0, -1, 0 }, { 0, 0, 1 }, { 0, 0, -1 } }
+local SIDES = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } }
+
+local function put(cells, x: number, y: number, z: number, color: Color3, material: Enum.Material, keep: boolean?)
+	local key = `{x},{y},{z}`
+	if keep and cells[key] then
+		return -- leaves never cover the trunk
 	end
+	cells[key] = { x, y, z, color, material }
 end
 
-function KINDS.Tree(add)
-	for y = 0, 2 do
-		add(0, y, 0, WOOD, Enum.Material.Wood)
-	end
-	for y = 3, 4 do
-		for x = -1, 1 do
-			for z = -1, 1 do
-				add(x, y, z, LEAF, Enum.Material.Grass)
-			end
-		end
-	end
-	add(0, 5, 0, LEAF, Enum.Material.Grass)
-end
-
-function KINDS.Wall(add)
-	for x = -3, 3 do
-		for y = 0, 2 do
-			add(x, y, 0, (x + y) % 2 == 0 and BRICK_RED or STONE, Enum.Material.Brick)
-		end
-	end
-end
-
-function KINDS.Tower(add) -- hollow, so it caves in on itself
-	for y = 0, 5 do
-		for x = -1, 1 do
-			for z = -1, 1 do
-				if x ~= 0 or z ~= 0 then
-					add(x, y, z, y % 2 == 0 and STONE or ROCK, Enum.Material.Cobblestone)
+local function grow(add, cells)
+	local seen, queue = {}, { "0,0,0" }
+	seen["0,0,0"] = cells["0,0,0"] and true
+	while #queue > 0 do
+		local c = cells[table.remove(queue)]
+		if c then
+			add(c[1], c[2], c[3], c[4], c[5])
+			for _, f in FACES do
+				local key = `{c[1] + f[1]},{c[2] + f[2]},{c[3] + f[3]}`
+				if cells[key] and not seen[key] then
+					seen[key] = true
+					table.insert(queue, key)
 				end
 			end
 		end
 	end
 end
 
-function KINDS.Arch(add)
-	for y = 0, 3 do
-		add(-2, y, 0, GATE, Enum.Material.Wood)
-		add(2, y, 0, GATE, Enum.Material.Wood)
+-- a colour a little lighter or darker than `base`
+local function shade(rng: Random, base: Color3, amount: number): Color3
+	local t = rng:NextNumber(-amount, amount)
+	return if t < 0 then base:Lerp(Color3.new(0, 0, 0), -t) else base:Lerp(Color3.new(1, 1, 1), t)
+end
+
+-- a broken column: four stacks of stone, each its own height, maybe a block knocked off beside it
+function KINDS.Pillar(add, rng)
+	local tall = rng:NextInteger(1, 4)
+	for i, c in { { -0.5, -0.5 }, { 0.5, -0.5 }, { -0.5, 0.5 }, { 0.5, 0.5 } } do
+		local h = if i == tall then 7 else rng:NextInteger(3, 6)
+		for y = 0, h - 1 do
+			add(c[1], y, c[2], shade(rng, STONE, 0.12), Enum.Material.Slate)
+		end
 	end
+	if rng:NextNumber() < 0.6 then
+		local s = SIDES[rng:NextInteger(1, 4)]
+		add(s[1] * 1.5 + (s[2] ~= 0 and rng:NextInteger(0, 1) - 0.5 or 0), 0, s[2] * 1.5 + (s[1] ~= 0 and rng:NextInteger(0, 1) - 0.5 or 0), shade(rng, STONE, 0.15), Enum.Material.Slate)
+	end
+end
+
+local LEAVES = { LEAF, Color3.fromRGB(56, 150, 50), Color3.fromRGB(84, 128, 40), Color3.fromRGB(24, 104, 64) }
+
+-- an oak: a trunk two or three high, a 3 x 3 x 2 crown on it, a few leaf cubes stuck on top and on one side,
+-- maybe a stub of a branch; each tree only a little different from the next
+function KINDS.Tree(add, rng)
+	local tint = LEAVES[rng:NextInteger(1, #LEAVES)]
+	local trunk = rng:NextInteger(2, 3)
+	for y = 0, trunk - 1 do
+		add(0, y, 0, WOOD, Enum.Material.Wood)
+	end
+	if rng:NextNumber() < 0.6 then -- a stub of a branch off the trunk
+		local s = SIDES[rng:NextInteger(1, 4)]
+		add(s[1], trunk - 2, s[2], WOOD, Enum.Material.Wood)
+	end
+	for x = -1, 1 do
+		for y = trunk, trunk + 1 do
+			for z = -1, 1 do
+				add(x, y, z, shade(rng, tint, 0.06), Enum.Material.Grass)
+			end
+		end
+	end
+	local top = {}
+	for _ = 1, rng:NextInteger(1, 3) do -- on top: one to three cubes
+		local x, z = rng:NextInteger(-1, 1), rng:NextInteger(-1, 1)
+		if not top[`{x},{z}`] then
+			top[`{x},{z}`] = true
+			add(x, trunk + 2, z, shade(rng, tint, 0.06), Enum.Material.Grass)
+		end
+	end
+	if rng:NextNumber() < 0.4 then -- one sticking out of a side
+		local s = SIDES[rng:NextInteger(1, 4)]
+		local along = rng:NextInteger(-1, 1)
+		add(s[1] * 2 + s[2] * along, trunk + rng:NextInteger(0, 1), s[2] * 2 + s[1] * along, shade(rng, tint, 0.06), Enum.Material.Grass)
+	end
+end
+
+-- a low wall, its top stones knocked off here and there
+function KINDS.Wall(add, rng)
 	for x = -3, 3 do
-		add(x, 4, 0, GATE, Enum.Material.Wood)
+		local h = 3 - (rng:NextNumber() < 0.35 and 1 or 0) - (rng:NextNumber() < 0.12 and 1 or 0)
+		for y = 0, h - 1 do
+			add(x, y, 0, shade(rng, (x + y) % 2 == 0 and BRICK_RED or STONE, 0.1), Enum.Material.Brick)
+		end
+	end
+	if rng:NextNumber() < 0.5 then -- a buttress on one face
+		add(rng:NextInteger(-3, 3), 0, rng:NextNumber() < 0.5 and 1 or -1, shade(rng, STONE, 0.1), Enum.Material.Brick)
 	end
 end
 
-function KINDS.Crates(add)
-	for _, c in { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 0, 1 }, { 1, 0, 1 }, { 0.5, 1, 0.5 }, { -1, 0, 0.5 } } do
-		add(c[1], c[2], c[3], CRATE, Enum.Material.WoodPlanks)
+function KINDS.Tower(add, rng) -- hollow, so it caves in on itself; a ruin, each corner worn down its own way
+	local gap = rng:NextInteger(1, 8)
+	local n = 0
+	for x = -1, 1 do
+		for z = -1, 1 do
+			if x ~= 0 or z ~= 0 then
+				n += 1
+				local h = 6 - (rng:NextNumber() < 0.5 and rng:NextInteger(1, 3) or 0)
+				for y = 0, h - 1 do
+					if not (n == gap and y == 2) then -- a window
+						add(x, y, z, shade(rng, y % 2 == 0 and STONE or ROCK, 0.1), Enum.Material.Cobblestone)
+					end
+				end
+			end
+		end
 	end
 end
 
-function KINDS.Rock(add)
-	add(0, 0.25, 0, ROCK, Enum.Material.Slate, 6)
-	add(1, 0, 0.75, ROCK, Enum.Material.Slate)
-	add(-0.75, 0, -1, ROCK, Enum.Material.Slate)
-	add(0.25, 1.4, 0, ROCK, Enum.Material.Slate, 3)
+-- a wooden gate, its beam sticking out further on one side, a board nailed up crooked on top
+function KINDS.Arch(add, rng)
+	for y = 0, 3 do
+		add(-2, y, 0, shade(rng, GATE, 0.08), Enum.Material.Wood)
+		add(2, y, 0, shade(rng, GATE, 0.08), Enum.Material.Wood)
+	end
+	local long = rng:NextNumber() < 0.5 and 1 or -1
+	for x = -3, 3 do
+		add(x, 4, 0, shade(rng, GATE, 0.08), Enum.Material.Wood)
+	end
+	add(long * 4, 4, 0, shade(rng, GATE, 0.08), Enum.Material.Wood)
+	add(rng:NextInteger(-2, 1) + 0.5, 5, 0, CRATE, Enum.Material.WoodPlanks, 2)
+	if rng:NextNumber() < 0.5 then
+		add(-long * 2, 4, rng:NextNumber() < 0.5 and 1 or -1, shade(rng, GATE, 0.1), Enum.Material.Wood) -- a brace
+	end
+end
+
+-- a heap of crates dropped where they fell, a couple of small ones on top
+function KINDS.Crates(add, rng)
+	local heights = {}
+	for _ = 1, rng:NextInteger(4, 8) do
+		local x, z = rng:NextInteger(-1, 1), rng:NextInteger(-1, 1)
+		local key = `{x},{z}`
+		local h = heights[key] or 0
+		if h < 3 and (h == 0 or rng:NextNumber() < 0.7) then
+			add(x, h, z, shade(rng, CRATE, 0.15), Enum.Material.WoodPlanks)
+			heights[key] = h + 1
+		end
+	end
+	heights["0,0"] = heights["0,0"] or (add(0, 0, 0, shade(rng, CRATE, 0.15), Enum.Material.WoodPlanks) and 1)
+	for _ = 1, rng:NextInteger(0, 2) do
+		local x, z = rng:NextInteger(-1, 1), rng:NextInteger(-1, 1)
+		local h = heights[`{x},{z}`]
+		if h then
+			add(x + rng:NextInteger(-1, 1) * 0.25, h, z + rng:NextInteger(-1, 1) * 0.25, shade(rng, CRATE, 0.2), Enum.Material.WoodPlanks, 2)
+		end
+	end
+end
+
+-- a boulder: columns of stone in a lopsided oval, taller on one side, maybe moss on top, pebbles about
+function KINDS.Rock(add, rng)
+	local ax, az = rng:NextNumber(1.2, 2.6), rng:NextNumber(1.2, 2.6)
+	local tilt = Vector2.new(rng:NextNumber(-0.4, 0.4), rng:NextNumber(-0.4, 0.4))
+	local high = rng:NextNumber(1.5, 3.2)
+	local moss = rng:NextNumber() < 0.35
+	local cells, tops = {}, {}
+	for x = -2, 2 do
+		for z = -2, 2 do
+			local d = math.sqrt((x / ax) ^ 2 + (z / az) ^ 2)
+			local h = math.floor((1.25 - d) * high + x * tilt.X + z * tilt.Y + rng:NextNumber(0, 0.9))
+			if x == 0 and z == 0 then
+				h = math.max(h, 1)
+			end
+			for y = 0, h - 1 do
+				put(cells, x, y, z, if moss and y == h - 1 then Color3.fromRGB(78, 120, 64) else shade(rng, ROCK, 0.12), Enum.Material.Slate)
+			end
+			if h > 0 then
+				table.insert(tops, { x, h, z })
+			end
+		end
+	end
+	grow(add, cells)
+	for _ = 1, rng:NextInteger(0, 2) do
+		local t = tops[rng:NextInteger(1, #tops)]
+		add(t[1] + rng:NextInteger(-1, 1) * 0.25, t[2], t[3] + rng:NextInteger(-1, 1) * 0.25, shade(rng, ROCK, 0.15), Enum.Material.Slate, 2)
+	end
 end
 
 -- Which bricks touch face to face, and which stand on the ground: a brick with no path of touching
@@ -541,6 +661,9 @@ local function buildStructure(kind: string, origin: CFrame, layered: boolean?, k
 	layered = layered and not INSTANT[kind]
 	-- add(x, y, z, color, material, size?): a cube of `size` (default CUBE) on the cube grid.
 	-- add(cframe, size, color, material): a box of any Vector3 size, placed in origin space. Returns the part.
+	-- The second argument, a Random seeded by where the structure stands: the same spot always builds the
+	-- same shape (a repair finds its bricks by slot), two trees elsewhere come out different.
+	local seed = math.round(origin.X) * 7919 + math.round(origin.Z) * 104729
 	KINDS[kind](function(x, y, z, color, material, size)
 		local cube
 		if typeof(x) == "CFrame" then
@@ -563,7 +686,7 @@ local function buildStructure(kind: string, origin: CFrame, layered: boolean?, k
 		end
 		table.insert(bricks, cube)
 		return cube
-	end)
+	end, Random.new(seed))
 	model:SetAttribute("Origin", origin)
 	model:SetAttribute("Total", bulk(bricks))
 	link(bricks, origin)
@@ -978,11 +1101,12 @@ function KINDS.Statue(add)
 		add(-0.5, y, 0, MARBLE, Enum.Material.Marble)
 		add(0.5, y, 0, MARBLE, Enum.Material.Marble)
 	end
-	add(-1.5, 4, 0, MARBLE, Enum.Material.Marble) -- arms out at the elbows
-	add(1.5, 4, 0, MARBLE, Enum.Material.Marble)
+	add(-1.5, 4, 0, MARBLE, Enum.Material.Marble) -- a fist on its hip, the other punched up at the sky
 	add(-1.5, 3, 0, MARBLE, Enum.Material.Marble)
-	add(1.5, 3, 0, MARBLE, Enum.Material.Marble)
-	add(0, 5, 0, MARBLE, Enum.Material.Marble) -- head
+	add(1.5, 4, 0, MARBLE, Enum.Material.Marble)
+	add(1.5, 5, 0, MARBLE, Enum.Material.Marble)
+	add(1.5, 6, 0, MARBLE, Enum.Material.Marble, 2)
+	add(-0.25, 5, 0, MARBLE, Enum.Material.Marble) -- head, cocked to one side
 end
 
 -- a brick house with a flat roof, the door on its +X side
@@ -1098,20 +1222,32 @@ function KINDS.HighWall(add)
 	end
 end
 
--- a pine: a short trunk under three narrowing layers of needles
-function KINDS.Pine(add)
-	local needles = Color3.fromRGB(26, 96, 56)
-	add(0, 0, 0, WOOD, Enum.Material.Wood)
-	for x = -1, 1 do
-		for z = -1, 1 do
-			add(x, 1, z, needles, Enum.Material.Grass)
-			if x == 0 or z == 0 then
-				add(x, 2, z, needles, Enum.Material.Grass)
+-- a pine: a trunk under three to five layers of needles, each narrower and drifting off the one under it
+function KINDS.Pine(add, rng)
+	local needles = shade(rng, Color3.fromRGB(26, 96, 56), 0.12)
+	local cells = {}
+	local trunk = rng:NextInteger(1, 2)
+	for y = 0, trunk - 1 do
+		put(cells, 0, y, 0, WOOD, Enum.Material.Wood)
+	end
+	local n, r0 = rng:NextInteger(3, 5), rng:NextNumber(1.4, 2.3)
+	local cx, cz = 0, 0
+	for i = 0, n - 1 do
+		local r = r0 * (1 - i / n) + 0.5
+		for x = -3, 3 do
+			for z = -3, 3 do
+				local d = math.sqrt((x - cx) ^ 2 + (z - cz) ^ 2)
+				if d <= r and (d < r - 0.7 or rng:NextNumber() > 0.25) then
+					put(cells, x, trunk + i, z, shade(rng, needles, 0.06), Enum.Material.Grass)
+				end
 			end
 		end
+		put(cells, math.round(cx), trunk + i, math.round(cz), needles, Enum.Material.Grass) -- the core, so each layer holds the next
+		cx = math.clamp(cx + rng:NextNumber(-0.45, 0.45), -1, 1)
+		cz = math.clamp(cz + rng:NextNumber(-0.45, 0.45), -1, 1)
 	end
-	add(0, 3, 0, needles, Enum.Material.Grass)
-	add(0, 4, 0, needles, Enum.Material.Grass, 2)
+	put(cells, math.round(cx), trunk + n, math.round(cz), needles, Enum.Material.Grass)
+	grow(add, cells)
 end
 
 -- four 8-stud blocks 12 apart, each 4 higher than the last (4 to 16): hop up them
@@ -1476,25 +1612,58 @@ local function districts(at: (string, number, number, number?) -> ())
 		return CFrame.new(x, y, z)
 	end
 
-	-- NE: lava fields. A stepped volcano with lava in its crater, in a square moat of lava (the rim
-	-- tiles), crossed by two stone bridges; rocks round it.
+	-- NE: lava fields. A lopsided volcano in a square moat of lava (the rim tiles), crossed by two stone
+	-- bridges; rocks round it. Columns of basalt on the 4-stud grid: the peak stands off centre, the slopes
+	-- run out further on some sides than others, a crater of lava sits off the peak and spills down the
+	-- north-east flank. Neighbouring columns differ by about a jump and a mantle, so it can be climbed.
 	local v = VOLCANO
 	landmark("Volcano", function(add)
-		for i, half in { 28, 22, 17, 13 } do -- tiers 6 high: a jump and a mantle each
-			add(CFrame.new(v + Vector3.yAxis * ((i - 1) * 6 + 3)), Vector3.new(half * 2, 6, half * 2), i % 2 == 0 and ASH or BASALT, Enum.Material.Basalt)
+		local rng = Random.new(31) -- the same volcano every time it is built (a repair finds bricks by slot)
+		local peak, crater, flow = Vector2.new(-4, 3), Vector2.new(2, -2), Vector2.new(1, -1).Unit
+		local DARK = Color3.fromRGB(40, 36, 42)
+		local vent, best = nil, math.huge
+		for i = -7, 7 do
+			for k = -7, 7 do
+				local p = Vector2.new(i * 4, k * 4)
+				local rel = p - peak
+				local a = math.atan2(rel.Y, rel.X)
+				local reach = 25 + 12 * math.noise(math.cos(a) * 1.4 + 3.1, math.sin(a) * 1.4 + 7.3, 0.5)
+				local h = 36 * (1 - rel.Magnitude / reach) + 6 * math.noise(i * 0.37 + 11, k * 0.37 + 5, 2.5) + rng:NextNumber(-1.5, 1.5)
+				local toCrater = p - crater
+				local along = toCrater:Dot(flow)
+				local across = math.abs(toCrater.X * flow.Y - toCrater.Y * flow.X + 1.5 * math.sin(along * 0.2))
+				local inCrater = toCrater.Magnitude < 7 + 2 * math.noise(i * 0.6, k * 0.6, 9.1)
+				local inFlow = not inCrater and along > 0 and across < 3.2 and h > 3
+				if inCrater then
+					h = 24 + rng:NextInteger(0, 1) * 2
+				elseif inFlow then
+					h = 24 - along * 0.8 -- an even tongue from the crater's lip to the ground
+				end
+				h = math.round(h / 2) * 2
+				if h < 2 then
+					continue
+				end
+				local at = v + Vector3.new(p.X, 0, p.Y)
+				if inCrater or inFlow then
+					add(CFrame.new(at + Vector3.yAxis * (h - 1) / 2), Vector3.new(4, h - 1, 4), BASALT, Enum.Material.Basalt)
+					local lava = add(CFrame.new(at + Vector3.yAxis * (h - 0.5)), Vector3.new(4, 1, 4), LAVA, Enum.Material.Neon)
+					lava:SetAttribute("Lava", true)
+					if inCrater and toCrater.Magnitude < best then
+						vent, best = lava, toCrater.Magnitude
+					end
+				else
+					local roll = rng:NextNumber()
+					local color = if roll < 0.08 then DARK elseif h + rng:NextNumber(-6, 6) > 16 then BASALT else ASH
+					add(CFrame.new(at + Vector3.yAxis * h / 2), Vector3.new(4, h, 4), shade(rng, color, 0.06), Enum.Material.Basalt)
+				end
+			end
 		end
-		for _, side in { -1, 1 } do -- the crater's rim, 3 up round the pool
-			add(CFrame.new(v + Vector3.new(side * 12, 25.5, 0)), Vector3.new(2, 3, 26), BASALT, Enum.Material.Basalt)
-			add(CFrame.new(v + Vector3.new(0, 25.5, side * 12)), Vector3.new(22, 3, 2), BASALT, Enum.Material.Basalt)
-		end
-		local pool = add(CFrame.new(v + Vector3.yAxis * 24.5), Vector3.new(22, 1, 22), LAVA, Enum.Material.Neon)
-		pool:SetAttribute("Lava", true)
 		local smoke = Instance.new("Smoke")
 		smoke.Color, smoke.Size, smoke.RiseVelocity, smoke.Opacity = Color3.fromRGB(60, 56, 56), 14, 6, 0.15
-		smoke.Parent = pool
+		smoke.Parent = vent
 		local glow = Instance.new("PointLight")
 		glow.Color, glow.Range, glow.Brightness = LAVA, 40, 3
-		glow.Parent = pool
+		glow.Parent = vent
 	end)
 	boxes("LavaBridges", {
 		{ c(v.X - 40, 0.5, v.Z), Vector3.new(24, 1, 6), ROCK, Enum.Material.Slate },
@@ -1504,7 +1673,7 @@ local function districts(at: (string, number, number, number?) -> ())
 	at("Rock", 236, -118)
 	at("Rock", 236, -236)
 	at("Rock", 116, -238)
-	sign("LAVA FIELDS", v + Vector3.yAxis * 44, Color3.fromRGB(255, 130, 60))
+	sign("LAVA FIELDS", v + Vector3.yAxis * 52, Color3.fromRGB(255, 130, 60))
 
 	-- E: the lake (water down to the bedrock), an island with trees, a pier off the west shore, boats.
 	for _, r in WATER do
@@ -1595,36 +1764,205 @@ local function districts(at: (string, number, number, number?) -> ())
 	boxes("HedgeMaze", maze)
 	sign("HEDGE MAZE", Vector3.new(-62, 16, 128), Color3.fromRGB(120, 210, 120))
 
-	-- SW: the farm. A red barn with a stepped roof, a silo, a windmill, a fenced field (the strip
-	-- tiles), hay bales.
+	-- SW: the farm, all in small pieces: a plank barn with a loft, stalls, sliding doors and a cupola; two
+	-- silos of stacked rings; a windmill on a tapering tower; wheat, pumpkins and carrots on the field strips
+	-- (the rim tiles); a fence with an open gate; hay, a tractor, a hen coop, a pig pen, a well, a scarecrow.
 	local BARN = Color3.fromRGB(168, 46, 40)
-	landmark("Barn", function(add)
-		add(c(-126, 6, 134), Vector3.new(28, 12, 28), BARN, Enum.Material.WoodPlanks)
-		for i, d in { 30, 22, 14, 6 } do
-			add(c(-126, 12 + i * 2 - 1, 134), Vector3.new(30, 2, d), Color3.fromRGB(88, 60, 50), Enum.Material.WoodPlanks)
+	local BARN_DARK = Color3.fromRGB(140, 36, 32)
+	local TRIM = Color3.new(0.95, 0.95, 0.95)
+	local SHINGLE = { Color3.fromRGB(88, 60, 50), Color3.fromRGB(72, 50, 42) }
+	local HAY = { Color3.fromRGB(222, 190, 96), Color3.fromRGB(206, 172, 80) }
+	local TWINE = Color3.fromRGB(150, 116, 60)
+	local IRON = Color3.fromRGB(70, 70, 76)
+	local PLANKS, METAL, FABRIC = Enum.Material.WoodPlanks, Enum.Material.Metal, Enum.Material.Fabric
+	-- box(add)(x, y, z, sx, sy, sz, color, material?): a box centred at (x, y, z), world space
+	local function box(add)
+		return function(x: number, y: number, z: number, sx: number, sy: number, sz: number, color: Color3, material: Enum.Material?)
+			return add(c(x, y, z), Vector3.new(sx, sy, sz), color, material or PLANKS)
 		end
-		add(c(-111.9, 4.5, 134), Vector3.new(0.2, 9, 10), Color3.fromRGB(64, 36, 30), Enum.Material.WoodPlanks) -- the doors
-		add(c(-111.8, 4.5, 134), Vector3.new(0.2, 9, 0.6), Color3.new(0.95, 0.95, 0.95), SMOOTH)
+	end
+	-- a hay bale lying along x on the ground at (x, y0, z), two bands of twine round it
+	local function bale(b, x: number, y0: number, z: number, color: Color3)
+		b(x, y0 + 1.5, z, 6, 3, 4, color, FABRIC)
+		for _, dx in { -1.6, 1.6 } do
+			b(x + dx, y0 + 1.5, z, 0.3, 3.1, 4.1, TWINE, FABRIC)
+		end
+	end
+
+	landmark("Barn", function(add)
+		local b = box(add)
+		local x0, x1, z0, z1, h = -140, -112, 120, 148, 12
+		-- walls of 2-stud boards, two reds; the east wall has a door 10 wide and 9 high
+		for i = 0, 13 do
+			local u = x0 + 1 + i * 2
+			local col = i % 2 == 0 and BARN or BARN_DARK
+			b(u, h / 2, z0 + 0.5, 2, h, 1, col)
+			b(u, h / 2, z1 - 0.5, 2, h, 1, col)
+		end
+		for i = 0, 12 do
+			local w = z0 + 2 + i * 2
+			local col = i % 2 == 0 and BARN_DARK or BARN
+			b(x0 + 0.5, h / 2, w, 1, h, 2, col)
+			if w > 128 and w < 140 then
+				b(x1 - 0.5, 10.5, w, 1, 3, 2, col) -- over the door
+			else
+				b(x1 - 0.5, h / 2, w, 1, h, 2, col)
+			end
+		end
+		for _, cx in { x0 - 0.2, x1 + 0.2 } do -- white corner posts
+			for _, cz in { z0 - 0.2, z1 + 0.2 } do
+				b(cx, h / 2, cz, 1.4, h, 1.4, TRIM, SMOOTH)
+			end
+		end
+		-- the doorway's white frame, the doors slid open to either side on a rail
+		b(-111.8, 9.3, 134, 0.4, 0.6, 11.2, TRIM, SMOOTH)
+		b(-111.8, 4.5, 128.7, 0.4, 9, 0.6, TRIM, SMOOTH)
+		b(-111.8, 4.5, 139.3, 0.4, 9, 0.6, TRIM, SMOOTH)
+		b(-111.4, 9.8, 134, 0.4, 0.4, 24, IRON, METAL)
+		for _, zc in { 125.4, 142.6 } do
+			b(-111.8, 4.6, zc, 0.4, 9, 5.4, BARN_DARK)
+			b(-111.4, 8.8, zc, 0.4, 0.6, 5.4, TRIM, SMOOTH)
+			b(-111.4, 0.4, zc, 0.4, 0.6, 5.4, TRIM, SMOOTH)
+			b(-111.4, 4.6, zc, 0.4, 0.6, 5.4, TRIM, SMOOTH)
+			b(-111.4, 4.6, zc - 2.4, 0.4, 9, 0.6, TRIM, SMOOTH)
+			b(-111.4, 4.6, zc + 2.4, 0.4, 9, 0.6, TRIM, SMOOTH)
+			b(-111.4, 4.6, zc, 0.4, 9, 0.6, TRIM, SMOOTH)
+		end
+		-- windows on the long sides: a white frame, a dark pane, a white cross
+		for _, side in { -1, 1 } do
+			local face = if side < 0 then z0 else z1
+			for _, wx in { -133, -119 } do
+				b(wx, 6.5, face + side * 0.15, 3.8, 3.8, 0.3, TRIM, SMOOTH)
+				b(wx, 6.5, face + side * 0.45, 3, 3, 0.3, GLASS, Enum.Material.Glass)
+				b(wx, 6.5, face + side * 0.7, 0.3, 3, 0.2, TRIM, SMOOTH)
+				b(wx, 6.5, face + side * 0.7, 3, 0.3, 0.2, TRIM, SMOOTH)
+			end
+		end
+		-- gambrel roof: layers 2 high, narrowing, white edging on the gable ends
+		for i, d in { 32, 29, 25, 20, 14, 8 } do
+			local y = h + (i - 1) * 2 + 1
+			b(-126, y, 134, 31, 2, d, SHINGLE[i % 2 + 1])
+			b(-141.65, y, 134, 0.3, 2, d, TRIM, SMOOTH)
+			b(-110.35, y, 134, 0.3, 2, d, TRIM, SMOOTH)
+		end
+		-- the loft door up the east gable, a hoist beam over it with a bale on the rope
+		b(-110.3, 17, 134, 0.4, 6, 6, BARN_DARK)
+		b(-110, 17, 134, 0.2, 6, 0.4, TRIM, SMOOTH)
+		b(-110, 17, 134, 0.2, 0.4, 6, TRIM, SMOOTH)
+		b(-108.5, 21, 134, 4, 0.8, 0.8, WOOD, Enum.Material.Wood)
+		b(-107, 18.6, 134, 0.2, 4, 0.2, TWINE, FABRIC)
+		b(-107, 16, 134, 2.4, 1.2, 1.6, HAY[1], FABRIC)
+		-- cupola with louvres, a cap and a weather vane
+		b(-126, 25.5, 134, 4, 3, 4, TRIM, SMOOTH)
+		for _, y in { 25, 26.2 } do
+			b(-126, y, 131.9, 3, 0.4, 0.2, IRON, SMOOTH)
+			b(-126, y, 136.1, 3, 0.4, 0.2, IRON, SMOOTH)
+			b(-128.1, y, 134, 0.2, 0.4, 3, IRON, SMOOTH)
+			b(-123.9, y, 134, 0.2, 0.4, 3, IRON, SMOOTH)
+		end
+		b(-126, 27.4, 134, 5, 0.8, 5, SHINGLE[1])
+		b(-126, 28.2, 134, 3, 0.8, 3, SHINGLE[2])
+		b(-126, 30.1, 134, 0.3, 3, 0.3, IRON, METAL)
+		b(-126, 30.4, 134, 2.4, 0.2, 0.2, IRON, METAL)
+		b(-126, 30.4, 134, 0.2, 0.2, 2.4, IRON, METAL)
+		b(-126, 31.4, 133.4, 0.2, 0.4, 2.6, IRON, METAL)
+		b(-126, 31.4, 135, 0.2, 1, 0.6, IRON, METAL)
+		-- inside: a loft over the west half on posts, a ladder up, bales on it; stalls with troughs
+		b(-133, 7, 134, 12, 0.6, 26, Color3.fromRGB(150, 112, 74))
+		for _, z in { 125, 134, 143 } do
+			b(-127.5, 3.35, z, 1, 6.7, 1, WOOD, Enum.Material.Wood)
+		end
+		for _, z in { 131, 133 } do
+			b(-126.8, 3.65, z, 0.4, 7.3, 0.4, WOOD, Enum.Material.Wood)
+		end
+		for y = 1.2, 6.2, 1.25 do
+			b(-126.8, y, 132, 0.4, 0.3, 1.6, WOOD, Enum.Material.Wood)
+		end
+		bale(b, -135, 7.3, 124, HAY[1])
+		bale(b, -135, 7.3, 128.2, HAY[2])
+		bale(b, -135, 10.3, 126.1, HAY[1])
+		bale(b, -134, 7.3, 144, HAY[2])
+		for _, x in { -124, -118 } do
+			b(x, 2.5, 143.5, 0.6, 5, 7, WOOD, Enum.Material.Wood)
+		end
+		for _, x in { -121, -115 } do
+			b(x, 0.75, 146.2, 4, 1.5, 1.6, Color3.fromRGB(110, 74, 48))
+		end
+		-- the lean-to off the west end: posts, a roof, firewood stacked under it, a wheelbarrow
+		for _, z in { 121.5, 128, 134.5 } do
+			b(-147.5, 3.5, z, 1, 7, 1, WOOD, Enum.Material.Wood)
+		end
+		b(-144.5, 7.5, 128, 9, 1, 16, SHINGLE[1])
+		for i = 0, 2 do
+			for j = 0, 3 - i do
+				b(-142, 0.5 + i, 123 + j * 1.1 + i * 0.55, 3, 1, 1, i % 2 == 0 and WOOD or Color3.fromRGB(100, 66, 40), Enum.Material.Wood)
+			end
+		end
+		b(-144, 1.4, 131, 2, 1, 3, IRON, METAL)
+		b(-144, 0.5, 129.4, 0.4, 1, 1, Color3.fromRGB(30, 30, 30), Enum.Material.Rubber)
+		b(-144.8, 0.45, 132.4, 0.4, 0.9, 0.4, WOOD, Enum.Material.Wood)
+		b(-143.2, 0.45, 132.4, 0.4, 0.9, 0.4, WOOD, Enum.Material.Wood)
 	end)
-	boxes("Silo", {
-		{ c(-104, 13, 116), Vector3.new(8, 26, 8), Color3.fromRGB(190, 192, 198), Enum.Material.Metal },
-		{ c(-104, 27, 116), Vector3.new(9, 2, 9), Color3.fromRGB(120, 124, 132), Enum.Material.Metal },
-		{ c(-104, 29, 116), Vector3.new(5, 2, 5), Color3.fromRGB(120, 124, 132), Enum.Material.Metal },
-	})
-	boxes("HayBales", {
-		{ c(-104, 1.5, 150), Vector3.new(6, 3, 4), Color3.fromRGB(222, 190, 96), Enum.Material.Fabric },
-		{ c(-104, 4.5, 150), Vector3.new(6, 3, 4), Color3.fromRGB(222, 190, 96), Enum.Material.Fabric },
-		{ c(-104, 1.5, 155), Vector3.new(6, 3, 4), Color3.fromRGB(212, 180, 86), Enum.Material.Fabric },
-	})
+
+	-- a silo of 2-stud columns round a circle, banded every 4, a stepped dome, a ladder on its east side
+	local function silo(name: string, cx: number, cz: number, r: number, h: number, ladder: boolean)
+		landmark(name, function(add)
+			local b = box(add)
+			local bands = { Color3.fromRGB(196, 198, 204), Color3.fromRGB(170, 174, 182), Color3.fromRGB(196, 198, 204), Color3.fromRGB(150, 60, 50) }
+			for gx = -r + 1, r - 1, 2 do
+				for gz = -r + 1, r - 1, 2 do
+					local d = Vector2.new(gx, gz).Magnitude
+					if d <= r and d > r - 2.3 then
+						for y = 0, h - 4, 4 do
+							b(cx + gx, y + 2, cz + gz, 2, 4, 2, bands[(y // 4) % #bands + 1], METAL)
+						end
+					end
+				end
+			end
+			for k, rr in { r + 0.3, r - 1.5, math.max(r - 3, 1.5) } do
+				for gx = -r + 1, r - 1, 2 do
+					for gz = -r + 1, r - 1, 2 do
+						if Vector2.new(gx, gz).Magnitude <= rr then
+							b(cx + gx, h + (k - 1) * 1.5 + 0.75, cz + gz, 2, 1.5, 2, Color3.fromRGB(120, 124, 132), METAL)
+						end
+					end
+				end
+			end
+			b(cx, h + 5, cz, 1, 1, 1, IRON, METAL) -- the vent
+			if ladder then
+				for _, dz in { -0.8, 0.8 } do
+					b(cx + r + 0.2, h / 2, cz + dz, 0.4, h, 0.3, IRON, METAL)
+				end
+				for y = 1.5, h - 1, 1.5 do
+					b(cx + r + 0.2, y, cz, 0.4, 0.25, 1.6, IRON, METAL)
+				end
+			end
+		end)
+	end
+	silo("Silo", -104, 116, 5, 28, true)
+	silo("Silo2", -94, 107, 4, 16, false)
+
+	landmark("HayBales", function(add)
+		local b = box(add)
+		for row = 0, 2 do -- a pyramid of bales, three, two, one
+			for k = 0, 2 - row do
+				bale(b, -106 + k * 6.2 + row * 3.1, row * 3, 152, HAY[(k + row) % 2 + 1])
+			end
+		end
+		bale(b, -103, 0, 157, HAY[2])
+		bale(b, -107, 0, 126, HAY[1]) -- by the barn doors
+		bale(b, -100, 0, 131, HAY[2])
+	end)
+
 	local fence = {}
 	local function rail(x0: number, x1: number, z0: number, z1: number)
 		for _, y in { 1.2, 2.4 } do
 			table.insert(fence, { c((x0 + x1) / 2, y, (z0 + z1) / 2), Vector3.new(math.max(x1 - x0, 0.4), 0.4, math.max(z1 - z0, 0.4)), WOOD, Enum.Material.Wood })
 		end
-		local n = math.max(x1 - x0, z1 - z0) // 16
+		local n = math.max(x1 - x0, z1 - z0) // 8
 		for k = 0, n do
 			local t = k / math.max(n, 1)
-			table.insert(fence, { c(x0 + (x1 - x0) * t, 1.5, z0 + (z1 - z0) * t), Vector3.new(0.6, 3, 0.6), WOOD, Enum.Material.Wood })
+			table.insert(fence, { c(x0 + (x1 - x0) * t, 1.6, z0 + (z1 - z0) * t), Vector3.new(0.6, 3.2, 0.6), Color3.fromRGB(110, 72, 46), Enum.Material.Wood })
 		end
 	end
 	rail(-240, -160, 112, 112)
@@ -1632,13 +1970,224 @@ local function districts(at: (string, number, number, number?) -> ())
 	rail(-240, -240, 112, 192)
 	rail(-160, -160, 112, 144) -- the gate: open between z 144 and 160
 	rail(-160, -160, 160, 192)
+	for _, z in { 144, 160 } do -- its two leaves, swung out
+		for _, y in { 0.8, 1.8, 2.8 } do
+			table.insert(fence, { c(-155.7, y, z), Vector3.new(8, 0.4, 0.4), PLANK, PLANKS })
+		end
+		table.insert(fence, { c(-151.9, 1.6, z), Vector3.new(0.4, 3.2, 0.4), PLANK, PLANKS })
+		table.insert(fence, { c(-155.7, 1.8, z), Vector3.new(0.4, 2.4, 0.4), PLANK, PLANKS })
+	end
 	boxes("Fence", fence)
+
+	-- the field strips (rimLook): wheat on the green ones, pumpkins and carrots on the dirt
+	landmark("Crops", function(add)
+		local b = box(add)
+		local rng = Random.new(5)
+		local WHEAT, STALK = Color3.fromRGB(226, 196, 92), Color3.fromRGB(150, 168, 70)
+		for _, sx in { -232, -200, -168 } do
+			for _, dx in { -5, 0, 5 } do
+				for z = 114.5, 190, 3 do
+					local x = sx + dx + rng:NextNumber(-0.4, 0.4)
+					local h = rng:NextNumber(2.2, 3.4)
+					if (sx == -168 and z > 142 and z < 162) or (sx == -200 and dx == 0 and z > 167 and z < 177) then
+						continue -- the way in from the gate, the scarecrow's spot
+					end
+					local p = b(x, h / 2, z, 1.2, h, 1.2, STALK:Lerp(WHEAT, rng:NextNumber(0.4, 1)), Enum.Material.Grass)
+					p.CanCollide = false -- walk through the wheat
+				end
+			end
+		end
+		for _, dx in { -4, 4 } do
+			for z = 116, 188, 6 do
+				if rng:NextNumber() < 0.15 then
+					continue
+				end
+				local x, s = -216 + dx + rng:NextNumber(-0.6, 0.6), rng:NextNumber(1.6, 2.6)
+				b(x, s * 0.35, z, s, s * 0.7, s, Color3.fromRGB(230, 120, 30):Lerp(Color3.fromRGB(250, 160, 40), rng:NextNumber()), SMOOTH)
+				b(x, s * 0.7 + 0.3, z, 0.4, 0.6, 0.4, Color3.fromRGB(90, 110, 40), SMOOTH)
+				b(x + s * 0.5 + 0.7, 0.1, z + rng:NextNumber(-0.6, 0.6), 1.4, 0.2, 1.4, Color3.fromRGB(60, 130, 50), Enum.Material.Grass)
+			end
+		end
+		for _, dx in { -4, 4 } do
+			for z = 115, 190, 3 do
+				local x = -184 + dx + rng:NextNumber(-0.3, 0.3)
+				b(x, 0.2, z, 0.8, 0.4, 0.8, Color3.fromRGB(236, 120, 40), SMOOTH)
+				local lh = rng:NextNumber(0.6, 1.2)
+				local leaf = b(x, 0.4 + lh / 2, z, 0.5, lh, 0.5, Color3.fromRGB(70, 150, 50), Enum.Material.Grass)
+				leaf.CanCollide = false
+			end
+		end
+	end)
+
+	landmark("Scarecrow", function(add)
+		local b = box(add)
+		b(-200, 3.5, 172, 0.6, 7, 0.6, WOOD, Enum.Material.Wood)
+		b(-200, 5.3, 172, 5, 0.5, 0.5, WOOD, Enum.Material.Wood)
+		b(-200, 4.8, 172, 2, 2.6, 1.2, Color3.fromRGB(60, 90, 160), FABRIC)
+		b(-197.2, 5.3, 172, 0.6, 0.6, 0.6, HAY[1], FABRIC)
+		b(-202.8, 5.3, 172, 0.6, 0.6, 0.6, HAY[1], FABRIC)
+		b(-200, 7.8, 172, 1.6, 1.6, 1.6, Color3.fromRGB(200, 170, 120), FABRIC)
+		b(-200, 8.75, 172, 2.8, 0.3, 2.8, Color3.fromRGB(120, 90, 50), FABRIC)
+		b(-200, 9.4, 172, 1.6, 1, 1.6, Color3.fromRGB(120, 90, 50), FABRIC)
+	end)
+
+	landmark("Tractor", function(add) -- facing east
+		local b = box(add)
+		local RED, TYRE, HUB = Color3.fromRGB(200, 40, 36), Color3.fromRGB(30, 30, 32), Color3.fromRGB(240, 200, 50)
+		for _, side in { -1, 1 } do
+			b(-132, 2.2, 172 + side * 2.6, 4.4, 4.4, 1.4, TYRE, Enum.Material.Rubber)
+			b(-132, 2.2, 172 + side * 3.4, 1.6, 1.6, 0.2, HUB, SMOOTH)
+			b(-132, 4.6, 172 + side * 2.6, 4.6, 0.4, 1.6, RED, METAL)
+			b(-126.5, 1.2, 172 + side * 2, 2.4, 2.4, 1, TYRE, Enum.Material.Rubber)
+			b(-126.5, 1.2, 172 + side * 2.6, 1, 1, 0.2, HUB, SMOOTH)
+		end
+		b(-132, 2.2, 172, 0.8, 0.8, 6.6, IRON, METAL)
+		b(-131.5, 3.4, 172, 3, 1.6, 3.8, RED, METAL)
+		b(-127.5, 3.2, 172, 5, 2, 2.6, RED, METAL)
+		b(-124.9, 3.2, 172, 0.2, 1.6, 2, IRON, METAL)
+		b(-124.9, 3.8, 171.3, 0.2, 0.4, 0.4, HUB, Enum.Material.Neon)
+		b(-124.9, 3.8, 172.7, 0.2, 0.4, 0.4, HUB, Enum.Material.Neon)
+		b(-126.5, 5.7, 172.8, 0.4, 3, 0.4, IRON, METAL)
+		b(-132.2, 4.9, 172, 1.4, 1.4, 1.4, Color3.fromRGB(40, 40, 44), FABRIC)
+		b(-130.4, 5, 172, 0.3, 1.6, 0.3, IRON, METAL)
+		b(-130.4, 5.9, 172, 1.2, 0.2, 1.2, IRON, METAL)
+	end)
+
+	landmark("Coop", function(add)
+		local b = box(add)
+		local WALL = Color3.fromRGB(214, 190, 150)
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				b(-112 + sx * 2.6, 1, 200 + sz * 2.1, 0.6, 2, 0.6, WOOD, Enum.Material.Wood)
+			end
+		end
+		b(-112, 4, 200, 6, 4, 5, WALL)
+		b(-112, 6.3, 200, 7, 0.6, 6, SHINGLE[1])
+		b(-112, 6.9, 200, 5, 0.6, 6, SHINGLE[2])
+		b(-112, 7.5, 200, 3, 0.6, 6, SHINGLE[1])
+		b(-108.9, 3, 200, 0.2, 1.6, 1.2, IRON, SMOOTH) -- the hatch, steps down from it
+		for k = 0, 2 do
+			local sh = (3 - k) * 0.7
+			b(-108.6 + k * 0.8, sh / 2, 200, 0.8, sh, 1.2, PLANK)
+		end
+		-- the run: a low fence of posts and rails east of the coop
+		for _, p in { { -106, 194 }, { -96, 194 }, { -96, 206 }, { -106, 206 }, { -101, 194 }, { -101, 206 }, { -96, 200 } } do
+			b(p[1], 1, p[2], 0.4, 2, 0.4, WOOD, Enum.Material.Wood)
+		end
+		b(-101, 1.6, 194, 10, 0.2, 0.2, WOOD, Enum.Material.Wood)
+		b(-101, 1.6, 206, 10, 0.2, 0.2, WOOD, Enum.Material.Wood)
+		b(-96, 1.6, 200, 0.2, 0.2, 12, WOOD, Enum.Material.Wood)
+		for i, h in { { -103, 198, 0 }, { -99, 202, 1 }, { -101, 196.5, 2 }, { -98, 198, 3 }, { -110, 204, 1 } } do
+			local x, z, turn = h[1], h[2], h[3]
+			local fx, fz = ({ 0, 1, 0, -1 })[turn + 1], ({ -1, 0, 1, 0 })[turn + 1]
+			local white = if i % 2 == 0 then Color3.fromRGB(150, 90, 50) else Color3.new(0.95, 0.95, 0.93)
+			b(x, 0.5, z, if fx ~= 0 then 1.4 else 1, 1, if fz ~= 0 then 1.4 else 1, white, SMOOTH)
+			b(x + fx * 0.6, 1.3, z + fz * 0.6, 0.6, 0.6, 0.6, white, SMOOTH)
+			b(x + fx * 0.6, 1.75, z + fz * 0.6, 0.2, 0.3, 0.2, Color3.fromRGB(220, 40, 40), SMOOTH)
+			b(x + fx * 1, 1.3, z + fz * 1, 0.2, 0.2, 0.2, Color3.fromRGB(240, 160, 30), SMOOTH)
+		end
+	end)
+
+	landmark("PigPen", function(add)
+		local b = box(add)
+		b(-146, 0.1, 214, 10, 0.2, 8, Color3.fromRGB(96, 66, 44), Enum.Material.Mud)
+		for _, p in { { -152, 209 }, { -146, 209 }, { -140, 209 }, { -152, 219 }, { -146, 219 }, { -140, 219 }, { -152, 214 }, { -140, 214 } } do
+			b(p[1], 1.3, p[2], 0.6, 2.6, 0.6, WOOD, Enum.Material.Wood)
+		end
+		for _, y in { 1, 2.1 } do
+			b(-146, y, 209, 12, 0.4, 0.3, WOOD, Enum.Material.Wood)
+			b(-146, y, 219, 12, 0.4, 0.3, WOOD, Enum.Material.Wood)
+			b(-152, y, 214, 0.3, 0.4, 10, WOOD, Enum.Material.Wood)
+			b(-140, y, 214, 0.3, 0.4, 10, WOOD, Enum.Material.Wood)
+		end
+		b(-146, 0.6, 217.6, 4, 1, 1.2, Color3.fromRGB(110, 74, 48))
+		local PINK, SNOUT = Color3.fromRGB(240, 170, 170), Color3.fromRGB(220, 130, 140)
+		for _, p in { { -148.5, 212.5, 1 }, { -143, 215, -1 } } do
+			local x, z, f = p[1], p[2], p[3]
+			for _, lx in { -0.7, 0.7 } do
+				for _, lz in { -1, 1 } do
+					b(x + lx, 0.2, z + lz, 0.5, 0.4, 0.5, PINK, SMOOTH)
+				end
+			end
+			b(x, 1.2, z, 2.2, 1.6, 3.2, PINK, SMOOTH)
+			b(x, 1.4, z + f * 2.1, 1.6, 1.4, 1, PINK, SMOOTH)
+			b(x, 1.2, z + f * 2.75, 0.8, 0.6, 0.3, SNOUT, SMOOTH)
+			b(x - 0.5, 2.3, z + f * 2.1, 0.4, 0.4, 0.2, SNOUT, SMOOTH)
+			b(x + 0.5, 2.3, z + f * 2.1, 0.4, 0.4, 0.2, SNOUT, SMOOTH)
+		end
+	end)
+
+	landmark("Well", function(add)
+		local b = box(add)
+		local rng = Random.new(9)
+		for course = 0, 1 do
+			for gx = -1, 1 do
+				for gz = -1, 1 do
+					if gx ~= 0 or gz ~= 0 then
+						b(-172 + gx * 1.6, 0.8 + course * 1.6, 236 + gz * 1.6, 1.6, 1.6, 1.6, shade(rng, STONE, 0.15), Enum.Material.Cobblestone)
+					end
+				end
+			end
+		end
+		b(-172, 2, 236, 1.6, 0.4, 1.6, Color3.fromRGB(50, 110, 170), Enum.Material.Glass)
+		for _, dx in { -1.6, 1.6 } do
+			b(-172 + dx, 4.7, 236, 0.5, 3, 0.5, WOOD, Enum.Material.Wood)
+		end
+		b(-172, 6.45, 236, 5.4, 0.5, 3, SHINGLE[1])
+		b(-172, 6.95, 236, 3.8, 0.5, 2, SHINGLE[2])
+		b(-172, 5.6, 236, 3.7, 0.3, 0.3, WOOD, Enum.Material.Wood)
+		b(-172, 4.6, 236, 0.15, 1.7, 0.15, TWINE, FABRIC)
+		b(-172, 3.35, 236, 0.8, 0.8, 0.8, Color3.fromRGB(110, 74, 48))
+	end)
+
 	landmark("Windmill", function(add)
-		add(c(-200, 15, 224), Vector3.new(8, 30, 8), Color3.fromRGB(226, 218, 200), Enum.Material.WoodPlanks)
-		add(c(-200, 31, 224), Vector3.new(10, 2, 10), Color3.fromRGB(88, 60, 50), Enum.Material.WoodPlanks)
-		add(c(-200, 26, 219), Vector3.new(2, 2, 2), WOOD, Enum.Material.Wood) -- the hub, on the north face
-		add(c(-200, 26, 217.7), Vector3.new(1.6, 26, 0.6), Color3.new(0.95, 0.95, 0.95), Enum.Material.WoodPlanks)
-		add(c(-200, 26, 217.7), Vector3.new(26, 1.6, 0.6), Color3.new(0.95, 0.95, 0.95), Enum.Material.WoodPlanks)
+		local b = box(add)
+		local wx, wz = -200, 224
+		for k, s in { 10, 9, 8, 7, 6, 5 } do -- a tower narrowing upward, stone at the foot
+			local y = (k - 1) * 5
+			b(wx, y + 2.5, wz, s, 5, s, if k == 1 then Color3.fromRGB(150, 146, 140) elseif k % 2 == 0 then Color3.fromRGB(226, 218, 200) else Color3.fromRGB(240, 234, 220), if k == 1 then Enum.Material.Cobblestone else PLANKS)
+			if k > 1 then -- a window, round the tower from storey to storey
+				local f = ({ { 0, -1 }, { 1, 0 }, { 0, 1 }, { -1, 0 } })[k % 4 + 1]
+				b(wx + f[1] * (s / 2 + 0.1), y + 2.5, wz + f[2] * (s / 2 + 0.1), if f[1] ~= 0 then 0.2 else 1.4, 2, if f[2] ~= 0 then 0.2 else 1.4, GLASS, Enum.Material.Glass)
+			end
+		end
+		b(wx, 2, wz - 5.1, 2.4, 4, 0.2, Color3.fromRGB(70, 46, 34)) -- the door
+		for i, p in { { -203, 217.5 }, { -197.5, 217.8 }, { -196.4, 218.6 } } do -- flour sacks by it
+			b(p[1], 0.7, p[2], 1.2, 1.4, 1, if i == 2 then Color3.fromRGB(220, 210, 190) else Color3.new(0.94, 0.93, 0.9), FABRIC)
+		end
+		-- a balcony round the third storey, a rail on posts
+		b(wx, 15.3, wz, 12, 0.6, 12, PLANK)
+		for _, sx in { -1, 1 } do
+			for _, sz in { -1, 1 } do
+				b(wx + sx * 5.8, 16.35, wz + sz * 5.8, 0.4, 1.5, 0.4, WOOD, Enum.Material.Wood)
+			end
+			b(wx + sx * 5.8, 17.2, wz, 0.3, 0.3, 12, WOOD, Enum.Material.Wood)
+			b(wx, 17.2, wz + sx * 5.8, 12, 0.3, 0.3, WOOD, Enum.Material.Wood)
+		end
+		-- the cap
+		b(wx, 31, wz, 7, 2, 7, SHINGLE[1])
+		b(wx, 33, wz, 5, 2, 5, SHINGLE[2])
+		b(wx, 35, wz, 3, 2, 3, SHINGLE[1])
+		b(wx, 36.6, wz, 0.6, 1.2, 0.6, IRON, METAL)
+		-- hub and four sails on the north face: a spar each, slats down one side of it, an edge rail
+		b(wx, 27, 219.5, 2, 2, 4, WOOD, Enum.Material.Wood)
+		local SAIL = Color3.new(0.95, 0.95, 0.95)
+		local zs = 217.2
+		b(wx, 34, zs, 1, 12, 0.6, SAIL) -- up, slats east
+		b(wx, 20, zs, 1, 12, 0.6, SAIL) -- down, slats west
+		b(wx + 7, 27, zs, 12, 1, 0.6, SAIL) -- east, slats down
+		b(wx - 7, 27, zs, 12, 1, 0.6, SAIL) -- west, slats up
+		for k = 0, 4 do
+			local t = 30 + k * 2.2
+			b(wx + 2, t, zs, 3, 0.3, 0.3, PLANK)
+			b(wx - 2, 54 - t, zs, 3, 0.3, 0.3, PLANK)
+			b(wx + t - 27 + 1, 25, zs, 0.3, 3, 0.3, PLANK)
+			b(wx - (t - 27) - 1, 29, zs, 0.3, 3, 0.3, PLANK)
+		end
+		b(wx + 3.65, 34.4, zs, 0.3, 11, 0.3, PLANK)
+		b(wx - 3.65, 19.6, zs, 0.3, 11, 0.3, PLANK)
+		b(wx + 7.6, 23.35, zs, 11, 0.3, 0.3, PLANK)
+		b(wx - 7.6, 30.65, zs, 11, 0.3, 0.3, PLANK)
 	end)
 	sign("FARM", Vector3.new(-170, 30, 150), Color3.fromRGB(255, 200, 120))
 
@@ -1663,6 +2212,9 @@ local function districts(at: (string, number, number, number?) -> ())
 			add(c(-222, 8 + i * 1.5 - 0.75, 38), Vector3.new(22, 1.5, d), Color3.fromRGB(70, 46, 34), Enum.Material.WoodPlanks)
 		end
 		add(c(-211.9, 3.5, 38), Vector3.new(0.2, 7, 4), Color3.fromRGB(56, 36, 26), Enum.Material.WoodPlanks) -- the door
+		add(c(-233.5, 7, 42), Vector3.new(3, 14, 3), STONE, Enum.Material.Cobblestone) -- a chimney up the west end, off centre
+		add(c(-216, 1, 47), Vector3.new(6, 2, 2), WOOD, Enum.Material.Wood) -- a woodpile
+		add(c(-217, 2.5, 47), Vector3.new(3, 1, 2), WOOD, Enum.Material.Wood)
 	end)
 	landmark("Campfire", function(add)
 		add(c(-204, 0.4, 52), Vector3.new(5, 0.8, 1), WOOD, Enum.Material.Wood)

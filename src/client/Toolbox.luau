@@ -29,9 +29,9 @@ local CHARACTERS = {
 	{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
 	{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
 	{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
-	{ name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
-	{ name = "Sport car", kind = "SportCar", color = Color3.fromRGB(227, 36, 43) }, -- the same, and it smashes apart like the map
-	{ name = "Tank", kind = "Tank", color = Color3.fromRGB(201, 178, 124) }, -- server/Tank: turret, gun, breaks apart too
+	-- off for now (server VEHICLES_ENABLED): { name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
+	-- off for now (server VEHICLES_ENABLED): { name = "Sport car", kind = "SportCar", color = Color3.fromRGB(227, 36, 43) }, -- the same, and it smashes apart like the map
+	-- off for now (server VEHICLES_ENABLED): { name = "Tank", kind = "Tank", color = Color3.fromRGB(201, 178, 124) }, -- server/Tank: turret, gun, breaks apart too
 }
 -- a team: spawned into it (SPAWN), or a click puts a dummy in it (WORLD, team paint); teams fight each other
 local TEAMS = {

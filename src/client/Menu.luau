@@ -667,7 +667,7 @@ local STATS = {
 	{ name = "KILLS", attribute = "Kills", show = tostring, color = YELLOW },
 	{ name = "BONES BROKEN", attribute = "StatBones", show = tostring, color = YELLOW },
 	{ name = "DUMMIES THROWN", attribute = "StatThrown", show = tostring, color = RED },
-	{ name = "BEST COMBO", attribute = "StatCombo", show = function(n) return n .. "x" end, color = YELLOW },
+	{ name = "DISTANCE WALKED", attribute = "StatWalked", show = function(n) return string.format("%.2f km", n * STUD_METRES / 1000) end, color = YELLOW },
 	{ name = "LONGEST THROW", attribute = "StatThrow", show = function(n) return math.floor(n * STUD_METRES) .. " m" end, color = YELLOW },
 	"BACK",
 	{ name = "PLAYTIME", attribute = "StatPlaytime", show = function(n)

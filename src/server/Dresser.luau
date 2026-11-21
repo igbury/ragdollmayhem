@@ -174,6 +174,9 @@ function Dresser.watch(player: Player, base: HumanoidDescription)
 				d:Destroy()
 			end
 		end
+		-- built at the origin, which is the spawn: the copy in PlayerGui showed up there in the world.
+		-- Parked far below the map instead (the WARDROBE stage frames it wherever it is).
+		model:PivotTo(CFrame.new(0, -10000, 0) * (model:GetPivot() - model:GetPivot().Position))
 		local old = gui:FindFirstChild("WardrobePreview")
 		model.Parent = gui
 		if old then

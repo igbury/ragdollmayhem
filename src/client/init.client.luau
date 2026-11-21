@@ -38,6 +38,7 @@ task.spawn(require, script:WaitForChild("KoStars")) -- stars over dummies out co
 task.spawn(require, script:WaitForChild("AdminPanel")) -- owner and Studio only (server/Admin)
 require(script:WaitForChild("DummyGear")) -- the cops' guns and the hooligans' bats
 require(script:WaitForChild("WantedHud")) -- the wanted stars
+task.spawn(require, script:WaitForChild("LikePrompt")) -- the optional "like the game?" card (waits for progress)
 require(script:WaitForChild("HeliRotors")) -- the army helicopters' rotors
 require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubbles over dummies
 
