@@ -1183,8 +1183,13 @@ local function updatePose(d)
 		wound, d.wound = nil, nil
 	end
 	local scared = now < d.scaredUntil and not (wound and d.bleed > 0) -- bleeding: the hands stay on the wound
+	-- the hand that holds a weapon keeps hold of it: only the free hand clutches a wound or goes up
+	-- (a bat or a gun pressed to the face went through the head)
+	local function free(side: string): boolean
+		return armFree(d, side) and not (side == "Right" and d.gear)
+	end
 	local key = (scared and "up" or wound and wound.part.Name .. tostring(wound.at) or "")
-		.. (armFree(d, "Left") and "L" or "") .. (armFree(d, "Right") and "R" or "")
+		.. (free("Left") and "L" or "") .. (free("Right") and "R" or "")
 	if key == d.poseKey then
 		return
 	end
@@ -1193,7 +1198,7 @@ local function updatePose(d)
 	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 	if scared and torso then
 		for _, side in { "Left", "Right" } do
-			if armFree(d, side) then
+			if free(side) then
 				local sx = side == "Left" and -1 or 1
 				-- elbows out to the sides, forearms straight up
 				reach(d, side, spot(torso, "HandsUp" .. side, Vector3.new(sx * 1.5, 1.9, -0.5)), Vector3.new(sx * 2.6, 0.2, 0.2))
@@ -1206,7 +1211,7 @@ local function updatePose(d)
 		-- an arm is held with the other hand, the chest with both, the rest with whichever is free
 		local sides = info.side == "left" and { "Right" } or info.side == "right" and { "Left" } or { "Right", "Left" }
 		for _, side in sides do
-			if not armFree(d, side) then
+			if not free(side) then
 				continue
 			end
 			local sx = side == "Left" and -1 or 1
@@ -1775,6 +1780,11 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		elseif info.limb == "arm" then
 			-- only the arm that was hit goes limp and swings; a broken one never comes back
 			limp(d, info.side, p.broken and math.huge or 1.6)
+			if p.broken and info.side == "right" and d.gear then
+				-- a broken weapon arm hangs: it cannot hold the bat or the gun any more (setGear, below)
+				d.gear = nil
+				d.model:SetAttribute("Gear", nil)
+			end
 		elseif info.zone == "Head" then
 			limp(d, "neck", 0.5) -- the head snaps back
 		else
