@@ -171,7 +171,7 @@ local KINDS = {
 	Worker = { weight = 0, outfit = "Worker", -- hard hat, hi-vis vest, tool belt, boots
 		colors = { Color3.fromRGB(59, 92, 140), Color3.fromRGB(44, 62, 92) } },
 	Zombie = { weight = 0, outfit = "Zombie", traits = { "Berserk" }, zombie = true, -- see ZOMBIE
-		colors = { Color3.fromRGB(184, 178, 160), Color3.fromRGB(74, 84, 104), Color3.fromRGB(127, 160, 90), Color3.fromRGB(127, 160, 90) } },
+		colors = { Color3.fromRGB(156, 149, 128), Color3.fromRGB(74, 84, 104), Color3.fromRGB(127, 160, 90), Color3.fromRGB(127, 160, 90) } }, -- a dirty shirt: in the sun a light one washes out to white
 }
 for _, kind in KINDS do
 	local look = description:Clone()
@@ -1276,7 +1276,7 @@ local function express(d)
 		face = "angry" -- hurt and not happy about it
 	end
 	if d.zombie and d.state ~= "Dead" then
-		face = "angry" -- teeth bared, always
+		face = "zombie" -- dead-eyed, the jaw hanging open (Looks)
 	end
 	Looks.face(model, face)
 	if ragdolled then

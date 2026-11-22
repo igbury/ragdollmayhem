@@ -283,6 +283,14 @@ function Outfits.dress(model: Model, name: string)
 		if bare[2] then
 			paint(model, { "LeftFoot", "RightFoot" }, bare[2])
 		end
+		if name == "Zombie" then -- its shirt and trousers are the body itself: cloth, not plastic, like its rags
+			for _, part in { "UpperTorso", "LowerTorso", "LeftUpperLeg", "RightUpperLeg", "LeftLowerLeg", "RightLowerLeg" } do
+				local p = model:FindFirstChild(part) :: BasePart?
+				if p then
+					p.Material = Enum.Material.Fabric
+				end
+			end
+		end
 		return
 	end
 	local fn = Outfits[name]
