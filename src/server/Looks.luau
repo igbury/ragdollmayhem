@@ -18,7 +18,12 @@ local FACES = {
 	dizzy = { eye = { 0.1, 0.05, -8 }, brow = -8, mouth = { 0.08, 0.07 } },
 	out = { eye = { 0.11, 0.022, 0 }, brow = 0, mouth = { 0.14, 0.025 } },
 	dead = { eye = "x", brow = 0, mouth = { 0.16, 0.025 } },
+	-- a zombie: dull pale eyes, mismatched, each with a pinprick pupil looking nowhere in particular,
+	-- brows slack and uneven, the jaw hanging open and crooked over its teeth
+	zombie = { eye = { 0.13, 0.13, 0 }, eyeR = { 0.1, 0.09, 0 }, pale = true, brow = -6, browR = 10,
+		mouth = { 0.24, 0.11 }, mouthTilt = -7, teeth = true },
 }
+local PALE = Color3.fromRGB(226, 222, 178)
 local INK = Color3.fromRGB(25, 22, 30)
 local EYE_Y, BROW_Y, MOUTH_Y = 0.46, 0.33, 0.72
 
@@ -91,7 +96,16 @@ function Looks.buildFace(head: BasePart)
 	gui.CanvasSize = Vector2.new(200, 200)
 	gui.LightInfluence = 1
 	for _, side in { "L", "R" } do
-		frame(gui, "Eye" .. side, true)
+		local eye = frame(gui, "Eye" .. side, true)
+		local pupil = frame(eye, "Pupil", true) -- only on pale eyes (the zombie's)
+		pupil.Size = UDim2.fromScale(0.26, 0.26)
+		pupil.Visible = false
+		local rim = Instance.new("UIStroke")
+		rim.Name = "Rim"
+		rim.Color = INK
+		rim.Thickness = 2
+		rim.Enabled = false
+		rim.Parent = eye
 		frame(gui, "Brow" .. side, false)
 		local cross = frame(gui, "Cross" .. side, false) -- one bar of the X; its child is the other
 		frame(cross, "Bar", false)
@@ -128,16 +142,22 @@ function Looks.face(model: Model, name: string)
 			cross.Bar.Size = UDim2.fromScale(1, 1)
 			cross.Bar.Rotation = 90
 		else
+			local shape = i == 2 and look.eyeR or look.eye
 			eye.Position = UDim2.fromScale(x, EYE_Y)
-			eye.Size = UDim2.fromScale(look.eye[1], look.eye[2])
-			eye.Rotation = look.eye[3] * mirror
+			eye.Size = UDim2.fromScale(shape[1], shape[2])
+			eye.Rotation = shape[3] * mirror
 		end
+		eye.BackgroundColor3 = look.pale and PALE or INK
+		eye.Rim.Enabled = look.pale == true
+		eye.Pupil.Visible = look.pale == true
+		eye.Pupil.Position = UDim2.fromScale(i == 1 and 0.36 or 0.62, i == 1 and 0.58 or 0.4) -- not looking the same way
 		brow.Position = UDim2.fromScale(x, BROW_Y - (look.browLift or 0))
 		brow.Size = UDim2.fromScale(0.17, 0.034)
-		brow.Rotation = look.brow * mirror
+		brow.Rotation = (i == 2 and look.browR or look.brow) * mirror
 	end
 	gui.Mouth.Position = UDim2.fromScale(0.5, MOUTH_Y)
 	gui.Mouth.Size = UDim2.fromScale(look.mouth[1], look.mouth[2])
+	gui.Mouth.Rotation = look.mouthTilt or 0
 	gui.Mouth.Teeth.Visible = look.teeth == true
 end
 

@@ -60,8 +60,11 @@ def material(h):
 class Piece:
     """Collects shapes for one object, in Roblox space, then bakes it into Blender."""
 
-    def __init__(self, name, exact=False):
+    def __init__(self, name, exact=False, fit=None, outline=OUTLINE):
         self.name = name
+        self.fit = fit  # (body part, "box" | "round"): see fit_to_body
+        self.refs = [(0, fit[1])] if fit else []
+        self.outline = outline  # studs the black shell sits off the surface
         # exact: bevelled shapes keep their colour on every face. Off for the pieces made before it
         # existed: there bevel's shrunk big faces fell back to the piece's first colour, and that is
         # how they look in the game (the police car is exact).
@@ -69,6 +72,10 @@ class Piece:
         self.bm = bmesh.new()
         self.cols = []  # material order
         self.layer = None
+
+    def ref(self, ref):
+        """The shapes made after this fit to the body against `ref` (see fit_to_body)."""
+        self.refs.append((len(self.bm.verts), ref))
 
     def _col(self, h):
         if h not in self.cols:
@@ -258,6 +265,8 @@ class Piece:
 
     def finish(self, outline=True):
         bm = self.bm
+        if self.fit:
+            fit_to_body(bm, self.fit[0], self.refs)
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
         if outline:
             black = self._col("000000")
@@ -271,7 +280,7 @@ class Piece:
                 if isinstance(v, bmesh.types.BMVert):
                     n = acc.get(tuple(round(c, 4) for c in v.co), v.normal)
                     if n.length > 1e-6:
-                        v.co += n.normalized() * OUTLINE
+                        v.co += n.normalized() * self.outline
             shell = [f for f in geom if isinstance(f, bmesh.types.BMFace)]
             bmesh.ops.reverse_faces(bm, faces=shell)
             for f in shell:
@@ -535,75 +544,366 @@ def worker():
         p.finish()
 
 
+# ---------------------------------------------------------------- the real body ---------------
+# The R15 sizes are boxes, the dummies are not: the torso tapers, limbs are rounded, the head is a
+# cylinder. A piece made with fit=(part, ref) is laid out against the box (or the round shape inside
+# it) and then every vertex is moved along a ray from the part's core so that its height over the
+# reference becomes its height over the real body (dummy_body.obj): plates lie on the curve
+# instead of floating off the corners or sinking in. ref "box": shapes placed on the box's faces;
+# "round": shapes wrapped round the part (sleeves, wraps, a cylinder head's hair).
+_BODY = {}
+FIT_EDGE = 0.2  # studs: longer edges are cut before a piece is fitted
+
+
+def _head_mesh(sx, sy, sz, rc=0.24, segs=28):
+    """The classic head: a cylinder with rounded rims (SpecialMesh Head, Scale 1, 1, 0.877)."""
+    prof = [(0.0, -0.5)]
+    for k in range(7):  # bottom rim, then top rim (r, y in units of the size)
+        a = -math.pi / 2 + k * math.pi / 12
+        prof.append((0.5 - rc + rc * math.cos(a), -0.5 + rc + rc * math.sin(a)))
+    for k in range(7):
+        a = k * math.pi / 12
+        prof.append((0.5 - rc + rc * math.cos(a), 0.5 - rc + rc * math.sin(a)))
+    prof.append((0.0, 0.5))
+    vs, fs = [], []
+    for r, y in prof:
+        for i in range(segs):
+            t = 2 * math.pi * i / segs
+            vs.append(Vector((math.cos(t) * r * sx, y * sy, math.sin(t) * r * sz)))
+    for j in range(len(prof) - 1):
+        for i in range(segs):
+            a, b = j * segs + i, j * segs + (i + 1) % segs
+            fs += [(a, b, b + segs), (a, b + segs, a + segs)]
+    return vs, fs
+
+
+def _body(part):
+    from mathutils.bvhtree import BVHTree
+    if not _BODY:
+        path = os.path.join(REPO, "assets", "army", "dummy_body.obj") if REPO else bpy.path.abspath("//dummy_body.obj")
+        raw, name = {}, None
+        for line in open(path, encoding="utf-8"):
+            t = line.split()
+            if not t or t[0] == "#":
+                continue
+            if t[0] == "o":
+                name = t[1]
+                raw[name] = (Vector([float(x) for x in t[2:5]]), [], [])
+            elif t[0] == "v":
+                raw[name][1].append(Vector([float(x) for x in t[1:4]]))
+            elif t[0] == "f":
+                raw[name][2].append(tuple(int(i) - 1 for i in t[1:4]))
+        for name, (size, vs, fs) in raw.items():
+            lo = Vector([min(v[i] for v in vs) for i in range(3)])
+            hi = Vector([max(v[i] for v in vs) for i in range(3)])
+            mid = (lo + hi) / 2
+            vs = [v - mid for v in vs]
+            _BODY[name] = (size, vs, fs, BVHTree.FromPolygons(vs, fs))
+        hx, hy, hz = R15["Head"]
+        vs, fs = _head_mesh(hx, hy, hz * 0.877)
+        _BODY["Head"] = (Vector((hx, hy, hz * 0.877)), vs, fs, BVHTree.FromPolygons(vs, fs))
+    return _BODY[part]
+
+
+def fit_to_body(bm, part, refs):
+    """refs: (first vertex, ref) in making order: Piece.ref() switches it for the shapes after."""
+    size = Vector(R15[part] if part in R15 else R15[part.replace("Left", "").replace("Right", "")])
+    _, _, _, tree = _body(part)
+    H = size / 2
+    a = 2 if "Foot" in part else 1  # the axis things wrap round (up, a foot's along it); the core is a segment on it
+    core = max(0.0, H[a] - min(H[i] for i in range(3) if i != a))
+    # a flat face only bends where it has vertices: cut the long edges first (each shape keeps its ref)
+    tag = bm.verts.layers.int.new("fit_ref")
+    names = sorted({rf for _, rf in refs})
+    for k, v in enumerate(bm.verts):
+        v[tag] = names.index(next(rf for start, rf in reversed(refs) if k >= start))
+    for _ in range(4):
+        long = [e for e in bm.edges if e.calc_length() > FIT_EDGE]
+        if not long:
+            break
+        bmesh.ops.subdivide_edges(bm, edges=long, cuts=1, use_grid_fill=True)
+    bmesh.ops.triangulate(bm, faces=bm.faces[:])  # bent quads would not stay flat
+    for v in bm.verts:
+        ref = names[v[tag]]
+        r = R2B @ v.co  # R2B is its own inverse
+        c = Vector((0, 0, 0))
+        c[a] = max(-core, min(core, r[a]))
+        d = r - c
+        L = d.length
+        if L < 1e-5:
+            continue
+        n = d / L
+        if ref == "box":
+            rref = min(((H[i] if n[i] > 0 else -H[i]) - c[i]) / n[i] for i in range(3) if abs(n[i]) > 1e-9)
+        else:  # an elliptic cylinder along the long axis, its ends the box's
+            cross = math.sqrt(sum((n[i] / H[i]) ** 2 for i in range(3) if i != a))
+            rref = 1 / cross if cross > 1e-9 else math.inf
+            if abs(n[a]) > 1e-9:
+                rref = min(rref, ((H[a] if n[a] > 0 else -H[a]) - c[a]) / n[a])
+        # the outer surface: the last hit along the ray (the core can sit outside a hollow shape)
+        far, start = None, c.copy()
+        for _ in range(8):
+            hit = tree.ray_cast(start, n)
+            if hit[0] is None:
+                break
+            far = (hit[0] - c).length
+            start = hit[0] + n * 1e-4
+        if far is None:
+            continue
+        v.co = R2B @ (c + n * (L - rref + far))
+
+
 # ---------------------------------------------------------------- Zombie ---------------------
 # The kind's body colours do most of it (main script KINDS: grey shirt torso, green arms and head,
-# blue trousers); the kit tears them up. Nothing red, nothing open: no gore.
-ZSKIN, ZSKIN_DARK = "7FA05A", "5E7E40"
-RAG, RAG_DARK, TROUSER, HAIR = "A49C88", "7E7868", "3C4456", "3A3428"
-TIE, BANDAGE, ROPE, SHOE = "4A3A6A", "D8D2C0", "8A7A50", "5A4030"
+# blue trousers); the kit tears them up: thinning hair, a stitched scar, a shirt in holes with the
+# bony chest showing through, sleeves and trouser legs torn off, a loose bandage, one shoe left.
+# Kept safe for uploads (no gore): nothing red, no wounds, no bone through skin; the ribs are bumps
+# in the green skin, bruises purple and yellow.
+ZSKIN, ZSKIN_DARK, ZSKIN_DEEP = "7FA05A", "5E7E40", "4A6630"
+# In the game's sun a flat colour washes out and two close ones melt together, so every rag is a
+# clear step darker than the dirty shirt it hangs off (KINDS.Zombie torso 9C9580) and the dirt is mud.
+RAG, RAG_DARK, DIRT, TROUSER, PATCH, HAIR = "6A604C", "4A4436", "5C4E3A", "2E3446", "5A6680", "2A2620"
+TIE, BANDAGE, ROPE, SHOE, SOLE, THREAD = "4A3A6A", "D8D2C0", "7C6C48", "5A4030", "2A2420", "2A2A24"
+BRUISE, BRUISE_OLD = "6E5C80", "A0A862"
+ZOUT = 0.045  # the zombie's black outline: thick enough to still read at the distance it is seen from
 
 
-def rags(p, y, h, sides):
-    """A ragged hem: diamonds half sunk into the surface ((x, z, facing) each), points hanging below `y`."""
-    for i, (px, pz, face) in enumerate(sides):
-        s = 0.18 + 0.07 * ((i * 7) % 3)
-        p.box((s, s, 0.05) if face == "z" else (0.05, s, s), (px, y - 0.03 * (i % 2), pz), h,
-              rot=(0, 0, 45) if face == "z" else (45, 0, 0), bevel=0)
+def _noise(i, seed):
+    """A repeatable 0..1 jitter (no random module: the kit builds the same every time)."""
+    return (math.sin(i * 12.9898 + seed * 78.233) * 43758.5453) % 1.0
+
+
+def jagged(w, h, n, seed, amp=0.28):
+    """A torn outline: n points round a w x h ellipse at uneven angles, every other one pulled in by
+    up to `amp` (notches), the rest wobbling a little: no two edges alike."""
+    pts = []
+    for i in range(n):
+        a = 2 * math.pi * (i + 0.7 * (_noise(i, seed + 7) - 0.5)) / n
+        r = 1 - (amp * (0.3 + 0.7 * _noise(i, seed)) if i % 2 else 0.2 * _noise(i, seed + 3))
+        pts.append((math.cos(a) * w / 2 * r, math.sin(a) * h / 2 * r))
+    return pts
+
+
+def strip(w, length, seed):
+    """A hanging shred: `w` wide at the top (y 0), torn to points `length` below."""
+    j = lambda i: 0.75 + 0.25 * _noise(i, seed)
+    return [(-w / 2, 0), (w / 2, 0), (w * 0.38, -length * 0.62 * j(1)), (w * 0.12, -length * j(2)),
+            (-w * 0.1, -length * 0.7 * j(3)), (-w * 0.32, -length * 0.92 * j(4))]
+
+
+FACES = {  # face -> (u axis, v axis, outward normal), Roblox part space
+    "-z": ((1, 0, 0), (0, 1, 0), (0, 0, -1)), "+z": ((-1, 0, 0), (0, 1, 0), (0, 0, 1)),
+    "-x": ((0, 0, 1), (0, 1, 0), (-1, 0, 0)), "+x": ((0, 0, -1), (0, 1, 0), (1, 0, 0)),
+    "+y": ((1, 0, 0), (0, 0, -1), (0, 1, 0)),
+}
+
+
+def plate(p, pts, at, face, depth, h, tilt=0.0):
+    """A flat piece of outline `pts` ((u, v) on that face) `depth` thick, centred `at`, lying on
+    `face` of the part; `tilt` degrees leans its bottom edge out from the surface (a flap)."""
+    u, v, n = (Vector(a) for a in FACES[face])
+    t = math.radians(tilt)
+    v2 = (v * math.cos(t) - n * math.sin(t)).normalized()  # bottom out, top in
+    n2 = (n * math.cos(t) + v * math.sin(t)).normalized()
+    c = Vector(at)
+    front = [p.bm.verts.new(R2B @ (c + u * a + v2 * b + n2 * depth / 2)) for a, b in pts]
+    back = [p.bm.verts.new(R2B @ (c + u * a + v2 * b - n2 * depth / 2)) for a, b in pts]
+    # each cap a fan of triangles from its middle: a torn outline is concave, and an n-gon of it
+    # lost its notches when triangulated (the torn edge came out a plain hexagon)
+    mu, mv = sum(a for a, _ in pts) / len(pts), sum(b for _, b in pts) / len(pts)
+    cf = p.bm.verts.new(R2B @ (c + u * mu + v2 * mv + n2 * depth / 2))
+    cb = p.bm.verts.new(R2B @ (c + u * mu + v2 * mv - n2 * depth / 2))
+    k = len(pts)
+    faces = []
+    for i in range(k):
+        j = (i + 1) % k
+        faces.append(p.bm.faces.new((cf, front[i], front[j])))
+        faces.append(p.bm.faces.new((cb, back[j], back[i])))
+        faces.append(p.bm.faces.new((front[i], back[i], back[j], front[j])))
+    bmesh.ops.recalc_face_normals(p.bm, faces=faces)
+    i = p._col(h)
+    for f in faces:
+        f.material_index = i
+
+
 
 
 def zombie():
+    # -- head: thinning, matted hair with a bald patch, a stitched scar, a bruise on the temple
     hx, hy, hz = R15["Head"]
-    p = Piece("Zombie_Head")
-    for x, y, z, s in ((-0.32, 0.5, 0.1, 0.42), (0.1, 0.56, 0.0, 0.46), (0.36, 0.46, 0.18, 0.36),
-                       (-0.1, 0.44, 0.4, 0.44), (0.24, 0.3, 0.42, 0.34), (-0.4, 0.26, 0.34, 0.3)):
-        p.ball((s, s * 0.7, s), (x * hx, y * hy, z * hz), HAIR, segs=10, rings=6)  # clumps of hair
-    p.box((0.5, 0.05, 0.05), (-0.1, hy * 0.3, -hz * 0.52), ZSKIN_DARK, rot=(0, 0, -12), bevel=0)  # stitched scar
+    p = Piece("Zombie_Head", exact=True, fit=("Head", "round"), outline=ZOUT)
+    # matted hair: a torn mat over the whole crown (its notches still reach the band), down the back and sides
+    top = hy * 0.5 + 0.03
+    cap = jagged(hx * 1.14, hz * 1.12, 18, 21, 0.12)
+    plate(p, cap, (0, top, 0), "+y", 0.07, HAIR)
+    # the hair round the whole top edge: the strands hang from it, no bare strip between them and the mat
+    p.cyl((hx * 1.06, hz * 1.06), 0.16, (0, hy * 0.5 - 0.06, 0.01), HAIR, segs=24)
+    p.ref("box")  # flat strands lie on the faces
+    # lank strands hanging from it: down the back, over the ears, a few over the left of the brow
+    # (the face itself is a decal and changes: kept clear)
+    hang = top - 0.02
+    for i, x in enumerate((-0.42, -0.26, -0.1, 0.06, 0.22, 0.38)):
+        plate(p, strip(0.2, 0.32 + 0.22 * _noise(i, 24), 90 + i), (x * hx, hang, hz * 0.5 + 0.03), "+z", 0.06, HAIR, tilt=2)
+    for s, face in ((-1, "-x"), (1, "+x")):
+        for i, z in enumerate((0.36, 0.14, -0.08)):
+            plate(p, strip(0.2, 0.22 + 0.14 * _noise(i, 25 + s), 100 + i + 3 * s), (s * (hx * 0.5 + 0.03), hang, z * hz), face, 0.06, HAIR, tilt=3)
+    for i, x in enumerate((-0.42, -0.29, -0.17)):
+        plate(p, strip(0.14, 0.2 + 0.1 * _noise(i, 26), 110 + i), (x * hx, hang, -hz * 0.5 - 0.03), "-z", 0.05, HAIR, tilt=4)
+    p.ref("round")
+    # a few clumps standing up off the mat
+    for i, (x, z, rx, rz) in enumerate(((-0.3, 0.3, 30, 40), (0.1, 0.4, 50, -20), (-0.05, 0.05, 10, 28), (0.3, 0.12, 20, -44))):
+        p.cyl(0.2, 0.14 + 0.04 * _noise(i, 9), (x * hx, top + 0.06, z * hz), HAIR, rot=(rx, 0, rz), segs=6, d2=0.09)
+    p.ref("box")
+    # the scar, across the right of the forehead, and its stitches
+    p.box((0.46, 0.05, 0.04), (hx * 0.18, hy * 0.36, -hz * 0.51), ZSKIN_DEEP, rot=(0, 0, -16), bevel=0)
     for i in range(4):
-        p.box((0.04, 0.16, 0.05), (-0.28 + i * 0.12, hy * 0.3 + 0.04 - i * 0.025, -hz * 0.53), "2A2A24", bevel=0)
+        x = hx * 0.18 + (-0.17 + i * 0.113) * math.cos(math.radians(16))
+        y = hy * 0.36 + (0.17 - i * 0.113) * math.sin(math.radians(16))
+        p.box((0.035, 0.15, 0.04), (x, y, -hz * 0.525), THREAD, rot=(0, 0, 18), bevel=0)
+    plate(p, jagged(0.4, 0.3, 9, 1, 0.55), (hx * 0.505, -hy * 0.08, -hz * 0.16), "+x", 0.03, BRUISE)  # the cheek
     p.finish()
 
+    # -- chest: holes torn in the shirt, the gaunt ribs bumping through, dirt, an open collar,
+    # the tie hanging off to one side and long shreds at the hem
     tx, ty, tz = R15["UpperTorso"]
-    p = Piece("Zombie_UpperTorso")
-    for x, y, s in ((0.22, -0.22, 0.42), (-0.28, 0.12, 0.3), (0.1, 0.3, 0.22)):
-        p.ball((s, s * 0.8, 0.08), (x * tx, y * ty, -tz * 0.5), ZSKIN, segs=12, rings=6)  # holes in the shirt
-    p.ball((0.46, 0.36, 0.08), (-0.2 * tx, -0.2 * ty, tz * 0.5), ZSKIN, segs=12, rings=6)
-    p.box((0.16, 0.14, 0.08), (0.06, ty * 0.4, -tz * 0.56), TIE, bevel=0.03)  # loose tie
-    p.box((0.18, 0.7, 0.05), (0.14, ty * 0.06, -tz * 0.56), TIE, rot=(0, 0, 14), bevel=0.02)
-    p.box((tx * 0.46, 0.12, tz * 0.78), (0, ty * 0.46, 0), RAG_DARK, bevel=0.05)  # collar
-    hem = [(x * tx, -tz * 0.48, "z") for x in (-0.36, -0.14, 0.08, 0.3)] + [(x * tx, tz * 0.48, "z") for x in (-0.3, -0.06, 0.18, 0.38)]
-    hem += [(s * tx * 0.5, 0, "x") for s in (-1, 1)]
-    rags(p, -ty * 0.48, RAG, hem)
+    p = Piece("Zombie_UpperTorso", exact=True, fit=("UpperTorso", "box"), outline=ZOUT)
+    zf = -tz * 0.5 - 0.012
+    hole = jagged(0.76, 0.64, 15, 3, 0.48)
+    plate(p, hole, (-tx * 0.17, -ty * 0.06, zf), "-z", 0.03, ZSKIN)  # the big hole, its left side
+    for i, y in enumerate((0.13, 0.0, -0.13)):  # ribs under the skin
+        w = 0.42 - 0.06 * abs(i - 1)
+        p.cyl(0.05, w, (-tx * 0.17 - 0.02, -ty * 0.06 + y, zf - 0.025), ZSKIN_DARK, axis="x", segs=8, rot=(0, 0, 6 - 6 * i))
+    plate(p, jagged(0.36, 0.32, 11, 4, 0.5), (tx * 0.26, ty * 0.24, zf), "-z", 0.03, ZSKIN)
+    plate(p, jagged(0.26, 0.22, 9, 5, 0.55), (tx * 0.3, -ty * 0.3, zf), "-z", 0.03, ZSKIN)
+    plate(p, jagged(0.5, 0.22, 14, 6, 0.45), (tx * 0.1, -ty * 0.34, zf), "-z", 0.02, DIRT)  # grime
+    plate(p, jagged(0.26, 0.5, 14, 7, 0.45), (-tx * 0.36, ty * 0.26, zf), "-z", 0.02, DIRT)
+    # the back: a long tear with the spine's bumps, and grime
+    zb = tz * 0.5 + 0.012
+    plate(p, jagged(0.52, 0.92, 15, 8, 0.45), (tx * 0.05, -ty * 0.04, zb), "+z", 0.03, ZSKIN)
+    for i in range(4):
+        p.ball((0.13, 0.09, 0.07), (tx * 0.05, ty * (0.14 - i * 0.1), zb + 0.02), ZSKIN_DARK, segs=8, rings=5)
+    plate(p, jagged(0.56, 0.3, 14, 9, 0.45), (-tx * 0.28, ty * 0.3, zb), "+z", 0.02, DIRT)
+    # collar: two flaps folded open at the throat
+    for s in (-1, 1):
+        plate(p, [(-0.2, 0.1), (0.2, 0.1), (0.12 * s + 0.0, -0.18), (-0.02 * s, -0.08)],
+              (s * 0.22, ty * 0.43, zf - 0.02), "-z", 0.05, RAG_DARK, tilt=-12)
+    # the tie: knot pulled loose and the blade swung across, its end torn
+    p.box((0.17, 0.15, 0.09), (0.04, ty * 0.34, zf - 0.05), TIE, rot=(0, 0, -12), bevel=0.03)
+    plate(p, [(-0.08, 0.0), (0.08, 0.0), (0.12, -0.5), (0.04, -0.62), (-0.03, -0.54), (-0.1, -0.6), (-0.13, -0.48)],
+          (0.11, ty * 0.28, zf - 0.04), "-z", 0.04, TIE, tilt=6)
+    # where the reaching arms do not cover it: the sides, the shoulders and more of the back
+    xs = tx * 0.5 + 0.012
+    plate(p, jagged(0.62, 0.84, 15, 41, 0.42), (-xs, -ty * 0.08, 0.02), "-x", 0.02, DIRT)  # mud down the left side
+    plate(p, jagged(0.5, 0.56, 14, 42, 0.46), (xs, ty * 0.04, -0.04), "+x", 0.03, ZSKIN)  # torn open on the right
+    for i in range(3):  # ribs bumping through it
+        p.ball((0.06, 0.07, 0.34 - 0.05 * abs(i - 1)), (xs + 0.02, ty * (0.13 - i * 0.11), -0.04), ZSKIN_DARK, segs=8, rings=5)
+    plate(p, jagged(0.44, 0.36, 12, 43, 0.48), (-tx * 0.3, ty * 0.22, zb), "+z", 0.03, ZSKIN)  # the shoulder blade
+    plate(p, jagged(0.62, 0.34, 14, 44, 0.42), (tx * 0.22, -ty * 0.32, zb), "+z", 0.02, DIRT)  # mud low on the back
+    for s, seed in ((-1, 45), (1, 46)):  # grime over the shoulders
+        plate(p, jagged(0.42, 0.34, 12, seed, 0.45), (s * tx * 0.33, ty * 0.5 + 0.012, 0.04 * s), "+y", 0.02, DIRT)
     p.finish()
 
+    # -- waist: the shirt's torn hem hangs over the trousers (on the waist piece, so it follows the
+    # hips instead of being bent round the chest's bottom edge), longer at the front left; every
+    # other shred a layer further out (no two in one plane), and the rope belt goes round outside them
     lx, ly, lz = R15["LowerTorso"]
-    p = Piece("Zombie_LowerTorso")
-    p.cyl((lx * 1.08, lz * 1.1), 0.12, (0, ly * 0.22, 0), ROPE, segs=16)  # rope for a belt
-    p.box((0.1, 0.34, 0.06), (lx * 0.2, -ly * 0.1, -lz * 0.56), ROPE, rot=(0, 0, 10), bevel=0)
+    p = Piece("Zombie_LowerTorso", exact=True, fit=("LowerTorso", "box"), outline=ZOUT)
+    top = ly * 0.22 + 0.03  # tucked under the belt: it hides where they tear off
+    for i, x in enumerate((-0.4, -0.22, -0.05, 0.12, 0.3, 0.42)):
+        L = 0.46 - 0.04 * i + 0.1 * _noise(i, 11)
+        z = -lz * 0.5 - 0.015 - 0.03 * (i % 2)
+        plate(p, strip(0.24 + 0.06 * _noise(i, 12), L, 20 + i), (x * lx, top, z), "-z", 0.03, RAG, tilt=3 + 3 * _noise(i, 13))
+    for i, x in enumerate((-0.36, -0.12, 0.14, 0.38)):
+        z = lz * 0.5 + 0.015 + 0.03 * (i % 2)
+        plate(p, strip(0.26, 0.4 + 0.1 * _noise(i, 14), 30 + i), (x * lx, top, z), "+z", 0.03, RAG, tilt=3)
+    for s, face in ((-1, "-x"), (1, "+x")):
+        plate(p, strip(0.3, 0.42, 40 + s), (s * (lx * 0.5 + 0.015), top, 0), face, 0.03, RAG, tilt=3)
+    p.ref("round")
+    by = ly * 0.22
+    p.cyl((lx * 1.1, lz * 1.2), 0.12, (0, by, 0), ROPE, segs=24)  # outside the shreds
+    zk = -lz * 0.6 - 0.04
+    p.ball((0.2, 0.17, 0.14), (lx * 0.22, by, zk), ROPE, segs=10, rings=6)  # the knot
+    p.cyl(0.08, 0.36, (lx * 0.2, -ly * 0.2, zk - 0.01), ROPE, rot=(0, 0, 8), segs=8)
+    p.cyl(0.08, 0.28, (lx * 0.27, -ly * 0.14, zk - 0.03), ROPE, rot=(0, 0, -14), segs=8)
     p.finish()
 
     for side, sign in (("Left", -1), ("Right", 1)):
+        # -- sleeves torn off above the elbow, the left lower than the right, shreds hanging
         ax, ay, az = R15["UpperArm"]
-        p = Piece(f"Zombie_{side}UpperArm")
-        p.ball((ax * 1.14, ay * 0.96, az * 1.12), (0, ay * 0.05, 0), RAG, cut=0.5)  # torn sleeve
-        rags(p, ay * 0.05, RAG, ((0, -az * 0.56, "z"), (0, az * 0.56, "z"), (ax * 0.57, 0, "x"), (-ax * 0.57, 0, "x")))
+        p = Piece(f"Zombie_{side}UpperArm", exact=True, fit=(f"{side}UpperArm", "round"), outline=ZOUT)
+        length = ay * (0.62 if side == "Left" else 0.44)
+        top = ay * 0.5 + 0.02
+        p.cyl((ax * 1.14, az * 1.1), length, (0, top - length / 2, 0), RAG, segs=16)
+        p.ball((ax * 1.14, 0.3, az * 1.1), (0, top, 0), RAG, cut=0.5, segs=16, rings=8)  # over the shoulder
+        rim = top - length
+        for i, (face, off) in enumerate((("-z", -az * 0.56), ("+z", az * 0.56), ("-x", -ax * 0.58), ("+x", ax * 0.58))):
+            at = (off, rim + 0.04, 0) if "x" in face else (0, rim + 0.04, off)
+            if (side == "Right" and face == "-x") or (side == "Left" and face == "+x"):
+                continue  # the side against the body
+            plate(p, strip(0.22, 0.26 + 0.1 * _noise(i, 50 + sign), 60 + i + sign), at, face, 0.035, RAG, tilt=8)
+        if side == "Right":  # a bruise on the bare arm under the sleeve
+            plate(p, jagged(0.3, 0.26, 9, 15, 0.55), (0, -ay * 0.3, -az * 0.51), "-z", 0.03, BRUISE)
         p.finish()
+        bx, by, bz = R15["LowerArm"]
+        p = Piece(f"Zombie_{side}LowerArm", exact=True, fit=(f"{side}LowerArm", "round"), outline=ZOUT)
+        if side == "Left":  # a bandage coming loose, its tail hanging
+            for i, y in enumerate((0.28, 0.06, -0.16)):
+                p.cyl((bx * 1.1, bz * 1.1), 0.13, (0, y * by, 0), BANDAGE, rot=(0, 0, 10 * (-1) ** i), segs=14)
+            plate(p, [(-0.07, 0), (0.07, 0), (0.06, -0.42), (0.0, -0.5), (-0.06, -0.4)], (bx * 0.2, -0.2 * by, -bz * 0.56), "-z", 0.03, BANDAGE, tilt=14)
+        else:  # stitched up the forearm
+            p.box((0.05, by * 0.56, 0.04), (0, -by * 0.02, -bz * 0.51), ZSKIN_DEEP, bevel=0)
+            for i in range(5):
+                p.box((0.17, 0.035, 0.04), (0, by * (0.22 - i * 0.11), -bz * 0.525), THREAD, rot=(0, 0, 14), bevel=0)
+            plate(p, jagged(0.26, 0.22, 9, 16, 0.55), (bx * 0.51, by * 0.2, 0), "+x", 0.03, BRUISE_OLD)
+        p.finish()
+
+        # -- trousers: a hole at the knee on the right, a sewn patch on the left thigh
+        ux, uy, uz = R15["UpperLeg"]
+        p = Piece(f"Zombie_{side}UpperLeg", exact=True, fit=(f"{side}UpperLeg", "round"), outline=ZOUT)
+        if side == "Right":
+            plate(p, jagged(0.44, 0.36, 13, 17, 0.5), (0, -uy * 0.38, -uz * 0.5 - 0.012), "-z", 0.03, ZSKIN)
+        else:
+            p.box((0.4, 0.38, 0.04), (0.02, uy * 0.06, -uz * 0.5 - 0.02), PATCH, rot=(0, 0, 7), bevel=0.02)
+            for i in range(4):
+                for s in (-1, 1):
+                    p.box((0.03, 0.08, 0.03), (0.02 + s * 0.2, uy * 0.06 - 0.14 + i * 0.095, -uz * 0.5 - 0.045), THREAD, rot=(0, 0, 7), bevel=0)
+        # mud up the outside of each thigh, and on the back of the left a tear
+        out = sign * (ux * 0.5 + 0.012)
+        plate(p, jagged(0.4, 0.7, 14, 47 + sign, 0.42), (out, -uy * 0.12, 0), "+x" if sign > 0 else "-x", 0.02, DIRT)
         if side == "Left":
-            bx, by, bz = R15["LowerArm"]
-            p = Piece("Zombie_LeftLowerArm")
-            for i, y in enumerate((0.25, 0.02, -0.22)):
-                p.cyl((bx * 1.08, bz * 1.08), 0.13, (0, y * by, 0), BANDAGE, rot=(0, 0, 9 * (-1) ** i), segs=14)  # bandage
-            p.finish()
-        kx, ky, kz = R15["LowerLeg"]
-        p = Piece(f"Zombie_{side}LowerLeg")
-        p.cyl((kx * 1.04, kz * 1.04), ky * 0.4, (0, -ky * 0.3, 0), ZSKIN, segs=14)  # bare shin under the rags
-        rags(p, -ky * 0.06, TROUSER, ((0, -kz * 0.52, "z"), (0, kz * 0.52, "z"), (kx * 0.53, 0, "x"), (-kx * 0.53, 0, "x"),
-                                     (kx * 0.3, -kz * 0.46, "z"), (-kx * 0.3, kz * 0.46, "z")))  # frayed trouser hem
+            plate(p, jagged(0.34, 0.42, 12, 49, 0.5), (0, uy * 0.1, uz * 0.5 + 0.012), "+z", 0.03, ZSKIN)
         p.finish()
+
+        # -- shins: the trouser leg torn off, raggedly, the left higher; bare skin under it
+        kx, ky, kz = R15["LowerLeg"]
+        p = Piece(f"Zombie_{side}LowerLeg", exact=True, fit=(f"{side}LowerLeg", "round"), outline=ZOUT)
+        cut = ky * (0.06 if side == "Left" else -0.12)
+        bare = ky * 0.5 + cut
+        p.cyl((kx * 1.04, kz * 1.04), bare, (0, -ky * 0.5 + bare / 2, 0), ZSKIN, segs=16)
+        for i, face in enumerate(("-z", "+z", "-x", "+x")):
+            off = (kz if "z" in face else kx) * 0.52 * (1 if "+" in face else -1)
+            for k, shift in enumerate((-0.16, 0.14)):
+                at = (off, cut + 0.05, shift) if "x" in face else (shift, cut + 0.05, off)
+                plate(p, strip(0.2, 0.2 + 0.12 * _noise(i * 2 + k, 70 + sign), 80 + i * 2 + k + sign), at, face, 0.03, TROUSER, tilt=6)
+        p.finish()
+
+    # -- feet: one worn shoe, its sole coming off at the toe; the other bare, green toes showing
     fx, fy, fz = R15["Foot"]
-    p = Piece("Zombie_RightFoot")  # one old shoe left; the other foot is bare (Outfits paints it)
-    p.box((fx * 1.08, fy * 0.6, fz * 1.06), (0, fy * 0.08, 0), SHOE, bevel=0.12)
-    p.box((fx * 1.1, 0.1, fz * 1.08), (0, -fy * 0.22, 0), "2A2420", bevel=0.04)
-    p.box((0.3, 0.08, 0.3), (0, fy * 0.36, -fz * 0.2), "2A2420", bevel=0.02)  # laces
+    p = Piece("Zombie_RightFoot", exact=True, fit=("RightFoot", "box"), outline=ZOUT)
+    p.box((fx * 1.16, fy * 1.12, fz * 1.1), (0, 0, 0), SHOE, bevel=0.12)  # the whole foot: the fit hugs it to the real one
+    p.box((fx * 1.08, 0.1, fz * 0.7), (0, -fy * 0.5 - 0.03, fz * 0.18), SOLE, bevel=0.04)
+    p.box((fx * 1.06, 0.09, fz * 0.38), (0, -fy * 0.5 - 0.07, -fz * 0.36), SOLE, rot=(-14, 0, 0), bevel=0.03)  # flapping open
+    for i in range(3):
+        p.box((0.34, 0.05, 0.06), (0, fy * 0.54, -fz * (0.06 + i * 0.12)), RAG, rot=(0, 0, 8 * (-1) ** i), bevel=0.01)  # laces
+    plate(p, jagged(0.22, 0.18, 9, 18, 0.5), (fx * 0.555, fy * 0.1, fz * 0.1), "+x", 0.03, SOLE)  # a hole in the side
+    p.finish()
+    p = Piece("Zombie_LeftFoot", exact=True, fit=("LeftFoot", "box"), outline=ZOUT)
+    # bare skin over the whole foot (the body under it takes the trousers' colour): the toes and sole sit on it
+    p.box((fx * 1.12, fy * 1.08, fz * 1.06), (0, 0, 0), ZSKIN, bevel=0.12)
+    for i, x in enumerate((-0.28, -0.1, 0.07, 0.24)):
+        s = 0.2 - 0.025 * i
+        p.ball((s, s * 0.55, s * 1.2), (x * fx * 1.2, -fy * 0.26, -fz * 0.5 - 0.05), ZSKIN_DARK, segs=10, rings=6)  # toes
+    p.box((fx * 1.04, 0.08, fz * 0.9), (0, -fy * 0.5 - 0.05, 0), ZSKIN_DEEP, bevel=0.03)  # a grimy sole
     p.finish()
 
 

@@ -22,6 +22,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_")
 NEON = {"FF3030", "30FF60", "FFFFFF", "FF8A20", "FFF6D0", "3060FF", "FFF4C8", "F4F4E6"}
 SEE_THROUGH = {"8FD0F0": 0.55, "2AA8D8": 0.15, "5AB4E0": 0.1, "364A66": 0.25, "1E2634": 0.15}
+# the zombie's cloth (build.py: rags, mud, trousers, patch, tie, bandage, rope): Fabric when installed,
+# so in the game's flat light the rags have a weave instead of looking like plastic
+FABRIC = {"6A604C", "4A4436", "5C4E3A", "2E3446", "5A6680", "4A3A6A", "D8D2C0", "7C6C48"}
 TRI_CAP = 19000
 
 
@@ -73,6 +76,7 @@ def main():
                 "name": sub.name, "color": hexcol, "tris": tris,
                 "at": [round(x, 4) for x in r], "size": [round(s.x, 4), round(s.z, 4), round(s.y, 4)],
                 "neon": hexcol in NEON, "transparency": SEE_THROUGH.get(hexcol, 0),
+                "fabric": ob.name.startswith("Zombie_") and hexcol in FABRIC,
             })
         manifest[ob.name] = entries
     # export only the split meshes, each at the origin (positions live in the manifest)
