@@ -108,9 +108,11 @@ local function icon(specs, parent: GuiObject, id: string?, zoom: number?): (View
 	end
 	fit()
 	local spin = 0
-	local function place(dt: number?)
-		spin += (dt or 0) * 1.2
-		local side = CFrame.Angles(0, (flat and 0.35 or math.pi / 2) + math.sin(spin) * 0.35, 0) -- from the right (+X)
+	-- (dt): sway, as on the hotbar; (angle, true): a full turntable, turned on by that many radians
+	local function place(dt: number?, turn: boolean?)
+		spin += (dt or 0) * (if turn then 1 else 1.2)
+		local base = flat and 0.35 or math.pi / 2
+		local side = CFrame.Angles(0, if turn then base + spin else base + math.sin(spin) * 0.35, 0) -- from the right (+X)
 		cam.CFrame = CFrame.new(box.Position) * side * CFrame.new(0, 0, dist) * CFrame.Angles(0, 0, upright and math.rad(-42) or math.rad(18))
 	end
 	place()
