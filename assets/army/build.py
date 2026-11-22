@@ -234,6 +234,23 @@ class Piece:
             faces, vs = self._bevel(edges, bevel, clamp=True)
         self._place(vs, faces, at, (0, 0, 0), h)
 
+    def slab(self, outline, y0, y1, at, h, bevel=0.1):
+        """A top-view outline (Roblox (x, z) points, in order round it) pushed up from y0 to y1,
+        placed `at`. Corners sharper than 25 degrees get rounded by `bevel` studs."""
+        sides = [[self.bm.verts.new(R2B @ Vector((x, y, z))) for x, z in outline] for y in (y0, y1)]
+        n = len(outline)
+        faces = [self.bm.faces.new(sides[0]), self.bm.faces.new(sides[1][::-1])]
+        for i in range(n):
+            j = (i + 1) % n
+            faces.append(self.bm.faces.new((sides[0][i], sides[1][i], sides[1][j], sides[0][j])))
+        bmesh.ops.recalc_face_normals(self.bm, faces=faces)
+        vs = sides[0] + sides[1]
+        if bevel > 0:
+            self.bm.normal_update()
+            edges = [e for e in {e for f in faces for e in f.edges} if len(e.link_faces) == 2 and e.calc_face_angle(0) > math.radians(25)]
+            faces, vs = self._bevel(edges, bevel, clamp=True)
+        self._place(vs, faces, at, (0, 0, 0), h)
+
     def text(self, s, width, depth, at, h, side):
         """Raised lettering `width` studs long on a car side: `side` +1 faces +X, -1 faces -X; it reads
         front to back on either side, as a viewer standing there sees it."""
@@ -1259,6 +1276,223 @@ def sport_car():
 SPORT_PIECES = ("Sport_Body", "Sport_Hood", "Sport_BumperF", "Sport_BumperR", "Sport_DoorL", "Sport_DoorR", "Sport_Cabin", "Sport_Wing")
 
 
+# ---------------------------------------------------------------- Tank -----------------------
+# A heavy WW2-era tank (the silhouette of the period, no markings of any side: only the number 131),
+# cartoon-chunky like the cars: a boxy hull, a big turret with a rounded back, an over-long gun with a
+# double muzzle brake, overlapping road wheels. Every piece's origin is the ground under the middle of
+# the tank, front -Z (like Cop_Body), modelled with the turret straight ahead and the gun level:
+# server/PoliceCar.luau turns Tank_Turret round TANK_TURRET (its ring, in the hull roof) and
+# Tank_Mantlet / Tank_Barrel also round TANK_GUN (the trunnions). Tank_Wheel is one road wheel round
+# its hub, outer face +X; TANK_WHEELS lists where they go (right side; mirror x for the left).
+TK_SAND, TK_OLIVE, TK_BROWN, TK_DIRT = "C9B27C", "6B7A3A", "7A5A34", "8E7B52"
+TK_METAL, TK_DARK, TK_RUST, TK_WOOD, TK_NUM = "2E2E30", "1E1E20", "5A4636", "8A6A40", "F0EADA"
+TANK_TURRET = (0, 4.9, -0.4)
+TANK_GUN = (0, 6.3, -4.1)
+TANK_WHEEL_R = 1.4
+TANK_WHEELS = tuple((4.4, 1.4, z) for z in (-5.4, -1.8, 1.8, 5.4)) + tuple((3.55, 1.4, z) for z in (-3.6, 0.0, 3.6))
+TANK_PIECES = ("Tank_Hull", "Tank_FenderL", "Tank_FenderR", "Tank_TrackL", "Tank_TrackR", "Tank_Turret",
+               "Tank_Mantlet", "Tank_Barrel", "Tank_Exhaust")
+
+
+def blotch_pts(cx, cy, r, seed, n=8):
+    """An irregular camouflage blob round (cx, cy), radius about r."""
+    import random
+    rnd = random.Random(seed)
+    return [(cx + r * (0.65 + 0.5 * rnd.random()) * math.cos(2 * math.pi * i / n),
+             cy + r * (0.55 + 0.45 * rnd.random()) * math.sin(2 * math.pi * i / n) * 0.75) for i in range(n)]
+
+
+def camo_side(p, x, marks, seed):
+    """Blobs on a face looking along +-X at `x`: each mark is (z, y, r, colour)."""
+    for i, (z, y, r, h) in enumerate(marks):
+        p.prism(blotch_pts(z, y, r, seed + i), 0.02, (x, 0, 0), h, bevel=0)
+
+
+def camo_top(p, y, marks, seed):
+    """Blobs lying on a top surface at height `y`: each mark is (x, z, r, colour)."""
+    for i, (x, z, r, h) in enumerate(marks):
+        p.slab(blotch_pts(x, z, r, seed + i), y, y + 0.02, (0, 0, 0), h, bevel=0)
+
+
+def hull2d(pts):
+    """Convex hull of 2D points, counter-clockwise (monotone chain)."""
+    pts = sorted(set(pts))
+
+    def cross(o, a, b):
+        return (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0])
+    lo, hi = [], []
+    for q in pts:
+        while len(lo) >= 2 and cross(lo[-2], lo[-1], q) <= 0:
+            lo.pop()
+        lo.append(q)
+    for q in reversed(pts):
+        while len(hi) >= 2 and cross(hi[-2], hi[-1], q) <= 0:
+            hi.pop()
+        hi.append(q)
+    return lo[:-1] + hi[:-1]
+
+
+def resample(loop, step):
+    """Points every `step` along a closed polyline, with the outward normal (z, y) at each."""
+    out, n = [], len(loop)
+    seg = [(loop[i], loop[(i + 1) % n]) for i in range(n)]
+    total = sum(math.dist(a, b) for a, b in seg)
+    count = max(8, round(total / step))
+    d, k, acc = total / count, 0, 0.0
+    for i in range(count):
+        t = i * d
+        while acc + math.dist(*seg[k]) < t:
+            acc += math.dist(*seg[k])
+            k += 1
+        a, b = seg[k]
+        ln = math.dist(a, b)
+        f = (t - acc) / ln
+        tz, ty = (b[0] - a[0]) / ln, (b[1] - a[1]) / ln
+        out.append(((a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f), (ty, -tz)))  # ccw loop: right of the tangent is out
+    return out
+
+
+def track_piece(name, s):
+    """One track: the link band round the wheels, its cleats, the drive sprocket in front, the idler."""
+    p = Piece(name, exact=True)
+    x, w, t = s * 3.9, 2.2, 0.35
+    circles = [(-7.5, 1.9, 1.1), (7.5, 1.8, 1.1)] + [(z, TANK_WHEEL_R, TANK_WHEEL_R) for z in (-5.4, 5.4)]
+    pts = [(cz + (r + t / 2) * math.cos(a * math.pi / 12), cy + (r + t / 2) * math.sin(a * math.pi / 12)) for cz, cy, r in circles for a in range(24)]
+    path = resample(hull2d(pts), 0.5)
+    loops = []
+    for (z, y), (nz, ny) in path:
+        loops.append([(x - w / 2, y - ny * t / 2, z - nz * t / 2), (x + w / 2, y - ny * t / 2, z - nz * t / 2),
+                      (x + w / 2, y + ny * t / 2, z + nz * t / 2), (x - w / 2, y + ny * t / 2, z + nz * t / 2)])
+    faces = p._solid(loops, (0, 0, 0), TK_METAL, (0, 0, 0))
+    bmesh.ops.recalc_face_normals(p.bm, faces=faces)
+    for i, ((z, y), (nz, ny)) in enumerate(resample(hull2d(pts), 0.8)):
+        ang = math.degrees(math.atan2(-nz, ny))  # turn the cleat to lie on the band
+        p.box((w + 0.12, 0.16, 0.32), (x, y + ny * (t / 2 + 0.05), z + nz * (t / 2 + 0.05)), TK_DARK, rot=(ang, 0, 0), bevel=0)
+    # sprocket (teeth round a sand hub) and idler
+    p.cyl(2.0, 1.3, (x, 1.9, -7.5), TK_SAND, axis="x", segs=16, bevel=0.08)
+    p.cyl(0.8, 1.45, (x, 1.9, -7.5), TK_METAL, axis="x", segs=10)
+    for i in range(9):
+        a = i * 2 * math.pi / 9
+        p.box((1.4, 0.35, 0.35), (x, 1.9 + math.cos(a) * 1.05, -7.5 + math.sin(a) * 1.05), TK_METAL, rot=(math.degrees(-a), 0, 0), bevel=0)
+    p.cyl(2.0, 1.2, (x, 1.8, 7.5), TK_SAND, axis="x", segs=16, bevel=0.08)
+    p.cyl(0.7, 1.35, (x, 1.8, 7.5), TK_METAL, axis="x", segs=10)
+    p.finish()
+
+
+def tank():
+    tx, ty, tz = TANK_TURRET
+    gx, gy, gz = TANK_GUN
+
+    # hull: the low tub between the tracks, the wide superstructure over them, deck details
+    p = Piece("Tank_Hull", exact=True)
+    p.prism([(-8.55, 3.4), (-8.8, 2.6), (-7.3, 0.9), (7.5, 0.9), (8.5, 2.3), (8.35, 3.4)], 5.6, (0, 0, 0), TK_DIRT, bevel=0.15)
+    p.prism([(-8.75, 3.4), (-8.55, 4.9), (8.2, 4.9), (8.4, 3.4)], 8.4, (0, 0, 0), TK_SAND, bevel=0.15)
+    p.box((7.2, 0.2, 6.4), (0, 4.95, 4.6), "B8A26E", bevel=0.05)  # engine deck
+    for z in (2.6, 3.6, 5.6, 6.6):
+        p.box((2.4, 0.12, 0.7), (0, 5.08, z), TK_DARK, bevel=0.03)  # grilles
+    for s in (-1, 1):
+        p.cyl(1.3, 0.18, (s * 2.4, 5.0, 4.6), TK_METAL, axis="y", segs=12)  # fan covers
+        p.cyl(0.45, 0.6, (s * 3.4, 5.15, -8.0), TK_METAL, axis="z", segs=10, bevel=0.05)  # headlights
+        p.cyl(0.32, 0.64, (s * 3.4, 5.15, -8.0), "FFF4C8", axis="z", segs=10)
+        for z in (-8.85, 8.6):  # tow hooks
+            p.box((0.5, 0.6, 0.5), (s * 2.3, 1.55, z), TK_METAL, bevel=0.08)
+        p.box((0.35, 0.12, 15.0), (s * 4.1, 3.5, 0), TK_DIRT, bevel=0)  # dirt along the bottom edge
+    p.box((1.8, 0.4, 0.25), (-2.1, 4.35, -8.68), TK_DARK, bevel=0.06)  # driver's visor
+    p.box((1.6, 0.18, 0.2), (-2.1, 4.6, -8.7), TK_METAL, bevel=0.04)
+    p.ball((0.9, 0.9, 0.6), (2.2, 4.2, -8.68), TK_METAL)  # hull machine gun (decoration)
+    p.cyl(0.18, 1.0, (2.2, 4.2, -9.1), TK_DARK, axis="z", segs=8)
+    for s in (-1, 1):
+        p.box((1.2, 0.8, 0.6), (s * 1.0, 5.15, -6.8), TK_SAND, bevel=0.2)  # hatches
+        p.cyl(0.8, 0.12, (s * 1.0, 5.6, -6.8), TK_METAL, axis="y", segs=10)
+    camo_side(p, 4.215, [(-5.5, 4.2, 1.5, TK_OLIVE), (-1.0, 4.0, 1.3, TK_BROWN), (3.0, 4.3, 1.6, TK_OLIVE), (6.8, 4.0, 1.1, TK_BROWN)], 10)
+    camo_side(p, -4.215, [(-6.2, 4.0, 1.2, TK_BROWN), (-2.4, 4.3, 1.5, TK_OLIVE), (1.8, 4.0, 1.2, TK_BROWN), (5.8, 4.2, 1.6, TK_OLIVE)], 20)
+    camo_top(p, 4.905, [(-2.8, -4.5, 1.5, TK_OLIVE), (2.6, -3.2, 1.3, TK_BROWN), (-3.2, 1.2, 1.0, TK_BROWN), (3.4, 1.0, 1.0, TK_OLIVE)], 30)
+    p.slab([(-3.6, -8.66), (-1.8, -8.7), (-2.4, -8.7), (-3.8, -8.64)], 3.7, 4.7, (0, 0, 0), TK_OLIVE, bevel=0)  # front plate streak
+    p.finish()
+
+    # fenders: a plate over each track with a mud flap in front; the shovel left, the pick right
+    for s, name in ((-1, "Tank_FenderL"), (1, "Tank_FenderR")):
+        p = Piece(name, exact=True)
+        x = s * 4.7
+        p.box((1.15, 0.12, 16.4), (x, 3.45, -0.2), TK_SAND, bevel=0.03)
+        p.box((1.15, 0.12, 1.3), (x, 3.2, -8.9), TK_SAND, rot=(-25, 0, 0), bevel=0.03)
+        p.box((1.15, 0.12, 0.9), (x, 3.25, 8.4), TK_SAND, rot=(20, 0, 0), bevel=0.03)
+        for z in (-6.0, 0.0, 6.0):
+            p.box((0.25, 0.25, 0.25), (s * 4.3, 3.62, z), TK_DARK, bevel=0.03)  # brackets
+        if s < 0:
+            p.cyl(0.18, 4.4, (x, 3.65, 0.6), TK_WOOD, axis="z", segs=8)  # shovel
+            p.box((0.75, 0.08, 1.1), (x, 3.62, -2.2), TK_METAL, bevel=0.05)
+        else:
+            p.cyl(0.18, 4.0, (x, 3.65, -1.0), TK_WOOD, axis="z", segs=8)  # pick
+            p.box((0.16, 0.16, 2.0), (x, 3.68, 1.0), TK_METAL, rot=(0, 90, 0), bevel=0.03)
+        p.box((0.2, 0.2, 1.6), (x, 3.62, 4.6), TK_DARK, bevel=0.03)  # a tow cable coil
+        p.finish()
+
+    track_piece("Tank_TrackL", -1)
+    track_piece("Tank_TrackR", 1)
+
+    # turret: flat front, straight sides, a rounded back, cupola left rear, stowage bin, spare links, 131
+    p = Piece("Tank_Turret", exact=True)
+    outline = [(-3.5, tz - 3.6), (3.5, tz - 3.6), (3.5, tz + 0.9)] + [(3.5 * math.cos(a * math.pi / 10), tz + 0.9 + 3.3 * math.sin(a * math.pi / 10)) for a in range(1, 10)] + [(-3.5, tz + 0.9)]
+    p.slab(outline, ty, ty + 2.8, (0, 0, 0), TK_SAND, bevel=0.22)
+    p.slab([(x * 0.94, z) for x, z in outline[:2]] + [(3.2, tz + 0.9), (-3.2, tz + 0.9)], ty + 2.8, ty + 2.95, (0, 0, 0), "B8A26E", bevel=0.04)
+    p.cyl(1.7, 0.9, (-1.7, ty + 3.2, tz + 2.0), TK_SAND, axis="y", segs=14, bevel=0.1)  # cupola
+    p.cyl(1.4, 0.18, (-1.7, ty + 3.72, tz + 2.0), TK_METAL, axis="y", segs=14)  # its hatch
+    for i in range(6):
+        a = i * math.pi / 3
+        p.box((0.35, 0.25, 0.1), (-1.7 + 0.85 * math.cos(a), ty + 3.25, tz + 2.0 + 0.85 * math.sin(a)), TK_DARK, rot=(0, -math.degrees(a) + 90, 0), bevel=0)
+    p.box((1.2, 0.15, 1.0), (1.4, ty + 2.98, tz + 0.6), TK_METAL, bevel=0.05)  # loader's hatch
+    p.box((4.2, 1.5, 1.4), (0, ty + 1.6, tz + 4.7), TK_SAND, bevel=0.15)  # stowage bin
+    p.box((4.0, 0.12, 1.3), (0, ty + 2.4, tz + 4.7), TK_BROWN, bevel=0.03)
+    for s in (-1, 1):
+        for z in (tz - 0.1, tz + 0.75):
+            p.box((0.22, 0.6, 0.75), (s * 3.62, ty + 1.5, z), TK_METAL, bevel=0.04)  # spare links
+            p.box((0.1, 0.2, 0.8), (s * 3.72, ty + 1.5, z), TK_DARK, bevel=0)
+        p.text("131", 2.0, 0.05, (s * 3.53, ty + 1.45, tz - 2.3), TK_NUM, s)
+        for k in range(3):
+            p.cyl(0.32, 0.6, (s * 3.1, ty + 2.2, tz - 3.4 + k * 0.4), TK_METAL, axis="y", rot=(-30, 0, 0), segs=8)  # smoke dischargers
+        camo_side(p, s * 3.515, [(tz + 1.4, ty + 1.8, 0.9, TK_OLIVE), (tz - 0.8, ty + 0.6, 0.7, TK_BROWN)], 40 + s)
+    camo_top(p, ty + 2.81, [(-2.2, tz - 2.2, 0.9, TK_OLIVE), (1.8, tz + 2.6, 1.0, TK_BROWN), (2.3, tz - 1.6, 0.7, TK_BROWN)], 50)
+    p.finish()
+
+    # mantlet: the gun shield round the trunnions, the sight beside the gun
+    p = Piece("Tank_Mantlet", exact=True)
+    p.box((4.3, 2.3, 0.9), (gx, gy, gz - 0.45), TK_SAND, bevel=0.3)
+    p.cyl(1.25, 0.8, (gx, gy, gz - 1.25), TK_SAND, axis="z", segs=14, bevel=0.1)
+    p.cyl(0.35, 0.2, (gx + 1.3, gy + 0.55, gz - 0.95), TK_DARK, axis="z", segs=8)
+    camo_side(p, 2.16, [(gz - 0.45, gy, 0.6, TK_OLIVE)], 60)
+    p.finish()
+
+    # gun: a long fat tube and a two-chamber muzzle brake (its pivot is TANK_GUN)
+    p = Piece("Tank_Barrel", exact=True)
+    z0, z1 = gz - 1.6, gz - 12.4
+    p.cyl(0.8, z0 - z1, (gx, gy, (z0 + z1) / 2), TK_METAL, axis="z", segs=14, d2=0.62)
+    p.cyl(0.95, 1.4, (gx, gy, z0 - 0.5), TK_METAL, axis="z", segs=14, bevel=0.06)  # the thicker root
+    for z in (z1 - 0.15, z1 - 1.05):
+        p.cyl(1.25, 0.55, (gx, gy, z), TK_METAL, axis="z", segs=14, bevel=0.08)
+    p.cyl(0.85, 1.3, (gx, gy, z1 - 0.6), TK_DARK, axis="z", segs=12)
+    p.cyl(0.4, 0.05, (gx, gy, z1 - 1.34), "0A0A0C", axis="z", segs=10)  # the bore
+    p.finish()
+
+    # exhausts: two tall pipes on the rear plate, each in a guard
+    p = Piece("Tank_Exhaust", exact=True)
+    for s in (-1, 1):
+        p.cyl(0.55, 2.4, (s * 1.7, 4.9, 8.65), TK_RUST, axis="y", segs=10, bevel=0.04)
+        p.cyl(0.4, 0.1, (s * 1.7, 6.12, 8.65), "0A0A0C", axis="y", segs=10)
+        p.box((0.9, 1.2, 0.12), (s * 1.7, 4.4, 8.98), TK_SAND, bevel=0.04)
+    p.finish()
+
+    # one road wheel: rubber tyre, a sand dish, a dark hub and its bolts
+    p = Piece("Tank_Wheel", exact=True)
+    p.cyl(2.8, 0.7, (0, 0, 0), TK_METAL, axis="x", segs=16, bevel=0.1)
+    p.cyl(2.3, 0.76, (0, 0, 0), TK_SAND, axis="x", segs=16)
+    p.cyl(0.8, 0.86, (0, 0, 0), TK_METAL, axis="x", segs=8)
+    for i in range(4):
+        a = i * math.pi / 2
+        p.cyl(0.16, 0.9, (0, math.cos(a) * 0.62, math.sin(a) * 0.62), TK_DARK, axis="x", segs=6)
+    p.finish()
+
+
 # ---------------------------------------------------------------- Map vehicles ---------------
 # The parked vehicles the maps used to build out of plain blocks, remade to the same footprint,
 # heights and colours (Map.luau car / boats, City.luau car / Bus, Factory.luau Forklift) in the kit's
@@ -1490,7 +1724,7 @@ def vehicles():
         bpy.data.objects[n].location = bpy.data.objects["City_Car"].location
 
 
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_")
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_", "Tank_")
 
 
 def build_all():
@@ -1506,6 +1740,7 @@ def build_all():
     police_car()
     sport_car()
     vehicles()
+    tank()
     # lay them out for a look (object origins stay at the attach point; only the display moves)
     x = 0
     for prefix in ("Soldier_", "Heavy_", "Worker_", "Zombie_"):
@@ -1536,6 +1771,18 @@ def build_all():
         w.location = Vector((60, 0, 0)) + R2B @ Vector((x * SPORT_WHEEL_AT[z][0], SPORT_WHEEL_AT[z][1], SPORT_WHEEL_AT[z][2]))
         w.rotation_euler = (0, 0, 0 if x > 0 else math.pi)
 
+    for n in TANK_PIECES:
+        bpy.data.objects[n].location = (0, 60, 0)
+    first = True
+    for x in (1, -1):
+        for at in TANK_WHEELS:
+            w = bpy.data.objects["Tank_Wheel"] if first else bpy.data.objects["Tank_Wheel"].copy()
+            if not first:
+                bpy.context.scene.collection.objects.link(w)
+                w.name = "_wheel_view"
+            first = False
+            w.location = Vector((0, 60, 0)) + R2B @ Vector((x * at[0], at[1], at[2]))
+            w.rotation_euler = (0, 0, 0 if x > 0 else math.pi)
 
 # where each body part sits on the standing dummy, relative to the UpperTorso (measured), for the layout only
 RIG = {

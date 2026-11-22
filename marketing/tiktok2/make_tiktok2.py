@@ -108,14 +108,16 @@ def main():
     # intro: the dummy and the weapons circling it
     raw = RAW / "intro.mp4"
     be = ffprobe_black_end(raw)
-    clips.append((["-ss", f"{be + 0.6:.3f}", "-i", str(raw)], INTRO_LEN, False))
     sfx_cues.append(("riser", 0.0, 0.8))
     d1 = say(*INTRO[0], 0.15)
-    say(INTRO[1][0], INTRO[1][1], 0.15 + d1 + 0.05)
-    title("WHICH WEAPON", 0.1, INTRO_LEN, 110, 230, "&H28E6FF&")
-    title("LAUNCHES THE", 0.25, INTRO_LEN, 110, 360)
-    title("FURTHEST?", 0.4, INTRO_LEN, 140, 510, "&H28E6FF&")
-    t = INTRO_LEN
+    d2 = say(INTRO[1][0], INTRO[1][1], 0.15 + d1 + 0.05)
+    intro_len = max(INTRO_LEN, 0.15 + d1 + 0.05 + d2 + 0.05)  # both intro lines end before the first weapon
+    # the orbit is ~12 s of capture: play it slower rather than freeze its last frame
+    clips.append((["-ss", f"{be + 0.6:.3f}", "-i", str(raw)], intro_len, min(SLOW, 11.5 / intro_len)))
+    title("WHICH WEAPON", 0.1, intro_len, 110, 230, "&H28E6FF&")
+    title("LAUNCHES THE", 0.25, intro_len, 110, 360)
+    title("FURTHEST?", 0.4, intro_len, 140, 510, "&H28E6FF&")
+    t = intro_len
 
     for seg in SEGS:
         raw = RAW / f"{seg['raw']}.mp4"
@@ -174,7 +176,7 @@ def main():
         groups = base.caption_groups([(w, s + at, e + at) for w, s, e in words])
         for i, g in enumerate(groups):
             s = g[0][1]
-            e = groups[i + 1][0][1] if i + 1 < len(groups) else g[-1][2] + 0.25
+            e = groups[i + 1][0][1] if i + 1 < len(groups) else g[-1][2] + 0.1
             parts = [f"{{\\kf{max(1, round((we - ws) * 100))}}}{w.upper()}" for w, ws, we in g]
             pop = "{\\fscx70\\fscy70\\t(0,80,\\fscx112\\fscy112)\\t(80,150,\\fscx100\\fscy100)}"
             ass.append(f"Dialogue: 0,{base.ts(s)},{base.ts(e)},{who},,0,0,0,,{pop}" + " ".join(parts))
@@ -202,7 +204,8 @@ def main():
             fc.append(f"[{i}:v]trim=end_frame=1,{crop},boxblur=12:2,eq=brightness=-0.3:saturation=1.2,"
                       f"loop=-1:1:0,fps=60,trim=duration={length:.3f},setpts=PTS-STARTPTS[v{i}]")
         else:
-            fc.append(f"[{i}:v]setpts=(PTS-STARTPTS)/{SLOW},fps=60,{crop},tpad=stop_mode=clone:stop_duration=3,"
+            speed = kind if isinstance(kind, float) else SLOW
+            fc.append(f"[{i}:v]setpts=(PTS-STARTPTS)/{speed},fps=60,{crop},tpad=stop_mode=clone:stop_duration=3,"
                       f"trim=duration={length:.3f},setpts=PTS-STARTPTS,fade=t=in:st=0:d=0.12:color=white[v{i}]")
         vlabels.append(f"[v{i}]")
     sub = str(HERE / "captions.ass").replace("\\", "/").replace(":", "\\:")

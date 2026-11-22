@@ -1,10 +1,17 @@
 -- What the first-time tutorial (server/Tutorial) shows: the player's own tutorial dummies outlined in
 -- yellow through walls (a Highlight each, gone once it is dead), a line at the top of the screen saying
 -- what to do (the player's "TutorialStep" attribute) and the controls hints under it ("Hint"). When a
--- line changes, the old text shrinks away and the new one pops in.
+-- line changes, the old text shrinks away and the new one pops in. On a phone the steps name the
+-- touch buttons, and the F-drag hints are left out (the GRAB button grabs, it does not drag).
+-- After the tutorial a goal line top right, under the cash (client/CashHud), names the cheapest weapon not owned yet.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
-local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
+local UserInputService = game:GetService("UserInputService")
+local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
+local Sfx = require(Shared:WaitForChild("Sfx"))
+local Progression = require(Shared:WaitForChild("Progression"))
+local Weapons = require(Shared:WaitForChild("Weapons"))
+local TouchControls = require(script.Parent:WaitForChild("TouchControls")) -- active(): playing by touch
 
 local TutorialHud = {}
 
@@ -78,14 +85,18 @@ function TutorialHud.start()
 		done = "Nice kick!",
 	}
 	local function showHint()
-		setLine(hintLabel, HINTS[player:GetAttribute("Hint")])
+		setLine(hintLabel, if TouchControls.active() then nil else HINTS[player:GetAttribute("Hint")])
 	end
 	player:GetAttributeChangedSignal("Hint"):Connect(showHint)
 	showHint()
 
 	local STEPS = {
 		kill = "Take out one of the glowing dummies!",
-		pick = "Hold Q to open your inventory and pick the HANDGUN",
+		pick = "Press Q to open your inventory and pick the HANDGUN",
+	}
+	local TOUCH_STEPS = {
+		kill = "Tap ATTACK to take out a glowing dummy!",
+		pick = "Tap the 🎒 backpack and pick the HANDGUN",
 	}
 	local COMPLETE = "TUTORIAL COMPLETE! Have fun."
 	local wasOn = false
@@ -95,7 +106,7 @@ function TutorialHud.start()
 			Sfx.ui(Sfx.TUTORIAL_STEP, 0.6)
 		end
 		if step then
-			setLine(label, STEPS[step])
+			setLine(label, (if TouchControls.active() then TOUCH_STEPS else STEPS)[step])
 		elseif wasOn then -- just done
 			setLine(label, COMPLETE)
 			task.delay(4, function()
@@ -107,6 +118,53 @@ function TutorialHud.start()
 		wasOn = step ~= nil
 	end
 	player:GetAttributeChangedSignal("TutorialStep"):Connect(show)
+	UserInputService.LastInputTypeChanged:Connect(function() -- a hybrid switched between touch and keys
+		task.defer(function() -- after TouchControls has judged the new input
+			if player:GetAttribute("TutorialStep") then
+				setLine(label, (if TouchControls.active() then TOUCH_STEPS else STEPS)[player:GetAttribute("TutorialStep")])
+			end
+			showHint()
+		end)
+	end)
+
+	-- The goal line: once the tutorial is done, the cheapest weapon not owned yet (the cash is client/CashHud).
+	local goal = line(46, 26, 0.34, Color3.new(1, 1, 1), 3)
+	goal.AnchorPoint, goal.Position = Vector2.new(1, 0), UDim2.new(1, -16, 0, 92) -- under the wanted stars and the cash (client/CashHud)
+	goal.TextXAlignment = Enum.TextXAlignment.Right
+	local function nextGoal(): string?
+		if player:GetAttribute("Tutorial") ~= false then
+			return nil -- not loaded, or still in the tutorial
+		end
+		local cash = player:GetAttribute(Progression.CASH) or 0
+		local best, bestPrice = nil, math.huge
+		for _, w in Weapons do
+			local price = Progression.PRICE[w.id]
+			if price and price < bestPrice and Progression.missing(player, w.id) then
+				best, bestPrice = w, price
+			end
+		end
+		if not best then
+			return nil
+		end
+		return if cash >= bestPrice then `BUY {best.name}!` else `NEXT: {best.name} {bestPrice}$`
+	end
+	local function showGoal()
+		local text = nextGoal()
+		if text and goal.Visible and goal.Text ~= text then
+			goal.Text = text -- the count went up: a little bump, no pop-out
+			local scale = goal:FindFirstChildOfClass("UIScale") :: UIScale
+			scale.Scale = 1.15
+			tween(scale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
+		else
+			setLine(goal, text)
+		end
+	end
+	player.AttributeChanged:Connect(function(attribute)
+		if attribute == "Tutorial" or attribute == Progression.CASH or attribute:sub(1, 3) == "Own" or attribute:sub(1, 4) == "Pass" then
+			showGoal()
+		end
+	end)
+	showGoal()
 
 	-- the outline: on a dummy marked for this player, until it dies
 	local function watch(model: Instance)

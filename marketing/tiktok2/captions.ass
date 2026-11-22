@@ -11,56 +11,56 @@ Style: Title,Arial Black,96,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 1,0:00:00.10,0:00:02.40,Title,,0,0,0,,{\pos(540,230)\c&H28E6FF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}WHICH WEAPON
-Dialogue: 1,0:00:00.25,0:00:02.40,Title,,0,0,0,,{\pos(540,360)\c&HFFFFFF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}LAUNCHES THE
-Dialogue: 1,0:00:00.40,0:00:02.40,Title,,0,0,0,,{\pos(540,510)\c&H28E6FF&\fs140}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FURTHEST?
-Dialogue: 1,0:00:02.40,0:00:05.73,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#6
-Dialogue: 1,0:00:02.45,0:00:05.73,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FRYING PAN
-Dialogue: 1,0:00:05.73,0:00:10.20,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#5
-Dialogue: 1,0:00:05.78,0:00:10.20,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}BASEBALL BAT
-Dialogue: 1,0:00:10.20,0:00:13.37,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#4
-Dialogue: 1,0:00:10.25,0:00:13.37,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}SLEDGEHAMMER
-Dialogue: 1,0:00:13.37,0:00:16.59,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#3
-Dialogue: 1,0:00:13.42,0:00:16.59,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}ROCKET LAUNCHER
-Dialogue: 1,0:00:16.59,0:00:21.02,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#2
-Dialogue: 1,0:00:16.64,0:00:21.02,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TNT
-Dialogue: 1,0:00:21.02,0:00:26.84,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#1
-Dialogue: 1,0:00:21.07,0:00:26.84,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TRIPLE C4
-Dialogue: 1,0:00:23.68,0:00:26.84,Title,,0,0,0,,{\pos(540,1000)\c&H50FF78&\fs90}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}NEW RECORD!
-Dialogue: 1,0:00:23.93,0:00:26.84,Title,,0,0,0,,{\pos(400,1210)\c&H50FF78&\fs280}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}6
-Dialogue: 1,0:00:24.23,0:00:26.84,Title,,0,0,0,,{\pos(680,1210)\c&H50FF78&\fs280}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}7
-Dialogue: 2,0:00:25.34,0:00:26.84,Title,,0,0,0,,{\pos(540,1460)\c&HFFFFFF&\fs120\t(0,80,\frz-6)\t(80,160,\frz6)\t(160,240,\frz-6)\t(240,320,\frz6)\t(320,400,\frz-6)\t(400,480,\frz6)\t(480,560,\frz-6)\t(560,640,\frz6)\t(640,720,\frz-6)\t(720,800,\frz6)\t(800,880,\frz-6)\t(880,960,\frz6)}HAHAHAHA!
-Dialogue: 1,0:00:26.89,0:00:30.14,Title,,0,0,0,,{\pos(540,330)\c&H28E6FF&\fs100}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FINAL RANKING
-Dialogue: 1,0:00:27.09,0:00:30.14,Title,,0,0,0,,{\pos(540,500)\c&H28E6FF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}1. TRIPLE C4  67.2
-Dialogue: 1,0:00:27.29,0:00:30.14,Title,,0,0,0,,{\pos(540,605)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}2. TNT  54.2
-Dialogue: 1,0:00:27.49,0:00:30.14,Title,,0,0,0,,{\pos(540,710)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}3. ROCKET LAUNCHER  40.9
-Dialogue: 1,0:00:27.69,0:00:30.14,Title,,0,0,0,,{\pos(540,815)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}4. SLEDGEHAMMER  24.5
-Dialogue: 1,0:00:27.89,0:00:30.14,Title,,0,0,0,,{\pos(540,920)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}5. BASEBALL BAT  9.9
-Dialogue: 1,0:00:28.09,0:00:30.14,Title,,0,0,0,,{\pos(540,1025)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}6. FRYING PAN  4.9
+Dialogue: 1,0:00:00.10,0:00:03.69,Title,,0,0,0,,{\pos(540,230)\c&H28E6FF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}WHICH WEAPON
+Dialogue: 1,0:00:00.25,0:00:03.69,Title,,0,0,0,,{\pos(540,360)\c&HFFFFFF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}LAUNCHES THE
+Dialogue: 1,0:00:00.40,0:00:03.69,Title,,0,0,0,,{\pos(540,510)\c&H28E6FF&\fs140}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FURTHEST?
+Dialogue: 1,0:00:03.69,0:00:07.02,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#6
+Dialogue: 1,0:00:03.74,0:00:07.02,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FRYING PAN
+Dialogue: 1,0:00:07.02,0:00:11.48,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#5
+Dialogue: 1,0:00:07.07,0:00:11.48,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}BASEBALL BAT
+Dialogue: 1,0:00:11.48,0:00:14.66,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#4
+Dialogue: 1,0:00:11.53,0:00:14.66,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}SLEDGEHAMMER
+Dialogue: 1,0:00:14.66,0:00:17.87,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#3
+Dialogue: 1,0:00:14.71,0:00:17.87,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}ROCKET LAUNCHER
+Dialogue: 1,0:00:17.87,0:00:22.31,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#2
+Dialogue: 1,0:00:17.92,0:00:22.31,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TNT
+Dialogue: 1,0:00:22.31,0:00:28.13,Title,,0,0,0,,{\pos(540,105)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}#1
+Dialogue: 1,0:00:22.36,0:00:28.13,Title,,0,0,0,,{\pos(540,215)\c&HFFFFFF&\fs88}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TRIPLE C4
+Dialogue: 1,0:00:24.97,0:00:28.13,Title,,0,0,0,,{\pos(540,1000)\c&H50FF78&\fs90}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}NEW RECORD!
+Dialogue: 1,0:00:25.22,0:00:28.13,Title,,0,0,0,,{\pos(400,1210)\c&H50FF78&\fs280}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}6
+Dialogue: 1,0:00:25.52,0:00:28.13,Title,,0,0,0,,{\pos(680,1210)\c&H50FF78&\fs280}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}7
+Dialogue: 2,0:00:26.63,0:00:28.13,Title,,0,0,0,,{\pos(540,1460)\c&HFFFFFF&\fs120\t(0,80,\frz-6)\t(80,160,\frz6)\t(160,240,\frz-6)\t(240,320,\frz6)\t(320,400,\frz-6)\t(400,480,\frz6)\t(480,560,\frz-6)\t(560,640,\frz6)\t(640,720,\frz-6)\t(720,800,\frz6)\t(800,880,\frz-6)\t(880,960,\frz6)}HAHAHAHA!
+Dialogue: 1,0:00:28.18,0:00:31.43,Title,,0,0,0,,{\pos(540,330)\c&H28E6FF&\fs100}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}FINAL RANKING
+Dialogue: 1,0:00:28.38,0:00:31.43,Title,,0,0,0,,{\pos(540,500)\c&H28E6FF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}1. TRIPLE C4  67.2
+Dialogue: 1,0:00:28.58,0:00:31.43,Title,,0,0,0,,{\pos(540,605)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}2. TNT  54.2
+Dialogue: 1,0:00:28.78,0:00:31.43,Title,,0,0,0,,{\pos(540,710)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}3. ROCKET LAUNCHER  40.9
+Dialogue: 1,0:00:28.98,0:00:31.43,Title,,0,0,0,,{\pos(540,815)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}4. SLEDGEHAMMER  24.5
+Dialogue: 1,0:00:29.18,0:00:31.43,Title,,0,0,0,,{\pos(540,920)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}5. BASEBALL BAT  9.9
+Dialogue: 1,0:00:29.38,0:00:31.43,Title,,0,0,0,,{\pos(540,1025)\c&HFFFFFF&\fs70}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}6. FRYING PAN  4.9
 Dialogue: 0,0:00:00.15,0:00:01.02,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf24}WHICH {\kf23}WEAPON {\kf27}LAUNCHES
 Dialogue: 0,0:00:01.02,0:00:01.60,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf4}A {\kf35}RAGDOLL {\kf7}THE
-Dialogue: 0,0:00:01.60,0:00:02.63,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf78}FURTHEST?
-Dialogue: 0,0:00:02.43,0:00:03.89,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf28}LET'S {\kf29}TEST {\kf50}IT!
-Dialogue: 0,0:00:02.45,0:00:03.67,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf31}FRYING {\kf62}PAN!
-Dialogue: 0,0:00:03.96,0:00:04.58,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf48}BONK.
-Dialogue: 0,0:00:04.58,0:00:05.83,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf28}FIVE {\kf68}STUDS.
-Dialogue: 0,0:00:05.78,0:00:07.05,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf45}BASEBALL {\kf51}BAT!
-Dialogue: 0,0:00:07.82,0:00:08.71,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf34}HUGE {\kf38}AIR...
-Dialogue: 0,0:00:08.71,0:00:10.30,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf24}ONLY {\kf20}TEN {\kf78}STUDS!
-Dialogue: 0,0:00:10.25,0:00:11.42,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf93}SLEDGEHAMMER!
-Dialogue: 0,0:00:11.88,0:00:12.61,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf51}TWENTY-FOUR {\kf7}AND {\kf2}A
-Dialogue: 0,0:00:12.61,0:00:13.47,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf62}HALF!
-Dialogue: 0,0:00:13.42,0:00:14.83,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf39}ROCKET {\kf72}LAUNCHER!
-Dialogue: 0,0:00:15.23,0:00:16.69,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf49}FORTY-ONE {\kf69}STUDS!
-Dialogue: 0,0:00:16.64,0:00:17.02,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf29}T.
-Dialogue: 0,0:00:17.02,0:00:17.31,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}N.
-Dialogue: 0,0:00:17.31,0:00:17.95,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf40}T!
-Dialogue: 0,0:00:18.78,0:00:19.63,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf77}FIFTY-FOUR!
-Dialogue: 0,0:00:19.63,0:00:20.23,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf17}WAY {\kf22}PAST {\kf7}THE
-Dialogue: 0,0:00:20.23,0:00:21.12,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf64}ROCKET!
-Dialogue: 0,0:00:21.07,0:00:22.53,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf35}TRIPLE {\kf82}C4!
-Dialogue: 0,0:00:23.48,0:00:24.48,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf92}SIXTY-SEVEN?!
-Dialogue: 0,0:00:24.48,0:00:25.54,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}SIX {\kf50}SEVEN!
-Dialogue: 0,0:00:28.19,0:00:28.91,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf22}WHICH {\kf23}WEAPON {\kf16}SHOULD
-Dialogue: 0,0:00:28.91,0:00:30.25,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}WE {\kf23}TEST {\kf68}NEXT?
-Dialogue: 0,0:00:30.05,0:00:31.37,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf37}COMMENT {\kf66}BELOW!
+Dialogue: 0,0:00:01.60,0:00:02.48,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf78}FURTHEST?
+Dialogue: 0,0:00:02.43,0:00:03.74,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf28}LET'S {\kf29}TEST {\kf50}IT!
+Dialogue: 0,0:00:03.74,0:00:04.81,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf31}FRYING {\kf61}PAN!
+Dialogue: 0,0:00:05.24,0:00:05.87,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf48}BONK.
+Dialogue: 0,0:00:05.87,0:00:06.97,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf28}FIVE {\kf68}STUDS.
+Dialogue: 0,0:00:07.07,0:00:08.19,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf45}BASEBALL {\kf51}BAT!
+Dialogue: 0,0:00:09.10,0:00:10.00,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf34}HUGE {\kf38}AIR...
+Dialogue: 0,0:00:10.00,0:00:11.43,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf24}ONLY {\kf20}TEN {\kf78}STUDS!
+Dialogue: 0,0:00:11.53,0:00:12.56,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf93}SLEDGEHAMMER!
+Dialogue: 0,0:00:13.16,0:00:13.89,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf51}TWENTY-FOUR {\kf7}AND {\kf2}A
+Dialogue: 0,0:00:13.89,0:00:14.61,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf62}HALF!
+Dialogue: 0,0:00:14.71,0:00:15.97,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf39}ROCKET {\kf72}LAUNCHER!
+Dialogue: 0,0:00:16.51,0:00:17.82,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf49}FORTY-ONE {\kf69}STUDS!
+Dialogue: 0,0:00:17.92,0:00:18.31,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf29}T.
+Dialogue: 0,0:00:18.31,0:00:18.60,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}N.
+Dialogue: 0,0:00:18.60,0:00:19.09,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf40}T!
+Dialogue: 0,0:00:20.07,0:00:20.91,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf77}FIFTY-FOUR!
+Dialogue: 0,0:00:20.91,0:00:21.52,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf17}WAY {\kf22}PAST {\kf7}THE
+Dialogue: 0,0:00:21.52,0:00:22.26,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf64}ROCKET!
+Dialogue: 0,0:00:22.36,0:00:23.66,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf35}TRIPLE {\kf82}C4!
+Dialogue: 0,0:00:24.77,0:00:25.77,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf92}SIXTY-SEVEN?!
+Dialogue: 0,0:00:25.77,0:00:26.68,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}SIX {\kf50}SEVEN!
+Dialogue: 0,0:00:29.48,0:00:30.20,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf22}WHICH {\kf23}WEAPON {\kf16}SHOULD
+Dialogue: 0,0:00:30.20,0:00:31.39,M,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}WE {\kf23}TEST {\kf68}NEXT?
+Dialogue: 0,0:00:31.34,0:00:32.51,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf37}COMMENT {\kf66}BELOW!

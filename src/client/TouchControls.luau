@@ -3,7 +3,7 @@
 --  * EASY (the default, the TouchSimple setting): aim assist (shots bend to a dummy just off the
 --    crosshair, the view drifts onto it while attacking or aiming), always running, and the plain
 --    jump only: no double jump, wall run, cling, slide or slam (init.client asks mv.simple()).
---  * PRO: every move, with RUN / SLIDE / SLAM buttons of their own.
+--  * PRO: every move, with RUN / SLIDE buttons of their own (SLAM is cut for now, init.client mv.cut).
 -- The buttons press init.client's own input handlers (mv.began / mv.ended) with a stand-in input,
 -- so a touch does exactly what the mouse and keys do. Roblox's own action buttons for those moves
 -- (ContextActionService) are hidden: these take their place.
@@ -50,7 +50,7 @@ local LAYOUT = {
 	View = { -35, -160, 48, "VIEW" },
 	Run = { -160, -100, 50, "RUN", true },
 	Slide = { -165, -160, 48, "SLIDE", true },
-	Slam = { -220, -100, 50, "SLAM", true },
+	-- Slam = { -220, -100, 50, "SLAM", true }, -- cut for now (init.client mv.cut.slam)
 }
 local CAS_ACTIONS = { "Sprint", "Crouch", "Dash", "Slam" } -- init.client's bind()
 
@@ -196,9 +196,6 @@ function TouchControls.start(mv, dummyFolder: Folder, aiming: () -> boolean)
 	end)
 	button("Slide").Activated:Connect(function()
 		mv.crouchHeld = not mv.crouchHeld
-	end)
-	button("Slam").Activated:Connect(function()
-		mv.armSlam()
 	end)
 
 	local mode = Instance.new("TextButton") -- EASY / PRO

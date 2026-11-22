@@ -667,7 +667,7 @@ local STATS = {
 	{ name = "KILLS", attribute = "Kills", show = tostring, color = YELLOW },
 	{ name = "BONES BROKEN", attribute = "StatBones", show = tostring, color = YELLOW },
 	{ name = "DUMMIES THROWN", attribute = "StatThrown", show = tostring, color = RED },
-	{ name = "BEST COMBO", attribute = "StatCombo", show = function(n) return n .. "x" end, color = YELLOW },
+	{ name = "DISTANCE WALKED", attribute = "StatWalked", show = function(n) return string.format("%.2f km", n * STUD_METRES / 1000) end, color = YELLOW },
 	{ name = "LONGEST THROW", attribute = "StatThrow", show = function(n) return math.floor(n * STUD_METRES) .. " m" end, color = YELLOW },
 	"BACK",
 	{ name = "PLAYTIME", attribute = "StatPlaytime", show = function(n)
@@ -926,9 +926,11 @@ local function turn(to)
 end
 shopP.onClick = function()
 	task.spawn(turn, SHOP_FACE)
+	ReplicatedStorage.Remotes.Action:FireServer("opened", "Shop") -- the Menus funnel (server/Funnels)
 end
 statP.onClick = function()
 	task.spawn(turn, STATS_FACE)
+	ReplicatedStorage.Remotes.Action:FireServer("opened", "Stats")
 end
 local function backToMenu()
 	task.spawn(turn, MENU_FACE)
@@ -1014,6 +1016,7 @@ function Menu.reopen()
 	if Menu.active then
 		return
 	end
+	ReplicatedStorage.Remotes.Action:FireServer("opened", "Menu") -- the Menus funnel (server/Funnels)
 	if SHARED.RagdollMenuCopy then -- the last copy has run; nothing needs the instance any more
 		SHARED.RagdollMenuCopy:Destroy()
 	end

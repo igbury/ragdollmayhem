@@ -1,0 +1,74 @@
+[Script Info]
+ScriptType: v4.00+
+PlayResX: 1080
+PlayResY: 1920
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: F,Arial Black,88,&H00B469FF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,7,4,2,60,60,440,1
+Style: Title,Arial Black,96,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,9,4,5,60,60,0,1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+Dialogue: 1,0:00:00.00,0:00:05.48,Title,,0,0,0,,{\pos(540,560)\c&H28E6FF&\fs160}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}RAGDOLL
+Dialogue: 1,0:00:00.10,0:00:05.48,Title,,0,0,0,,{\pos(540,710)\c&H28E6FF&\fs160}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MAYHEM
+Dialogue: 1,0:00:00.60,0:00:05.48,Title,,0,0,0,,{\pos(540,1250)\c&H50FF78&\fs115}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}BETA OUT NOW!
+Dialogue: 1,0:00:05.48,0:00:07.20,Title,,0,0,0,,{\pos(540,260)\c&HFFFFFF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}WHAT'S
+Dialogue: 1,0:00:05.58,0:00:07.20,Title,,0,0,0,,{\pos(540,380)\c&H28E6FF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}DIFFERENT?
+Dialogue: 1,0:00:07.20,0:00:12.44,Title,,0,0,0,,{\pos(540,260)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}PARKOUR
+Dialogue: 1,0:00:07.30,0:00:12.44,Title,,0,0,0,,{\pos(540,390)\c&HFFFFFF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MOVES
+Dialogue: 1,0:00:12.44,0:00:15.60,Title,,0,0,0,,{\pos(540,260)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}GRAB
+Dialogue: 1,0:00:12.54,0:00:15.60,Title,,0,0,0,,{\pos(540,390)\c&HFFFFFF&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}& PUNT
+Dialogue: 1,0:00:15.60,0:00:21.48,Title,,0,0,0,,{\pos(540,260)\c&HFFFFFF&\fs110}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}THE DUMMIES
+Dialogue: 1,0:00:15.70,0:00:21.48,Title,,0,0,0,,{\pos(540,380)\c&H28E6FF&\fs125}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}ARE ALIVE
+Dialogue: 1,0:00:21.48,0:00:27.52,Title,,0,0,0,,{\pos(540,330)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}TOOLBOX
+Dialogue: 1,0:00:27.52,0:00:30.52,Title,,0,0,0,,{\pos(540,260)\c&HFFFFFF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}DRIVE
+Dialogue: 1,0:00:27.62,0:00:30.52,Title,,0,0,0,,{\pos(540,390)\c&H28E6FF&\fs130}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}A TANK
+Dialogue: 1,0:00:30.52,0:00:34.64,Title,,0,0,0,,{\pos(540,260)\c&H28E6FF&\fs125}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}MYTH BOSSES
+Dialogue: 1,0:00:34.64,0:00:39.64,Title,,0,0,0,,{\pos(540,260)\c&H50FF78&\fs120}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}PLAY THE BETA
+Dialogue: 1,0:00:34.84,0:00:39.64,Title,,0,0,0,,{\pos(540,380)\c&HFFFFFF&\fs80}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}COMMENT YOUR IDEAS
+Dialogue: 1,0:00:36.24,0:00:39.64,Title,,0,0,0,,{\pos(540,980)\c&HFFFFFF&\fs80}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}SEARCH:
+Dialogue: 1,0:00:36.34,0:00:39.64,Title,,0,0,0,,{\pos(540,1090)\c&H28E6FF&\fs105}{\fscx40\fscy40\t(0,110,\fscx115\fscy115)\t(110,190,\fscx100\fscy100)}RAGDOLL MAYHEM
+Dialogue: 0,0:00:00.39,0:00:01.39,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf22}RAGDOLL {\kf48}MAYHEM {\kf11}BY
+Dialogue: 0,0:00:01.39,0:00:02.83,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf58}CADABULA {\kf56}STUDIOS {\kf11}IS
+Dialogue: 0,0:00:02.83,0:00:03.60,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf18}OUT {\kf24}NOW {\kf11}IN
+Dialogue: 0,0:00:03.60,0:00:05.18,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf45}BETA {\kf5}ON {\kf72}ROBLOX!
+Dialogue: 0,0:00:05.74,0:00:06.30,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf11}SO {\kf13}WHAT {\kf20}MAKES
+Dialogue: 0,0:00:06.30,0:00:07.30,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf11}IT {\kf59}DIFFERENT?
+Dialogue: 0,0:00:07.39,0:00:07.85,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf2}YOU {\kf19}MOVE {\kf13}LIKE
+Dialogue: 0,0:00:07.85,0:00:09.01,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf4}A {\kf97}STUNTMAN:
+Dialogue: 0,0:00:09.01,0:00:09.81,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf72}SPRINT,
+Dialogue: 0,0:00:09.81,0:00:10.53,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf64}SLIDE,
+Dialogue: 0,0:00:10.53,0:00:10.95,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf40}DASH,
+Dialogue: 0,0:00:10.95,0:00:11.68,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}AND {\kf32}SLAM {\kf19}DOWN
+Dialogue: 0,0:00:11.68,0:00:12.54,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf13}FROM {\kf12}THE {\kf26}AIR!
+Dialogue: 0,0:00:12.70,0:00:13.21,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf3}GRAB {\kf4}A {\kf27}DUMMY
+Dialogue: 0,0:00:13.21,0:00:14.31,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf16}BY {\kf6}THE {\kf66}COLLAR...
+Dialogue: 0,0:00:14.31,0:00:15.05,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf2}AND {\kf38}PUNT {\kf11}IT
+Dialogue: 0,0:00:15.05,0:00:15.70,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf40}AWAY!
+Dialogue: 0,0:00:15.87,0:00:16.51,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf2}AND {\kf12}THE {\kf36}DUMMIES
+Dialogue: 0,0:00:16.51,0:00:17.51,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf18}ARE {\kf61}ALIVE!
+Dialogue: 0,0:00:17.51,0:00:18.66,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf38}THEY {\kf64}TALK,
+Dialogue: 0,0:00:18.66,0:00:19.75,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf27}START {\kf74}FIGHTS,
+Dialogue: 0,0:00:19.75,0:00:20.42,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}AND {\kf32}COPS {\kf13}SHOW
+Dialogue: 0,0:00:20.42,0:00:20.99,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf11}UP {\kf5}TO {\kf27}ARREST
+Dialogue: 0,0:00:20.99,0:00:21.58,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf34}THEM!
+Dialogue: 0,0:00:21.73,0:00:22.45,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf4}OPEN {\kf6}THE {\kf49}TOOLBOX
+Dialogue: 0,0:00:22.45,0:00:23.92,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf12}AND {\kf33}SPAWN {\kf80}ANYONE:
+Dialogue: 0,0:00:23.92,0:00:24.73,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf73}SOLDIERS,
+Dialogue: 0,0:00:24.73,0:00:25.72,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf96}WORKERS...
+Dialogue: 0,0:00:25.72,0:00:26.33,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf5}OR {\kf8}A {\kf27}WHOLE
+Dialogue: 0,0:00:26.33,0:00:27.62,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf48}ZOMBIE {\kf48}HORDE!
+Dialogue: 0,0:00:27.70,0:00:28.79,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf19}NEED {\kf19}MORE {\kf48}CHAOS?
+Dialogue: 0,0:00:28.79,0:00:29.35,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf30}HOP {\kf5}IN {\kf4}A
+Dialogue: 0,0:00:29.35,0:00:30.06,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf46}TANK!
+Dialogue: 0,0:00:30.64,0:00:31.51,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf1}AND {\kf26}MYTH {\kf41}BOSSES
+Dialogue: 0,0:00:31.51,0:00:32.33,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf26}HUNT {\kf6}THE {\kf36}DUMMIES
+Dialogue: 0,0:00:32.33,0:00:33.41,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf104}DOWN...
+Dialogue: 0,0:00:33.41,0:00:34.74,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf12}AND {\kf18}EAT {\kf67}THEM.
+Dialogue: 0,0:00:34.76,0:00:35.54,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf9}IT'S {\kf4}A {\kf48}BETA,
+Dialogue: 0,0:00:35.54,0:00:35.99,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf11}SO {\kf13}TELL {\kf11}US
+Dialogue: 0,0:00:35.99,0:00:36.47,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf6}WHAT {\kf11}TO {\kf12}ADD
+Dialogue: 0,0:00:36.47,0:00:37.52,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf46}NEXT!
+Dialogue: 0,0:00:37.52,0:00:38.58,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf5}SEARCH {\kf42}RAGDOLL {\kf42}MAYHEM
+Dialogue: 0,0:00:38.58,0:00:39.74,F,,0,0,0,,{\fscx70\fscy70\t(0,80,\fscx112\fscy112)\t(80,150,\fscx100\fscy100)}{\kf11}ON {\kf72}ROBLOX!

@@ -1,5 +1,6 @@
--- Server-owned bosses. They never fight players and cannot be killed: let out of their cage they hunt
--- the dummies (init.server.luau hands over `prey`), crush them with their attack and eat them.
+-- Server-owned bosses. They never fight players and cannot be killed: let out of their cage they roam the
+-- whole arena map hunting every dummy (init.server.luau hands over `prey`), crush and eat them, and
+-- smash the structures in their way. Only their pedestal puts them back in the cage.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +9,7 @@ local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
+local Map = require(script.Parent.Map)
 local Monsters = {}
 -- a boss's voice: the zombie clips, pitched down to its size
 local function voice(d, id, volume)
@@ -257,12 +259,6 @@ local function actorOf(part)
 	while at and at.Parent ~= folder do at = at.Parent end
 	return at and actors[at]
 end
-local function lineClear(d, from, to)
-	local offset = to - from
-	if offset.Magnitude < 0.01 then return true end
-	local result = workspace:Raycast(from, offset, d.ray)
-	return not result or (result.Position - to).Magnitude < 4
-end
 local function playerRoot(player)
 	local c = player.Character
 	local h = c and c:FindFirstChildOfClass("Humanoid")
@@ -271,10 +267,22 @@ local function playerRoot(player)
 end
 local function release(d)
 	if d.state ~= "Caged" then return end
-	d.prompt.Enabled = false
+	d.prompt.ActionText = "Recall"
 	setBars(d.cage, false)
 	openGate(d, true)
 	state(d, "Idle")
+end
+local drop
+-- The pedestal again: whatever it is doing, it is back on its stand behind a shut gate.
+local function recall(d)
+	if d.state == "Caged" then return end
+	drop(d)
+	d.moving, d.goal, d.skip = 0, nil, {}
+	d.model:PivotTo(CFrame.new(d.home) * CFrame.Angles(0, math.pi, 0))
+	d.prompt.ActionText = "Release"
+	setBars(d.cage, true)
+	openGate(d, false)
+	state(d, "Caged")
 end
 -- A weapon hit on a boss: it flinches and lets itself out, nothing more. True when `part` is a boss's,
 -- so the shot stops there.
@@ -339,7 +347,7 @@ function Monsters.spawn(kind, home, cage)
 	local dummies = workspace:FindFirstChild("Dummies")
 	ray.FilterDescendantsInstances = kit and { model, kit, cage:FindFirstChild("Gate"), cage:FindFirstChild("Floors"), cage:FindFirstChild("Challenge"), cage:FindFirstChild("Sign"), dummies } or { model, cage, dummies }
 	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart,
-		home = home, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0 }
+		home = home, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0, skip = {} }
 	actors[model] = d
 	d.joints = {}
 	for _, obj in model:GetDescendants() do if obj:IsA("Motor6D") then d.joints[obj.Name] = obj end end
@@ -347,35 +355,59 @@ function Monsters.spawn(kind, home, cage)
 	openGate(d, false)
 	local connection = prompt.Triggered:Connect(function(player)
 		local r = playerRoot(player)
-		if r and (r.Position - button.Position).Magnitude <= 14 and player:GetAttribute("Map") == "ARENA" then release(d) end
+		if r and (r.Position - button.Position).Magnitude <= 14 and player:GetAttribute("Map") == "ARENA" then
+			if d.state == "Caged" then release(d) else recall(d) end
+		end
 	end)
 	model.Destroying:Connect(function() actors[model] = nil; connection:Disconnect() end)
 	return model
 end
--- The nearest dummy it can see near its dungeon: (model, torso).
+-- The nearest dummy anywhere on the arena map (over its ground, not one it gave up on): (model, torso).
 local function findTarget(d)
-	local best, torso, distance = nil, nil, 48
-	local eye = d.root.Position + Vector3.yAxis * 6 * d.def.scale
+	local best, torso, distance = nil, nil, math.huge
+	local now = os.clock()
 	prey.each(function(model, part)
-		if (part.Position - d.home).Magnitude >= 65 then return end
+		if (d.skip[model] or 0) > now then return end
 		local gap = (part.Position - d.root.Position).Magnitude
-		if gap < distance and lineClear(d, eye, part.Position) then best, torso, distance = model, part, gap end
+		if gap < distance and groundAt(part.Position, 2) then best, torso, distance = model, part, gap end
 	end)
 	return best, torso
+end
+-- No dummy left: a random spot on the arena ground, never in another boss's pit.
+local function wanderGoal(d)
+	for _ = 1, 6 do
+		local spot = Vector3.new(math.random(-240, 240), 0, math.random(-240, 240))
+		local y = groundAt(spot + Vector3.yAxis * 30, 0)
+		local pit = false
+		for _, b in YARD.x do
+			if b ~= d.home.X and inDungeon(spot, b, YARD.z) then pit = true end
+		end
+		if y and not pit then return Vector3.new(spot.X, y, spot.Z) end
+	end
+	return nil
 end
 local function face(d, position)
 	local toward = (position - d.root.Position) * XZ
 	if toward.Magnitude > 0.1 then d.root.CFrame = CFrame.lookAt(d.root.Position, d.root.Position + toward) end
 end
+-- Walls in its way get knocked down (structures only: the floor and the unbreakable stay).
+local function smash(d, at)
+	if os.clock() < (d.nextSmash or 0) then return end
+	d.nextSmash = os.clock() + 0.4
+	Map.blast(at, 4 * d.def.scale, 70, nil, true)
+end
 local function move(d, direction, speed, dt)
 	local step = flat(direction) * speed * dt
 	local hit = workspace:Blockcast(d.root.CFrame, Vector3.new(4, 5, 3) * d.def.scale, step, d.ray)
-	if hit then return false end
+	if hit and hit.Instance.Anchored then -- loose bricks it just wades through
+		smash(d, hit.Position)
+		return false
+	end
 	local nextPosition = d.root.Position + step
-	if ((nextPosition - d.home) * XZ).Magnitude > 60 then return false end
-	-- follow the ground: off a plinth, up a step (never a climb taller than a step)
+	-- follow the ground: off a plinth, up a step (never a climb taller than a step), never off an edge
 	local ground = groundAt(nextPosition - Vector3.yAxis * 6 * d.def.scale, 5)
-	if ground then step += Vector3.yAxis * (ground + 6 * d.def.scale - d.root.Position.Y) end
+	if not ground then return false end
+	step += Vector3.yAxis * (ground + 6 * d.def.scale - d.root.Position.Y)
 	d.root.CFrame += step
 	return true
 end
@@ -383,6 +415,7 @@ local CRUSH = 6 -- blow power on a dummy (init.server hit()): enough to break th
 local function strike(d)
 	local center = d.impact
 	Sfx.play({ Sfx.SLEDGEHAMMER_SLAM, 0.7, 1 }, center)
+	Map.blast(center, d.def.radius * 0.5, 70, nil, true)
 	prey.each(function(model, torso)
 		if ((torso.Position - center) * XZ).Magnitude <= d.def.radius and math.abs(torso.Position.Y - center.Y) < 14 then
 			prey.crush(model, center, CRUSH)
@@ -392,7 +425,7 @@ local function strike(d)
 end
 -- The dummy in its hands: lifted to the mouth (welded to the boss), bitten limb by limb, then gone.
 local EAT_TIME, BITE_EVERY = 3.2, 0.7
-local function drop(d)
+function drop(d)
 	if d.weld then d.weld:Destroy() end
 	d.meal, d.weld = nil, nil
 end
@@ -444,10 +477,19 @@ local function think(d, now)
 		if now < d.untilTime then return end
 		state(d, "Idle")
 	elseif d.state == "Windup" or d.state == "Strike" or d.state == "Charge" then return end
+	-- stuck on something it cannot break: give up on that dummy (or spot) for a while
+	if d.moving == 0 and (d.state == "Chase" or d.state == "Return") then
+		d.stuck = (d.stuck or 0) + 1
+		if d.stuck >= 30 then -- 3 s
+			if d.chasing then d.skip[d.chasing] = os.clock() + 12 end
+			d.goal, d.stuck = nil, 0
+		end
+	else d.stuck = 0 end
 	local target, r = findTarget(d)
+	d.chasing = target
 	if not r then
-		if (d.root.Position - d.home).Magnitude < 1 then state(d, "Idle"); d.moving = 0
-		else state(d, "Return"); face(d, route(d, d.home)) end
+		if not d.goal or ((d.goal - d.root.Position) * XZ).Magnitude < 4 then d.goal = wanderGoal(d) end
+		if d.goal then state(d, "Return"); face(d, route(d, d.goal)) else state(d, "Idle"); d.moving = 0 end
 		return
 	end
 	local dist = ((r.Position - d.root.Position) * XZ).Magnitude
@@ -562,6 +604,7 @@ function Monsters.start(remotes, api)
 		plaque(arch, def.name, LOOK.marble, Enum.Font.FredokaOne)
 		Monsters.spawn(kind, home, cage)
 	end
+	if map then table.insert(floors, map) end -- out of the yard it walks the whole arena map
 	groundParams.FilterDescendantsInstances = floors
 	local accumulator, poseClock = 0, 0
 	RunService.Heartbeat:Connect(function(dt)

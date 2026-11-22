@@ -1,5 +1,5 @@
 # Writes src/server/CarVoxels.luau: every vehicle piece of the kit (build.py police_car / sport_car /
-# vehicles) as the cubes of its surface, so it can break into cubes like the rest of the map.
+# tank / vehicles) as the cubes of its surface, so it can break into cubes like the rest of the map.
 # Run headless after build.py (army.blend saved):
 #   blender -b assets/army/army.blend --python assets/army/voxels.py
 # A cube sits on every grid cell that the piece's surface passes through (that is what keeps the
@@ -17,7 +17,8 @@ R2B = Matrix(((-1, 0, 0), (0, 0, 1), (0, 1, 0)))
 B2R = R2B.inverted()
 SIZE = 1.0
 CARS = ("Cop_Body", "Cop_Wheel", "Sport_Body", "Sport_Hood", "Sport_BumperF", "Sport_BumperR", "Sport_DoorL",
-        "Sport_DoorR", "Sport_Cabin", "Sport_Wing", "Sport_Wheel")
+        "Sport_DoorR", "Sport_Cabin", "Sport_Wing", "Sport_Wheel", "Tank_Hull", "Tank_FenderL", "Tank_FenderR",
+        "Tank_TrackL", "Tank_TrackR", "Tank_Turret", "Tank_Mantlet", "Tank_Barrel", "Tank_Exhaust", "Tank_Wheel")
 # the map's vehicles (Map.luau skins): their bricks stand on the ground, so their rows start at y 0
 # (cell centres half a cube up); the bus is in 2-stud cubes like the old one (a hit splits them to 1)
 STANDING = {"Park_Car": 1.0, "City_Car": 1.0, "City_TaxiSign": 1.0, "City_PoliceLights": 1.0, "City_Bus": 2.0,

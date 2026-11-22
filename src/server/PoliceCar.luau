@@ -13,6 +13,12 @@
 -- cubes are gone the car falls apart: driver thrown out, every cube and the wheels off, then it goes.
 --
 -- Car space: ground under the middle of the car at y 0, front toward -Z (the model's LookVector).
+--
+-- The tank (server/Tank.luau) is a kind here too: it fills in KINDS.Tank's build / preview / wreck
+-- and uses the shared pieces below (PoliceCar.parts). A tank's pieces turn with its turret, so every
+-- piece keeps its own origin ("Origin": the piece's ground point seen from its collider) and the part
+-- it is mounted on (its "Mount" joint's Part0); car attributes Armor (blast reach factor), WreckAt and
+-- CrashAt override the car defaults.
 
 local CollectionService = game:GetService("CollectionService")
 local Debris = game:GetService("Debris")
@@ -41,6 +47,7 @@ local SPECS = {
 		track = 3.2, front = -5.0, rear = 5.2, siren = false, seatY = 0.8,
 		cabin = { size = Vector3.new(6.0, 1.4, 8.0), at = Vector3.new(0, 3.95, 1.0) },
 	},
+	Tank = { label = "Tank", wheel = "Tank_Wheel", fit = Vector3.new(11.5, 8, 21) }, -- built by server/Tank.luau
 }
 PoliceCar.KINDS = SPECS
 
@@ -55,6 +62,7 @@ local LOOSE_LIFE = 6 -- seconds the wreck's frame lies about, like the map's loo
 local CRASH = 30 -- studs/s lost within CRASH_WINDOW that count as a crash
 local CRASH_WINDOW = 0.12
 local WRECK_AT = 0.45 -- share of its cubes a car can lose before it falls apart (a structure: 0.9)
+local BROKEN_AT = 0.4 -- share of a piece's own cubes gone that marks it "Broken" (a tank's track stops pulling, its gun firing)
 
 local owned: { [Player]: { Model } } = {}
 
@@ -148,9 +156,11 @@ end
 local cubeParams = OverlapParams.new()
 cubeParams.FilterType = Enum.RaycastFilterType.Include
 
--- the ground point of a car right now (the chassis rides CHASSIS.y above it, never turned)
-local function originOf(car: Model): CFrame
-	return (car.PrimaryPart :: BasePart).CFrame * CFrame.new(0, -CHASSIS.y, 0)
+-- A piece's origin right now and the part it is mounted on (the chassis, or a tank's turret / gun).
+local function frameOf(panel: Model): (CFrame, BasePart)
+	local c = panel.PrimaryPart :: BasePart
+	local mount = c:FindFirstChild("Mount") :: any
+	return c.CFrame * ((panel:GetAttribute("Origin") :: CFrame?) or CFrame.identity), mount.Part0
 end
 
 -- Builds `piece`'s cubes at `base` (its origin) into a new folder, each welded to `to` by a "Mount".
@@ -195,12 +205,13 @@ local function near(piece: string, p: Vector3, radius: number): boolean
 end
 
 -- A whole piece splits in place into its cubes (the map's big blocks do the same when first hit).
-local function shatter(car: Model, panel: Model)
-	if panel:GetAttribute("Shattered") then
+local function shatter(panel: Model)
+	if panel:GetAttribute("Shattered") or not panel.PrimaryPart then
 		return
 	end
 	panel:SetAttribute("Shattered", true)
-	cubes(panel.Name, originOf(car), car.PrimaryPart :: BasePart).Parent = panel
+	local base, mount = frameOf(panel)
+	cubes(panel.Name, base, mount).Parent = panel
 	for _, p in panel:GetChildren() do
 		if p:IsA("BasePart") then
 			p:Destroy() -- the meshes and the collider, in the same frame the cubes appear
@@ -232,14 +243,18 @@ local function wreck(car: Model, from: Vector3, power: number)
 	end
 	local spec = SPECS[car.Name] or SPECS.PoliceCar
 	task.defer(function() -- once the driver is clear of it
+		if spec.wreck then
+			spec.wreck(car, from, power) -- the tank: what flies off whole leaves car.Panels first
+		end
 		local panels = car:FindFirstChild("Panels")
 		for _, panel in if panels then panels:GetChildren() else {} do
-			shatter(car, panel :: Model)
+			shatter(panel :: Model)
 		end
 		local chassis = car.PrimaryPart :: BasePart
 		for _, w in car:GetChildren() do
 			if w:IsA("BasePart") and w.Name:match("^Wheel") then
-				local turn = if chassis.CFrame:PointToObjectSpace(w.Position).X < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.identity
+				-- a car's wheel is a plain cylinder with its meshes turned on it; a tank's road wheel ("WheelVis") is turned itself
+				local turn = if w.Name ~= "WheelVis" and chassis.CFrame:PointToObjectSpace(w.Position).X < 0 then CFrame.Angles(0, math.pi, 0) else CFrame.identity
 				cubes(spec.wheel, w.CFrame * turn, chassis).Parent = car
 				w:Destroy()
 			end
@@ -275,26 +290,37 @@ local function blasted(position: Vector3, radius: number, power: number)
 		if not (panels and car.Parent == workspace and car:IsA("Model")) or car:GetAttribute("Wrecked") then
 			continue
 		end
-		local here = originOf(car):PointToObjectSpace(position) -- the blast in the car's own space
+		local r = radius * ((car:GetAttribute("Armor") :: number?) or 1) -- armour: the blast bites less deep
 		for _, panel in panels:GetChildren() do
 			local c = (panel :: Model).PrimaryPart
-			if c and not panel:GetAttribute("Shattered") and reaches(c.CFrame, c.Size, position, radius + 0.5) and near(panel.Name, here, radius) then
-				shatter(car, panel :: Model)
+			if c and not panel:GetAttribute("Shattered") and reaches(c.CFrame, c.Size, position, r + 0.5) then
+				local here = frameOf(panel :: Model):PointToObjectSpace(position) -- the blast in the piece's own space
+				if near(panel.Name, here, r) then
+					shatter(panel :: Model)
+				end
 			end
 		end
 		cubeParams.FilterDescendantsInstances = { panels }
 		local knocked = 0
-		for _, cube in workspace:GetPartBoundsInRadius(position, radius + 1, cubeParams) do
-			if cube.Name == "Cube" and cube:FindFirstChild("Mount") and (cube.Position - position).Magnitude <= radius + 0.25 then
+		for _, cube in workspace:GetPartBoundsInRadius(position, r + 1, cubeParams) do
+			if cube.Name == "Cube" and cube:FindFirstChild("Mount") and (cube.Position - position).Magnitude <= r + 0.25 then
+				local panel = cube.Parent and cube.Parent.Parent :: Instance
 				knockCube(cube, position, power)
 				knocked += 1
+				if panel then
+					local gone = ((panel:GetAttribute("Lost") :: number?) or 0) + 1
+					panel:SetAttribute("Lost", gone)
+					if gone >= ((panel:GetAttribute("Cells") :: number?) or math.huge) * BROKEN_AT then
+						panel:SetAttribute("Broken", true)
+					end
+				end
 			end
 		end
 		if knocked > 0 then
 			Sfx.play(Sfx.METAL, position)
 			local lost = ((car:GetAttribute("Lost") :: number?) or 0) + knocked
 			car:SetAttribute("Lost", lost)
-			if lost >= ((car:GetAttribute("Cubes") :: number?) or math.huge) * WRECK_AT then
+			if lost >= ((car:GetAttribute("Cubes") :: number?) or math.huge) * ((car:GetAttribute("WreckAt") :: number?) or WRECK_AT) then
 				wreck(car, position, power)
 			end
 		end
@@ -318,7 +344,7 @@ RunService.Heartbeat:Connect(function()
 		end
 		local v = chassis.AssemblyLinearVelocity
 		local lost = s.v.Magnitude - v.Magnitude
-		if lost > CRASH and now > s.cool and s.v.Magnitude > 1 then
+		if lost > ((car:GetAttribute("CrashAt") :: number?) or CRASH) and now > s.cool and s.v.Magnitude > 1 then
 			s.cool = now + 0.6
 			local dir = s.v.Unit
 			local reach = math.max(math.abs(dir:Dot(chassis.CFrame.LookVector)) * 9, math.abs(dir:Dot(chassis.CFrame.RightVector)) * 4)
@@ -331,6 +357,9 @@ end)
 -- A still, anchored copy for the Toolbox's stage (ToolboxPreviews), origin on the ground.
 function PoliceCar.preview(kind: string): Model
 	local spec = SPECS[kind]
+	if spec.preview then
+		return spec.preview()
+	end
 	local m = Instance.new("Model")
 	m.Name = kind
 	for _, piece in spec.panels do
@@ -345,12 +374,12 @@ end
 -- The pieces: each its own model in car.Panels, its meshes welded to an invisible collider (its box,
 -- which weapons hit; the chassis and cabin boxes do the colliding) that a "Mount" weld holds on.
 -- Counts the car's cubes for WRECK_AT.
-local function addPanels(model: Model, spec, origin: CFrame, chassis: BasePart)
+local function addPanels(model: Model, pieces: { string }, origin: CFrame, mountOf: (string) -> BasePart): number
 	local total = 0
-	local folder = Instance.new("Folder")
+	local folder = model:FindFirstChild("Panels") or Instance.new("Folder")
 	folder.Name = "Panels"
 	folder.Parent = model
-	for _, piece in spec.panels do
+	for _, piece in pieces do
 		local panel = Instance.new("Model")
 		panel.Name = piece
 		dress(piece, origin, panel)
@@ -367,22 +396,18 @@ local function addPanels(model: Model, spec, origin: CFrame, chassis: BasePart)
 			end
 		end
 		panel.PrimaryPart = collider
+		panel:SetAttribute("Origin", collider.CFrame:ToObjectSpace(origin))
 		panel.Parent = folder
-		weld(chassis, collider, "Mount")
+		weld(mountOf(piece), collider, "Mount")
+		panel:SetAttribute("Cells", #CarVoxels[piece].cells // 4)
 		total += #CarVoxels[piece].cells // 4
 	end
-	model:SetAttribute("Cubes", total)
+	return total
 end
 
--- A drivable car of `kind` (SPECS) with its ground point at `cf` (facing cf.LookVector), for `owner`.
-function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
-	groups()
-	local spec = SPECS[kind or "PoliceCar"] or SPECS.PoliceCar
-	local model = Instance.new("Model")
-	model.Name = kind or "PoliceCar"
-	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- the driver's client needs every constraint
-	local origin = cf
-
+-- A car's own frame: chassis, cabin, pieces, seat and the four sprung wheels at `origin`, into `model`.
+-- Returns the chassis, the seat, the prompt's spot (car space) and where the driver gets out (chassis space).
+local function carBody(model: Model, spec, origin: CFrame): (BasePart, VehicleSeat, Vector3, CFrame)
 	local chassis = box("Chassis", CHASSIS.size, origin * CFrame.new(0, CHASSIS.y, 0), model)
 	chassis.CustomPhysicalProperties = PhysicalProperties.new(0.6, 0.3, 0.3)
 	chassis.CollisionGroup = "CarBody"
@@ -390,7 +415,9 @@ function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
 	local cabin = box("Cabin", spec.cabin.size, origin * CFrame.new(spec.cabin.at), model)
 	cabin.Massless, cabin.CollisionGroup = true, "CarBody"
 	weld(chassis, cabin)
-	addPanels(model, spec, origin, chassis)
+	model:SetAttribute("Cubes", addPanels(model, spec.panels, origin, function()
+		return chassis
+	end))
 
 	local seat = Instance.new("VehicleSeat")
 	seat.Name = "DriveSeat"
@@ -438,18 +465,23 @@ function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
 	end
 	model:SetAttribute("WheelRadius", spec.radius)
 	model:SetAttribute("Siren", spec.siren)
-	model:SetAttribute("Driver", "")
+	return chassis, seat, Vector3.new(-CHASSIS.size.X / 2, 3.2, -0.3), CFrame.new(-CHASSIS.size.X / 2 - 2.5, 1.5, -0.3)
+end
 
-	-- getting in: a prompt by the driver's door (T; E is grab), the seat itself sits deep in the body
-	local door = Instance.new("Attachment")
-	door.Name = "Door"
-	door.Position = chassis.CFrame:PointToObjectSpace(origin * Vector3.new(-CHASSIS.size.X / 2, 3.2, -0.3))
-	door.Parent = chassis
+-- Getting in: a prompt at `door` (car space; T, E is grab), the seat itself sits deep in the body. The
+-- driver owns the whole mechanism while seated (a passenger who sat first would otherwise); getting out
+-- puts them at `exit` (chassis space), never inside the roof. `eject` (the tank): a wreck throws the
+-- driver up at this speed (PoliceCar.fling: they own their physics).
+local function seatUp(model: Model, chassis: BasePart, seat: VehicleSeat, origin: CFrame, label: string, door: Vector3, exit: CFrame, eject: number?)
+	local spot = Instance.new("Attachment")
+	spot.Name = "Door"
+	spot.Position = chassis.CFrame:PointToObjectSpace(origin * door)
+	spot.Parent = chassis
 	local prompt = Instance.new("ProximityPrompt")
-	prompt.ActionText, prompt.ObjectText = "Drive", spec.label
+	prompt.ActionText, prompt.ObjectText = "Drive", label
 	prompt.KeyboardKeyCode, prompt.GamepadKeyCode = Enum.KeyCode.T, Enum.KeyCode.ButtonL3
 	prompt.HoldDuration, prompt.MaxActivationDistance, prompt.RequiresLineOfSight = 0, 10, false
-	prompt.Parent = door
+	prompt.Parent = spot
 	prompt.Triggered:Connect(function(player)
 		local char = player.Character
 		local hum = char and char:FindFirstChildOfClass("Humanoid")
@@ -458,8 +490,6 @@ function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
 		end
 	end)
 
-	-- the driver owns the whole mechanism while seated (a passenger who sat first would otherwise);
-	-- getting out puts them beside the driver's door, never inside the roof
 	local inside: Humanoid? = nil
 	local groupsWere: { [BasePart]: string } = {}
 	seat:GetPropertyChangedSignal("Occupant"):Connect(function()
@@ -480,12 +510,28 @@ function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
 		if not hum and left and left.Parent then
 			local char = left.Parent :: Model
 			driverGroup(char, groupsWere)
-			local at = chassis.CFrame * CFrame.new(-CHASSIS.size.X / 2 - 2.5, 1.5, -0.3)
+			local at = chassis.CFrame * exit
+			local thrown = eject and model:GetAttribute("Wrecked") and Players:GetPlayerFromCharacter(char)
 			task.defer(function() -- after the seat weld is gone
 				char:PivotTo(CFrame.new(at.Position) * chassis.CFrame.Rotation)
+				if thrown and PoliceCar.fling then
+					PoliceCar.fling(thrown, Vector3.new(math.random(-12, 12), eject :: number, math.random(-12, 12)))
+				end
 			end)
 		end
 	end)
+end
+
+-- A drivable car of `kind` (SPECS) with its ground point at `cf` (facing cf.LookVector), for `owner`.
+function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
+	groups()
+	local spec = SPECS[kind or "PoliceCar"] or SPECS.PoliceCar
+	local model = Instance.new("Model")
+	model.Name = kind or "PoliceCar"
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic -- the driver's client needs every constraint
+	model:SetAttribute("Driver", "")
+	local chassis, seat, door, exit = (spec.build or carBody)(model, spec, cf)
+	seatUp(model, chassis, seat, cf, spec.label, door, exit, spec.eject)
 
 	CollectionService:AddTag(model, "Car")
 	model.Parent = workspace
@@ -507,19 +553,24 @@ function PoliceCar.spawn(cf: CFrame, owner: Player?, kind: string?): Model
 	return model
 end
 
--- Where a car with its ground point at `at` fits, facing `look` or the nearest free quarter turn of it:
--- nothing solid (walls, players, dummies) in its box above the ground. nil when no heading fits.
-function PoliceCar.fit(at: Vector3, look: Vector3): CFrame?
+-- Where a car of `kind` with its ground point at `at` fits, facing `look` or the nearest free quarter
+-- turn of it: nothing solid (walls, players, dummies) in its box above the ground. nil when no heading fits.
+function PoliceCar.fit(at: Vector3, look: Vector3, kind: string?): CFrame?
+	local size = (kind and SPECS[kind] and SPECS[kind].fit) or Vector3.new(7.8, 4.6, 19)
 	local params = OverlapParams.new()
 	params.RespectCanCollide = true
 	for _, turn in { 0, 90, -90, 180 } do
 		local cf = CFrame.lookAt(at, at + look) * CFrame.Angles(0, math.rad(turn), 0)
-		if #workspace:GetPartBoundsInBox(cf * CFrame.new(0, 2.7, 0), Vector3.new(7.8, 4.6, 19), params) == 0 then
+		if #workspace:GetPartBoundsInBox(cf * CFrame.new(0, 0.4 + size.Y / 2, 0), size, params) == 0 then
 			return cf
 		end
 	end
 	return nil
 end
+
+-- the shared pieces server/Tank.luau builds with
+PoliceCar.parts = { box = box, weld = weld, dress = dress, addPanels = addPanels, groups = groups, LOOSE_LIFE = LOOSE_LIFE }
+PoliceCar.fling = nil :: ((Player, Vector3) -> ())? -- set by init.server: throws a player (they own their physics)
 
 -- Toolbox WORLD's clear: every car goes.
 function PoliceCar.clear()

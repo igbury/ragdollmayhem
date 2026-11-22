@@ -16,6 +16,7 @@ local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
 local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
 local Audio =require(script.Parent:WaitForChild("Music")) -- the sound settings (SETTINGS page)
+local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
@@ -29,8 +30,9 @@ local CHARACTERS = {
 	{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
 	{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
 	{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
-	{ name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
-	{ name = "Sport car", kind = "SportCar", color = Color3.fromRGB(227, 36, 43) }, -- the same, and it smashes apart like the map
+	-- off for now (server VEHICLES_ENABLED): { name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
+	-- off for now (server VEHICLES_ENABLED): { name = "Sport car", kind = "SportCar", color = Color3.fromRGB(227, 36, 43) }, -- the same, and it smashes apart like the map
+	-- off for now (server VEHICLES_ENABLED): { name = "Tank", kind = "Tank", color = Color3.fromRGB(201, 178, 124) }, -- server/Tank: turret, gun, breaks apart too
 }
 -- a team: spawned into it (SPAWN), or a click puts a dummy in it (WORLD, team paint); teams fight each other
 local TEAMS = {
@@ -304,6 +306,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			return -- the main menu, dead, or the weapon wheel is up
 		end
 		cover.Visible = on
+		if on then
+			actionRemote:FireServer("opened", "Toolbox") -- the Menus funnel (server/Funnels)
+		end
 		Sfx.ui(if on then Sfx.UI_OPEN else Sfx.UI_CLOSE, 0.5)
 		gui:SetAttribute("WeaponPickerOpen", on) -- frees the cursor and stops attacks (init, WeaponBar)
 		api.freeze(on)
@@ -422,6 +427,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		pages[i] = page
 		b.Activated:Connect(function()
 			showTab(i)
+			actionRemote:FireServer("opened", if i == 1 then "Toolbox" else string.upper(t.name:sub(1, 1)) .. string.lower(t.name:sub(2)))
 		end)
 	end
 
@@ -650,6 +656,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end)
 	settingsTitle.Activated:Connect(function()
 		showSettings(true)
+		actionRemote:FireServer("opened", "Settings")
 	end)
 	local function label(parent: Instance, text: string)
 		local l = Instance.new("TextLabel")
@@ -657,8 +664,9 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		l.TextXAlignment, l.Size, l.LayoutOrder, l.ZIndex, l.Parent = Enum.TextXAlignment.Left, UDim2.fromOffset(280, 44), 0, 44, parent
 	end
 	local shows = {} -- each control's redraw, run whenever a setting changes
-	-- ON / OFF for a boolean setting; `off` names a setting that is on when false (MusicOff, NeverWanted)
-	local function toggle(text: string, name: string, order: number, off: boolean?)
+	-- ON / OFF for a boolean setting; `off` names a setting that is on when false (MusicOff, NeverWanted).
+	-- `get` / `set`: for a setting that is not a plain boolean (PerfMode: "auto" / "on" / "off").
+	local function toggle(text: string, name: string, order: number, off: boolean?, get: (() -> boolean)?, set: ((boolean) -> ())?)
 		local r = row(settingsPage, order, 50)
 		label(r, text)
 		local b = button(r, "ON", Color3.fromRGB(40, 140, 70), 44, true)
@@ -666,10 +674,14 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 		local l = b:FindFirstChild("Label") :: TextLabel
 		l.TextSize = 24
 		b.Activated:Connect(function()
-			Audio.set(name, not Audio.get(name))
+			if set and get then
+				set(not get())
+			else
+				Audio.set(name, not Audio.get(name))
+			end
 		end)
 		table.insert(shows, function()
-			local on = Audio.get(name) ~= (off == true)
+			local on = if get then get() else Audio.get(name) ~= (off == true)
 			l.Text = if on then "ON" else "OFF"
 			local fill = b:FindFirstChild("Fill")
 			local shade = fill and fill:FindFirstChildOfClass("UIGradient")
@@ -727,7 +739,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	slider("BONE BREAKING", "BoneScale", 11, 0.5, true)
 	slider("GRAVITY", "Gravity", 12, 0.1, true)
 	slider("DAMAGE", "DamageScale", 13, 0.5, true)
-	hint(settingsPage, "Saved with your progress. Gravity, ragdoll damage, grave zombies and burning dummies follow whoever joined the server first.", 14)
+	heading(settingsPage, "GRAPHICS", 15)
+	toggle("PERFORMANCE MODE", "PerfMode", 16, false, PerfMode.wanted, function(v: boolean)
+		Audio.set("PerfMode", if v then "on" else "off")
+	end)
+	hint(settingsPage, "Saved with your progress. Gravity, ragdoll damage, grave zombies and burning dummies follow whoever joined the server first. Performance mode turns itself on for phones.", 17)
 	local function showSettingsValues()
 		for _, show in shows do
 			show()

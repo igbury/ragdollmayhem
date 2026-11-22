@@ -28,15 +28,18 @@ local GloveMeshes = require(script:WaitForChild("GloveMeshes"))
 local Inspect = require(script:WaitForChild("Inspect"))
 local WeaponSway = require(script:WaitForChild("WeaponSway"))
 require(script:WaitForChild("Driving")) -- the police car: runs itself (no local: this script is at the 200-local limit)
+require(script:WaitForChild("TankClient")) -- the tank: driving, the turret, the gun; runs itself
 local WeaponBob = require(script:WaitForChild("WeaponBob"))
 local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))
 local Menu = require(script:WaitForChild("Menu"))
 require(script:WaitForChild("Music")) -- starts the background playlist
+require(script:WaitForChild("PerfMode")) -- fewer shadows, lights and particles on phones (runs itself)
 task.spawn(require, script:WaitForChild("KoStars")) -- stars over dummies out cold
 task.spawn(require, script:WaitForChild("AdminPanel")) -- owner and Studio only (server/Admin)
 require(script:WaitForChild("DummyGear")) -- the cops' guns and the hooligans' bats
 require(script:WaitForChild("WantedHud")) -- the wanted stars
+task.spawn(require, script:WaitForChild("LikePrompt")) -- the optional "like the game?" card (waits for progress)
 require(script:WaitForChild("HeliRotors")) -- the army helicopters' rotors
 require(script:WaitForChild("Speech")).start(dummyFolder) -- comic speech bubbles over dummies
 
@@ -228,6 +231,7 @@ local MOVE = {
 local mv = {
 	simple = function(): boolean return false end, -- the easy touch controls are on (TouchControls replaces it)
 	sprintHeld = false, -- Shift
+	freeCursor = false, -- O: a free cursor in third person
 	sprintToggle = false, -- gamepad / touch: press to run, stops when you stop moving
 	crouchHeld = false,
 	low = false, -- hips lowered: sliding or crouching
@@ -244,6 +248,10 @@ local mv = {
 	diveUntil = 0, -- a dive kick is flying until then
 	diveReadyAt = 0,
 	diveDir = Vector3.zAxis,
+	-- moves cut for now, to keep the controls short (true = gone): the slam dive (R / Y in the air, and
+	-- its ground slam), the wall flip off a cling (S, or dash while hanging) and the sprint vault onto
+	-- low cover (an airborne ledge grab still climbs). Flip one back to false to bring it back.
+	cut = { slam = true, flip = true, vault = true },
 	lastWallNormal = nil :: Vector3?, -- the wall last run on this airtime
 	loop = "", -- the looping movement look last reported to the server (see Others)
 }
@@ -505,7 +513,7 @@ do
 end
 local controls = label({
 	Visible = false, -- H shows it (below); the weapons have their own bar now (WeaponBar)
-	Text = "1-5 / Q  Weapons (hold Q: the wheel)\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, teams, build)\nG  Spawn the picked character\nBuilding: hold Q  Blocks, 1 / 2  Block / trash, click  Build / delete\nR  Revive / slam (in the air)\nB  Scan (X-ray a dummy)\nV  Camera\nM  Back to the menu",
+	Text = "1-5  Weapons, Q or J  Arsenal\nX  Dash\nClick with an ability in hand  Use it\nF on a dummy  Hold it (sprint: grind it into the ground)\nHolding it, look down + hold click  Pound it into the ground\nE  Grab / drop\nC  Fall\nTab  Toolbox (characters, teams, build)\nG  Spawn the picked character\nBuilding: hold Q  Blocks, 1 / 2  Block / trash, click  Build / delete\nR  Revive\nB  Scan (X-ray a dummy)\nV  Camera\nM  Back to the menu",
 	TextSize = 14,
 	TextXAlignment = Enum.TextXAlignment.Left,
 	TextYAlignment = Enum.TextYAlignment.Bottom,
@@ -1699,6 +1707,9 @@ end
 -- dive: a shove downward now and extra gravity on the way (see updateWallRun), so the landing,
 -- which scales with fall speed, comes sooner and harder. True when in the air (armed or already was).
 function mv.armSlam(): boolean
+	if mv.cut.slam then
+		return false
+	end
 	local char = player.Character
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -1733,6 +1744,10 @@ mv.began = function(input, processed)
 		return
 	end
 	if input.UserInputType == Enum.UserInputType.MouseButton1 or input.KeyCode == Enum.KeyCode.ButtonR2 then
+		local seated = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+		if seated and seated.SeatPart then
+			return -- in a vehicle: no swing (its lunge shoved the welded vehicle); the tank's gun is client/TankClient
+		end
 		if os.clock() < puntUntil then
 			return -- mid-punt: no swing, shot or throw until the kick is done
 		end
@@ -1845,6 +1860,8 @@ mv.began = function(input, processed)
 		if dummy then
 			Fx.scan(dummy, 4)
 		end
+	elseif input.KeyCode == Enum.KeyCode.O then
+		mv.freeCursor = not mv.freeCursor -- third person: a free cursor (MoveCamera, the mouse icon below)
 	elseif input.KeyCode == Enum.KeyCode.V then
 		-- only V changes the view: third person is held at one distance, so the mouse wheel
 		-- (weapon bar, held body) never zooms the camera
@@ -2185,6 +2202,11 @@ end
 
 local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: BasePart)
 	wallParams.FilterDescendantsInstances = { char, workspace:FindFirstChild("Dummies") }
+	if humanoid.SeatPart then -- in a vehicle the root is welded to it: none of this may push it (the tank flew off)
+		hold(root, nil)
+		wall, mantle, carry = nil, nil, Vector3.zero
+		return
+	end
 	local grounded = humanoid.FloorMaterial ~= Enum.Material.Air
 	local able = humanoid.Health > 0 and not char:GetAttribute("Ragdolled")
 	if grounded then
@@ -2351,7 +2373,7 @@ local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: 
 	local forward = pressed(humanoid, "W")
 	-- Vault: sprinting on the ground, or moving forward in the air, into something whose top is in
 	-- reach (a crate, a low wall, a ledge at foot level) takes you up onto it.
-	if forward and (not grounded or sprint > 0.5) then
+	if forward and (not grounded or (sprint > 0.5 and not mv.cut.vault)) then
 		local dir = input.Unit
 		local hit = workspace:Raycast(root.Position - Vector3.yAxis * 1.5, dir * 2.8, wallParams)
 		-- anchored only: loose rubble is not something to climb
@@ -2651,6 +2673,9 @@ local WALL_FLIP_BACK = 55
 local WALL_FLIP_UP = 60
 local WALL_FLIP_TIME = 0.7 -- the animation's length
 function mv.wallFlip()
+	if mv.cut.flip then
+		return
+	end
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not (root and wall and wall.clinging) then
@@ -2698,7 +2723,7 @@ function mv.dash()
 	if not (root and humanoid) or humanoid.Health <= 0 or char:GetAttribute("Ragdolled") or mantle then
 		return
 	end
-	if wall and wall.clinging then
+	if wall and wall.clinging and not mv.cut.flip then
 		mv.wallFlip()
 		return
 	end
@@ -2917,14 +2942,15 @@ RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Valu
 	end
 end)
 RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
-	if gui:GetAttribute("WeaponPickerOpen") then
+	local free = mv.freeCursor and not isFirstPerson() -- O in third person
+	if gui:GetAttribute("WeaponPickerOpen") or free then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	elseif thirdWeapon then -- after the camera scripts, which would set their own mouse behaviour
 		UserInputService.MouseBehavior = Enum.MouseBehavior.LockCenter
 	elseif mouseLocked and not isFirstPerson() then -- weapon put away: free the mouse again
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	end
-	mouseLocked = thirdWeapon
+	mouseLocked = thirdWeapon and not free
 	local target = 0
 	if wall then
 		-- head away from the wall, as the third-person body leans (WallRun); +Z tips it left
@@ -3143,7 +3169,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local dragView = (holding ~= nil and holding.drag == true) or os.clock() < puntUntil
 	local show = isFirstPerson() and not Menu.active and (not holding or dragView) and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
-	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and not thirdWeapon)
+	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and (not thirdWeapon or mv.freeCursor == true))
 	crosshair.Visible = isFirstPerson() or thirdWeapon
 
 	-- sprint
@@ -3238,6 +3264,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local out = Weapons[weaponIndex]
 	thirdWeapon = (out.kind ~= nil or heldAbility ~= nil) and not isFirstPerson() and not holding and not Menu.active
 		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
+		and humanoid.SeatPart == nil -- seated, the root is welded to the vehicle: turning it would turn (and tear) the vehicle
 	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
 		local look = (weaponVisual.testFace or camera.CFrame.LookVector) * Vector3.new(1, 0, 1) -- testFace: WeaponTest "face"
 		if look.Magnitude > 0.01 then
@@ -3862,3 +3889,4 @@ end)
 
 -- the first-time tutorial: outlines on its dummies, what to do next (server/Tutorial)
 require(script:WaitForChild("TutorialHud")).start()
+require(script:WaitForChild("CashHud")).start() -- the cash counter, top right

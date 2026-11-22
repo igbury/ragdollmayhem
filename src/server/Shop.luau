@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shop = require(ReplicatedStorage.Shared.Shop)
+local Funnels = require(script.Parent.Funnels)
 
 local ShopServer = {}
 
@@ -39,6 +40,9 @@ function ShopServer.start()
 		local key = byPass[passId]
 		if bought and key then
 			player:SetAttribute(Shop.attribute(key), true)
+		end
+		if key then
+			Funnels.pass(player, key, bought) -- the Shop funnel
 		end
 	end)
 end

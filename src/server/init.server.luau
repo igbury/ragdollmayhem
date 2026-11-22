@@ -26,6 +26,7 @@ local ShopServer = require(script.Shop)
 local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
 local PoliceCar = require(script.PoliceCar)
+require(script.Tank) -- adds the tank to PoliceCar.KINDS (its hooks are set below, by explode)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2
@@ -105,6 +106,7 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 	if budget.count > MOVE_RATE then
 		return
 	end
+	Progress.Funnels.move(player, name) -- the Moves funnel (server/Funnels)
 	for _, other in Players:GetPlayers() do
 		if other ~= player then
 			moveRemote:FireClient(other, player, kind, name)
@@ -113,6 +115,10 @@ moveRemote.OnServerEvent:Connect(function(player, kind, name)
 end)
 
 local CITY_ENABLED = false -- City Square is in development: not built, not in the menu. Flip to test it.
+local VEHICLES_ENABLED = false -- the police car, sport car and tank: off for now (no Toolbox entry, no preview, no spawn). Flip with client/Toolbox CHARACTERS
+if not VEHICLES_ENABLED then
+	PoliceCar.KINDS.PoliceCar, PoliceCar.KINDS.SportCar, PoliceCar.KINDS.Tank = nil, nil, nil
+end
 local PORT_ENABLED = true -- the Port (Port.luau) is new: false hides it again (and leave it out of client/Menu.luau MAPS)
 local SPAWNS = { ARENA = CFrame.new(0, 5, 0), FACTORY = Factory.SPAWN, ["CITY SQUARE"] = CITY_ENABLED and City.SPAWN or nil, PORT = PORT_ENABLED and Port.SPAWN or nil }
 -- Until PLAY picks a map the character waits here, anchored, away from every map (they lie on X, the port at +640 Z).
@@ -1086,7 +1092,11 @@ local function kill(d, cause: string)
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
 		if by then -- a kill for the weapon progression (zombies count)
-			Progress.credit(by, weapon)
+			local paid = Progress.credit(by, weapon)
+			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+			if torso then -- the cash flies out of the body to the killer's counter (client/CashHud)
+				fxRemote:FireClient(by, "Cash", nil, torso.Position, paid)
+			end
 		end
 		local head = d.zombie and d.model:FindFirstChild("Head") :: BasePart?
 		if head then
@@ -2365,6 +2375,16 @@ Players.PlayerRemoving:Connect(clearBlocks)
 
 local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true, team = true, freeze = true, revive = true, fall = true, build = true, unbuild = true, clearbuild = true, setting = true, dress = true } -- slam / kick / dive: the handler below
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
+	if action == "opened" then -- a menu opened, for the Menus funnel (server/Funnels checks the name)
+		Progress.Funnels.menu(player, arg)
+		return
+	end
+	if action == "buy" then -- a weapon for cash (server/Progress checks the id and the price)
+		if not rateLimited(player, 0.25, "buy") then
+			Progress.buy(player, arg)
+		end
+		return
+	end
 	local building = action == "build" or action == "unbuild"
 	local quick = building or action == "setting" -- clicking + / - on the SETTINGS page fast
 	if not MENU_ACTIONS[action] or rateLimited(player, quick and 0.08 or 0.25, if building then "build" elseif quick then "setting" else "action") then
@@ -2419,7 +2439,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		-- one drivable car where the aim is, nose away from the player (server/PoliceCar)
 		local flat = (arg - head.Position) * Vector3.new(1, 0, 1)
 		local look = if flat.Magnitude > 0.1 then flat.Unit else Vector3.zAxis
-		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look) -- no room (a wall, someone): no car
+		local spot = PoliceCar.fit(arg + Vector3.new(0, 1, 0), look, extra) -- no room (a wall, someone): no car
 		if spot then
 			PoliceCar.spawn(spot, player, extra)
 		end
@@ -2436,6 +2456,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			local d = spawnDummy(CFrame.new(at + Vector3.new(0, 4, 0)) * CFrame.Angles(0, math.random() * math.pi * 2, 0), nil, kind)
 			if plus and d and Sandbox.TEAM_COLORS[extra2] then -- spawned straight into the picked team
 				Sandbox.setTeam(d, extra2)
+			end
+			if d then
+				Progress.Funnels.spawned(player) -- the Sandbox funnel
 			end
 		end
 	elseif action == "clearspawn" then -- Toolbox WORLD: every dummy goes, the tutorial's stay, and the cars
@@ -2467,6 +2490,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		block:SetAttribute("Owner", player.UserId)
 		block:SetAttribute("Piece", Vector3.one * (BLOCK_SIZE / 4)) -- breaks into bricks like the map's cubes
 		block.Parent = builtFolder
+		Progress.Funnels.built(player) -- the Sandbox funnel
 	elseif action == "unbuild" and typeof(arg) == "Instance" and arg.Parent == builtFolder
 		and (arg.Position - head.Position).Magnitude < 200 then
 		local at = arg.Position
@@ -2487,6 +2511,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			end
 		end
 	elseif action == "setting" and Progress.SETTINGS[arg] and type(extra) == Progress.SETTINGS[arg] and extra == extra then -- client/Music, saved (not NaN)
+		if arg == "PerfMode" and extra ~= "auto" and extra ~= "on" and extra ~= "off" then
+			return
+		end
 		if arg == "Wardrobe" then
 			extra = require(script.Dresser).clean(extra) -- only real catalog picks are kept (shared/Wardrobe)
 		end
@@ -2809,6 +2836,7 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	char:SetAttribute("BowDrawAt", nil)
 	clearBoxing(player)
 	char:SetAttribute("EquippedWeapon", id)
+	Progress.Funnels.equipped(player, id) -- the Arsenal funnel: a bought weapon in hand
 	if id ~= "BoxingGloves" then return end
 	local model = BoxingGloves.attach(char)
 	if not model then
@@ -2841,6 +2869,23 @@ local function explode(position: Vector3, sound: string, scale: number?)
 	smash(position, 13 * s, 45 * s, Vector3.zero, 80 * math.sqrt(s), "blast")
 end
 
+do -- the tank (server/Tank): its shells blow up like a big rocket, it bowls dummies over, a wreck throws its driver
+	local Tank = require(script.Tank)
+	Tank.explode = explode
+	function Tank.act(player: Player?)
+		Wanted.act(player, "Tank")
+	end
+	function Tank.ram(player: Player?, position: Vector3, dir: Vector3, speed: number)
+		task.spawn(function()
+			Wanted.act(player, "Tank") -- whatever this does to a dummy is on the driver
+			smash(position, 5.5, speed * 0.6, dir * speed * 1.6 + UP * 30, 15)
+		end)
+	end
+	function PoliceCar.fling(player: Player, velocity: Vector3)
+		hazardRemote:FireClient(player, velocity)
+	end
+end
+
 local function ignite(position: Vector3)
 	fxRemote:FireAllClients("Fire", nil, position, 8, 5)
 	local crackle = Instance.new("Part") -- the burning patch's sound (the fire itself is client Fx)
@@ -2861,6 +2906,8 @@ end
 -- and says something about it; the touchy ones come for you. A player it hits gets red all over
 -- the screen ("Splatted", only on that player's client).
 local TOMATO_RED = Color3.fromRGB(215, 30, 25)
+-- its pop on a hit: fx size, Map.blast radius, smash radius / damage / outward shove (a grenade: 9, 9, 13, 45, 80)
+Sandbox.TOMATO_POP = { boom = 2.5, crater = 1.2, radius = 4, damage = 10, shove = 28 }
 local TOMATO_LINES = { "My shirt!", "Did you just...", "A TOMATO?!", "Ew! EW!", "You'll pay for that!", "Who does that?!", "It's in my eyes!" }
 local function tomato(p: BasePart, char: Model, owner: Player?)
 	local done = false
@@ -2873,6 +2920,17 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 		p:Destroy()
 		local dir = velocity.Magnitude > 1 and velocity.Unit or -UP
 		fxRemote:FireAllClients("Splat", nil, position, dir, other)
+		local function pop() -- a small pop where it hit: a puff, a dent, a shove (plain force, no shrapnel)
+			if not other then
+				return -- burst in the air on its timer
+			end
+			local c = Sandbox.TOMATO_POP
+			Wanted.act(owner, "Tomato") -- a kill by it is the thrower's (explosive kills)
+			Sfx.play({ Sfx.GRENADE_BOOM, 1.8, 0.35 }, position)
+			fxRemote:FireAllClients("Boom", nil, position, c.boom)
+			Map.blast(position, c.crater, 20)
+			smash(position, c.radius, c.damage, Vector3.zero, c.shove)
+		end
 		local d = other and dummyOf(other)
 		if d and d.state ~= "Dead" and not d.model:GetAttribute("Ragdolled") then
 			reactToHit(d, dir)
@@ -2884,12 +2942,14 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 			if owner and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.6)) then
 				d.target = owner
 			end
+			pop() -- after the line: knocked down, it would not say it
 			return
 		end
 		local victim = other and other.Parent and Players:GetPlayerFromCharacter(other.Parent)
 		if victim then
 			fxRemote:FireClient(victim, "Splatted", nil)
 		end
+		pop()
 	end
 	p.Touched:Connect(function(other)
 		if not other:IsDescendantOf(char) and not other:IsDescendantOf(p) then
