@@ -22,12 +22,15 @@ Shop.UNLOCKS = { gun = "AllGuns", melee = "AllMelee", thrown = "AllExplosives", 
 -- 2X CASH (key DoubleKO): each kill pays this many times the cash
 Shop.KO_WORTH = 2
 -- SANDBOX +: what the Toolbox (client/Toolbox, server "spawn" / "build") keeps for the pass, and the
--- caps without it / with it (blocks per player, living dummies)
+-- caps without it / with it (blocks per player, living dummies, seconds between one player's SPAWNs,
+-- the share of a kill's cash a dummy they spawned pays: spammed spawns farmed 760$/min at 10x DAMAGE)
 Shop.SANDBOX = {
 	kinds = { Soldier = true, Heavy = true, Worker = true, Zombie = true },
 	materials = { Metal = true, Slate = true },
 	blocks = { 100, 300 },
 	dummies = { 20, 30 },
+	spawnCooldown = { 3, 1.5 },
+	spawnCash = { 0.1, 0.4 },
 }
 
 function Shop.attribute(key: string): string

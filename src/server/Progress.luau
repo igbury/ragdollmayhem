@@ -155,11 +155,12 @@ local function load(player: Player)
 	Funnels.load(player, type(data) == "table" and data.funnels)
 end
 
--- `player` killed a dummy with `weapon` (a Weapons id; nil, "Body" or an ability count as a plain kill).
--- Pays Progression.cash(weapon), Shop.KO_WORTH times that with 2X KO; the counters take the real kill.
--- Returns the cash paid.
-function Progress.credit(player: Player, weapon: string?): number
-	local paid = Progression.cash(weapon) * (Shop.owns(player, "DoubleKO") and Shop.KO_WORTH or 1)
+-- `player` killed a dummy of `kind` (its Kind attribute; `share`: its Spawned attribute, the part of the
+-- cash a Toolbox one pays, Shop.SANDBOX.spawnCash) with `weapon` (a Weapons id; nil, "Body" or "Ability"
+-- count as a plain kill). Pays Progression.cash(weapon, kind, share), Shop.KO_WORTH times that with 2X KO,
+-- rounded to whole cash; the counters take the real kill. Returns the cash paid.
+function Progress.credit(player: Player, weapon: string?, kind: string?, share: number?): number
+	local paid = math.round(Progression.cash(weapon, kind, share) * (Shop.owns(player, "DoubleKO") and Shop.KO_WORTH or 1))
 	player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + paid)
 	for _, counter in Progression.counters(weapon) do
 		local attribute = Progression.ATTRIBUTE[counter]

@@ -110,17 +110,20 @@ for _, bed in { { Sfx.CITY_AMBIENCE_LOOP, 0.25 }, { Sfx.WIND_LOOP, 0.12 } } do
 	Sfx.loop(SoundService, bed[1], bed[2]).SoundGroup = effects
 end
 
--- Every button in the interface clicks when pressed and ticks when the mouse comes onto it.
+-- Every button in the interface clicks when pressed and ticks when the mouse comes onto it, but those
+-- with a Quiet attribute (invisible tap catchers, as round the Arsenal's book).
 local hoverAt = 0
 local function button(b: Instance)
 	if not b:IsA("GuiButton") then
 		return
 	end
 	b.Activated:Connect(function()
-		Sfx.ui(Sfx.UI_CLICK, 0.5)
+		if not b:GetAttribute("Quiet") then
+			Sfx.ui(Sfx.UI_CLICK, 0.5)
+		end
 	end)
 	b.MouseEnter:Connect(function()
-		if os.clock() - hoverAt > 0.06 then -- sweeping across a row: not a tick per button at once
+		if not b:GetAttribute("Quiet") and os.clock() - hoverAt > 0.06 then -- sweeping across a row: not a tick per button at once
 			hoverAt = os.clock()
 			Sfx.ui(Sfx.UI_HOVER, 0.25)
 		end

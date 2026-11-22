@@ -1092,7 +1092,7 @@ local function kill(d, cause: string)
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
 		if by then -- a kill for the weapon progression (zombies count)
-			local paid = Progress.credit(by, weapon)
+			local paid = Progress.credit(by, weapon, d.model:GetAttribute("Kind"), d.model:GetAttribute("Spawned"))
 			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 			if torso then -- the cash flies out of the body to the killer's counter (client/CashHud)
 				fxRemote:FireClient(by, "Cash", nil, torso.Position, paid)
@@ -2444,6 +2444,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			PoliceCar.spawn(spot, player, extra)
 		end
 	elseif action == "spawn" and finite(arg) and (arg - head.Position).Magnitude < 200 then
+		if rateLimited(player, Shop.SANDBOX.spawnCooldown[plus and 2 or 1], "spawn") then
+			return
+		end
 		local kind = typeof(extra) == "string" and KINDS[extra] and extra or nil
 		if kind and Shop.SANDBOX.kinds[kind] and not plus then
 			return
@@ -2458,6 +2461,7 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 				Sandbox.setTeam(d, extra2)
 			end
 			if d then
+				d.model:SetAttribute("Spawned", Shop.SANDBOX.spawnCash[plus and 2 or 1]) -- the share of a kill's cash it pays (kill)
 				Progress.Funnels.spawned(player) -- the Sandbox funnel
 			end
 		end

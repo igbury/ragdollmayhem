@@ -763,5 +763,32 @@
     "operation": "81e1d229-a652-4179-9f4f-daf8e0810831",
     "error": null,
     "sha256": "d626a776f61ccafaed52ccf29f11b48b93dd44eda1385957278c8490b570ad97"
+  },
+  "comic_page_turn": {
+    "assetId": "82122354228220",
+    "assetType": "Audio",
+    "displayName": "comic_page_turn",
+    "moderation": "Approved",
+    "operation": "e54c3a1e-d009-42e4-821f-50dc4861c6fa",
+    "error": null,
+    "sha256": "c74aa207564e0ff88d73295f981f78f89bb9befff3b1a2fb9e55f07f6a1e8ba4"
+  },
+  "comic_book_open": {
+    "assetId": "111308078990691",
+    "assetType": "Audio",
+    "displayName": "comic_book_open",
+    "moderation": "Approved",
+    "operation": "a47c693b-6e98-4a1b-bf54-0f33e0a845cb",
+    "error": null,
+    "sha256": "45971bb5c8b5acc8b4aa4b3068610fe9113529e7a2dcde22632eeebc16be06bf"
+  },
+  "comic_book_close": {
+    "assetId": "79079157069537",
+    "assetType": "Audio",
+    "displayName": "comic_book_close",
+    "moderation": "Approved",
+    "operation": "4aa4a579-b321-47f6-a28d-7a692f028b8f",
+    "error": null,
+    "sha256": "4a5b1d747a7eda8fe417d9ff113929505f44d57317635a3d534f60b04bb3ae6b"
   }
 }

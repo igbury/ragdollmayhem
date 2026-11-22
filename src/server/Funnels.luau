@@ -202,8 +202,8 @@ end
 
 -- `player` equipped weapon `id` (main server script, after the equip went through).
 function Funnels.equipped(player: Player, id: string)
-	if Progression.PRICE[id] and not Progression.START[id] and id ~= "Handgun" and player:GetAttribute(Progression.own(id)) then
-		reach(player, "Arsenal", 5, ARSENAL) -- the pistol is the tutorial's gift, not a buy
+	if Progression.PRICE[id] and not Progression.START[id] and player:GetAttribute(Progression.own(id)) then
+		reach(player, "Arsenal", 5, ARSENAL) -- a weapon they bought (the pistol too: no longer a gift)
 	end
 end
 

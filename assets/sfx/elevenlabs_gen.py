@@ -114,6 +114,10 @@ SOUNDS = [
     ("tutorial_step", 0.8, False, "A tutorial step completed in a cartoon game: a bright happy three-note ascending ding with a sparkle."),
     ("wanted_star_up", 0.9, False, "A wanted level star appearing in a cops-and-robbers game: a tense dramatic metallic stinger hit with a short alarm-like whoop."),
     ("wanted_alarm", 2.0, False, "A short police alert alarm for a cartoon crime game: two quick urgent electronic siren whoops."),
+    # --- the Arsenal comic book (client/Arsenal) ---
+    ("comic_page_turn", 1.0, False, "Turning one page of a glossy comic book by its corner: a quick crisp paper swish as a single thin page lifts, flips over and lands flat with a light papery flap, close-up, snappy."),
+    ("comic_book_open", 1.0, False, "Opening a comic book: the thicker glossy card cover swung open with a soft papery whoosh and landing flat on the table with a gentle slap, close-up."),
+    ("comic_book_close", 0.7, False, "Closing a comic book: the cover and pages flapping shut with a quick papery whoomp ending in a soft flat slap, close-up."),
     # --- dummy voices (speech bubbles) ---
     ("dummy_talk", 1.2, False, "A cartoon character talking in gibberish: quick high-pitched babbling syllables like Animal Crossing style speech, no real words."),
     ("dummy_shout", 1.0, False, "A cartoon character shouting angrily in gibberish: a loud short squeaky indignant yell, no real words, comedic."),

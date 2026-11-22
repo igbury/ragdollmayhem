@@ -92,11 +92,11 @@ function TutorialHud.start()
 
 	local STEPS = {
 		kill = "Take out one of the glowing dummies!",
-		pick = "Press Q to open your inventory and pick the HANDGUN",
+		pick = "Press Q to open your inventory, buy the HANDGUN and pick it",
 	}
 	local TOUCH_STEPS = {
 		kill = "Tap ATTACK to take out a glowing dummy!",
-		pick = "Tap the 🎒 backpack and pick the HANDGUN",
+		pick = "Tap the 🎒 backpack, buy the HANDGUN and pick it",
 	}
 	local COMPLETE = "TUTORIAL COMPLETE! Have fun."
 	local wasOn = false

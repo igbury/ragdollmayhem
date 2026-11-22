@@ -9,31 +9,38 @@ local Shop = require(script.Parent:WaitForChild("Shop")) -- ALL WEAPONS and the 
 
 local Progression = {}
 
-Progression.START = { Fists = true, Bat = true }
+Progression.START = { Fists = true } -- everything else is bought, the pistol too (the tutorial's kill pays for it)
 Progression.CASH = "Cash"
--- cash a kill pays, by what it took (counters below): melee is the hardest, an explosive can take several
-Progression.KILL_CASH = { kills = 12, ranged = 10, thrown = 6 }
+-- cash a kill pays, by what it took (counters below): melee is the hardest, an explosive can take several;
+-- anime: an ability (the Anime Pack; its kills come in as "Ability", main server script)
+Progression.KILL_CASH = { kills = 15, ranged = 10, thrown = 5, anime = 10 }
+-- times that for a dummy of this Kind (the hooligans fight back with a bat); paid rounded to whole cash
+Progression.KIND_CASH = { Hooligan = 1.1 }
+-- (a dummy put down with the Toolbox pays only a share of it, Shop.SANDBOX.spawnCash: Progression.cash)
 -- [weapon id] = cash. A pacing sim (cheapest first, 3 kills/min with fists up to 8 with the top weapons,
 -- ~11$ a kill) gave: a buy every 1-4 min for the first 20 min, everything in ~5 h, ~2.5 h with 2X CASH.
+-- The cheap melee weapons were then pushed up between the early guns and explosives, so the first buys
+-- alternate ranged / melee / explosive (2026-11-22; the sim not rerun: the first buys take about twice as long).
 -- ponytail: kill rates are guesses; retune once Analytics shows real kills per minute
 Progression.PRICE = {
-	Handgun = 10,
-	Crowbar = 30,
-	Axe = 50,
+	Handgun = 5,
+	Bat = 30,
 	Tomato = 60,
-	Sledgehammer = 80,
-	BoxingGloves = 100,
-	Lasso = 120,
-	Pan = 150,
+	Crowbar = 100,
 	Bow = 180,
+	Axe = 190,
 	Grenade = 200,
 	Spear = 250,
 	Knife = 280,
 	Revolver = 320,
+	Sledgehammer = 330,
 	Molotov = 350,
+	BoxingGloves = 380,
 	Lightsaber = 420,
 	TNT = 450,
+	Lasso = 470,
 	Taser = 500,
+	Pan = 520,
 	Chainsaw = 550,
 	C4 = 600,
 	Landmine = 650,
@@ -58,7 +65,8 @@ Progression.ATTRIBUTE = { kills = "Kills", ranged = "RangedKills", thrown = "Thr
 Progression.GROUP_ATTRIBUTE = "InGroup"
 Progression.GROUP_NEED = "JOIN THE GROUP"
 
-local RANGED = { gun = true, bow = true, knife = true, rocket = true }
+local RANGED = { gun = true, bow = true, knife = true }
+local EXPLOSIVE = { thrown = true, rocket = true } -- the rocket launcher is an explosive, as in the Arsenal
 local kindOf = {} -- [weapon id, its slash / heavy too] = kind
 local tagOf = {} -- [weapon id] = its shop tag (Shop.UNLOCKS)
 for _, w in Weapons do
@@ -77,16 +85,18 @@ function Progression.counters(weapon: string?): { string }
 	local out = { "kills" }
 	if kind and RANGED[kind] then
 		table.insert(out, "ranged")
-	elseif kind == "thrown" then
+	elseif kind and EXPLOSIVE[kind] then
 		table.insert(out, "thrown")
 	end
 	return out
 end
 
--- What a kill with `weapon` pays (2X CASH aside): the counter it adds to besides "kills".
-function Progression.cash(weapon: string?): number
+-- What a kill with `weapon` of a dummy of `kind` (its Kind attribute) pays, 2X CASH aside and unrounded:
+-- by the counter it adds to besides "kills", an ability by its own rate; `share`: the part a Toolbox one pays.
+function Progression.cash(weapon: string?, kind: string?, share: number?): number
 	local counters = Progression.counters(weapon)
-	return Progression.KILL_CASH[counters[2] or "kills"]
+	local base = if weapon == "Ability" then Progression.KILL_CASH.anime else Progression.KILL_CASH[counters[2] or "kills"]
+	return base * (Progression.KIND_CASH[kind or ""] or 1) * (share or 1)
 end
 
 -- nil when `player` may use weapon `id`, else what it still takes ("1000$" or GROUP_NEED).

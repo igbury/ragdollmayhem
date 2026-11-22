@@ -242,13 +242,14 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- Hotbar -------------------------------------------------------------------------------
 	-- It starts with the fists alone. Each weapon taken from the wheel (hold Q) or the Arsenal (J)
 	-- that is not on it yet gets a slot of its own, up to MAX_SLOTS; after that it replaces the one in hand.
+	-- The Arsenal's Anime Pack puts every ability on it instead (pack(), past MAX_SLOTS).
 	local MAX_SLOTS = 5
 	local loadout = { 1 } -- Weapons[1], the fists
 	local bar = Instance.new("Frame")
 	bar.Name = "Hotbar"
 	bar.AnchorPoint = Vector2.new(0.5, 1)
 	bar.Position = UDim2.new(0.5, 0, 1, -12)
-	bar.Size = UDim2.fromOffset((MAX_SLOTS + 1) * 56 + 16, 70) -- the weapons, then the backpack
+	bar.Size = UDim2.fromOffset((math.max(MAX_SLOTS, #attacks) + 1) * 56 + 16, 70) -- the weapons, then the backpack
 	bar.BackgroundTransparency = 1
 	bar.Parent = gui
 	local list = Instance.new("UIListLayout")
@@ -277,8 +278,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		if loadout[k] > #weapons then -- an ability: an orb in its colour
 			local orb = Instance.new("Frame")
 			orb.AnchorPoint = Vector2.new(0.5, 0.5)
-			orb.Position = UDim2.fromScale(0.5, 0.42)
-			orb.Size = UDim2.fromScale(0.42, 0.42)
+			orb.Position = UDim2.fromScale(0.5, 0.5)
+			orb.Size = UDim2.fromScale(0.46, 0.46)
 			orb.BackgroundColor3 = w.color
 			orb.ZIndex = 2
 			corner(orb, 100)
@@ -292,7 +293,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			s.vp, s.place = icon(viewmodels[w.id] or fistSpec, s.frame, w.id, SLOT_ZOOM[w.id])
 		end
 		s.stroke.Color = w.color or GROUP[w.tag] or GROUP.melee
-		s.short.Text = w.short or w.id:upper()
 		s.showing = loadout[k]
 		lockSlot(k)
 	end
@@ -320,13 +320,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		cool.ZIndex = 3
 		corner(cool, 10)
 		cool.Parent = slot
-		local short = text(slot, {
-			AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -2), Size = UDim2.new(1, 0, 0, 10),
-			TextSize = 9, Font = Enum.Font.GothamBold, ZIndex = 4,
-		})
 		slot.Parent = bar
-		local lock = text(slot, { Size = UDim2.fromScale(1, 0.8), Text = "🔒", TextSize = 20, ZIndex = 5, Visible = false })
-		slots[k] = { frame = slot, stroke = stroke, cool = cool, short = short, lock = lock }
+		local lock = text(slot, { Size = UDim2.fromScale(1, 1), Text = "🔒", TextSize = 20, ZIndex = 5, Visible = false })
+		slots[k] = { frame = slot, stroke = stroke, cool = cool, lock = lock }
 		fill(k)
 		slot.Activated:Connect(function()
 			if not api.blocked() then
@@ -591,6 +587,15 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			flip(dirn)
 		end)
 	end
+	-- abilities on the bar: the Anime Pack is out (only it puts them there)
+	local function packOut(): boolean
+		for _, e in loadout do
+			if e > #weapons then
+				return true
+			end
+		end
+		return false
+	end
 	local function choose(i: number?)
 		if not i then
 			show(false)
@@ -602,7 +607,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			return
 		end
 		if not table.find(loadout, i) then
-			if #loadout < MAX_SLOTS then -- a new slot at the end
+			if #loadout < MAX_SLOTS and not packOut() then -- a new slot at the end (with the pack out: in the held one's place)
 				table.insert(loadout, i)
 				addSlot(#loadout)
 			else -- the bar is full: it takes the place of the one in hand
@@ -617,22 +622,42 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		show(false)
 	end
 
+	-- The Anime Pack (one card in the Arsenal for all the abilities): every ability on the bar in place of
+	-- what was on it, the first in hand. A weapon taken after it takes the held ability's place (choose).
+	local function pack()
+		if missing(attackFrom + 1) then
+			take(attackFrom + 1) -- says what it needs (the ANIME ATTACKS pass), takes nothing
+			return
+		end
+		for k = #slots, 1, -1 do
+			slots[k].frame:Destroy()
+			slots[k] = nil
+		end
+		table.clear(loadout)
+		for k in attacks do
+			loadout[k] = attackFrom + k
+			addSlot(k)
+		end
+		take(loadout[1])
+	end
+
 	-- the Arsenal grid asks the same locks
-	local bagApi = setmetatable({ locked = missing, buy = buy, attackFrom = attackFrom }, { __index = api })
+	local bagApi = setmetatable({ locked = missing, buy = buy, attackFrom = attackFrom, pack = pack, packOut = packOut }, { __index = api })
 	arsenal = require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, bagApi, choose, function() show(false) end)
 
 	-- Unlocks: a notice (below) and the locks redrawn (a new weapon goes on the bar once it is taken).
-	-- The banner is for what a locked weapon still needs.
+	-- The banner is for what a locked weapon still needs, and for a moment the name of what was just taken
+	-- (the slots show only its picture).
 	local banner = text(gui, {
 		AnchorPoint = Vector2.new(0.5, 1), Position = UDim2.new(0.5, 0, 1, -96), Size = UDim2.fromOffset(420, 34),
 		TextSize = 24, Font = Enum.Font.GothamBlack, TextColor3 = Color3.fromRGB(255, 214, 90), TextStrokeTransparency = 0.2, Text = "", Visible = false,
 	})
 	local bannerToken = 0
-	flash = function(message: string)
+	flash = function(message: string, seconds: number?)
 		bannerToken += 1
 		local token = bannerToken
 		banner.Text, banner.Visible = message, true
-		task.delay(2.5, function()
+		task.delay(seconds or 2.5, function()
 			if bannerToken == token then
 				banner.Visible = false
 			end
@@ -665,7 +690,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		line.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 		line.Parent = parent
 	end
-	local function notify(i: number)
+	local function notify(i: number, headline: string?) -- headline: the caption ("NEW WEAPON!" by default)
 		local w = weapons[i]
 		local tint = w.color or GROUP[w.tag] or GROUP.melee
 		noticeCount += 1
@@ -725,7 +750,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		caption.Parent = card
 		inked(caption, 3)
 		text(caption, {
-			Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromOffset(5, 3), Text = "NEW WEAPON!",
+			Size = UDim2.new(1, -10, 1, -6), Position = UDim2.fromOffset(5, 3), Text = headline or "NEW WEAPON!",
 			Font = COMIC, TextScaled = true, TextColor3 = INK, TextStrokeTransparency = 1,
 		})
 		local spin = RunService.RenderStepped:Connect(function(dt)
@@ -768,6 +793,25 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end
 	relock()
+	-- Affordable notices: the first time a weapon for sale that is not theirs yet comes within their cash,
+	-- the same card says they can buy it (once a session; what they could afford as the save came in stays quiet).
+	local affordable = {}
+	local function checkAfford()
+		local quiet = not player:GetAttribute("ProgressLoaded")
+		local cash = player:GetAttribute(Progression.CASH) or 0
+		for i, w in weapons do
+			local price = Progression.PRICE[w.id]
+			if price and not affordable[i] and missing(i) and cash >= price then
+				affordable[i] = true
+				if not quiet then
+					notify(i, `BUY IT: {price}$`)
+				end
+			end
+		end
+	end
+	checkAfford()
+	player:GetAttributeChangedSignal(Progression.CASH):Connect(checkAfford)
+	player:GetAttributeChangedSignal("ProgressLoaded"):Connect(checkAfford)
 	player.AttributeChanged:Connect(function(attribute) -- a weapon bought (shared/Progression)
 		if attribute:sub(1, 3) == "Own" then
 			relock()
@@ -840,10 +884,18 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end)
 
+	local named = inHand() -- what the banner last named
 	RunService.RenderStepped:Connect(function(dt)
 		-- the backpack is for phones and tablets (the keyboard holds Q, the mouse is locked in first person)
 		backpack.Visible = TouchControls.active()
 		local current = inHand()
+		if current ~= named then -- something else in hand: its name over the bar for a moment
+			named = current
+			local e = entry(current)
+			if e then
+				flash(e.name, 1.5)
+			end
+		end
 		local cooldown = api.cooldown()
 		for k, s in slots do
 			local on = loadout[k] == current
@@ -852,7 +904,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			s.frame.BackgroundTransparency = on and 0.05 or 0.35
 			s.stroke.Thickness = on and 3 or 1.5
 			s.stroke.Transparency = on and 0 or 0.55
-			s.short.TextTransparency = on and 0 or 0.35
 			s.cool.Size = UDim2.fromScale(1, on and cooldown or 0)
 			if on then
 				s.place(dt)
