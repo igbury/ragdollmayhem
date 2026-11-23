@@ -888,6 +888,9 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	RunService.RenderStepped:Connect(function(dt)
 		-- the backpack is for phones and tablets (the keyboard holds Q, the mouse is locked in first person)
 		backpack.Visible = TouchControls.active()
+		-- centred, unless that runs it under the touch ATTACK button (a narrow phone): then left of it
+		local half, centre, edge = list.AbsoluteContentSize.X / 2, gui.AbsoluteSize.X / 2, TouchControls.attackLeft()
+		bar.Position = UDim2.new(0, if edge then math.max(half + 8, math.min(centre, edge - 8 - half)) else centre, 1, -12)
 		local current = inHand()
 		if current ~= named then -- something else in hand: its name over the bar for a moment
 			named = current

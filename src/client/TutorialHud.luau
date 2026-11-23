@@ -11,6 +11,7 @@ local Shared = game:GetService("ReplicatedStorage"):WaitForChild("Shared")
 local Sfx = require(Shared:WaitForChild("Sfx"))
 local Progression = require(Shared:WaitForChild("Progression"))
 local Weapons = require(Shared:WaitForChild("Weapons"))
+local Stickers = require(Shared:WaitForChild("Stickers"))
 local TouchControls = require(script.Parent:WaitForChild("TouchControls")) -- active(): playing by touch
 
 local TutorialHud = {}
@@ -131,7 +132,20 @@ function TutorialHud.start()
 	local goal = line(46, 26, 0.34, Color3.new(1, 1, 1), 3)
 	goal.AnchorPoint, goal.Position = Vector2.new(1, 0), UDim2.new(1, -16, 0, 92) -- under the wanted stars and the cash (client/CashHud)
 	goal.TextXAlignment = Enum.TextXAlignment.Right
-	local function nextGoal(): string?
+	-- and under it a bar filling with the cash towards that weapon's price, green once it can be bought
+	local GREEN = Color3.fromRGB(110, 230, 90)
+	local track = Instance.new("Frame")
+	track.AnchorPoint, track.Position, track.Size = Vector2.new(1, 0), UDim2.new(1, -16, 0, 122), UDim2.new(0.16, 0, 0, 8)
+	track.BackgroundColor3, track.BorderSizePixel, track.Visible = INK, 0, false
+	local trackLine = Instance.new("UIStroke")
+	trackLine.Thickness, trackLine.Color = 2, INK
+	trackLine.Parent = track
+	local fill = Instance.new("Frame")
+	fill.Size, fill.BackgroundColor3, fill.BorderSizePixel = UDim2.fromScale(0, 1), YELLOW, 0
+	fill.Parent = track
+	track.Parent = gui
+	-- text, and how far the cash has got to the price (0..1); nil when there is no goal
+	local function nextGoal(): (string?, number?)
 		if player:GetAttribute("Tutorial") ~= false then
 			return nil -- not loaded, or still in the tutorial
 		end
@@ -146,10 +160,16 @@ function TutorialHud.start()
 		if not best then
 			return nil
 		end
-		return if cash >= bestPrice then `BUY {best.name}!` else `NEXT: {best.name} {bestPrice}$`
+		local ratio = math.clamp(cash / bestPrice, 0, 1)
+		return if cash >= bestPrice then `BUY {best.name}!` else `NEXT: {best.name} {math.floor(cash)}/{bestPrice}$`, ratio
 	end
 	local function showGoal()
-		local text = nextGoal()
+		local text, ratio = nextGoal()
+		track.Visible = text ~= nil
+		if ratio then
+			fill.BackgroundColor3 = if ratio >= 1 then GREEN else YELLOW
+			tween(fill, 0.3, { Size = UDim2.fromScale(ratio, 1) })
+		end
 		if text and goal.Visible and goal.Text ~= text then
 			goal.Text = text -- the count went up: a little bump, no pop-out
 			local scale = goal:FindFirstChildOfClass("UIScale") :: UIScale
@@ -165,6 +185,152 @@ function TutorialHud.start()
 		end
 	end)
 	showGoal()
+
+	-- The controls of the weapon just taken out, for a few seconds under the tutorial's lines (as
+	-- init.client reads the input: right mouse / AIM aims, holds the block, shows the throw arc...).
+	local controls = line(164, 28, 0.6, Color3.new(1, 1, 1), 3)
+	local function controlsOf(w, touch: boolean): string?
+		local A, HA = if touch then "Tap ATTACK" else "Click", if touch then "Hold ATTACK" else "Hold click"
+		local M = if touch then "AIM" else "Right click"
+		local by = {
+			Fists = `{A}: punch · {HA}: keep punching`,
+			BoxingGloves = `{HA}: punch · {M}: block · Block + {A}: heavy left`,
+			Knife = `{A}: slash · {M} + {A}: throw it`,
+			Spear = `{A}: thrust, skewers up to three`,
+			Bow = `{HA} to draw, let go to shoot`,
+			C4 = `{A}: stick a charge · {M}: BOOM`,
+			Landmine = `{A}: put it down · it goes off when they step close`,
+			Lasso = `{A}: throw the rope · {M}: let go`,
+			Chainsaw = `{HA}: saw`,
+			Flamethrower = `{HA}: spray fire · {M}: aim`,
+			Minigun = `{HA}: spin up and fire · {M}: aim`,
+		}
+		if by[w.id] then
+			return by[w.id]
+		elseif w.kind == "melee" and w.aimSwing then
+			return if touch then `{A}: swing` else "Hold click and move the mouse to aim the swing, let go to hit"
+		elseif w.kind == "melee" then
+			return if w.auto then `{HA}: keep going` else `{A}: swing`
+		elseif w.kind == "gun" or w.kind == "rocket" then
+			return `{if w.auto then HA else A}: fire · {M}: aim`
+		elseif w.kind == "thrown" then
+			return `{A}: throw · {M}: see where it lands`
+		end
+		return nil
+	end
+	local controlsToken = 0
+	local function showControls()
+		local char = player.Character
+		local id = char and char:GetAttribute("EquippedWeapon")
+		local w
+		for _, each in Weapons do
+			if each.id == id then
+				w = each
+			end
+		end
+		local text = w and player:GetAttribute("Map") and controlsOf(w, TouchControls.active())
+		controlsToken += 1
+		local token = controlsToken
+		setLine(controls, text or nil)
+		task.delay(4, function()
+			if controlsToken == token then
+				setLine(controls, nil)
+			end
+		end)
+	end
+	local function watchCharacter(char: Model)
+		char:GetAttributeChangedSignal("EquippedWeapon"):Connect(showControls)
+	end
+	if player.Character then
+		watchCharacter(player.Character)
+	end
+	player.CharacterAdded:Connect(watchCharacter)
+	player:GetAttributeChangedSignal("Map"):Connect(showControls) -- into a map from the menu: what is in hand
+
+	-- Stickers (shared/Stickers): the current challenge, the first one not earned, under the goal bar;
+	-- and a pop in the middle of the screen when one is earned (its cash is already in, server/Progress).
+	local challenge = line(136, 22, 0.34, Color3.fromRGB(150, 230, 255), 3)
+	challenge.AnchorPoint, challenge.Position = Vector2.new(1, 0), UDim2.new(1, -16, 0, 136)
+	challenge.TextXAlignment = Enum.TextXAlignment.Right
+	local earned = line(210, 40, 0.6, Color3.fromRGB(120, 240, 110), 4)
+	local function wording(sticker): string
+		return if TouchControls.active() and sticker.touch then sticker.touch else sticker.text
+	end
+	local function showChallenge()
+		local text
+		if player:GetAttribute("Tutorial") == false then
+			local touch = TouchControls.active()
+			for _, sticker in Stickers.LIST do
+				if not player:GetAttribute(Stickers.attribute(sticker.id)) and not (touch and sticker.keys) then
+					text = `CHALLENGE: {wording(sticker)} +{sticker.cash}$`
+					break
+				end
+			end
+		end
+		setLine(challenge, text)
+	end
+	UserInputService.LastInputTypeChanged:Connect(function()
+		task.defer(showChallenge) -- after TouchControls has judged it (as the tutorial lines above)
+	end)
+	-- several at once (a rocket: the blast and a limb) are shown one after another, not over each other
+	local queue, showing = {}, false
+	local function nextEarned()
+		local text = table.remove(queue, 1)
+		showing = text ~= nil
+		if not text then
+			setLine(earned, nil)
+			return
+		end
+		Sfx.ui(Sfx.TUTORIAL_STEP, 0.8)
+		setLine(earned, text)
+		task.delay(if #queue > 0 then 2 else 3.5, nextEarned)
+	end
+	local function announce(text: string)
+		table.insert(queue, text)
+		if not showing then
+			nextEarned()
+		end
+	end
+	-- the daily reward (server/Progress.daily), once in a map: paid while still in the menu, it waits
+	local dailyShown = false
+	local function showDaily()
+		local cash = player:GetAttribute("DailyCash")
+		if dailyShown or not cash or not player:GetAttribute("Map") then
+			return
+		end
+		dailyShown = true
+		announce(`DAY {player:GetAttribute("DailyStreak") or 1} REWARD +{cash}$ · TOMORROW +{player:GetAttribute("DailyNext") or cash}$`)
+	end
+	player:GetAttributeChangedSignal("DailyCash"):Connect(showDaily)
+	player:GetAttributeChangedSignal("Map"):Connect(showDaily)
+	showDaily()
+	-- the ones the save brought, known once it is in: only stickers earned after that pop up (the save's
+	-- attributes and ProgressLoaded can reach the client in one batch, so that flag alone is no guard)
+	local known: { [string]: boolean }? = nil
+	task.spawn(function()
+		while not player:GetAttribute("ProgressLoaded") do
+			player:GetAttributeChangedSignal("ProgressLoaded"):Wait()
+		end
+		task.wait(1) -- the rest of the batch
+		local seen = {}
+		for _, sticker in Stickers.LIST do
+			seen[sticker.id] = player:GetAttribute(Stickers.attribute(sticker.id)) == true
+		end
+		known = seen
+	end)
+	player.AttributeChanged:Connect(function(attribute)
+		if attribute == "Tutorial" then
+			showChallenge()
+		elseif attribute:sub(1, 7) == "Sticker" then
+			local sticker = Stickers.get(attribute:sub(8))
+			if sticker and known and not known[sticker.id] and player:GetAttribute(attribute) then
+				known[sticker.id] = true
+				announce(`STICKER! {wording(sticker)} +{sticker.cash}$`)
+			end
+			showChallenge()
+		end
+	end)
+	showChallenge()
 
 	-- the outline: on a dummy marked for this player, until it dies
 	local function watch(model: Instance)

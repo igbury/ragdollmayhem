@@ -11,11 +11,19 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Shop = require(ReplicatedStorage.Shared.Shop)
 local Settings = require(ReplicatedStorage.Shared.Settings)
+local Stickers = require(ReplicatedStorage.Shared.Stickers)
 local Funnels = require(script.Parent.Funnels)
 
 local Progress = {}
 -- Settings (shared/Settings; the toolbox SETTINGS page): attribute = its type. Saved as they are.
 Progress.Funnels = Funnels -- reached through here by the main server script (its locals limit)
+Progress.Stickers = Stickers -- the same
+local GRACE = 300 -- seconds of play (StatPlaytime) before dummies hit a new player back
+
+-- A player still in their first minutes: nothing hits them back yet (main script: hit, tomato).
+function Progress.isNew(who: any): boolean
+	return typeof(who) == "Instance" and who:IsA("Player") and (who:GetAttribute("StatPlaytime") or 0) < GRACE
+end
 Progress.Settings = Settings -- for the main server script, which is at Luau's 200-locals limit
 Progress.SETTINGS = {}
 for name, default in Settings.DEFAULTS do
@@ -48,6 +56,11 @@ local LEGACY = {
 	Grenade = { "thrown", 15 }, Molotov = { "thrown", 25 }, TNT = { "thrown", 30 }, C4 = { "thrown", 40 },
 	Landmine = { "thrown", 45 },
 }
+-- The daily reward: cash on the first visit of each (UTC) day after the tutorial, more for each day in
+-- a row (day 1..7, then day 7's again); a missed day starts the streak over. Kept as DailyDay (the day
+-- number it was last paid) and DailyStreak, saved; DailyCash / DailyNext are this session's pay and
+-- tomorrow's, for the client's pop-up (client/TutorialHud).
+local DAILY = { 20, 30, 40, 50, 60, 80, 100 }
 local lastAt = {} -- [player] = where their root was at the last walk sample
 local loaded = {} -- [player] = true once their saved counters are in (no save before that: it would wipe them)
 local dirty = {} -- [player] = true: changed since the last save
@@ -75,6 +88,13 @@ local function snapshot(player: Player)
 		data.settings[name] = player:GetAttribute(name)
 	end
 	data.funnels = Funnels.save(player)
+	data.daily = { day = player:GetAttribute("DailyDay"), streak = player:GetAttribute("DailyStreak") }
+	data.stickers = {}
+	for _, sticker in Stickers.LIST do
+		if player:GetAttribute(Stickers.attribute(sticker.id)) then
+			table.insert(data.stickers, sticker.id)
+		end
+	end
 	return data
 end
 
@@ -91,6 +111,41 @@ local function save(player: Player)
 	end
 end
 
+-- The streak after a visit on `day` when the last paid one was `last` (nil: never): nil = paid today already.
+local function streakAfter(last: number?, streak: number?, day: number): number?
+	if last == day then
+		return nil
+	end
+	return if last == day - 1 then (streak or 0) + 1 else 1
+end
+
+-- Pays today's daily reward if it is due (and the tutorial is done: it waits for that).
+function Progress.daily(player: Player)
+	if player:GetAttribute("Tutorial") ~= false or not player:GetAttribute("ProgressLoaded") then
+		return
+	end
+	local day = os.time() // 86400
+	local streak = streakAfter(player:GetAttribute("DailyDay"), player:GetAttribute("DailyStreak"), day)
+	if not streak then
+		return
+	end
+	local cash = DAILY[math.min(streak, #DAILY)]
+	player:SetAttribute("DailyDay", day)
+	player:SetAttribute("DailyStreak", streak)
+	player:SetAttribute("DailyNext", DAILY[math.min(streak + 1, #DAILY)])
+	player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + cash)
+	player:SetAttribute("DailyCash", cash) -- last: the client shows the pop-up on this one
+	dirty[player] = true
+end
+
+-- once loaded: the daily reward now, or as soon as the tutorial is done
+local function watchDaily(player: Player)
+	player:GetAttributeChangedSignal("Tutorial"):Connect(function()
+		Progress.daily(player)
+	end)
+	Progress.daily(player)
+end
+
 local function load(player: Player)
 	for _, attribute in Progression.ATTRIBUTE do
 		player:SetAttribute(attribute, player:GetAttribute(attribute) or 0)
@@ -105,6 +160,7 @@ local function load(player: Player)
 		player:SetAttribute("HintsDone", false)
 		player:SetAttribute("ProgressLoaded", true)
 		Funnels.load(player, nil)
+		watchDaily(player)
 		return
 	end
 	local done, data = pcall(store.GetAsync, store, tostring(player.UserId))
@@ -114,6 +170,7 @@ local function load(player: Player)
 		player:SetAttribute("HintsDone", false)
 		player:SetAttribute("ProgressLoaded", true) -- the client stops waiting for it all the same
 		Funnels.load(player, nil) -- this session's only: it is never saved
+		watchDaily(player)
 		return
 	end
 	if player.Parent and type(data) == "table" then
@@ -136,6 +193,17 @@ local function load(player: Player)
 			end
 			dirty[player] = true
 		end
+		if type(data.daily) == "table" and tonumber(data.daily.day) and tonumber(data.daily.streak) then
+			player:SetAttribute("DailyDay", tonumber(data.daily.day))
+			player:SetAttribute("DailyStreak", tonumber(data.daily.streak))
+		end
+		if type(data.stickers) == "table" then
+			for _, id in data.stickers do
+				if type(id) == "string" and Stickers.get(id) then
+					player:SetAttribute(Stickers.attribute(id), true)
+				end
+			end
+		end
 		local saved = type(data.stats) == "table" and data.stats or {}
 		for stat, how in STATS do
 			local have, old = player:GetAttribute(stat) or 0, tonumber(saved[stat]) or 0
@@ -153,6 +221,7 @@ local function load(player: Player)
 	loaded[player] = true
 	player:SetAttribute("ProgressLoaded", true)
 	Funnels.load(player, type(data) == "table" and data.funnels)
+	watchDaily(player)
 end
 
 -- `player` killed a dummy of `kind` (its Kind attribute; `share`: its Spawned attribute, the part of the
@@ -168,7 +237,37 @@ function Progress.credit(player: Player, weapon: string?, kind: string?, share: 
 	end
 	Funnels.kill(player, weapon)
 	dirty[player] = true
+	local kills = player:GetAttribute(Progression.ATTRIBUTE.kills) or 0
+	if kills >= 10 then
+		Progress.sticker(player, "ko10")
+	end
+	if kills >= 100 then
+		Progress.sticker(player, "ko100")
+	end
 	return paid
+end
+
+-- `player` did what sticker `id` (shared/Stickers) asks: the first time (and not in the tutorial) it is
+-- theirs, with its cash. The client sees the "Sticker<id>" attribute come in and shows it.
+function Progress.sticker(player: Player?, id: string)
+	local sticker = Stickers.get(id)
+	if typeof(player) ~= "Instance" or not player:IsA("Player") or not sticker or player:GetAttribute("Tutorial") ~= false then
+		return
+	end
+	local attribute = Stickers.attribute(id)
+	if player:GetAttribute(attribute) then
+		return
+	end
+	player:SetAttribute(attribute, true)
+	player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + sticker.cash)
+	local count = 0
+	for _, each in Stickers.LIST do
+		if player:GetAttribute(Stickers.attribute(each.id)) then
+			count += 1
+		end
+	end
+	Funnels.sticker(player, id, count)
+	dirty[player] = true
 end
 
 -- One more of a summed stat (StatBones, StatThrown).
@@ -206,6 +305,7 @@ function Progress.buy(player: Player, id: any): boolean
 	player:SetAttribute(Progression.own(id), true)
 	dirty[player] = true
 	Funnels.bought(player, id, price)
+	Progress.sticker(player, "buy") -- not the tutorial's pistol: Progress.sticker skips the tutorial
 	return true
 end
 

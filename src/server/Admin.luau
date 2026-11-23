@@ -31,6 +31,7 @@ end
 --   dummies: { [Model]: d }, spawn: (cf, kind?) -> d?, revive: (d) -> (), kill: (d) -> (),
 --   freeze: () -> boolean (toggles TIME STOP, returns it), wanted: (player, stars) -> (),
 --   berserk: (d) -> () (fights the nearest dummy from now on), trim: () -> () (room for one more),
+--   disaster: (player, kind?) -> string (server/Disasters.force: one round them now, no pass or cooldown),
 -- }
 function Admin.start(remotes: Folder, api)
 	local remote = Instance.new("RemoteEvent")
@@ -172,6 +173,12 @@ function Admin.start(remotes: Folder, api)
 		end,
 		freeze = function()
 			return if api.freeze() then "Time stopped." else "Time running."
+		end,
+		disaster = function(player, kind) -- kind nil: a random one
+			if kind ~= nil and typeof(kind) ~= "string" then
+				return nil
+			end
+			return api.disaster(player, kind)
 		end,
 	}
 

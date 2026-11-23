@@ -8,6 +8,7 @@ local TweenService = game:GetService("TweenService")
 local UIS = game:GetService("UserInputService")
 
 local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local Disasters = require(ReplicatedStorage.Shared:WaitForChild("Disasters"))
 
 local player = Players.LocalPlayer
 local remote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Admin", math.huge) :: RemoteEvent -- made late, after the maps (server/Admin)
@@ -181,6 +182,17 @@ button(crowd, "Remove all", RED, 7, function() ask("removeall") end)
 
 local world = section("World", 3)
 button(world, "Stop / start time", BLUE, 1, function() ask("freeze") end)
+
+-- server/Disasters: one round you now, no SANDBOX + and no cooldown
+local disasters = section("Disasters (test, no cooldown)", 3)
+for i, kind in Disasters.KINDS do
+	button(disasters, kind.name, kind.color, i, function() ask("disaster", kind.id) end)
+end
+button(disasters, "Random", PURPLE, #Disasters.KINDS + 1, function() ask("disaster") end)
+local combos = section("Disaster combos (test)", 3)
+for i, combo in Disasters.COMBOS do
+	button(combos, combo.name, combo.color, i, function() ask("disaster", combo.id) end)
+end
 
 remote.OnClientEvent:Connect(function(message: string)
 	status.Text = message

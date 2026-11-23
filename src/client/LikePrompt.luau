@@ -1,7 +1,8 @@
 -- A polite "like the game?" card, top centre. Nothing is locked behind it and nothing is given for
 -- it (Roblox forbids rewarding likes, and cannot check one anyway). It shows when the saved play
--- time (StatPlaytime, server/Progress) passes one of ASK_AT during this session, so each player
--- sees it at most once per mark, ever, with no extra save. Gone on OK or after SHOW_TIME.
+-- time (StatPlaytime, server/Progress) passes one of ASK_AT during this session and the player has
+-- a few stickers (below), so each player sees it at most once per mark, ever, with no extra save.
+-- Gone on OK or after SHOW_TIME.
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local Sfx = require(game:GetService("ReplicatedStorage"):WaitForChild("Shared"):WaitForChild("Sfx"))
@@ -86,16 +87,39 @@ end
 if not player:GetAttribute("ProgressLoaded") then
 	player:GetAttributeChangedSignal("ProgressLoaded"):Wait()
 end
+-- Asked after a good moment, not just after time: a mark reached with fewer than MIN_STICKERS stickers
+-- (shared/Stickers) waits for the one that makes it, and comes up once its pop (client/TutorialHud) is over.
+local MIN_STICKERS = 3
+local pending = false
+local function stickers(): number
+	local n = 0
+	for name, value in player:GetAttributes() do
+		if name:sub(1, 7) == "Sticker" and value == true then
+			n += 1
+		end
+	end
+	return n
+end
 local last = player:GetAttribute("StatPlaytime") or 0
 player:GetAttributeChangedSignal("StatPlaytime"):Connect(function()
 	local now = player:GetAttribute("StatPlaytime") or 0
 	for _, mark in ASK_AT do
 		if last < mark and now >= mark then
-			show()
+			if stickers() >= MIN_STICKERS then
+				show()
+			else
+				pending = true
+			end
 			break
 		end
 	end
 	last = now
+end)
+player.AttributeChanged:Connect(function(name)
+	if pending and name:sub(1, 7) == "Sticker" and stickers() >= MIN_STICKERS then
+		pending = false
+		task.delay(4, show)
+	end
 end)
 
 return nil

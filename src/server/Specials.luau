@@ -351,6 +351,8 @@ local function freeze(d)
 	end)
 end
 
+Specials.freeze = freeze -- the blizzard's (server/Disasters, through init.server)
+
 local function frost(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
 	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
 	K.fx:FireAllClients("Shot", char, weapon.id, origin, target, result ~= nil, true)

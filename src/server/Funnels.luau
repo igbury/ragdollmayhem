@@ -16,14 +16,14 @@
 --  7  Shop            does a shop visit turn into a purchase     Opened shop, Saw a pass prompt, Bought a pass
 --  8  Moves           how much of the movement kit gets used     1 / 2 / 3 / 5 / 8 / 11 moves (all not cut)
 --  9  Sandbox         is the Toolbox found and used              Opened Toolbox, Spawned a character, Built a block
--- 10  (free)
+-- 10  Stickers        do the challenges pull players along       1 / 3 / 5 / 8 / 12 stickers (shared/Stickers)
 -- Retired 2026-11-21 (their meaning changed; never reuse the names): MeleeWeapons, RangedWeapons,
 -- ExplosiveWeapons (kill-count unlock order, now weapons are bought), Movement (stuck at the cut Wall
 -- flip), Menus (stuck at the WeaponWheel, which the Arsenal replaced).
 --
 -- Custom events (CustomField01 = the value): MoveUsed "Move - <name>", MenuOpened "Menu - <name>"
 -- (once per player each), WeaponBought "Weapon - <id>" (value: its price), PassPrompt
--- "Pass - <key> - Bought" / "Pass - <key> - Closed".
+-- "Pass - <key> - Bought" / "Pass - <key> - Closed", StickerEarned "Sticker - <id>".
 -- AnalyticsService sends only from published servers; in Studio each event is printed instead.
 local AnalyticsService = game:GetService("AnalyticsService")
 local HttpService = game:GetService("HttpService")
@@ -47,6 +47,7 @@ local PLAYTIME_MINUTES = { 1, 3, 5, 10, 15, 30, 60, 120, 300 }
 local SHOP = { "Opened shop", "Saw a pass prompt", "Bought a pass" }
 local MOVE_STEPS = { 1, 2, 3, 5, 8, 11 } -- 11 = every move not cut (client/init mv.cut: slam, flip, vault)
 local SANDBOX = { "Opened Toolbox", "Spawned a character", "Built a block" }
+local STICKER_STEPS = { 1, 3, 5, 8, 12 } -- 12 = every sticker in shared/Stickers today
 -- Move remote reports (main server script, MOVE_NAMES) = the ability they mean
 local MOVES = {
 	sprint = "Sprint", wall1 = "Wall run", ["wall-1"] = "Wall run", cling = "Wall cling",
@@ -134,6 +135,7 @@ local function countNames(steps: { number }, one: string, many: string): { strin
 	return names
 end
 local KILL_NAMES = countNames(KILL_STEPS, "kill", "kills")
+local STICKER_NAMES = countNames(STICKER_STEPS, "sticker", "stickers")
 local MOVE_NAMES = countNames(MOVE_STEPS, "move", "moves")
 local PLAYTIME_NAMES = {}
 for i, m in PLAYTIME_MINUTES do
@@ -254,6 +256,12 @@ function Funnels.pass(player: Player, key: string, bought: boolean)
 		send(player, "Shop", 3, SHOP[3], session)
 	end
 	custom(player, "PassPrompt", `Pass - {key} - {if bought then "Bought" else "Closed"}`)
+end
+
+-- `player` earned sticker `id`, their `count`th (server/Progress.sticker, after it went through).
+function Funnels.sticker(player: Player, id: string, count: number)
+	custom(player, "StickerEarned", "Sticker - " .. id)
+	reach(player, "Stickers", milestone(STICKER_STEPS, count), STICKER_NAMES)
 end
 
 -- `player` spawned a character / built a block with the Toolbox (main server script, after it worked).

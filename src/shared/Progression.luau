@@ -9,7 +9,9 @@ local Shop = require(script.Parent:WaitForChild("Shop")) -- ALL WEAPONS and the 
 
 local Progression = {}
 
-Progression.START = { Fists = true } -- everything else is bought, the pistol too (the tutorial's kill pays for it)
+-- the bat and the tomato too, so the first minutes have more than fists to play with (2026-11-23);
+-- everything else is bought, the pistol too (the tutorial's kill pays for it and teaches buying)
+Progression.START = { Fists = true, Bat = true, Tomato = true }
 Progression.CASH = "Cash"
 -- cash a kill pays, by what it took (counters below): melee is the hardest, an explosive can take several;
 -- anime: an ability (the Anime Pack; its kills come in as "Ability", main server script)

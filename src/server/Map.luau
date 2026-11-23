@@ -101,6 +101,24 @@ local function block(size: Vector3, position: Vector3, color: Color3, material: 
 	return p
 end
 
+-- Disasters on (server/Disasters holds it while one runs): nothing mends (later) and twice the loose
+-- cubes stay (track). A count, not a flag: two maps can have one each.
+Map.holds = 0
+
+-- fn() `seconds` from now, but not while a disaster holds the map: then once it is over, each at a
+-- random moment in the next few seconds, so the whole map does not snap back in one frame.
+local function later(seconds: number, fn: () -> ())
+	task.delay(seconds, function()
+		if Map.holds > 0 then
+			repeat
+				task.wait(1)
+			until Map.holds == 0
+			task.wait(math.random() * 6)
+		end
+		fn()
+	end)
+end
+
 local loose = {} -- live loose cubes, oldest first
 local function track(p: BasePart)
 	table.insert(loose, p)
@@ -110,7 +128,7 @@ local function track(p: BasePart)
 			table.remove(loose, i)
 		end
 	end)
-	if #loose > MAX_DEBRIS then
+	if #loose > MAX_DEBRIS * (if Map.holds > 0 then 2 else 1) then
 		table.remove(loose, 1):Destroy() -- newest always shows, the oldest makes room
 	end
 end
@@ -511,7 +529,7 @@ local function shatter(hits: { BasePart }, standing: boolean?, inside: (BasePart
 		end
 		whole.Parent = nil
 		if floor then
-			task.delay(REGEN, function()
+			later(REGEN, function()
 				for _, p in stay do
 					p:Destroy()
 				end
@@ -807,7 +825,9 @@ function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enu
 end
 
 -- Knock one brick out of its structure: only what the hit reaches breaks off.
+Map.broken = 0 -- bricks knocked out since the server started (server/Disasters counts a disaster's)
 local function knock(cube: BasePart, from: Vector3, power: number)
+	Map.broken += 1
 	local offset = cube.Position - from
 	cube.Parent = workspace -- out of the structure (and out of later blasts)
 	cube.CollisionGroup = "Debris"
@@ -835,7 +855,7 @@ local function damaged(model: Model)
 			knock(cube, cube.Position + Vector3.yAxis, 5)
 		end
 	end
-	task.delay(REGEN, function()
+	later(REGEN, function()
 		model:Destroy()
 		if model:GetAttribute("Origin") then -- a grave (Map.grave) stays broken
 			buildStructure(model.Name, model:GetAttribute("Origin"), true)
@@ -909,7 +929,7 @@ local function idleCheck(model: Model, stamp: number)
 	if lastHit[model] ~= stamp or model.Parent ~= folder or not model:GetAttribute("Origin") then
 		return -- hit again since, fell down whole (it rebuilds on its own), or a grave (stays broken)
 	end
-	if model:GetAttribute("Rebuilding") then
+	if model:GetAttribute("Rebuilding") or Map.holds > 0 then -- a disaster on: mend after it
 		task.delay(1, idleCheck, model, stamp)
 		return
 	end
@@ -925,7 +945,9 @@ local function hitStructures(hits: { BasePart }, from: Vector3, power: number): 
 	for _, cube in hits do
 		local model = cube.Parent
 		if cube:GetAttribute("SkinBox") then
-			unskin(model :: Model) -- its cubes break from the next hit on
+			if model then -- (gone already when an earlier box of the same model unskinned it)
+				unskin(model :: Model) -- its cubes break from the next hit on
+			end
 		elseif model == built then
 			knock(cube, from, power) -- a built brick: no structure to settle or rebuild
 			table.insert(knocked, cube)
@@ -1058,6 +1080,29 @@ function Map.flip(cf: CFrame, size: Vector3, velocity: Vector3)
 		if math.random() < chance then
 			chunk(cube, TILE * (0.9 + math.random() * 0.5), velocity * (0.7 + math.random() * 0.6))
 		end
+	end
+	dropUnbuilt(cf.Position, size.Magnitude / 2)
+	breakSounds(broken, cf.Position)
+end
+
+-- Knock down every structure brick in a box and throw the bricks along `velocity` (the tsunami's
+-- face, server/Disasters): the floor stays, built blocks and skinned models go too.
+function Map.sweep(cf: CFrame, size: Vector3, velocity: Vector3)
+	local function reach(piece: CFrame, extent: Vector3, _floor: boolean): boolean
+		local at, h = cf:PointToObjectSpace(piece.Position), extent * 0.87
+		return math.abs(at.X) <= size.X / 2 + h.X and math.abs(at.Y) <= size.Y / 2 + h.Y and math.abs(at.Z) <= size.Z / 2 + h.Z
+	end
+	for _, p in workspace:GetPartBoundsInBox(cf, size, params) do
+		if p:GetAttribute("SkinBox") and p.Parent then
+			unskin(p.Parent :: Model) -- a model in reach turns into its cubes, which this sweep then breaks
+		end
+	end
+	local hits = shatter(workspace:GetPartBoundsInBox(cf, size, params), true, function()
+		return false
+	end, reach)
+	local broken = hitStructures(hits, cf.Position, 0)
+	for _, cube in broken do
+		cube.AssemblyLinearVelocity = velocity * (0.6 + math.random() * 0.6) + Vector3.yAxis * math.random() * 18
 	end
 	dropUnbuilt(cf.Position, size.Magnitude / 2)
 	breakSounds(broken, cf.Position)
@@ -1294,6 +1339,7 @@ local BASALT = Color3.fromRGB(58, 54, 60)
 local ASH = Color3.fromRGB(92, 86, 84)
 local CROP = Color3.fromRGB(118, 164, 62)
 local VOLCANO = Vector3.new(176, 0, -176) -- the lava fields (NE): a moat of lava 32..48 out from it
+Map.CRATER = VOLCANO + Vector3.new(2, 26, -2) -- the top of its lava crater (the volcano disaster erupts it)
 local WATER = { { 144, 240, -64, 64 }, { -64, -32, 208, 240 } } -- the lake (E) and the park's pond (S)
 local DRY = { 176, 208, -16, 16 } -- the lake's island
 local function within(x: number, z: number, r): boolean

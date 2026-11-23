@@ -103,9 +103,10 @@ local live = {}
 
 -- Returns a new anchored, non-colliding MeshPart for the weapon, or nil if this client can't
 -- build one (callers keep their block fallback). The part's origin is the modelled origin (the
--- grip), not the bounding-box centre. Destroy it when done. Yields.
-function WeaponMeshes.create(id: string): MeshPart?
-	local data = script:FindFirstChild(id)
+-- grip), not the bounding-box centre. Destroy it when done. Yields. `module`: a data module kept
+-- elsewhere (client/DisasterMeshes), for a model that is not a weapon (no icon); default: script[id].
+function WeaponMeshes.create(id: string, module: ModuleScript?): MeshPart?
+	local data = module or script:FindFirstChild(id)
 	if not data then
 		return nil
 	end

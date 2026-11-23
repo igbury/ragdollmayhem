@@ -1,0 +1,9 @@
+{
+  "game": "Ragdoll Mayhem",
+  "title": "ONE PUNCH",
+  "kicker": "",
+  "text": {"style": "shout", "color": "#FFFFFF", "accent": "#FFD21F", "accent_word": "PUNCH",
+           "stroke": "#0B0B12", "plate": "none", "align": "left", "zone": "lower-left", "max_width": 0.5},
+  "art": {"focus": [0.55, 0.4]},
+  "source": {"model": "FLUX.1-schnell (hf-space)", "seed": "22", "prompt": "see prompt.txt"}
+}

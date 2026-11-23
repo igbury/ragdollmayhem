@@ -33,6 +33,11 @@ UserInputService.LastInputTypeChanged:Connect(judge)
 function TouchControls.active(): boolean
 	return touching
 end
+-- The ATTACK button's left edge in screen pixels while it shows, else nil (client/WeaponBar keeps the
+-- hotbar left of it: on a narrow phone the Anime Pack's bar would run under it). Set by start().
+function TouchControls.attackLeft(): number?
+	return nil
+end
 
 local INK = Color3.fromRGB(16, 15, 20)
 local ASSIST_CONE = math.cos(math.rad(7)) -- a shot bends to a dummy this close to the crosshair
@@ -156,11 +161,21 @@ function TouchControls.start(mv, dummyFolder: Folder, aiming: () -> boolean)
 
 	-- ATTACK: held like the left mouse button, let go when that finger leaves the screen
 	local attackTouch: InputObject? = nil
-	button("Attack").InputBegan:Connect(function(input)
+	local attack = button("Attack")
+	function TouchControls.attackLeft(): number?
+		return if root.Visible then attack.AbsolutePosition.X else nil
+	end
+	attack.InputBegan:Connect(function(input)
 		if input.UserInputType == Enum.UserInputType.Touch and not attackTouch then
 			attackTouch, attackHeld = input, true
 			lit("Attack", true)
 			mv.began(M1, false)
+		end
+	end)
+	-- that finger dragged while held draws an aimed swing's line (init.client swingUi), as the mouse does
+	UserInputService.InputChanged:Connect(function(input)
+		if input == attackTouch then
+			mv.swingDrag(input.Delta)
 		end
 	end)
 	UserInputService.InputEnded:Connect(function(input)

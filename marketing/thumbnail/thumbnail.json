@@ -1,0 +1,41 @@
+{
+  "tool": "rxz roblox-thumbnail",
+  "version": 1,
+  "canvas": [
+    1920,
+    1080
+  ],
+  "art": "art_22.png",
+  "game": "Ragdoll Mayhem",
+  "title": "ONE PUNCH",
+  "kicker": "",
+  "zone": "lower-left",
+  "lines": [
+    "ONE PUNCH"
+  ],
+  "art_stats": {
+    "mean": 146.1,
+    "range": 225,
+    "border_edge": 4.49,
+    "center_edge": 23.48,
+    "clutter": 0.19,
+    "hues": 2,
+    "focal": 2.04
+  },
+  "style": "shout",
+  "font_size": 197,
+  "cap_height": 194,
+  "cap_pct": 18.0,
+  "stroke": 12,
+  "words": 2,
+  "box": [
+    115,
+    771,
+    935,
+    965
+  ],
+  "margin_ok": true,
+  "hits_reserved_corner": false,
+  "contrast": 1.75,
+  "title_color": "#FFFFFF"
+}

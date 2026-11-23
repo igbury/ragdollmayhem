@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Attacks"))
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
+local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -103,6 +104,13 @@ local function part(shape: Enum.PartType, color: Color3, material: Enum.Material
 	p.Size = Vector3.one * 0.05
 	p.Parent = folder
 	return p
+end
+
+-- Performance mode (client/PerfMode, on by itself on phones and tablets): the detail pieces (sparks,
+-- dust, crystals, spikes) come in half the number and the black ink twins are left out; every shape,
+-- flash, word and shake stays. Off, nothing changes.
+local function few(n: number): number
+	return if PerfMode.active() then math.max(1, math.ceil(n / 2)) else n
 end
 
 -- Drive `fn(alpha 0..1)` every frame for `dur` seconds, then destroy `parts`.
@@ -225,7 +233,7 @@ function Fx.ring(cf: CFrame | (number) -> CFrame, r0: number, r1: number, dur: n
 			p.Transparency = a * a
 		end
 	end)
-	if color ~= BLACK and opt.ink ~= false then
+	if color ~= BLACK and opt.ink ~= false and not PerfMode.active() then
 		-- black twin just outside: the manga ink line
 		Fx.ring(cf, r0 + thick * 0.6, r1 + thick * 0.6, dur, BLACK, { arc = arc, sides = n, spin = spin, thick = thick * 0.5, height = height * 0.8 })
 	end
@@ -237,7 +245,8 @@ end
 function Fx.spikes(cf: CFrame, count: number, r0: number, length: number, dur: number, color: Color3, opt: { [string]: any }?)
 	opt = opt or {}
 	local tilt, thick = opt.tilt or 0, opt.thick or 0.2
-	local ink = color ~= BLACK and opt.ink ~= false
+	local ink = color ~= BLACK and opt.ink ~= false and not PerfMode.active()
+	count = few(count)
 	local parts, spikes = {}, {}
 	local phase = rng:NextNumber() * math.pi * 2
 	for i = 1, count do
@@ -275,7 +284,7 @@ end
 
 -- Jagged slabs that stab out of the ground, lean outward and sink back.
 function Fx.crystals(cf: CFrame, count: number, radius: number, height: number, dur: number, color: Color3)
-	for i = 1, count do
+	for i = 1, few(count) do
 		local p = part(Enum.PartType.Block, i % 3 == 0 and WHITE or (i % 3 == 1 and color or BLACK))
 		local h = height * (0.5 + rng:NextNumber() * 0.7)
 		local w = h * rng:NextNumber(0.12, 0.24)
@@ -301,7 +310,7 @@ end
 
 -- Streaks that shoot out and brake hard ("anime snap"). `radius` < 0 makes them converge.
 function Fx.sparks(position: Vector3, count: number, radius: number, color: Color3, bias: Vector3?, life: number?)
-	for i = 1, count do
+	for i = 1, few(count) do
 		local dir = rng:NextUnitVector()
 		dir = (Vector3.new(dir.X, math.abs(dir.Y), dir.Z) + (bias or Vector3.zero) * 1.5).Unit
 		local c = i % 3 == 0 and BLACK or (i % 3 == 1 and color or WHITE)
@@ -319,7 +328,7 @@ end
 
 -- Voxel dust: tumbling cubes instead of round puffs.
 function Fx.dust(position: Vector3, count: number, spread: number, size: number)
-	for i = 1, count do
+	for i = 1, few(count) do
 		local angle = rng:NextNumber() * math.pi * 2
 		local dir = Vector3.new(math.cos(angle), 0, math.sin(angle))
 		local p = part(Enum.PartType.Block, i % 4 == 0 and BLACK or DUST, Enum.Material.SmoothPlastic)

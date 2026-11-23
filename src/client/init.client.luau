@@ -460,6 +460,18 @@ do
 	function swingUi.holdCamera(hold: boolean) -- applied with the aim's own slow-down every frame (below)
 		swingUi.slow = hold
 	end
+	-- The line drawn on by (dx, dy) screen pixels (y down), kept inside the circle: the mouse, and on a
+	-- phone the finger holding ATTACK (TouchControls calls mv.swingDrag), so a touch can aim the swing too
+	function swingUi.move(dx: number, dy: number)
+		local a = swingUi.aim
+		if not a then return end
+		a.x += dx
+		a.y -= dy
+		local len = math.sqrt(a.x * a.x + a.y * a.y)
+		if len > swingUi.R then a.x, a.y = a.x / len * swingUi.R, a.y / len * swingUi.R end
+		swingUi.draw()
+	end
+	mv.swingDrag = function(delta: Vector3) swingUi.move(delta.X, delta.Y) end
 	-- The line as (side, up, power): side/up the unit direction (0, 0 if barely moved), power 0..1;
 	-- an unmoved line is a plain swing (0.5).
 	function swingUi.value(): Vector3
@@ -622,7 +634,33 @@ do
 		fill.Parent = back
 		return fill
 	end
+	-- The chart note beside it: what was done to the dummy (its newest injuries, server "Injuries"),
+	-- then "Name · Status · 87% blood". It flashes white when the note changes.
+	local note = Instance.new("Frame")
+	note.AnchorPoint = Vector2.new(1, 1)
+	note.Position = UDim2.new(1, -174, 1, -160) -- left of the panel, bottoms level
+	note.Size = UDim2.fromOffset(280, 52)
+	note.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+	note.BackgroundTransparency = 0.25
+	note.BorderSizePixel = 0
+	note.Visible = false
+	note.Parent = gui
+	local noteBar = Instance.new("Frame") -- the yellow edge, as on a chart
+	noteBar.Size = UDim2.new(0, 3, 1, 0)
+	noteBar.BackgroundColor3 = Color3.fromRGB(252, 200, 50)
+	noteBar.BorderSizePixel = 0
+	noteBar.Parent = note
+	local headline = label({ TextSize = 13, TextColor3 = Color3.fromRGB(252, 200, 50), TextXAlignment = Enum.TextXAlignment.Left,
+		TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextTruncate = Enum.TextTruncate.AtEnd,
+		Position = UDim2.fromOffset(10, 5), Size = UDim2.new(1, -16, 0, 30) }) -- two lines at most
+	headline.Parent = note
+	local detail = label({ TextSize = 11, TextColor3 = Color3.fromRGB(220, 220, 220), TextXAlignment = Enum.TextXAlignment.Left,
+		TextTruncate = Enum.TextTruncate.AtEnd, Font = Enum.Font.Gotham, Position = UDim2.new(0, 10, 1, -18), Size = UDim2.new(1, -16, 0, 13) })
+	detail.Parent = note
 	mv.vitals = {
+		note = note,
+		headline = headline,
+		detail = detail,
 		panel = panel,
 		cells = cells,
 		status = line(156, 13, Color3.fromRGB(255, 160, 60)),
@@ -1800,14 +1838,11 @@ mv.began = function(input, processed)
 				-- counted from the press, not from when the circle shows: a line drawn straight away is
 				-- already there when it comes up (a release before that is still a plain swing, mv.ended)
 				if inp.UserInputType == Enum.UserInputType.MouseMovement then
-					a.x += inp.Delta.X
-					a.y -= inp.Delta.Y
+					swingUi.move(inp.Delta.X, inp.Delta.Y)
 				else -- right stick: where it points is the line
-					a.x, a.y = inp.Position.X * swingUi.R, inp.Position.Y * swingUi.R
+					a.x, a.y = 0, 0
+					swingUi.move(inp.Position.X * swingUi.R, -inp.Position.Y * swingUi.R)
 				end
-				local len = math.sqrt(a.x * a.x + a.y * a.y)
-				if len > swingUi.R then a.x, a.y = a.x / len * swingUi.R, a.y / len * swingUi.R end
-				swingUi.draw()
 				return Enum.ContextActionResult.Pass -- on to the camera, slowed by holdCamera
 			end, false, Enum.ContextActionPriority.High.Value, Enum.UserInputType.MouseMovement, Enum.KeyCode.Thumbstick2)
 			return
@@ -3864,6 +3899,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 	local vitals = mv.vitals
 	vitals.panel.Visible = seen ~= nil
+	vitals.note.Visible = seen ~= nil
 	if seen then
 		local blood = seen:GetAttribute("Blood") or 100
 		local pain = seen:GetAttribute("Pain") or 0
@@ -3879,6 +3915,24 @@ RunService.RenderStepped:Connect(function(dt)
 		-- the heart races with pain and with blood loss
 		local bpm = dead and 0 or math.floor(72 + pain * 0.7 + (100 - blood) * 1.6 + math.sin(os.clock() * 3) * 2)
 		vitals.status.Text = status
+		-- the server lists them oldest first; newest first here, so a cut-off note loses the old ones
+		local injuries = (seen:GetAttribute("Injuries") or ""):lower():split(", ")
+		for i = 1, #injuries // 2 do
+			injuries[i], injuries[#injuries + 1 - i] = injuries[#injuries + 1 - i], injuries[i]
+		end
+		local list = table.concat(injuries, ", ")
+		local headline = if list ~= "" then list:sub(1, 1):upper() .. list:sub(2) else "No injuries yet"
+		if vitals.headline.Text ~= headline then
+			if vitals.noteOf == seen then -- a new injury on the same dummy, not a new dummy looked at
+				vitals.headline.TextColor3 = Color3.new(1, 1, 1)
+				game:GetService("TweenService"):Create(vitals.headline, TweenInfo.new(0.5), { TextColor3 = Color3.fromRGB(252, 200, 50) }):Play()
+			end
+			vitals.headline.Text = headline
+			-- the box fits the note: one line or two (the headline's own box holds two)
+			vitals.note.Size = UDim2.fromOffset(280, 5 + math.min(vitals.headline.TextBounds.Y, 30) + 24)
+		end
+		vitals.noteOf = seen
+		vitals.detail.Text = `{seen.Name} · {status} · {math.floor(blood)}% blood`
 		vitals.pulse.Text = bpm .. " bpm"
 		vitals.pulse.TextColor3 = (dead or bpm > 140) and Color3.fromRGB(255, 120, 60) or Color3.fromRGB(120, 230, 150)
 		vitals.blood.Size = UDim2.fromScale(blood / 100, 1)
@@ -3889,4 +3943,5 @@ end)
 
 -- the first-time tutorial: outlines on its dummies, what to do next (server/Tutorial)
 require(script:WaitForChild("TutorialHud")).start()
+require(script:WaitForChild("Disasters")).start() -- tornado, tsunami, meteors, nuke (server/Disasters)
 require(script:WaitForChild("CashHud")).start() -- the cash counter, top right

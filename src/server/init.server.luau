@@ -39,13 +39,21 @@ local MAX_SLAM_LOST = 140 -- studs/s a held body can lose in one hit, as its hol
 local MAX_DUMMIES = 30
 local MAX_HP = 100
 
-local NAMES = { "Noemi", "Jia", "Kofi", "Ruth", "Dot", "Fatima", "Wanda", "Thandi", "Milo", "Otto", "Bruno", "Ines" }
+-- the vitals note shows the name (client), so enough of them that an arena of ~30 rarely repeats one
+local NAMES = { "Noemi", "Jia", "Kofi", "Ruth", "Dot", "Fatima", "Wanda", "Thandi", "Milo", "Otto", "Bruno", "Ines",
+	"Nadia", "Sven", "Priya", "Rocco", "Mabel", "Ike", "Yuki", "Bart", "Olga", "Femi", "Lars", "Ada", "Hugo", "Rosa",
+	"Dmitri", "Lulu", "Pablo", "Agnes", "Kwame", "Bea", "Igor", "Sunny", "Moses", "Greta", "Raj", "Fern", "Duke", "Vera" }
 local ZONES = {
-	Head = { damage = 14, daze = 20, lines = { "My head!", "Ow, I see stars...", "Not the face!" } },
-	Chest = { damage = 10, daze = 14, lines = { "My chest!", "Oof!", "Can't... breathe..." } },
-	Stomach = { damage = 8, daze = 12, lines = { "Oof, my stomach!", "Hey, cut it out!" } },
-	Arm = { damage = 5, daze = 5, lines = { "Why the arm?", "Ow, my arm!" } },
-	Leg = { damage = 5, daze = 6, lines = { "My leg!", "Ow, ow!" } },
+	Head = { damage = 14, daze = 20, lines = { "My head!", "Ow, I see stars...", "Not the face!", "Who turned off the lights?",
+		"I think I bit my tongue.", "Ow! I needed those brain cells!", "Everything's spinning..." } },
+	Chest = { damage = 10, daze = 14, lines = { "My chest!", "Oof!", "Can't... breathe...", "Right in the lunch!",
+		"I felt that in my spine.", "That's where my heart is!" } },
+	Stomach = { damage = 8, daze = 12, lines = { "Oof, my stomach!", "Hey, cut it out!", "I just ate!", "Not the belly!",
+		"That's going to bruise." } },
+	Arm = { damage = 5, daze = 5, lines = { "Why the arm?", "Ow, my arm!", "I use that arm!", "My elbow!",
+		"That's my waving arm!" } },
+	Leg = { damage = 5, daze = 6, lines = { "My leg!", "Ow, ow!", "My knee!", "I need that to run away!",
+		"Right in the shin!" } },
 }
 local IDLE_LINES = { "I could really go for a sandwich.", "Who is winning? I can't tell.", "Back off a bit, will you?", "Nice weather today.",
 	"Did I leave the oven on?", "I feel like someone is watching me.", "My knees still hurt from last time.", "Is it Friday yet?" }
@@ -325,6 +333,14 @@ end
 -- everything below it. The axe and the katana (CHOP) take a limb off at once. Blunt blows and
 -- arrows never take one off: they break bones and bleed.
 local Body: any = {
+	-- what a dummy says about what just happened to it, beyond the blow itself: a hard landing after
+	-- flying (landImpact), catching fire and being caught in a blast (harm)
+	LANDING_LINES = { "I can fly! ...No, I can't.", "Who put the ground there?", "I'd like to get off now.",
+		"That's not how stairs work!", "I've seen better landings.", "Did anyone get my good side?" },
+	FIRE_LINES = { "Hot! HOT!", "Is something burning? Oh, it's me.", "Stop, drop and... AAH!", "Water! Anyone?",
+		"I smell like barbecue!" },
+	BLAST_LINES = { "What was THAT?!", "My ears are ringing!", "I can't hear anything!", "Who brought dynamite?!",
+		"I'm in pieces! ...Wait." },
 	TOUGH = { Hand = 3, Foot = 3, LowerArm = 5, LowerLeg = 6, UpperArm = 7, UpperLeg = 8 },
 	WEAR = { bullet = 1, blade = 1.2 },
 	CHOP = { Axe = true, Katana = true, Lightsaber = true },
@@ -333,6 +349,15 @@ local Body: any = {
 	HOP_SPEED = 4.5,
 	HOP_FALL = 0.12, -- chance a second of going over while it hops along
 }
+-- A line from `list` other than the one the dummy said last, so a beating does not loop one line.
+-- (On Body: the main script is at Luau's 200 top-level locals.)
+function Body.fresh(d, list: { string }): string
+	local text = pick(list)
+	if text == d.model:GetAttribute("Say") and #list > 1 then
+		text = list[(table.find(list, text) :: number) % #list + 1]
+	end
+	return text
+end
 -- A limb ("Left" / "Right", "Arm" / "Leg") is gone once its upper or lower part is.
 function Body.gone(d, side: string, limb: string): boolean
 	return d.lost[side .. "Upper" .. limb] == true or d.lost[side .. "Lower" .. limb] == true
@@ -1638,6 +1663,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 			local by = blameOf(d)
 			if by then
 				Progress.add(by, "StatBones") -- the STATS page
+				Progress.sticker(by, "bones")
 			end
 			Sfx.play(Sfx.BONE, point)
 			addInjury(d, info.broken)
@@ -1811,6 +1837,9 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	end
 
 	-- the body is limp by now (knockDown or dead), so the joints can be cut
+	if burst or cutOff then
+		Progress.sticker((blameOf(d)), if burst then "headshot" else "limb")
+	end
 	if burst then
 		addInjury(d, "head burst")
 		sever(d, part, dir):Destroy()
@@ -1830,17 +1859,17 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	express(d)
 
 	if d.state == "Awake" or d.state == "Knocked down" or d.state == "Held" then
-		say(d, line or pick(zone.lines))
+		say(d, line or d.nextLine or Body.fresh(d, zone.lines))
 	end
 	syncAttributes(d)
 	alarm(d, point, (not dead and d.state == "Dead") and "death" or cutOff and "cut" or kind == "bullet" and "shot" or "hit", from)
 	local hooligan = attacker and typeof(attacker) ~= "Instance" and attacker.gear == "Bat"
 	local teammate = attacker and typeof(attacker) ~= "Instance" and d.team and attacker.team == d.team
-	if attacker and not dead and not teammate and d.state ~= "Dead" and d.target ~= attacker
+	if attacker and not dead and not teammate and not Progress.isNew(attacker) and d.state ~= "Dead" and d.target ~= attacker
 		and not grounded(d) and Body.mobility(d) ~= "hop" and Body.usable(d, "jab") -- nothing left to fight with: no threats
 		and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and not badlyHurt(d)) or (hooligan and d.brave)) then
 		d.target = attacker -- it hits back (behave), on its feet again if it went down
-		say(d, pick(ANGRY_LINES))
+		say(d, Body.fresh(d, ANGRY_LINES))
 	end
 	if d.state == "Awake" and from and not d.target then -- still on its feet: it gets away from whoever did that
 		flee(d, from, 24)
@@ -2541,6 +2570,9 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 			end
 		end
 		if d then
+			if d.state == "Dead" or d.state == "Out cold" then
+				Progress.sticker(player, "revive")
+			end
 			revive(d)
 		end
 	elseif action == "fall" then
@@ -2590,6 +2622,7 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 	if kind == "fire" then
 		d.burn += 1
 		addInjury(d, d.burn >= 5 and "severe burns" or "burns")
+		Progress.sticker(if culprit ~= nil then culprit else (blameOf(d)), "fire")
 		for _, part in d.model:GetChildren() do
 			if part:IsA("BasePart") then
 				paint(d, part)
@@ -2616,6 +2649,8 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 		local dist = away.Magnitude
 		away = dist > 0.1 and away.Unit or UP
 		addInjury(d, "blast injuries")
+		-- caught in a blast is enough: a blast alone seldom kills (a rocket left one alive with two limbs gone)
+		Progress.sticker((blameOf(d)), "boom")
 		for _ = 1, 3 do -- shrapnel
 			local part = (d.model:FindFirstChild(BLAST_LIMBS[math.random(#BLAST_LIMBS)]) or torso) :: BasePart
 			local out = Random.new():NextUnitVector()
@@ -2628,11 +2663,20 @@ local function harm(d, damage: number, kind: string?, from: Vector3?)
 			local limb = d.model:FindFirstChild(BLAST_LIMBS[math.random(#BLAST_LIMBS)]) :: BasePart?
 			if limb then
 				addInjury(d, PARTS[limb.Name].label .. " blown off")
+				Progress.sticker((blameOf(d)), "limb")
 				sever(d, limb, away)
 				Body.lost(d, limb)
 			end
 		end
 		fxRemote:FireAllClients("Wound", nil, torso, torso.Position, away, dist < 7 and 3 or 2, nil, "blast")
+	end
+	-- a word about it, if it can still talk: a blast once, a fire on catching and every third burn after
+	if d.state == "Knocked down" and not d.zombie then
+		if kind == "blast" then
+			say(d, Body.fresh(d, Body.BLAST_LINES), "shout")
+		elseif kind == "fire" and d.burn % 3 == 1 then
+			say(d, Body.fresh(d, Body.FIRE_LINES), "shout")
+		end
 	end
 	express(d)
 	syncAttributes(d)
@@ -2864,13 +2908,14 @@ equipRemote.OnServerEvent:Connect(function(player, id)
 	if state.tracks.guard then state.tracks.guard:Play(0.15) end
 end)
 
--- `scale` (default 1) grows the blast: its crater, reach, damage and the shove (TNT, C4).
-local function explode(position: Vector3, sound: string, scale: number?)
+-- `scale` (default 1) grows the blast: its crater, reach, damage and the shove (TNT, C4). `power`
+-- (default 1) multiplies only its damage (server/Disasters' DAMAGE).
+local function explode(position: Vector3, sound: string, scale: number?, power: number?)
 	local s = scale or 1
 	Sfx.play({ sound, 1 / math.sqrt(s), 1 }, position)
 	fxRemote:FireAllClients("Boom", nil, position, 9 * s)
 	Map.blast(position, 9 * s, 70)
-	smash(position, 13 * s, 45 * s, Vector3.zero, 80 * math.sqrt(s), "blast")
+	smash(position, 13 * s, 45 * s * (power or 1), Vector3.zero, 80 * math.sqrt(s), "blast")
 end
 
 do -- the tank (server/Tank): its shells blow up like a big rocket, it bowls dummies over, a wreck throws its driver
@@ -2890,7 +2935,7 @@ do -- the tank (server/Tank): its shells blow up like a big rocket, it bowls dum
 	end
 end
 
-local function ignite(position: Vector3)
+local function ignite(position: Vector3, power: number?) -- `power`: times the burn (server/Disasters)
 	fxRemote:FireAllClients("Fire", nil, position, 8, 5)
 	local crackle = Instance.new("Part") -- the burning patch's sound (the fire itself is client Fx)
 	crackle.Anchored, crackle.CanCollide, crackle.CanQuery, crackle.CanTouch = true, false, false, false
@@ -2900,7 +2945,7 @@ local function ignite(position: Vector3)
 	Debris:AddItem(crackle, 5.2)
 	Map.blast(position, 2.5, 30)
 	for _ = 1, 10 do
-		smash(position, 8, 6, Vector3.zero, 0, "fire")
+		smash(position, 8, 6 * (power or 1), Vector3.zero, 0, "fire")
 		task.wait(0.5)
 	end
 end
@@ -2939,11 +2984,12 @@ local function tomato(p: BasePart, char: Model, owner: Player?)
 		if d and d.state ~= "Dead" and not d.model:GetAttribute("Ragdolled") then
 			reactToHit(d, dir)
 			say(d, pick(TOMATO_LINES), "shout")
+			Progress.sticker(owner, "tomato")
 			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 			if torso then
 				torso.AssemblyLinearVelocity += dir * Vector3.new(6, 0, 6)
 			end
-			if owner and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.6)) then
+			if owner and not Progress.isNew(owner) and (d.trait == "Tough" or d.trait == "Berserk" or (d.trait == "Hothead" and math.random() < 0.6)) then
 				d.target = owner
 			end
 			pop() -- after the line: knocked down, it would not say it
@@ -4528,6 +4574,7 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 			if d.punt.hits == 1 then
 				power = math.max(power, 1) * PUNT_POWER
 				d.daze += 25
+				Progress.sticker(d.punt.by, "wall") -- the kicker (a kick sets no Wanted culprit to blame)
 			end
 			if d.punt.hits >= PUNT_HITS then
 				d.punt = nil
@@ -4539,7 +4586,10 @@ function landImpact(d, part: BasePart, dir: Vector3, lost: number, skip: Player?
 	-- RAGDOLL DAMAGE off (the host's SETTINGS page): it lands with a thud, nothing hurts or breaks
 	if Progress.Settings.get(Progress.Settings.host(), "RagdollDamage") then
 		d.daze += (power - 1) * 12 -- a hard landing shakes the whole body, not just the part that hit
+		-- a real flight (about 80 studs/s and up) gets a remark about the landing, not about the body part
+		d.nextLine = if power >= 2.5 then Body.fresh(d, Body.LANDING_LINES) else nil
 		hit(d, part, dir, power, 0, "blunt", part.Position + dir * 0.5) -- the side that struck the ground
+		d.nextLine = nil
 	end
 	-- the tutorial's dummies (server/Tutorial) die of any blow against a wall, so a kick into one always
 	-- pays off: a wall is where the kicker saw it strike something standing (`at`), or anything it hit
@@ -4685,6 +4735,9 @@ RunService.Heartbeat:Connect(function(dt)
 				if d.throwFrom and d.looseOwner.Parent then -- landed: the longest throw (STATS)
 					local flown = (core.Position - d.throwFrom) * Vector3.new(1, 0, 1)
 					Progress.best(d.looseOwner, "StatThrow", math.floor(flown.Magnitude))
+				if flown.Magnitude >= Progress.Stickers.THROW then
+					Progress.sticker(d.looseOwner, "throw")
+				end
 				end
 				d.throwFrom = nil
 				d.looseOwner = nil
@@ -4916,6 +4969,39 @@ Monsters.start(remotes, {
 		end
 	end,
 })
+-- Natural disasters (server/Disasters): every 3-4 min on their own, or SANDBOX + calls one
+require(script.Disasters).start(remotes, {
+	hazard = hazard,
+	explode = explode,
+	each = function(fn) -- fn(model, torso) for every dummy not in a boss's jaws (hazard frees a held one)
+		for model, d in dummies do
+			local torso = model:FindFirstChild("UpperTorso")
+			if torso and not torso:FindFirstChild("BossBite") then
+				fn(model, torso)
+			end
+		end
+	end,
+	ignite = ignite, -- the volcano's burning lava pools
+	freeze = function(model) -- the blizzard (server/Specials, the frost gun's ice)
+		local d = dummies[model]
+		if d and d.state ~= "Dead" and not d.heldBy then
+			require(script.Specials).freeze(d)
+		end
+	end,
+	spawnZombie = function(cf) -- zombie night: one out of the ground, room made first
+		trimDummies()
+		local d = spawnDummy(cf, nil, "Zombie")
+		return d and d.model
+	end,
+	burnAway = function(model) -- dawn: a zombie left goes up in flames and is gone
+		local d = dummies[model]
+		if d then
+			require(script.Specials).alight(d)
+			fxRemote:FireAllClients("Boom", nil, model:GetPivot().Position, 2)
+			task.delay(2.5, model.Destroy, model)
+		end
+	end,
+})
 if CITY_ENABLED then
 	City.build()
 	for _, spot in City.DUMMY_SPOTS do
@@ -4972,6 +5058,7 @@ require(script.Admin).start(remotes, {
 		d.trait, d.morale, d.baseMorale = "Berserk", 100, 100
 		d.nextLook = 0
 	end,
+	disaster = require(script.Disasters).force,
 })
 ShopServer.start()
 -- the host's GRAVITY and GRAVE ZOMBIES settings (server/World)

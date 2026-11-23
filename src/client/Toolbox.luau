@@ -17,6 +17,7 @@ local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx")
 local Wardrobe = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Wardrobe"))
 local Audio =require(script.Parent:WaitForChild("Music")) -- the sound settings (SETTINGS page)
 local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
+local Disasters = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Disasters"))
 
 local GRID = 4 -- block size in studs; the server builds the same size
 local RANGE = 150
@@ -601,6 +602,45 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	end
 	passSticker(paintHead, "SandboxPlus")
 	hint(worldSide, "Pick a colour, then click dummies to put them in that team. Teams fight each other.", 7)
+	-- DISASTERS (SANDBOX +): one where you are now (server/Disasters), then a cooldown on all of them
+	local disasterHead = heading(worldSide, "DISASTERS", 8)
+	passSticker(disasterHead, "SandboxPlus")
+	local disasterRows = { row(worldSide, 9, 42), row(worldSide, 10, 42) } -- five a row
+	local disasterRemote: RemoteEvent? = nil -- made late in the server's start: waited for below
+	local readyAt = 0 -- os.clock() the server's cooldown is over (its "accepted" reply)
+	local disasterLabels = {}
+	for i, kind in Disasters.KINDS do
+		local b = button(disasterRows[if i <= 5 then 1 else 2], kind.name, kind.color, 44, true)
+		b.Size, b.LayoutOrder, b.Rotation = UDim2.new(0.2, -6, 1, 0), i, if i % 2 == 0 then 1 else -1
+		local label = b:FindFirstChild("Label") :: TextLabel
+		label.TextSize, label.TextColor3, label.TextWrapped = 16, YELLOW, true
+		disasterLabels[kind] = label
+		b.Activated:Connect(function()
+			if locked({ pass = "SandboxPlus" }) or os.clock() < readyAt or not disasterRemote then
+				return
+			end
+			disasterRemote:FireServer("trigger", kind.id)
+			setOpen(false)
+		end)
+	end
+	task.spawn(function() -- the server's reply sets the cooldown; then the countdown on the buttons
+		disasterRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Disaster")
+		;(disasterRemote :: RemoteEvent).OnClientEvent:Connect(function(what, a, b)
+			if what == "accepted" then
+				readyAt = os.clock() + a
+			elseif what == "refused" and a == "cooldown" then
+				readyAt = os.clock() + b
+			end
+		end)
+		while true do
+			local left = math.ceil(readyAt - os.clock())
+			for kind, label in disasterLabels do
+				label.Text = if left > 0 then `{kind.name} {left}s` else kind.name
+			end
+			task.wait(0.5)
+		end
+	end)
+	hint(worldSide, `Sets it off right where you are. Then wait {Disasters.COOLDOWN} s. One also strikes on its own every few minutes.`, 11)
 
 	local buildLabel = function() end -- the BUILD page, below
 	local showBlocks = function() end
