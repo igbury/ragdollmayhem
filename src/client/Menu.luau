@@ -1033,4 +1033,19 @@ end
 -- still in it to the arena ("map").
 gui.Enabled = true
 
+-- ...and a first-timer does not wait for that click: once the save says they have not done the
+-- tutorial, PLAY presses itself (no time limit, so it never depends on how fast the DataStore is;
+-- someone who clicks first just plays). Only the first menu of the session: M back to it stays put.
+if script.Name ~= "MenuAgain" then
+	task.spawn(function()
+		while not player:GetAttribute("ProgressLoaded") do
+			player:GetAttributeChangedSignal("ProgressLoaded"):Wait()
+		end
+		if player:GetAttribute("Tutorial") == true and Menu.active and not leaving and not turning then
+			pow(playP.word)
+			play()
+		end
+	end)
+end
+
 return Menu

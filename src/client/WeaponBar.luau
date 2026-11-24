@@ -243,11 +243,17 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 
 	-- Hotbar -------------------------------------------------------------------------------
-	-- It starts with the fists alone. Each weapon taken from the wheel (hold Q) or the Arsenal (J)
+	-- It starts with the fists and the other starting weapons (shared/Progression.START: a new player
+	-- sees on keys 1-3 that they have a bat and a tomato). Each weapon taken from the wheel (hold Q) or the Arsenal (J)
 	-- that is not on it yet gets a slot of its own, up to MAX_SLOTS; after that it replaces the one in hand.
 	-- The Arsenal's Anime Pack puts every ability on it instead (pack(), past MAX_SLOTS).
 	local MAX_SLOTS = 5
 	local loadout = { 1 } -- Weapons[1], the fists
+	for i, w in weapons do
+		if i > 1 and Progression.START[w.id] then
+			table.insert(loadout, i)
+		end
+	end
 	local bar = Instance.new("Frame")
 	bar.Name = "Hotbar"
 	bar.AnchorPoint = Vector2.new(0.5, 1)

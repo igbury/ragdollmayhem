@@ -85,19 +85,21 @@ function TutorialHud.start()
 		kick = "Look straight ahead and LEFT CLICK to kick it into a wall!",
 		done = "Nice kick!",
 	}
-	local function showHint()
-		setLine(hintLabel, if TouchControls.active() then nil else HINTS[player:GetAttribute("Hint")])
+	local function showHint() -- not over the Arsenal step: one instruction at a time
+		local quiet = TouchControls.active() or player:GetAttribute("TutorialStep") == "pick"
+		setLine(hintLabel, if quiet then nil else HINTS[player:GetAttribute("Hint")])
 	end
 	player:GetAttributeChangedSignal("Hint"):Connect(showHint)
+	player:GetAttributeChangedSignal("TutorialStep"):Connect(showHint)
 	showHint()
 
 	local STEPS = {
 		kill = "Take out one of the glowing dummies!",
-		pick = "Press Q to open your inventory, buy the HANDGUN and pick it",
+		pick = "Press Q: buy the HANDGUN, then EQUIP it",
 	}
 	local TOUCH_STEPS = {
 		kill = "Tap ATTACK to take out a glowing dummy!",
-		pick = "Tap the 🎒 backpack, buy the HANDGUN and pick it",
+		pick = "Tap 🎒: buy the HANDGUN, then EQUIP it",
 	}
 	local COMPLETE = "TUTORIAL COMPLETE! Have fun."
 	local wasOn = false
