@@ -57,4 +57,11 @@ return {
 	{ id = "C4", name = "C4", tag = "thrown", short = "C4", kind = "thrown", cd = 0.6, speed = 45 },
 	{ id = "Landmine", name = "LANDMINE", tag = "thrown", short = "MINE", kind = "thrown", cd = 1.0 },
 	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140, hip = 0.12 },
+	-- TOOLS
+	-- bandage: aim at the stump of a torn-off limb (within `range`) and click: it is dressed and stops
+	-- bleeding (server Body.playerBandage; client MedicAim shows which stump the click would take)
+	{ id = "Bandage", name = "BANDAGE", tag = "tool", short = "BNDG", kind = "bandage", cd = 0.8, range = 10 },
+	-- cast: aim at an arm or a leg with a broken bone and click: it goes in a plaster cast (server
+	-- Body.playerCast; client MedicAim lights up the limb)
+	{ id = "Cast", name = "PLASTER CAST", tag = "tool", short = "CAST", kind = "cast", cd = 1.2, range = 10 },
 }

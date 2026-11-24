@@ -124,7 +124,9 @@ function Ragdoll.joints(model: Model, names: { string }, limp: boolean)
 		return
 	end
 	for _, d in model:GetDescendants() do
-		if (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) and table.find(names, d.Name) then
+		if d:GetAttribute("Splint") then
+			continue -- held by a cast (server Body.splint): welded, neither driven nor limp
+		elseif (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) and table.find(names, d.Name) then
 			d.Enabled = not limp
 		elseif d.Name == "RagJoint" and d:IsA("Constraint") and table.find(names, d:GetAttribute("Joint")) then
 			d.Enabled = limp
@@ -139,7 +141,9 @@ function Ragdoll.set(model: Model, on: boolean)
 	for _, d in model:GetDescendants() do
 		-- Motor6D = classic rigs; AnimationConstraint = new avatar joints, which already ship
 		-- their own limited BallSocketConstraints, so disabling the drive is enough.
-		if (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) and JOINTS[d.Name] then
+		if d:GetAttribute("Splint") then
+			continue -- held by a cast (server Body.splint)
+		elseif (d:IsA("Motor6D") or d:IsA("AnimationConstraint")) and JOINTS[d.Name] then
 			d.Enabled = not on
 		elseif d.Name == "RagJoint" and d:IsA("Constraint") then
 			d.Enabled = on

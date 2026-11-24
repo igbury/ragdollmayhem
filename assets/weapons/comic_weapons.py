@@ -477,6 +477,52 @@ def landmine(b):
     b.sweep([(0.38, -0.12, 0.0), (0.5, -0.1, 0.0), (0.5, 0.1, 0.0), (0.38, 0.12, 0.0)], 0.02, BLACK, seg=6)  # handle
 
 
+GAUZE = (0.95, 0.93, 0.88)
+GAUZE_SHADE = (0.8, 0.77, 0.7)
+
+
+def bandage(b):
+    """A roll of crepe bandage held in the fist (the player's Bandage: dresses a stump), its axis across X,
+    a red cross on the end, the loose end hanging off the front with a clip."""
+    b.cyl((0, 0, 0.12), "x", 0.38, 0.27, GAUZE, seg=16)
+    b.cyl((-0.196, 0, 0.12), "x", 0.012, 0.1, PAPER, seg=12)  # the cardboard core
+    b.cyl((-0.2, 0, 0.12), "x", 0.012, 0.06, HOLE, seg=10)
+    for k in range(3):  # the edges of the turns, showing on the roll
+        b.cyl((-0.12 + k * 0.12, 0, 0.12), "x", 0.03, 0.275, GAUZE_SHADE, seg=16)
+    b.cyl((0.196, 0, 0.12), "x", 0.012, 0.2, WHITE, seg=16)  # the label on the outer end, a red cross on it
+    b.box(V((0.2, -0.04, 0.0)), V((0.212, 0.04, 0.24)), RED)
+    b.box(V((0.2, -0.12, 0.08)), V((0.212, 0.12, 0.16)), RED)
+    b.hexa({  # the loose end, off the front of the roll and curling down
+        (ix, iy, iz): V(((-0.17, 0.17)[ix], (-0.27, -0.245)[iy] + (0, -0.06)[iz], (0.12, -0.34)[iz]))
+        for ix, iy, iz in product((0, 1), repeat=3)}, GAUZE_SHADE)
+    b.box(V((-0.06, -0.33, -0.27)), V((0.06, -0.3, -0.2)), STEEL, 0.008)  # its clip
+
+
+PLASTER_ROLL = (0.93, 0.92, 0.88)
+PLASTER_MESH = (0.74, 0.73, 0.69)
+FOIL = (0.7, 0.74, 0.8)
+WATER = (0.45, 0.75, 0.95)
+
+
+def cast_roll(b):
+    """A roll of plaster bandage (the player's Cast: sets a broken arm or leg), wet from the bowl: half out
+    of its torn foil pack, the soaked end hanging, two drops falling off it."""
+    b.cyl((0, 0, 0.14), "x", 0.46, 0.25, PLASTER_ROLL, seg=16)
+    for k in range(5):  # the open weave of the plaster gauze, showing as bands round the roll
+        b.cyl((-0.18 + k * 0.09, 0, 0.14), "x", 0.018, 0.255, PLASTER_MESH, seg=16)
+    b.cyl((0.236, 0, 0.14), "x", 0.012, 0.09, PAPER, seg=12)  # the core
+    b.cyl((0.24, 0, 0.14), "x", 0.012, 0.05, HOLE, seg=10)
+    b.hexa({  # the foil pack, torn open, round the back half
+        (ix, iy, iz): V(((-0.25, -0.02)[ix], (-0.29, 0.29)[iy] * (1 if iz else 0.95), (-0.14, 0.42)[iz]))
+        for ix, iy, iz in product((0, 1), repeat=3)}, FOIL, 0.02)
+    b.box(V((-0.255, -0.12, 0.2)), V((-0.245, 0.12, 0.3)), BLUE)  # the pack's label
+    b.hexa({  # the soaked end, hanging off the front
+        (ix, iy, iz): V(((-0.2, 0.2)[ix], (-0.26, -0.235)[iy] + (0, -0.05)[iz], (0.14, -0.3)[iz]))
+        for ix, iy, iz in product((0, 1), repeat=3)}, PLASTER_MESH)
+    b.ball((0.05, -0.31, -0.38), 0.035, WATER, seg=8, rings=6)
+    b.ball((-0.08, -0.3, -0.48), 0.025, WATER, seg=8, rings=6)
+
+
 # name -> (builder, comic.shape ops) ; the ops as comic.RULES gives the older ones
 WEAPONS = {
     "Crowbar": (crowbar, [("thick", 1.25)]),
@@ -494,6 +540,8 @@ WEAPONS = {
     "TNT": (tnt, [("thick", 1.1)]),
     "C4": (c4, [("thick", 1.1)]),
     "Landmine": (landmine, []),
+    "Bandage": (bandage, [("thick", 1.1)]),
+    "Cast": (cast_roll, [("thick", 1.1)]),
 }
 
 

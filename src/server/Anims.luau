@@ -251,24 +251,46 @@ Anims.taunt = build("DummyTaunt", {
 	{ 1.2, GUARD },
 }, false, Enum.AnimationPriority.Action2, true)
 
--- down on its knees, both hands digging at the ground in front (burying)
+-- down on its knees, both hands at the ground in front (tending the hurt, Body.help)
 Anims.dig = polished("Dig")
-
--- A zombie clawing its way up out of its grave (server/World raises the body through the mound):
--- hunched, head down, each arm in turn reaching high and dragging down to the chest.
-local CLAW_UP, CLAW_UP_EL = rx(165), rx(15)
-local CLAW_DOWN, CLAW_DOWN_EL = rx(70), rx(95)
-local HUNCH = { LowerTorso = rx(-10), UpperTorso = rx(-15), Head = rx(-20) }
-Anims.rise = build("ZombieRise", {
-	{ 0, with(HUNCH, { LeftUpperArm = CLAW_UP, LeftLowerArm = CLAW_UP_EL, RightUpperArm = CLAW_DOWN, RightLowerArm = CLAW_DOWN_EL }), "snap" },
-	{ 0.4, with(HUNCH, { LeftUpperArm = CLAW_DOWN, LeftLowerArm = CLAW_DOWN_EL, RightUpperArm = CLAW_UP, RightLowerArm = CLAW_UP_EL }), "snap" },
-	{ 0.8, with(HUNCH, { LeftUpperArm = CLAW_UP, LeftLowerArm = CLAW_UP_EL, RightUpperArm = CLAW_DOWN, RightLowerArm = CLAW_DOWN_EL }) },
-}, true, Enum.AnimationPriority.Action4)
 
 -- a broken leg held stiff and a little out: the walk only moves the good one, so it drags
 Anims.limp = {}
 for _, side in { "Left", "Right" } do
 	Anims.limp[side:lower()] = polished("Limp" .. side)
+end
+
+-- A leg in a cast (server Body.cast: the knee and ankle welded straight, so only its hip moves): on
+-- crutches, swing-through. Both crutches go out ahead and plant, the body leans onto them, swings up
+-- and through between them and lands on the good foot; the cast leg is held a little forward, clear
+-- of the ground. `side` is the leg in the cast. A slung arm (Body.sling) is welded: the swing skips it.
+Anims.crutch = {}
+for _, side in { "Left", "Right" } do
+	local good, cast = side == "Left" and "Right" or "Left", side
+	local function crutches(shoulder: number, elbow: number)
+		return { LeftUpperArm = rxy(shoulder, 0, -6), RightUpperArm = rxy(shoulder, 0, 6), LeftLowerArm = rx(elbow), RightLowerArm = rx(elbow) }
+	end
+	local planted = with(crutches(30, 14), { -- crutches out ahead, leaning onto them, the good foot behind
+		LowerTorso = body(0.08, -8), UpperTorso = rx(-10), Head = rx(8),
+		[good .. "UpperLeg"] = rx(-16), [good .. "LowerLeg"] = rx(-14), [good .. "Foot"] = rx(12),
+		[cast .. "UpperLeg"] = rx(18),
+	})
+	local swung = with(crutches(4, 6), { -- up on the crutches, the body swinging through between them
+		LowerTorso = body(-0.14, 2), UpperTorso = rx(-4),
+		[good .. "UpperLeg"] = rx(26), [good .. "LowerLeg"] = rx(-34), [good .. "Foot"] = rx(-4),
+		[cast .. "UpperLeg"] = rx(26),
+	})
+	local landed = with(crutches(-14, 4), { -- on the good foot, ahead of the crutches
+		LowerTorso = body(0.1, 4), UpperTorso = rx(-2), Head = rx(-4),
+		[good .. "UpperLeg"] = rx(14), [good .. "LowerLeg"] = rx(-12), [good .. "Foot"] = rx(-2),
+		[cast .. "UpperLeg"] = rx(14),
+	})
+	Anims.crutch[side:lower()] = build("DummyCrutch" .. side, {
+		{ 0, planted, "snap" }, -- the swing off the crutches is quick
+		{ 0.32, swung },
+		{ 0.55, landed, "load" }, -- and the crutches come round again
+		{ 0.9, planted },
+	}, true, Enum.AnimationPriority.Action)
 end
 
 

@@ -159,7 +159,7 @@ end
 
 -- Kinds of dummy, picked at random by weight: the catalog Shirt / Pants / Hat it wears, the
 -- weapon it holds (`gear`, a Weapons id; DummyGear draws it, fight() uses it) and the traits it
--- may be born with (nil: any, rollTrait). Armed ones always hit back, so never a Mourner or Coward.
+-- may be born with (nil: any, rollTrait). Armed ones always hit back, so never a Calm one or a Coward.
 -- A hooligan is always Berserk: it goes for the Normal ones (nearestDummy), and the cops who see
 -- it (alarm) shoot it, and then it goes for the cop that shot it (hit).
 local KINDS = {
@@ -175,6 +175,9 @@ local KINDS = {
 		colors = { Color3.fromRGB(96, 108, 70), Color3.fromRGB(120, 110, 80) } },
 	Heavy = { weight = 0, gear = "Rocket", traits = { "Tough" }, law = true, outfit = "Heavy", armor = 0.3,
 		colors = { Color3.fromRGB(34, 36, 42), Color3.fromRGB(34, 36, 42) } },
+	-- medic: the only ones that dress a stump (Body.bandage); teal scrubs, a red cross on the chest
+	Medic = { weight = 6, traits = { "Calm" }, medic = true,
+		colors = { Color3.fromRGB(70, 150, 160), Color3.fromRGB(56, 128, 138) } },
 	-- Toolbox only (weight 0). `colors` 3 and 4: arms and head, when not the torso's / the skin.
 	Worker = { weight = 0, outfit = "Worker", -- hard hat, hi-vis vest, tool belt, boots
 		colors = { Color3.fromRGB(59, 92, 140), Color3.fromRGB(44, 62, 92) } },
@@ -348,6 +351,7 @@ local Body: any = {
 	CRAWL_SPEED = 1.6,
 	HOP_SPEED = 4.5,
 	HOP_FALL = 0.12, -- chance a second of going over while it hops along
+	CRUTCH_SPEED = 4,
 }
 -- A line from `list` other than the one the dummy said last, so a beating does not loop one line.
 -- (On Body: the main script is at Luau's 200 top-level locals.)
@@ -361,6 +365,250 @@ end
 -- A limb ("Left" / "Right", "Arm" / "Leg") is gone once its upper or lower part is.
 function Body.gone(d, side: string, limb: string): boolean
 	return d.lost[side .. "Upper" .. limb] == true or d.lost[side .. "Lower" .. limb] == true
+end
+function Body.isMedic(d): boolean
+	local kind = KINDS[d.model:GetAttribute("Kind")]
+	return kind ~= nil and kind.medic == true
+end
+-- A Medic's dressing over every stump left on the body (sever's caps on the parts it still has): the
+-- Blender kit's Bandage_Stump on a limb end, Bandage_Socket where the limb went at the torso. Both are
+-- modelled 1 stud across with the cut at the origin and +Y out of it (assets/army/build.py bandages),
+-- so they are scaled to the part here and any arm or leg fits.
+function Body.bandage(d)
+	for _, cap in d.model:GetDescendants() do
+		Body.dress(cap)
+	end
+end
+-- One stump (sever's cap, on a part still on the body), unless it is dressed already. True: it was.
+function Body.dress(cap: Instance): boolean
+	local kit = game:GetService("ReplicatedStorage"):FindFirstChild("ArmyKit")
+	do
+		local on = cap.Parent
+		if cap.Name ~= "Stump" or not on or not on:IsA("BasePart") or cap:GetAttribute("Bandaged") then
+			return false
+		end
+		cap:SetAttribute("Bandaged", true)
+		local torso = on.Name:find("Torso") ~= nil
+		local out = cap.CFrame.XVector -- the cap faces out along X (stump)
+		local across = if math.abs(on.CFrame.RightVector:Dot(out)) > 0.8 then on.CFrame.LookVector else on.CFrame.RightVector
+		local at = CFrame.fromMatrix(cap.Position, (across - out * across:Dot(out)).Unit, out)
+		local w = cap.Size.Y
+		local scale = if torso then Vector3.one * w * 1.1 else Vector3.new(on.Size.X, (on.Size.X + on.Size.Z) / 2, on.Size.Z)
+		local folder = kit and kit:FindFirstChild(if torso then "Bandage_Socket" else "Bandage_Stump")
+		local parts = {}
+		if folder then
+			for _, mesh in folder:GetChildren() do
+				local p = mesh:Clone() :: BasePart
+				local place = p:GetAttribute("Place") or CFrame.identity
+				p.Size *= scale
+				p.CFrame = at * CFrame.new(place.Position * scale) * place.Rotation
+				table.insert(parts, p)
+			end
+		else -- the place has no kit yet (Bandages.glb not imported): a plain gauze cap
+			local p = Instance.new("Part")
+			p.Shape, p.Color, p.Material = Enum.PartType.Ball, Color3.fromHex("F1EDE3"), Enum.Material.Fabric
+			p.Size = scale * Vector3.new(1.08, 0.9, 1.08)
+			p.CFrame = at * CFrame.new(0, -0.1 * scale.Y, 0)
+			table.insert(parts, p)
+		end
+		for _, p in parts do
+			p.Name = "Bandage"
+			p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+			local weld = Instance.new("WeldConstraint")
+			weld.Part0, weld.Part1, weld.Parent = on, p, p
+			p.Parent = on
+		end
+	end
+	return true
+end
+-- Plaster casts (assets/army/build.py casts: a long cast, one kit piece per body part of the limb,
+-- textured with what friends wrote on it). Limbs ("Left" / "Right", "Arm" / "Leg") with a broken bone,
+-- still on, not yet in a cast: what a Medic or the player's Cast item sets.
+Body.LIMB_PARTS = { Arm = { "UpperArm", "LowerArm", "Hand" }, Leg = { "UpperLeg", "LowerLeg", "Foot" } }
+function Body.needsCast(d): { { string } }
+	local out = {}
+	for _, side in { "Left", "Right" } do
+		for limb, names in Body.LIMB_PARTS do
+			local broken, cast = false, false
+			for _, name in names do
+				local part = d.model:FindFirstChild(side .. name)
+				broken = broken or (part ~= nil and part:GetAttribute("Broken") == true)
+				cast = cast or (part ~= nil and part:GetAttribute("Cast") == true)
+			end
+			if broken and not cast and not Body.gone(d, side, limb) then
+				table.insert(out, { side, limb })
+			end
+		end
+	end
+	return out
+end
+-- Puts `side` `limb` in a cast: the kit's Cast_<part> pieces on each of its parts still on the body
+-- (modelled in the part's space on the dummy's own body mesh, so they go on as they are), and the cast
+-- holds it stiff for good (Body.splint): an arm goes in a sling across the chest (Body.sling: it hits
+-- with it no more, it was broken), a leg is held straight and it gets about on crutches (Body.crutches,
+-- Anims.crutch). False: nothing to cast there.
+function Body.cast(d, side: string, limb: string): boolean
+	local need = false
+	for _, l in Body.needsCast(d) do
+		need = need or (l[1] == side and l[2] == limb)
+	end
+	if not need then
+		return false
+	end
+	for _, name in Body.LIMB_PARTS[limb] do
+		local body = d.model:FindFirstChild(side .. name) :: BasePart?
+		if not body then
+			continue
+		end
+		body:SetAttribute("Cast", true)
+		if not Body.kitOn(body, "Cast_" .. side .. name, "Cast") then -- no kit yet (Casts.glb not imported): a plain white shell
+			local p = Instance.new("Part")
+			p.Size, p.Color, p.Material = body.Size * Vector3.new(1.15, 0.95, 1.15), Color3.fromHex("F3F0E8"), Enum.Material.SmoothPlastic
+			p.CFrame = body.CFrame
+			Body.stick(body, p, "Cast")
+		end
+	end
+	if limb == "Arm" then
+		if d.limpJoints[side:lower()] then
+			d.limpJoints[side:lower()] = 0
+		end
+		Body.sling(d, side)
+	else
+		for name, joint in { LowerLeg = "Knee", Foot = "Ankle" } do -- straight, as the cast set it
+			local part = d.model:FindFirstChild(side .. name) :: BasePart?
+			local motor = part and part:FindFirstChild(side .. joint)
+			if part and motor and motor:IsA("Motor6D") and motor.Part0 then
+				Body.splint(part, motor.Part0, motor.C0, motor.C1)
+			elseif part and motor and motor:IsA("AnimationConstraint") and motor.Attachment0 and motor.Attachment1 then -- the dummies' rig
+				Body.splint(part, motor.Attachment0.Parent :: BasePart, motor.Attachment0.CFrame, motor.Attachment1.CFrame)
+			end
+		end
+		Body.crutches(d, side)
+	end
+	d.morale = math.min(d.baseMorale, d.morale + 20)
+	addInjury(d, `{side:lower()} {limb:lower()} in a cast`)
+	return true
+end
+-- Clones the kit's `piece` (ReplicatedStorage.ArmyKit, modelled in `on`'s space) onto `on`, each mesh
+-- named `label`. False: the place has no such piece (its .glb not imported yet).
+function Body.kitOn(on: BasePart, piece: string, label: string): boolean
+	local kit = game:GetService("ReplicatedStorage"):FindFirstChild("ArmyKit")
+	local folder = kit and kit:FindFirstChild(piece)
+	if not folder then
+		return false
+	end
+	for _, mesh in folder:GetChildren() do
+		local p = mesh:Clone() :: BasePart
+		p.CFrame = on.CFrame * (p:GetAttribute("Place") or CFrame.identity)
+		Body.stick(on, p, label)
+	end
+	return true
+end
+function Body.stick(on: BasePart, p: BasePart, label: string)
+	p.Name = label
+	p.Anchored, p.CanCollide, p.CanQuery, p.CanTouch, p.Massless = false, false, false, false, true
+	local weld = Instance.new("WeldConstraint")
+	weld.Part0, weld.Part1, weld.Parent = on, p, p
+	p.Parent = on
+end
+-- `part`'s joint (its Motor6D and the ragdoll's stand-in for it, Ragdoll.setup) lets go for good and a
+-- weld holds it to `to` instead: no animation bends it, and limp or ragdolled it does not flop (Ragdoll
+-- leaves anything marked "Splint" alone). revive undoes it. Its joint lives in the part (R15).
+function Body.splint(part: BasePart, to: BasePart, c0: CFrame, c1: CFrame)
+	for _, j in part:GetChildren() do
+		if j:IsA("Motor6D") or j:IsA("AnimationConstraint") or j.Name == "RagJoint" then
+			j.Enabled = false
+			j:SetAttribute("Splint", true)
+		end
+	end
+	local weld = Instance.new("Weld")
+	weld.Name, weld.Part0, weld.Part1, weld.C0, weld.C1 = "Splint", to, part, c0, c1
+	weld.Parent = part
+end
+-- The arm in a sling: bent across the belly, each of its parts welded to the chest where assets/army
+-- build.py sling_pose puts it (printed by its sling_luau(): the same pose the Sling_ piece was made on).
+Body.SLING = {
+	Left = { UpperArm = CFrame.new(-1.0477, 0.2074, -0.1721, 0.5883, -0.1685, -0.7909, -0.0711, 0.9635, -0.2582, 0.8055, 0.2081, 0.5548), LowerArm = CFrame.new(-0.9909, -0.2664, -0.3827, 0.3681, -0.9259, -0.0850, -0.3691, -0.0616, -0.9274, 0.8534, 0.3727, -0.3644), Hand = CFrame.new(-0.3600, -0.1047, -0.6669, 0.3681, -0.9259, -0.0850, -0.3691, -0.0616, -0.9274, 0.8534, 0.3727, -0.3644) },
+	Right = { UpperArm = CFrame.new(1.0477, 0.2074, -0.1721, 0.5883, 0.1685, 0.7909, 0.0711, 0.9635, -0.2582, -0.8055, 0.2081, 0.5548), LowerArm = CFrame.new(0.9909, -0.2664, -0.3827, 0.3681, 0.9259, 0.0850, 0.3691, -0.0616, -0.9274, -0.8534, 0.3727, -0.3644), Hand = CFrame.new(0.3600, -0.1047, -0.6669, 0.3681, 0.9259, 0.0850, 0.3691, -0.0616, -0.9274, -0.8534, 0.3727, -0.3644) },
+}
+function Body.sling(d, side: string)
+	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+	if not torso then
+		return
+	end
+	for name, at in Body.SLING[side] do
+		local part = d.model:FindFirstChild(side .. name) :: BasePart?
+		if part then
+			Body.splint(part, torso, at, CFrame.identity)
+		end
+	end
+	Body.kitOn(torso, "Sling_" .. side, "Sling")
+	d.slung = side
+	local hand = d.model:FindFirstChild(side .. "Hand")
+	for _, p in if hand then hand:GetChildren() else {} do
+		if p.Name == "Crutch" then -- on crutches already: that hand lets go of its one
+			p:Destroy()
+		end
+	end
+	if side == "Right" then -- the hand it held its weapon in
+		d.gear = nil
+		d.model:SetAttribute("Gear", nil)
+	end
+end
+-- A leg in a cast: a crutch in each hand it can hold one in (not one in a sling, not one it lost), and
+-- it walks on them (Body.gait: Anims.crutch); its weapon goes, its hands are full (Body.usable).
+function Body.crutches(d, side: string)
+	if d.crutch then
+		return
+	end
+	d.crutch = side:lower()
+	d.gear = nil
+	d.model:SetAttribute("Gear", nil)
+	for _, s in { "Left", "Right" } do
+		local hand = d.model:FindFirstChild(s .. "Hand") :: BasePart?
+		if hand and not hand:GetAttribute("Cast") and not Body.kitOn(hand, "Crutch", "Crutch") then
+			local p = Instance.new("Part") -- no kit yet: a plain grey pole
+			p.Size, p.Color, p.Material = Vector3.new(0.14, 2.6, 0.14), Color3.fromHex("B8BEC8"), Enum.Material.Metal
+			p.CFrame = hand.CFrame * CFrame.new(0, -1, 0.28)
+			Body.stick(hand, p, "Crutch")
+		end
+	end
+end
+-- The player's Cast (shared/Weapons): the arm or leg the crosshair is on (within the item's reach), when a
+-- bone in it is broken and it is not in a cast yet, goes in one (client MedicAim lights up the same limb).
+function Body.playerCast(origin: Vector3, dir: Vector3, range: number)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { dummyFolder }
+	local hit = workspace:Raycast(origin, dir * range, params)
+	local info = hit and PARTS[hit.Instance.Name]
+	local model = hit and hit.Instance.Parent
+	local d = model and dummies[model]
+	if not (d and info and info.limb) then
+		return
+	end
+	local side = if info.side == "left" then "Left" else "Right"
+	if Body.cast(d, side, if info.limb == "arm" then "Arm" else "Leg") and d.state ~= "Dead" and d.state ~= "Out cold" then
+		say(d, pick(Body.THANKS))
+	end
+end
+-- What marks a Medic out: a white patch with a red cross on the chest.
+function Body.medicMarks(model: Model)
+	local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+	if not torso then
+		return
+	end
+	local z = -torso.Size.Z / 2
+	for _, m in { { Vector3.new(0.5, 0.5, 0.04), z - 0.01, Color3.new(1, 1, 1) }, { Vector3.new(0.34, 0.1, 0.04), z - 0.03, Color3.fromRGB(220, 30, 40) },
+		{ Vector3.new(0.1, 0.34, 0.04), z - 0.03, Color3.fromRGB(220, 30, 40) } } do
+		local p = Instance.new("Part")
+		p.Name, p.Size, p.Color, p.Material = "Armor", m[1], m[3], Enum.Material.SmoothPlastic
+		p.CanCollide, p.CanQuery, p.CanTouch, p.Massless, p.CastShadow = false, false, false, true, false
+		p.CFrame = torso.CFrame * CFrame.new(0.3, 0.3, m[2])
+		local weld = Instance.new("WeldConstraint")
+		weld.Part0, weld.Part1, weld.Parent = torso, p, p
+		p.Parent = torso
+	end
 end
 -- Arms it can still pull itself along or hit with: there, and not broken.
 function Body.arms(d): number
@@ -848,7 +1096,7 @@ end
 local function knockDown(d, seconds: number, state: string)
 	dropPose(d) -- a limp body holds no pose
 	d.crawling = false -- flat out: it crawls again once it comes round (Heartbeat)
-	d.risingUntil, d.digUntil = 0, 0
+	d.risingUntil = 0
 	for _, t in d.tracks do
 		t:Stop(0)
 	end
@@ -957,14 +1205,22 @@ local function revive(d)
 	end
 	d.wound, d.lastWound, d.scaredUntil, d.attackerAt = nil, nil, 0, nil
 	for _, mark in d.model:GetDescendants() do
-		if mark.Name == "Wound" or mark.Name == "Bruise" then
+		if mark.Name == "Wound" or mark.Name == "Bruise" or mark.Name == "Cast" or mark.Name == "Sling" or mark.Name == "Crutch"
+			or (mark.Name == "Splint" and mark:IsA("Weld")) then
 			mark:Destroy()
+		elseif mark:GetAttribute("Splint") then -- a joint the cast held: free, as the rest of the body is
+			mark:SetAttribute("Splint", nil)
+			mark.Enabled = (mark.Name == "RagJoint") == (d.model:GetAttribute("Ragdolled") == true)
+		elseif mark:IsA("BasePart") then
+			mark:SetAttribute("Broken", nil)
+			mark:SetAttribute("Cast", nil)
 		end
 	end
 	d.speed, d.limpSide, d.risingUntil = d.zombie and ZOMBIE.speed or 8, nil, 0
-	-- a fresh start for the mind too: it used to come back still fighting, still digging a grave,
-	-- or bent over a wound it no longer has
-	d.target, d.burying, d.digUntil, d.legless = nil, nil, 0, false
+	d.crutch, d.slung = nil, nil
+	-- a fresh start for the mind too: it used to come back still fighting, or bent over a wound it
+	-- no longer has
+	d.target, d.legless = nil, false
 	d.crawling = false
 	if d.helping then
 		Body.stopHelping(d)
@@ -1349,6 +1605,8 @@ local function pace(d): number
 		return Body.CRAWL_SPEED
 	elseif Body.mobility(d) == "hop" then
 		return Body.HOP_SPEED
+	elseif d.crutch then
+		return Body.CRUTCH_SPEED
 	end
 	return (d.limp or d.blood < BLOOD_DROWSY) and 3.5 or 8
 end
@@ -1509,9 +1767,9 @@ end
 -- Every dummy is born with one. None ever starts on a player: a player only gets hit back by the dummy it hit.
 -- Berserk goes for the nearest dummy on sight, Tough hits back and
 -- keeps at it however badly it is hurt, Hothead hits back but gives up once something is broken
--- or it bleeds hard, Mourner buries the dead, Coward runs at the very sight of a player.
-local TRAITS = { { "Berserk", 5 }, { "Tough", 20 }, { "Hothead", 20 }, { "Mourner", 50 }, { "Coward", 5 } }
-local MORALE = { Berserk = 100, Tough = 90, Hothead = 60, Mourner = 40, Coward = 15 } -- starting morale
+-- or it bleeds hard, Calm never hits back (it tends the hurt, Body.cope), Coward runs at the very sight of a player.
+local TRAITS = { { "Berserk", 5 }, { "Tough", 20 }, { "Hothead", 20 }, { "Calm", 50 }, { "Coward", 5 } }
+local MORALE = { Berserk = 100, Tough = 90, Hothead = 60, Calm = 40, Coward = 15 } -- starting morale
 local function rollTrait(): string
 	local roll = math.random() * 100
 	for _, t in TRAITS do
@@ -1520,7 +1778,7 @@ local function rollTrait(): string
 			return t[1]
 		end
 	end
-	return "Mourner"
+	return "Calm"
 end
 
 -- Broken bones, a bad bleed or not much blood left: a Hothead has had enough.
@@ -1602,7 +1860,6 @@ local ANGRY_LINES = { "That's it!", "You want a fight?!", "Come here!", "Oh, you
 local BERSERK_LINES = { "YOU!", "Get over here!", "I've been waiting for this." }
 local GIVE_UP_LINES = { "Okay, okay, I'm done!", "Not worth it!", "I give up!" }
 local COWARD_LINES = { "Nope, nope, nope!", "Stay away from me!", "Help!" }
-local MOURN_LINES = { "Oh no... I'll take care of you.", "Someone has to do it.", "Poor thing." }
 local LEG_LINES = { "My leg won't hold me!", "Whoa-", "Ow, the leg!" }
 local WAKE_LINES = { "That's the last time you do that.", "I'm okay. I think.", "Ow. Ow. Ow.", "Stay away from me!" }
 local LOSS_LINES = { arm = { "My arm!", "That was my good arm!" }, leg = { "My leg!", "I needed that!" }, hand = { "My hand!" }, foot = { "My foot!" } }
@@ -1660,6 +1917,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	local function breakBone()
 		if not p.broken then
 			p.broken = true
+			part:SetAttribute("Broken", true) -- what a cast is for (Body.cast, client MedicAim)
 			local by = blameOf(d)
 			if by then
 				Progress.add(by, "StatBones") -- the STATS page
@@ -1906,6 +2164,9 @@ function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: str
 	if wear.outfit then
 		Outfits.dress(model, wear.outfit)
 	end
+	if wear.medic then
+		Body.medicMarks(model)
+	end
 
 	model:PivotTo(cf)
 	model.Parent = dummyFolder
@@ -1971,10 +2232,8 @@ function spawnDummy(cf: CFrame, as: string?, forceKind: string?, forceTrait: str
 		impactState = Impact.new(), -- recent top speeds and a landing under way (impacts)
 		nextImpact = 0,
 		target = nil :: Player?, -- the player it is going for
-		nextLook = 0, -- next look round for players and the dead (behave)
+		nextLook = 0, -- next look round for players (behave)
 		nextSwing = 0, -- next punch at its target
-		burying = nil :: any, -- the dead dummy it is burying
-		digUntil = 0, -- 0: not digging yet
 		wound = nil :: any, -- { part, at, untilTime }: where the hands go
 		lastWound = nil :: any, -- the newest wound, kept after the hands leave it (gunpoint)
 		pressing = false, -- a hand is on the wound: it bleeds slower
@@ -2018,6 +2277,9 @@ task.spawn(function()
 			Looks.buildFace(Looks.plainHead(model))
 			if kind.outfit then
 				Outfits.dress(model, kind.outfit)
+			end
+			if kind.medic then
+				Body.medicMarks(model)
 			end
 			-- outside workspace the accessory welds never solve: put each hat on its body attachment
 			for _, acc in model:GetChildren() do
@@ -2172,9 +2434,6 @@ punchRemote.OnServerEvent:Connect(function(player, part)
 				if Monsters.damage(result.Instance, 14, delta, player) then return end
 			end
 		end
-		if part.Parent and part.Parent.Name == "Grave" and part:IsDescendantOf(Map.folder) then
-			Map.blast(part.Position, 1.5, 25)
-		end
 		return
 	end
 	if tryDodge(d, player) then
@@ -2194,6 +2453,9 @@ local BLEEDING_LINES = { "I'm already bleeding!", "Please, I need a doctor!", "H
 local DRAW_LINES = { "Drop the weapon!", "Gun! Gun!", "That's it!", "You asked for it!" }
 -- what a dummy holds (gear): DummyGear on the clients swaps the model in its hand
 local function setGear(d, gear)
+	if d.crutch or d.slung == "Right" then -- the hand it would hold it in is on a crutch or in a sling
+		gear = nil
+	end
 	if d.gear ~= gear then
 		d.gear = gear
 		d.model:SetAttribute("Gear", gear)
@@ -3325,6 +3587,13 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	if id == "Shotgun" then -- racked for the next shell
 		task.delay(0.45, Sfx.play, { Sfx.SHOTGUN_PUMP, 1, 0.7 }, origin)
 	end
+	if weapon.kind == "bandage" then
+		Body.playerBandage(player, origin, dir, weapon.range)
+		return
+	elseif weapon.kind == "cast" then
+		Body.playerCast(origin, dir, weapon.range)
+		return
+	end
 	if require(script.Specials).fire(weapon, player, char, origin, dir, aimed == true) then
 		return
 	end
@@ -3507,7 +3776,7 @@ Players.PlayerRemoving:Connect(function(player)
 end)
 
 -- What its personality makes it do while it is up and not busy getting up. Returns true while it
--- is fighting or burying (no wandering then).
+-- is fighting (no wandering then).
 local sightParams = RaycastParams.new()
 sightParams.FilterType = Enum.RaycastFilterType.Exclude
 local SIGHT = 45
@@ -3568,13 +3837,13 @@ local ENGAGE_SLOTS = 2
 local CIRCLE_RADIUS = 10
 local MORALE_BREAK = 20
 local WEAK = 0.35 -- what an unarmed dummy's blows are worth on a hooligan: it fights back, but it is no match
-local DODGE = { Berserk = 0.2, Tough = 0.35, Hothead = 0.25, Mourner = 0.12, Coward = 0.3 } -- chance to slip a blow
+local DODGE = { Berserk = 0.2, Tough = 0.35, Hothead = 0.25, Calm = 0.12, Coward = 0.3 } -- chance to slip a blow
 -- [trait] = weights of { jab, combo (jab, jab, haymaker), haymaker, kick }
 local STYLE = {
 	Berserk = { 2, 3, 4, 2 },
 	Tough = { 3, 2, 2, 3 },
 	Hothead = { 4, 2, 2, 1 },
-	Mourner = { 5, 1, 1, 1 },
+	Calm = { 5, 1, 1, 1 },
 	Coward = { 5, 0, 1, 1 },
 }
 local STYLE_MOVES = { "jab", "combo", "haymaker", "kick" }
@@ -3720,7 +3989,7 @@ local function pickMove(d, b): string
 	if d.gear == "Baton" then
 		return math.random() < 0.85 and "baton" or "kick"
 	end
-	local weights = STYLE[d.trait] or STYLE.Mourner
+	local weights = STYLE[d.trait] or STYLE.Calm
 	local total = 0
 	for _, w in weights do
 		total += w
@@ -4200,52 +4469,55 @@ function ZOMBIE.crawl(d, torso: BasePart, now: number)
 	end
 end
 
-local function claimable(body): boolean
-	local by = body.claimedBy
-	return body.state == "Dead" and not body.heldBy and not (by and by.burying == body and dummies[by.model] and by.state ~= "Dead")
-end
-
-local function bury(d, root: BasePart, now: number)
-	local body = d.burying
-	local torso = body.model:FindFirstChild("UpperTorso") or body.model:FindFirstChild("HumanoidRootPart")
-	if not dummies[body.model] or body.state ~= "Dead" or body.heldBy or not torso then
-		d.burying, d.digUntil = nil, 0 -- revived, carried off or gone
-		playTrack(d, Anims.dig):Stop()
-		return
-	end
-	local to = (torso.Position - root.Position) * Vector3.new(1, 0, 1)
-	if d.digUntil == 0 then
-		if to.Magnitude > 4 then
-			if now >= d.nextLook then
-				d.nextLook = now + 0.5
-				walkTo(d, torso.Position - (to.Magnitude > 0.1 and to.Unit * 3 or Vector3.zero))
-			end
-			return
-		end
-		walkStraight(d, root.Position)
-		if to.Magnitude > 0.1 then
-			root.CFrame = CFrame.lookAt(root.Position, root.Position + to)
-		end
-		d.digUntil = now + 4
-		playTrack(d, Anims.dig):Play(0.3)
-	elseif now >= d.digUntil then
-		playTrack(d, Anims.dig):Stop(0.3)
-		local ground = Vector3.new(torso.Position.X, root.Position.Y - d.humanoid.HipHeight - root.Size.Y / 2, torso.Position.Z)
-		local facing = to.Magnitude > 0.1 and to.Unit or Vector3.zAxis
-		-- the stone at the far end, the mound toward the digger
-		Map.grave(CFrame.lookAt(ground, ground + facing), body.model.Name)
-		say(d, `Rest easy, {body.model.Name}.`)
-		body.model:Destroy()
-		d.burying, d.digUntil = nil, 0
-	end
-end
-
 -- Body: what losing a limb does to a dummy, and how it carries on without it ------------------------
 Body.BEG = { "Please, no more!", "I have a family!", "Stay back! Stay back!", "Okay, you win! You win!", "Not again, please!" }
 Body.HURT = { "Somebody... help...", "I can't feel my legs.", "Where's my arm?", "So cold...", "Is anyone there?" }
 Body.HELP = { "Hold on, I've got you!", "Don't move, I'm coming!", "Stay with me!" }
 Body.THANKS = { "Thank you...", "I owe you one.", "You saved me." }
 Body.HELP_TIME = 4 -- s it holds someone's wounds before the bleeding stops
+Body.BANDAGE_TIME = 6 -- s a Medic takes to dress a stump
+Body.CAST_TIME = 8 -- s a Medic takes to set a broken arm or leg in plaster
+Body.MEDIC_RANGE = 120 -- studs a Medic looks for the hurt (anyone else: 50)
+Body.MEDIC_LINES = { "Medic! Coming through!", "Hang on, I'm a medic!", "Keep pressure on it, I'm coming!" }
+-- The player's Bandage (shared/Weapons): the undressed stump nearest the crosshair's line, within the
+-- item's reach and BANDAGE_AIM studs of the line (client MedicAim lights up the same one), is
+-- dressed and stops bleeding; the rest of the body's wounds bleed on.
+Body.BANDAGE_AIM = 1.4
+function Body.playerBandage(player: Player, origin: Vector3, dir: Vector3, range: number)
+	local best, bestOff, owner = nil, Body.BANDAGE_AIM, nil
+	for model, d in dummies do
+		local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+		if not torso or (torso.Position - origin).Magnitude > range + 6 then
+			continue
+		end
+		for _, cap in model:GetDescendants() do
+			if cap.Name == "Stump" and cap:IsA("BasePart") and not cap:GetAttribute("Bandaged") then
+				local to = cap.Position - origin
+				local along = to:Dot(dir)
+				local off = (to - dir * along).Magnitude
+				if along > 0 and along <= range and off < bestOff then
+					best, bestOff, owner = cap, off, d
+				end
+			end
+		end
+	end
+	if not best or not Body.dress(best) then
+		return
+	end
+	CollectionService:RemoveTag(best, "Bleeder")
+	owner.bleed = math.max(owner.bleed - 1.6, 0) -- what the stump bled (sever)
+	local still = false
+	for _, part in owner.model:GetDescendants() do
+		still = still or CollectionService:HasTag(part, "Bleeder")
+	end
+	if not still then
+		owner.bleed = 0
+	end
+	if owner.state ~= "Dead" and owner.state ~= "Out cold" then
+		say(owner, pick(Body.THANKS))
+	end
+	syncAttributes(owner)
+end
 
 -- An arm it can still hit with: there, hand and all, and not broken.
 function Body.armOk(d, side: string): boolean
@@ -4264,6 +4536,9 @@ end
 -- The blow it means to throw, or the next best one it still can (a jab is the left hand, a
 -- haymaker or a swing of its weapon the right, a kick takes two good legs); nil: nothing left.
 function Body.usable(d, name: string): string?
+	if d.crutch then -- both hands on its crutches
+		return nil
+	end
 	local can = {
 		jab = Body.armOk(d, "Left"),
 		haymaker = Body.armOk(d, "Right"),
@@ -4356,7 +4631,10 @@ function Body.gait(d, rising: boolean, dt: number)
 		end
 	end
 	for side, animation in Anims.limp do
-		drive(animation, how == "limp" and d.limpSide == side and not d.crawling, 3.5)
+		drive(animation, how == "limp" and d.limpSide == side and not d.crawling and not d.crutch, 3.5)
+	end
+	for side, animation in Anims.crutch do -- the leg in a cast held stiff off the ground, swung through on the crutches
+		drive(animation, how == "limp" and d.crutch == side and not d.crawling, Body.CRUTCH_SPEED)
 	end
 	local stand = if Body.gone(d, "Left", "Leg") then "right" else "left"
 	for side, animation in Anims.hop do
@@ -4384,7 +4662,9 @@ end
 function Body.help(d, root: BasePart, now: number): boolean
 	local other = d.helping
 	local torso = other.model:FindFirstChild("UpperTorso") :: BasePart?
-	if not dummies[other.model] or other.state == "Dead" or other.bleed <= 0 or not torso or other.heldBy then
+	local casts = if Body.isMedic(d) and dummies[other.model] then Body.needsCast(other) else {} -- (only a Medic sets bones)
+	if not dummies[other.model] or other.state == "Dead" or (other.bleed <= 0 and #casts == 0) or not torso or other.heldBy
+		or (next(other.lost) and not Body.isMedic(d)) then -- a limb gone since: that wants a Medic
 		if other.state == "Dead" then
 			say(d, "No, no, no...")
 		end
@@ -4407,13 +4687,19 @@ function Body.help(d, root: BasePart, now: number): boolean
 		if Anims.dig then
 			playTrack(d, Anims.dig):Play(0.3)
 		end
-	elseif now - d.helpSince >= Body.HELP_TIME then
+	elseif now - d.helpSince >= math.max(if next(other.lost) then Body.BANDAGE_TIME else Body.HELP_TIME, if #casts > 0 then Body.CAST_TIME else 0) then
 		stopBleeding(other)
+		if next(other.lost) then
+			Body.bandage(other) -- (only a Medic gets this far with a stump: cope, above)
+		end
+		for _, limb in casts do
+			Body.cast(other, limb[1], limb[2])
+		end
 		other.morale = math.min(other.baseMorale, other.morale + 30)
 		if other.state ~= "Out cold" then
 			say(other, pick(Body.THANKS))
 		end
-		say(d, "There. You'll make it.")
+		say(d, if #casts > 0 then "There, all set. Six weeks in that cast!" elseif next(other.lost) then "All wrapped up. Keep it still." else "There. You'll make it.")
 		Body.stopHelping(d)
 	end
 	return true
@@ -4421,16 +4707,13 @@ end
 
 -- Before anything else it would do (behave): a dummy that cannot stand, or has no arm left, does
 -- not fight on; it begs a player who comes near and gets away from them as best it can, and lies
--- moaning otherwise. A whole, calm one may go and tend a badly hurt one that is bleeding (a Mourner
--- always, the brave ones too). True: it is busy with that.
+-- moaning otherwise. A whole, calm one may go and tend a badly hurt one that is bleeding (a Calm
+-- one always, the brave ones too). True: it is busy with that.
 function Body.cope(d, root: BasePart, now: number): boolean
 	local how = Body.mobility(d)
 	if how == "hop" or how == "crawl" or how == "down" or Body.usable(d, "jab") == nil then
 		if d.target then
 			stopFighting(d)
-		end
-		if d.burying then
-			d.burying.claimedBy, d.burying = nil, nil
 		end
 		if d.helping then
 			Body.stopHelping(d)
@@ -4462,24 +4745,30 @@ function Body.cope(d, root: BasePart, now: number): boolean
 	if d.helping then
 		return Body.help(d, root, now)
 	end
-	if d.target or d.burying or d.calmAt > 0 or d.team or now < (d.nextHelpLook or 0)
-		or not (d.trait == "Mourner" or d.brave) then
+	if d.target or d.calmAt > 0 or d.team or now < (d.nextHelpLook or 0)
+		or not (d.trait == "Calm" or d.brave) then
 		return false
 	end
 	d.nextHelpLook = now + 1.5
-	local best, bestDist = nil, 50
+	local medic = Body.isMedic(d)
+	local best, bestDist = nil, if medic then Body.MEDIC_RANGE else 50
 	for _, other in dummies do
 		local torso = other.model:FindFirstChild("UpperTorso") :: BasePart?
 		local dist = torso and (torso.Position - root.Position).Magnitude or math.huge
-		if other ~= d and dist < bestDist and other.state ~= "Dead" and not other.zombie and not other.helpedBy
-			and not other.heldBy and other.bleed > 0
-			and (other.crawling or other.state ~= "Awake" or other.blood < BLOOD_DROWSY or Body.mobility(other) ~= "walk") then
+		local cut = next(other.lost) ~= nil -- a limb gone: a Medic's job, and the first one it takes
+		if medic and cut then
+			dist -= 60
+		end
+		local casts = medic and other ~= d and dist < bestDist and #Body.needsCast(other) > 0 -- a broken bone: a Medic's too
+		if other ~= d and dist < bestDist and (medic or not cut) and other.state ~= "Dead" and not other.zombie and not other.helpedBy
+			and not other.heldBy and (other.bleed > 0 or casts)
+			and (cut or casts or other.crawling or other.state ~= "Awake" or other.blood < BLOOD_DROWSY or Body.mobility(other) ~= "walk") then
 			best, bestDist = other, dist
 		end
 	end
 	if best then
 		d.helping, best.helpedBy = best, d
-		say(d, pick(Body.HELP), "shout")
+		say(d, pick(if medic then Body.MEDIC_LINES else Body.HELP), "shout")
 		d.speed = pace(d) * 1.5
 		return true
 	end
@@ -4500,10 +4789,6 @@ local function behave(d, now: number): boolean
 	if d.target then
 		fight(d, root, now)
 		return d.target ~= nil
-	end
-	if d.burying then
-		bury(d, root, now)
-		return true
 	end
 	if now < d.nextLook then
 		return false
@@ -4531,21 +4816,6 @@ local function behave(d, now: number): boolean
 		elseif player and other and (other.Position - root.Position).Magnitude < 30 then
 			say(d, pick(COWARD_LINES))
 			flee(d, other.Position, 30)
-		end
-	elseif d.trait == "Mourner" and d.calmAt == 0 then
-		local best, bestDist = nil, 60
-		for _, body in dummies do
-			local torso = body.model:FindFirstChild("UpperTorso") :: BasePart?
-			local dist = torso and (torso.Position - root.Position).Magnitude or math.huge
-			if body ~= d and dist < bestDist and claimable(body) then
-				best, bestDist = body, dist
-			end
-		end
-		if best then
-			best.claimedBy, d.burying = d, best
-			say(d, pick(MOURN_LINES))
-			d.speed = pace(d)
-			return true
 		end
 	end
 	return false
@@ -5061,14 +5331,14 @@ require(script.Admin).start(remotes, {
 	disaster = require(script.Disasters).force,
 })
 ShopServer.start()
--- the host's GRAVITY and GRAVE ZOMBIES settings (server/World)
-require(script.World).start({ spawn = spawnDummy, trim = trimDummies, play = playTrack })
+-- the host's GRAVITY setting (server/World)
+require(script.World).start()
 -- the first-time tutorial on the arena (server/Tutorial)
 Tutorial.start({
 	spawn = function(cf: CFrame, kind: string?): Model
 		trimDummies()
-		-- a Mourner: never hits back (only the Tough, Berserk and Hothead ones do, hit)
-		return spawnDummy(cf, nil, kind, "Mourner").model
+		-- a Calm one: never hits back (only the Tough, Berserk and Hothead ones do, hit)
+		return spawnDummy(cf, nil, kind, "Calm").model
 	end,
 	dummies = function(): { Model }
 		local list = {}

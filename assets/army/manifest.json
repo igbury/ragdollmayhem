@@ -1,4 +1,179 @@
 {
+ "Bandage_Socket": [
+  {
+   "name": "Bandage_Socket__D9D1BF",
+   "color": "D9D1BF",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    1.3,
+    0.05,
+    1.3
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Socket__F1EDE3",
+   "color": "F1EDE3",
+   "tris": 238,
+   "at": [
+    0.0,
+    0.14,
+    0.0
+   ],
+   "size": [
+    1.1,
+    0.28,
+    1.1
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Socket__EDE3C8",
+   "color": "EDE3C8",
+   "tris": 236,
+   "at": [
+    -0.0,
+    0.155,
+    0.0
+   ],
+   "size": [
+    1.096,
+    0.31,
+    1.096
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Socket__000000",
+   "color": "000000",
+   "tris": 582,
+   "at": [
+    -0.0,
+    0.1429,
+    0.0
+   ],
+   "size": [
+    1.3464,
+    0.3822,
+    1.3464
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Bandage_Stump": [
+  {
+   "name": "Bandage_Stump__D9D1BF",
+   "color": "D9D1BF",
+   "tris": 690,
+   "at": [
+    -0.0,
+    -0.225,
+    -0.0037
+   ],
+   "size": [
+    1.1175,
+    1.07,
+    1.1575
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Stump__F1EDE3",
+   "color": "F1EDE3",
+   "tris": 466,
+   "at": [
+    -0.0,
+    -0.2819,
+    0.0
+   ],
+   "size": [
+    1.1294,
+    1.1237,
+    1.1308
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Stump__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    -0.12,
+    -0.5,
+    -0.585
+   ],
+   "size": [
+    0.17,
+    0.1,
+    0.04
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Stump__EDE3C8",
+   "color": "EDE3C8",
+   "tris": 108,
+   "at": [
+    0.2,
+    -0.47,
+    -0.575
+   ],
+   "size": [
+    0.1,
+    0.36,
+    0.03
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Bandage_Stump__000000",
+   "color": "000000",
+   "tris": 1372,
+   "at": [
+    -0.0,
+    -0.2645,
+    -0.0169
+   ],
+   "size": [
+    1.168,
+    1.1969,
+    1.2226
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
  "Baton": [
   {
    "name": "Baton__9EA2AC",
@@ -16,7 +191,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Baton__34343A",
@@ -34,7 +210,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Baton__2A2A30",
@@ -52,7 +229,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Baton__17171C",
@@ -70,7 +248,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Baton__7A5434",
@@ -88,7 +267,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Baton__000000",
@@ -106,7 +286,868 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftFoot": [
+  {
+   "name": "Cast_LeftFoot__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1141,
+   "at": [
+    -0.0005,
+    -0.0319,
+    0.1754
+   ],
+   "size": [
+    0.9742,
+    0.845,
+    1.0235
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftFoot__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 486,
+   "at": [
+    0.0086,
+    -0.1805,
+    -0.3285
+   ],
+   "size": [
+    0.9341,
+    0.5791,
+    0.0829
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftFoot__2A2D33",
+   "color": "2A2D33",
+   "tris": 108,
+   "at": [
+    -0.0,
+    -0.435,
+    0.1
+   ],
+   "size": [
+    0.7728,
+    0.1,
+    0.992
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftFoot__4A505A",
+   "color": "4A505A",
+   "tris": 540,
+   "at": [
+    -0.0,
+    -0.49,
+    0.12
+   ],
+   "size": [
+    0.7224,
+    0.03,
+    0.7
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftFoot__353A44",
+   "color": "353A44",
+   "tris": 671,
+   "at": [
+    0.0008,
+    -0.0551,
+    -0.2276
+   ],
+   "size": [
+    1.0307,
+    0.8482,
+    0.2342
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftFoot__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    -0.51,
+    -0.06,
+    -0.2
+   ],
+   "size": [
+    0.035,
+    0.14,
+    0.1
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftFoot__000000",
+   "color": "000000",
+   "tris": 3054,
+   "at": [
+    -0.0078,
+    -0.057,
+    0.146
+   ],
+   "size": [
+    1.0859,
+    0.9425,
+    1.1304
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftHand": [
+  {
+   "name": "Cast_LeftHand__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 737,
+   "at": [
+    0.0179,
+    0.3479,
+    0.0077
+   ],
+   "size": [
+    0.7477,
+    0.5873,
+    0.8682
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftHand__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 558,
+   "at": [
+    0.0181,
+    0.0723,
+    0.0077
+   ],
+   "size": [
+    0.783,
+    0.1078,
+    0.9037
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftHand__000000",
+   "color": "000000",
+   "tris": 1295,
+   "at": [
+    0.0181,
+    0.3339,
+    0.0078
+   ],
+   "size": [
+    0.8309,
+    0.6621,
+    0.9511
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftLowerArm": [
+  {
+   "name": "Cast_LeftLowerArm__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 960,
+   "at": [
+    -0.0004,
+    -0.0005,
+    -0.0003
+   ],
+   "size": [
+    0.7488,
+    1.1247,
+    0.7365
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 960,
+   "at": [
+    -0.0004,
+    -0.0008,
+    -0.0005
+   ],
+   "size": [
+    0.7968,
+    1.1722,
+    0.7839
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftLowerLeg": [
+  {
+   "name": "Cast_LeftLowerLeg__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1280,
+   "at": [
+    -0.0036,
+    -0.0032,
+    -0.0009
+   ],
+   "size": [
+    0.8664,
+    1.3004,
+    0.9236
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftLowerLeg__353A44",
+   "color": "353A44",
+   "tris": 655,
+   "at": [
+    -0.0016,
+    -0.4913,
+    0.0164
+   ],
+   "size": [
+    0.9151,
+    0.222,
+    0.9439
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftLowerLeg__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    -0.47,
+    -0.45,
+    0.0
+   ],
+   "size": [
+    0.035,
+    0.1,
+    0.14
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 2043,
+   "at": [
+    -0.0178,
+    -0.0031,
+    0.0104
+   ],
+   "size": [
+    0.9859,
+    1.3482,
+    0.9941
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftUpperArm": [
+  {
+   "name": "Cast_LeftUpperArm__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 949,
+   "at": [
+    0.0326,
+    -0.2495,
+    0.0057
+   ],
+   "size": [
+    0.7633,
+    0.8198,
+    0.8909
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftUpperArm__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 402,
+   "at": [
+    0.0778,
+    0.1632,
+    -0.0119
+   ],
+   "size": [
+    0.6796,
+    0.076,
+    0.8907
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 1351,
+   "at": [
+    0.0341,
+    -0.2291,
+    -0.0031
+   ],
+   "size": [
+    0.8143,
+    0.9084,
+    0.9559
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_LeftUpperLeg": [
+  {
+   "name": "Cast_LeftUpperLeg__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1080,
+   "at": [
+    -0.0125,
+    -0.3353,
+    0.002
+   ],
+   "size": [
+    0.8526,
+    0.9934,
+    0.8662
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_LeftUpperLeg__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 480,
+   "at": [
+    -0.0121,
+    0.185,
+    0.0016
+   ],
+   "size": [
+    0.8875,
+    0.0602,
+    0.9015
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_LeftUpperLeg__000000",
+   "color": "000000",
+   "tris": 1560,
+   "at": [
+    -0.012,
+    -0.3086,
+    0.0016
+   ],
+   "size": [
+    0.935,
+    1.0948,
+    0.9489
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightFoot": [
+  {
+   "name": "Cast_RightFoot__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1141,
+   "at": [
+    0.0005,
+    -0.0319,
+    0.1754
+   ],
+   "size": [
+    0.9742,
+    0.845,
+    1.0235
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightFoot__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 486,
+   "at": [
+    -0.0086,
+    -0.1805,
+    -0.3285
+   ],
+   "size": [
+    0.9341,
+    0.5791,
+    0.0829
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightFoot__2A2D33",
+   "color": "2A2D33",
+   "tris": 108,
+   "at": [
+    -0.0,
+    -0.435,
+    0.1
+   ],
+   "size": [
+    0.7728,
+    0.1,
+    0.992
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightFoot__4A505A",
+   "color": "4A505A",
+   "tris": 540,
+   "at": [
+    -0.0,
+    -0.49,
+    0.12
+   ],
+   "size": [
+    0.7224,
+    0.03,
+    0.7
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightFoot__353A44",
+   "color": "353A44",
+   "tris": 671,
+   "at": [
+    -0.0008,
+    -0.0551,
+    -0.2276
+   ],
+   "size": [
+    1.0307,
+    0.8482,
+    0.2342
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightFoot__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    0.51,
+    -0.06,
+    -0.2
+   ],
+   "size": [
+    0.035,
+    0.14,
+    0.1
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightFoot__000000",
+   "color": "000000",
+   "tris": 3054,
+   "at": [
+    0.0078,
+    -0.057,
+    0.146
+   ],
+   "size": [
+    1.0859,
+    0.9425,
+    1.1304
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightHand": [
+  {
+   "name": "Cast_RightHand__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 737,
+   "at": [
+    -0.0179,
+    0.3479,
+    0.0077
+   ],
+   "size": [
+    0.7477,
+    0.5873,
+    0.8682
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightHand__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 558,
+   "at": [
+    -0.0181,
+    0.0723,
+    0.0077
+   ],
+   "size": [
+    0.783,
+    0.1078,
+    0.9037
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightHand__000000",
+   "color": "000000",
+   "tris": 1295,
+   "at": [
+    -0.0181,
+    0.3339,
+    0.0078
+   ],
+   "size": [
+    0.8309,
+    0.6621,
+    0.9511
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightLowerArm": [
+  {
+   "name": "Cast_RightLowerArm__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 960,
+   "at": [
+    0.0004,
+    -0.0005,
+    -0.0003
+   ],
+   "size": [
+    0.7488,
+    1.1247,
+    0.7365
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightLowerArm__000000",
+   "color": "000000",
+   "tris": 960,
+   "at": [
+    0.0004,
+    -0.0008,
+    -0.0005
+   ],
+   "size": [
+    0.7968,
+    1.1722,
+    0.7839
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightLowerLeg": [
+  {
+   "name": "Cast_RightLowerLeg__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1280,
+   "at": [
+    0.0036,
+    -0.0032,
+    -0.0009
+   ],
+   "size": [
+    0.8664,
+    1.3004,
+    0.9236
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightLowerLeg__353A44",
+   "color": "353A44",
+   "tris": 655,
+   "at": [
+    0.0016,
+    -0.4913,
+    0.0164
+   ],
+   "size": [
+    0.9151,
+    0.222,
+    0.9439
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightLowerLeg__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    0.47,
+    -0.45,
+    0.0
+   ],
+   "size": [
+    0.035,
+    0.1,
+    0.14
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 2043,
+   "at": [
+    0.0178,
+    -0.0031,
+    0.0104
+   ],
+   "size": [
+    0.9859,
+    1.3482,
+    0.9941
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightUpperArm": [
+  {
+   "name": "Cast_RightUpperArm__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 949,
+   "at": [
+    -0.0326,
+    -0.2495,
+    0.0057
+   ],
+   "size": [
+    0.7633,
+    0.8198,
+    0.8909
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightUpperArm__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 402,
+   "at": [
+    -0.0778,
+    0.1632,
+    -0.0119
+   ],
+   "size": [
+    0.6796,
+    0.076,
+    0.8907
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 1351,
+   "at": [
+    -0.0341,
+    -0.2291,
+    -0.0031
+   ],
+   "size": [
+    0.8143,
+    0.9084,
+    0.9559
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Cast_RightUpperLeg": [
+  {
+   "name": "Cast_RightUpperLeg__F3F0E8",
+   "color": "F3F0E8",
+   "tris": 1080,
+   "at": [
+    0.0125,
+    -0.3353,
+    0.002
+   ],
+   "size": [
+    0.8526,
+    0.9934,
+    0.8662
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": true
+  },
+  {
+   "name": "Cast_RightUpperLeg__F7F6F1",
+   "color": "F7F6F1",
+   "tris": 480,
+   "at": [
+    0.0121,
+    0.185,
+    0.0016
+   ],
+   "size": [
+    0.8875,
+    0.0602,
+    0.9015
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Cast_RightUpperLeg__000000",
+   "color": "000000",
+   "tris": 1560,
+   "at": [
+    0.012,
+    -0.3086,
+    0.0016
+   ],
+   "size": [
+    0.935,
+    1.0948,
+    0.9489
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
   }
  ],
  "City_Bus": [
@@ -126,7 +1167,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__1C1C20",
@@ -144,7 +1186,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__18181A",
@@ -162,7 +1205,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__C8CCD4",
@@ -180,7 +1224,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__1E2634",
@@ -198,7 +1243,8 @@
    ],
    "neon": false,
    "transparency": 0.15,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__E8E8E2",
@@ -216,7 +1262,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__FFF1EA",
@@ -234,7 +1281,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__FFF4C8",
@@ -252,7 +1300,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__FF3030",
@@ -270,7 +1319,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__121214",
@@ -288,7 +1338,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__FF8A20",
@@ -306,7 +1357,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Bus__000000",
@@ -324,7 +1376,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "City_Car": [
@@ -344,7 +1397,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__1C1C20",
@@ -362,7 +1416,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__18181A",
@@ -380,7 +1435,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__C8CCD4",
@@ -398,7 +1454,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__FFF4C8",
@@ -416,7 +1473,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__FF3030",
@@ -434,7 +1492,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__FFF1EA",
@@ -452,7 +1511,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__121214",
@@ -470,7 +1530,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__1E2634",
@@ -488,7 +1549,8 @@
    ],
    "neon": false,
    "transparency": 0.15,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_Car__000000",
@@ -506,7 +1568,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "City_PoliceLights": [
@@ -526,7 +1589,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_PoliceLights__3060FF",
@@ -544,7 +1608,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_PoliceLights__FF3030",
@@ -562,7 +1627,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_PoliceLights__000000",
@@ -580,7 +1646,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "City_TaxiSign": [
@@ -600,7 +1667,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_TaxiSign__121214",
@@ -618,7 +1686,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "City_TaxiSign__000000",
@@ -636,7 +1705,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Cop_Body": [
@@ -656,7 +1726,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__141416",
@@ -674,7 +1745,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__8FD0F0",
@@ -692,7 +1764,8 @@
    ],
    "neon": false,
    "transparency": 0.55,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__F2F2EE",
@@ -710,7 +1783,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__1C1C20",
@@ -728,7 +1802,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__8A8E98",
@@ -746,7 +1821,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__FFCC22",
@@ -764,7 +1840,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__FFFFFF",
@@ -782,7 +1859,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__FF8A20",
@@ -800,7 +1878,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__FF3030",
@@ -818,7 +1897,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__3060FF",
@@ -836,7 +1916,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__34343A",
@@ -854,7 +1935,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__3A3C44",
@@ -872,7 +1954,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Body__000000",
@@ -890,7 +1973,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Cop_Wheel": [
@@ -910,7 +1994,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Wheel__C8CCD4",
@@ -928,7 +2013,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Wheel__8A8E98",
@@ -946,7 +2032,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Wheel__3A3C44",
@@ -964,7 +2051,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Cop_Wheel__000000",
@@ -982,7 +2070,124 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Crutch": [
+  {
+   "name": "Crutch__3A3F48",
+   "color": "3A3F48",
+   "tris": 164,
+   "at": [
+    -0.0,
+    -0.1,
+    -0.01
+   ],
+   "size": [
+    0.1462,
+    0.13,
+    0.5
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Crutch__2F6BD8",
+   "color": "2F6BD8",
+   "tris": 512,
+   "at": [
+    -0.0,
+    -0.03,
+    0.1975
+   ],
+   "size": [
+    0.76,
+    1.9,
+    0.575
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Crutch__B8BEC8",
+   "color": "B8BEC8",
+   "tris": 88,
+   "at": [
+    -0.0,
+    -0.1668,
+    0.3588
+   ],
+   "size": [
+    0.12,
+    1.5665,
+    0.3177
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Crutch__7C838F",
+   "color": "7C838F",
+   "tris": 44,
+   "at": [
+    -0.0,
+    -1.435,
+    0.26
+   ],
+   "size": [
+    0.1,
+    0.97,
+    0.1
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Crutch__1A1C20",
+   "color": "1A1C20",
+   "tris": 460,
+   "at": [
+    -0.0,
+    -1.5975,
+    0.26
+   ],
+   "size": [
+    0.1657,
+    1.005,
+    0.17
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Crutch__000000",
+   "color": "000000",
+   "tris": 1268,
+   "at": [
+    -0.0,
+    -0.5929,
+    0.128
+   ],
+   "size": [
+    0.7952,
+    3.0611,
+    0.8229
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
   }
  ],
  "Factory_Forklift": [
@@ -1002,7 +2207,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__18181A",
@@ -1020,7 +2226,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__2A2A30",
@@ -1038,7 +2245,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__FFF1EA",
@@ -1056,7 +2264,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__121214",
@@ -1074,7 +2283,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__26282E",
@@ -1092,7 +2302,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__464A52",
@@ -1110,7 +2321,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__FF8A20",
@@ -1128,7 +2340,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__BEBEC3",
@@ -1146,7 +2359,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Factory_Forklift__000000",
@@ -1164,7 +2378,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_Head": [
@@ -1184,7 +2399,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_Head__7A8296",
@@ -1202,7 +2418,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_Head__4E5566",
@@ -1220,7 +2437,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_Head__1A1C22",
@@ -1238,7 +2456,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_Head__2AA8D8",
@@ -1256,7 +2475,8 @@
    ],
    "neon": false,
    "transparency": 0.15,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_Head__000000",
@@ -1274,7 +2494,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftFoot": [
@@ -1294,7 +2515,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftFoot__4E5566",
@@ -1312,7 +2534,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftFoot__000000",
@@ -1330,7 +2553,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftHand": [
@@ -1350,7 +2574,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftHand__000000",
@@ -1368,7 +2593,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftLowerArm": [
@@ -1388,7 +2614,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerArm__4E5566",
@@ -1406,7 +2633,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerArm__7A8296",
@@ -1424,7 +2652,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerArm__000000",
@@ -1442,7 +2671,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftLowerLeg": [
@@ -1462,7 +2692,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerLeg__343844",
@@ -1480,7 +2711,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerLeg__4E5566",
@@ -1498,7 +2730,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftLowerLeg__000000",
@@ -1516,7 +2749,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftUpperArm": [
@@ -1536,7 +2770,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftUpperArm__343844",
@@ -1554,7 +2789,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftUpperArm__000000",
@@ -1572,7 +2808,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LeftUpperLeg": [
@@ -1592,7 +2829,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftUpperLeg__343844",
@@ -1610,7 +2848,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LeftUpperLeg__000000",
@@ -1628,7 +2867,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_LowerTorso": [
@@ -1648,7 +2888,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LowerTorso__4E5566",
@@ -1666,7 +2907,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LowerTorso__1A1C22",
@@ -1684,7 +2926,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_LowerTorso__000000",
@@ -1702,7 +2945,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightFoot": [
@@ -1722,7 +2966,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightFoot__4E5566",
@@ -1740,7 +2985,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightFoot__000000",
@@ -1758,7 +3004,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightHand": [
@@ -1778,7 +3025,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightHand__000000",
@@ -1796,7 +3044,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightLowerArm": [
@@ -1816,7 +3065,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerArm__4E5566",
@@ -1834,7 +3084,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerArm__7A8296",
@@ -1852,7 +3103,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerArm__000000",
@@ -1870,7 +3122,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightLowerLeg": [
@@ -1890,7 +3143,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerLeg__343844",
@@ -1908,7 +3162,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerLeg__4E5566",
@@ -1926,7 +3181,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightLowerLeg__000000",
@@ -1944,7 +3200,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightUpperArm": [
@@ -1964,7 +3221,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightUpperArm__343844",
@@ -1982,7 +3240,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightUpperArm__000000",
@@ -2000,7 +3259,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_RightUpperLeg": [
@@ -2020,7 +3280,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightUpperLeg__343844",
@@ -2038,7 +3299,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_RightUpperLeg__000000",
@@ -2056,7 +3318,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heavy_UpperTorso": [
@@ -2076,7 +3339,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_UpperTorso__4E5566",
@@ -2094,7 +3358,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_UpperTorso__7A8296",
@@ -2112,7 +3377,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_UpperTorso__1A1C22",
@@ -2130,7 +3396,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_UpperTorso__FF8A20",
@@ -2148,7 +3415,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heavy_UpperTorso__000000",
@@ -2166,7 +3434,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heli_Body": [
@@ -2186,7 +3455,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__2C3424",
@@ -2204,7 +3474,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__8FD0F0",
@@ -2222,7 +3493,8 @@
    ],
    "neon": false,
    "transparency": 0.55,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__141614",
@@ -2240,7 +3512,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__E8D27A",
@@ -2258,7 +3531,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__FF3030",
@@ -2276,7 +3550,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__30FF60",
@@ -2294,7 +3569,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__6E8A3A",
@@ -2312,7 +3588,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__E0DED8",
@@ -2330,7 +3607,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__4E6428",
@@ -2348,7 +3626,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__1C1C20",
@@ -2366,7 +3645,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__FFF6D0",
@@ -2384,7 +3664,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__3A3C44",
@@ -2402,7 +3683,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__FFFFFF",
@@ -2420,7 +3702,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Body__000000",
@@ -2438,7 +3721,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heli_Rotor": [
@@ -2458,7 +3742,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Rotor__22251E",
@@ -2476,7 +3761,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Rotor__FFCC22",
@@ -2494,7 +3780,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_Rotor__000000",
@@ -2512,7 +3799,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Heli_TailRotor": [
@@ -2532,7 +3820,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_TailRotor__22251E",
@@ -2550,7 +3839,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_TailRotor__FFCC22",
@@ -2568,7 +3858,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Heli_TailRotor__000000",
@@ -2586,7 +3877,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Park_Boat": [
@@ -2606,7 +3898,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Boat__966E46",
@@ -2624,7 +3917,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Boat__121214",
@@ -2642,7 +3936,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Boat__FFF1EA",
@@ -2660,7 +3955,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Boat__000000",
@@ -2678,7 +3974,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Park_Car": [
@@ -2698,7 +3995,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__1C1C20",
@@ -2716,7 +4014,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__18181A",
@@ -2734,7 +4033,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__C8CCD4",
@@ -2752,7 +4052,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__FFF4C8",
@@ -2770,7 +4071,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__FF3030",
@@ -2788,7 +4090,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__FFF1EA",
@@ -2806,7 +4109,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__121214",
@@ -2824,7 +4128,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__364A66",
@@ -2842,7 +4147,8 @@
    ],
    "neon": false,
    "transparency": 0.25,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Park_Car__000000",
@@ -2860,7 +4166,240 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Sling_Left": [
+  {
+   "name": "Sling_Left__2F5DA8",
+   "color": "2F5DA8",
+   "tris": 691,
+   "at": [
+    -1.006,
+    -0.4187,
+    -0.3879
+   ],
+   "size": [
+    1.1534,
+    0.5925,
+    1.0479
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Left__E8EEF6",
+   "color": "E8EEF6",
+   "tris": 378,
+   "at": [
+    -0.5253,
+    0.4406,
+    -0.1993
+   ],
+   "size": [
+    2.0174,
+    1.2969,
+    1.4187
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Left__22467F",
+   "color": "22467F",
+   "tris": 644,
+   "at": [
+    -0.4563,
+    0.4389,
+    -0.1295
+   ],
+   "size": [
+    1.9326,
+    1.2333,
+    1.219
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Left__1E2228",
+   "color": "1E2228",
+   "tris": 108,
+   "at": [
+    -0.4787,
+    0.0466,
+    -0.5529
+   ],
+   "size": [
+    0.2562,
+    0.2931,
+    0.1179
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Sling_Left__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    -0.4888,
+    0.0455,
+    -0.5811
+   ],
+   "size": [
+    0.1145,
+    0.1511,
+    0.0577
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Sling_Left__000000",
+   "color": "000000",
+   "tris": 1929,
+   "at": [
+    -0.5366,
+    0.1848,
+    -0.2039
+   ],
+   "size": [
+    2.1397,
+    1.8465,
+    1.4637
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
+ ],
+ "Sling_Right": [
+  {
+   "name": "Sling_Right__2F5DA8",
+   "color": "2F5DA8",
+   "tris": 691,
+   "at": [
+    1.006,
+    -0.4187,
+    -0.3879
+   ],
+   "size": [
+    1.1534,
+    0.5925,
+    1.0479
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Right__E8EEF6",
+   "color": "E8EEF6",
+   "tris": 378,
+   "at": [
+    0.5278,
+    0.4406,
+    -0.1993
+   ],
+   "size": [
+    2.0125,
+    1.2969,
+    1.4187
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Right__22467F",
+   "color": "22467F",
+   "tris": 644,
+   "at": [
+    0.4563,
+    0.4389,
+    -0.1295
+   ],
+   "size": [
+    1.9326,
+    1.2333,
+    1.219
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": true,
+   "textured": false
+  },
+  {
+   "name": "Sling_Right__1E2228",
+   "color": "1E2228",
+   "tris": 108,
+   "at": [
+    0.4787,
+    0.0466,
+    -0.5529
+   ],
+   "size": [
+    0.2562,
+    0.2931,
+    0.1179
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Sling_Right__AEB4BE",
+   "color": "AEB4BE",
+   "tris": 108,
+   "at": [
+    0.4888,
+    0.0455,
+    -0.5811
+   ],
+   "size": [
+    0.1145,
+    0.1511,
+    0.0577
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "Sling_Right__000000",
+   "color": "000000",
+   "tris": 1929,
+   "at": [
+    0.5366,
+    0.1848,
+    -0.2039
+   ],
+   "size": [
+    2.1397,
+    1.8465,
+    1.4637
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_Head": [
@@ -2880,7 +4419,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__4E6428",
@@ -2898,7 +4438,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__1C1C20",
@@ -2916,7 +4457,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__5AB4E0",
@@ -2934,7 +4476,8 @@
    ],
    "neon": false,
    "transparency": 0.1,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__3A3C44",
@@ -2952,7 +4495,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__2E2A24",
@@ -2970,7 +4514,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_Head__000000",
@@ -2988,7 +4533,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_LeftLowerArm": [
@@ -3008,7 +4554,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftLowerArm__3A4A1E",
@@ -3026,7 +4573,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftLowerArm__000000",
@@ -3044,7 +4592,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_LeftLowerLeg": [
@@ -3064,7 +4613,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftLowerLeg__2E2A24",
@@ -3082,7 +4632,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftLowerLeg__000000",
@@ -3100,7 +4651,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_LeftUpperArm": [
@@ -3120,7 +4672,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftUpperArm__3A4A1E",
@@ -3138,7 +4691,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftUpperArm__000000",
@@ -3156,7 +4710,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_LeftUpperLeg": [
@@ -3176,7 +4731,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftUpperLeg__4E6428",
@@ -3194,7 +4750,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LeftUpperLeg__000000",
@@ -3212,7 +4769,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_LowerTorso": [
@@ -3232,7 +4790,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LowerTorso__C9A86A",
@@ -3250,7 +4809,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LowerTorso__3A3C44",
@@ -3268,7 +4828,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LowerTorso__4E6428",
@@ -3286,7 +4847,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_LowerTorso__000000",
@@ -3304,7 +4866,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_RightLowerArm": [
@@ -3324,7 +4887,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightLowerArm__3A4A1E",
@@ -3342,7 +4906,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightLowerArm__000000",
@@ -3360,7 +4925,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_RightLowerLeg": [
@@ -3380,7 +4946,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightLowerLeg__2E2A24",
@@ -3398,7 +4965,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightLowerLeg__000000",
@@ -3416,7 +4984,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_RightUpperArm": [
@@ -3436,7 +5005,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightUpperArm__3A4A1E",
@@ -3454,7 +5024,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightUpperArm__000000",
@@ -3472,7 +5043,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_RightUpperLeg": [
@@ -3492,7 +5064,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightUpperLeg__4E6428",
@@ -3510,7 +5083,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_RightUpperLeg__000000",
@@ -3528,7 +5102,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Soldier_UpperTorso": [
@@ -3548,7 +5123,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__3A4A1E",
@@ -3566,7 +5142,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__2E2A24",
@@ -3584,7 +5161,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__6E8A3A",
@@ -3602,7 +5180,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__C9A86A",
@@ -3620,7 +5199,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__9E8E5E",
@@ -3638,7 +5218,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__D8C08A",
@@ -3656,7 +5237,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__1C1C20",
@@ -3674,7 +5256,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Soldier_UpperTorso__000000",
@@ -3692,7 +5275,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_Body": [
@@ -3712,7 +5296,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__141416",
@@ -3730,7 +5315,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__18181C",
@@ -3748,7 +5334,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__FFF1EA",
@@ -3766,7 +5353,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__9E1018",
@@ -3784,7 +5372,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__121214",
@@ -3802,7 +5391,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Body__000000",
@@ -3820,7 +5410,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_BumperF": [
@@ -3840,7 +5431,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__18181C",
@@ -3858,7 +5450,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__C8CCD4",
@@ -3876,7 +5469,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__FFF1EA",
@@ -3894,7 +5488,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__2A2A30",
@@ -3912,7 +5507,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__FFFFFF",
@@ -3930,7 +5526,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__121214",
@@ -3948,7 +5545,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperF__000000",
@@ -3966,7 +5564,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_BumperR": [
@@ -3986,7 +5585,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__18181C",
@@ -4004,7 +5604,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__8A8E98",
@@ -4022,7 +5623,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__0C0C0E",
@@ -4040,7 +5642,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__F2F2EE",
@@ -4058,7 +5661,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__FFF1EA",
@@ -4076,7 +5680,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__FF3030",
@@ -4094,7 +5699,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__121214",
@@ -4112,7 +5718,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_BumperR__000000",
@@ -4130,7 +5737,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_Cabin": [
@@ -4150,7 +5758,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Cabin__E3242B",
@@ -4168,7 +5777,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Cabin__FFF1EA",
@@ -4186,7 +5796,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Cabin__18181C",
@@ -4204,7 +5815,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Cabin__000000",
@@ -4222,7 +5834,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_DoorL": [
@@ -4242,7 +5855,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorL__9E1018",
@@ -4260,7 +5874,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorL__FFF1EA",
@@ -4278,7 +5893,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorL__121214",
@@ -4296,7 +5912,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorL__18181C",
@@ -4314,7 +5931,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorL__000000",
@@ -4332,7 +5950,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_DoorR": [
@@ -4352,7 +5971,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorR__9E1018",
@@ -4370,7 +5990,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorR__FFF1EA",
@@ -4388,7 +6009,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorR__121214",
@@ -4406,7 +6028,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorR__18181C",
@@ -4424,7 +6047,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_DoorR__000000",
@@ -4442,7 +6066,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_Hood": [
@@ -4462,7 +6087,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Hood__121214",
@@ -4480,7 +6106,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Hood__9E1018",
@@ -4498,7 +6125,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Hood__FFF1EA",
@@ -4516,7 +6144,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Hood__000000",
@@ -4534,7 +6163,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_Wheel": [
@@ -4554,7 +6184,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wheel__26262C",
@@ -4572,7 +6203,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wheel__8A8E98",
@@ -4590,7 +6222,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wheel__3E4048",
@@ -4608,7 +6241,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wheel__000000",
@@ -4626,7 +6260,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Sport_Wing": [
@@ -4646,7 +6281,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wing__E3242B",
@@ -4664,7 +6300,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wing__FFF1EA",
@@ -4682,7 +6319,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wing__121214",
@@ -4700,7 +6338,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Sport_Wing__000000",
@@ -4718,7 +6357,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Barrel": [
@@ -4738,7 +6378,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Barrel__1E1E20",
@@ -4756,7 +6397,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Barrel__0A0A0C",
@@ -4774,7 +6416,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Barrel__000000",
@@ -4792,7 +6435,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Exhaust": [
@@ -4812,7 +6456,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Exhaust__0A0A0C",
@@ -4830,7 +6475,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Exhaust__C9B27C",
@@ -4848,7 +6494,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Exhaust__000000",
@@ -4866,7 +6513,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_FenderL": [
@@ -4886,7 +6534,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderL__1E1E20",
@@ -4904,7 +6553,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderL__8A6A40",
@@ -4922,7 +6572,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderL__2E2E30",
@@ -4940,7 +6591,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderL__000000",
@@ -4958,7 +6610,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_FenderR": [
@@ -4978,7 +6631,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderR__1E1E20",
@@ -4996,7 +6650,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderR__8A6A40",
@@ -5014,7 +6669,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderR__2E2E30",
@@ -5032,7 +6688,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_FenderR__000000",
@@ -5050,7 +6707,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Hull": [
@@ -5070,7 +6728,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__C9B27C",
@@ -5088,7 +6747,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__B8A26E",
@@ -5106,7 +6766,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__1E1E20",
@@ -5124,7 +6785,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__2E2E30",
@@ -5142,7 +6804,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__FFF4C8",
@@ -5160,7 +6823,8 @@
    ],
    "neon": true,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__6B7A3A",
@@ -5178,7 +6842,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__7A5A34",
@@ -5196,7 +6861,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Hull__000000",
@@ -5214,7 +6880,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Mantlet": [
@@ -5234,7 +6901,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Mantlet__1E1E20",
@@ -5252,7 +6920,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Mantlet__6B7A3A",
@@ -5270,7 +6939,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Mantlet__000000",
@@ -5288,7 +6958,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_TrackL": [
@@ -5308,7 +6979,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackL__1E1E20",
@@ -5326,7 +6998,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackL__C9B27C",
@@ -5344,7 +7017,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackL__000000",
@@ -5362,7 +7036,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_TrackR": [
@@ -5382,7 +7057,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackR__1E1E20",
@@ -5400,7 +7076,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackR__C9B27C",
@@ -5418,7 +7095,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_TrackR__000000",
@@ -5436,7 +7114,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Turret": [
@@ -5456,7 +7135,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__B8A26E",
@@ -5474,7 +7154,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__2E2E30",
@@ -5492,7 +7173,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__1E1E20",
@@ -5510,7 +7192,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__7A5A34",
@@ -5528,7 +7211,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__F0EADA",
@@ -5546,7 +7230,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__6B7A3A",
@@ -5564,7 +7249,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Turret__000000",
@@ -5582,7 +7268,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Tank_Wheel": [
@@ -5602,7 +7289,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Wheel__C9B27C",
@@ -5620,7 +7308,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Wheel__1E1E20",
@@ -5638,7 +7327,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Tank_Wheel__000000",
@@ -5656,7 +7346,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_Head": [
@@ -5676,7 +7367,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__D99A0A",
@@ -5694,7 +7386,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__F4F4F0",
@@ -5712,7 +7405,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__2FA84A",
@@ -5730,7 +7424,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__1C1C20",
@@ -5748,7 +7443,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__8FD0F0",
@@ -5766,7 +7462,8 @@
    ],
    "neon": false,
    "transparency": 0.55,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__E03A2A",
@@ -5784,7 +7481,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_Head__000000",
@@ -5802,7 +7500,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LeftFoot": [
@@ -5822,7 +7521,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftFoot__8A9098",
@@ -5840,7 +7540,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftFoot__1C1C20",
@@ -5858,7 +7559,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftFoot__000000",
@@ -5876,7 +7578,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LeftLowerArm": [
@@ -5896,7 +7599,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftLowerArm__7A5230",
@@ -5914,7 +7618,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftLowerArm__000000",
@@ -5932,7 +7637,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LeftLowerLeg": [
@@ -5952,7 +7658,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftLowerLeg__000000",
@@ -5970,7 +7677,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LeftUpperArm": [
@@ -5990,7 +7698,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftUpperArm__000000",
@@ -6008,7 +7717,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LeftUpperLeg": [
@@ -6028,7 +7738,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LeftUpperLeg__000000",
@@ -6046,7 +7757,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_LowerTorso": [
@@ -6066,7 +7778,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__8A9098",
@@ -6084,7 +7797,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__5A3A20",
@@ -6102,7 +7816,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__B07A44",
@@ -6120,7 +7835,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__FFC21A",
@@ -6138,7 +7854,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__1C1C20",
@@ -6156,7 +7873,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_LowerTorso__000000",
@@ -6174,7 +7892,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_RightFoot": [
@@ -6194,7 +7913,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightFoot__8A9098",
@@ -6212,7 +7932,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightFoot__1C1C20",
@@ -6230,7 +7951,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightFoot__000000",
@@ -6248,7 +7970,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_RightLowerArm": [
@@ -6268,7 +7991,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightLowerArm__7A5230",
@@ -6286,7 +8010,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightLowerArm__000000",
@@ -6304,7 +8029,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_RightLowerLeg": [
@@ -6324,7 +8050,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightLowerLeg__000000",
@@ -6342,7 +8069,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_RightUpperArm": [
@@ -6362,7 +8090,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightUpperArm__000000",
@@ -6380,7 +8109,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_RightUpperLeg": [
@@ -6400,7 +8130,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_RightUpperLeg__000000",
@@ -6418,7 +8149,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Worker_UpperTorso": [
@@ -6438,7 +8170,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__D8DCE0",
@@ -6456,7 +8189,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__2A2A30",
@@ -6474,7 +8208,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__F4F4F0",
@@ -6492,7 +8227,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__5AB4E0",
@@ -6510,7 +8246,8 @@
    ],
    "neon": false,
    "transparency": 0.1,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__D0600E",
@@ -6528,7 +8265,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__2A5AC0",
@@ -6546,7 +8284,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__2E4A74",
@@ -6564,7 +8303,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Worker_UpperTorso__000000",
@@ -6582,7 +8322,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_Head": [
@@ -6602,7 +8343,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_Head__4A6630",
@@ -6620,7 +8362,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_Head__2A2A24",
@@ -6638,7 +8381,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_Head__6E5C80",
@@ -6656,7 +8400,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_Head__000000",
@@ -6674,7 +8419,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LeftFoot": [
@@ -6694,7 +8440,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftFoot__5E7E40",
@@ -6712,7 +8459,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftFoot__4A6630",
@@ -6730,7 +8478,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftFoot__000000",
@@ -6748,7 +8497,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LeftLowerArm": [
@@ -6768,7 +8518,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LeftLowerArm__000000",
@@ -6786,7 +8537,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LeftLowerLeg": [
@@ -6806,7 +8558,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftLowerLeg__2E3446",
@@ -6824,7 +8577,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LeftLowerLeg__000000",
@@ -6842,7 +8596,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LeftUpperArm": [
@@ -6862,7 +8617,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LeftUpperArm__000000",
@@ -6880,7 +8636,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LeftUpperLeg": [
@@ -6900,7 +8657,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LeftUpperLeg__2A2A24",
@@ -6918,7 +8676,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftUpperLeg__5C4E3A",
@@ -6936,7 +8695,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LeftUpperLeg__7FA05A",
@@ -6954,7 +8714,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_LeftUpperLeg__000000",
@@ -6972,7 +8733,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_LowerTorso": [
@@ -6992,7 +8754,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LowerTorso__7C6C48",
@@ -7010,7 +8773,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_LowerTorso__000000",
@@ -7028,7 +8792,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_RightFoot": [
@@ -7048,7 +8813,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightFoot__2A2420",
@@ -7066,7 +8832,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightFoot__6A604C",
@@ -7084,7 +8851,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_RightFoot__000000",
@@ -7102,7 +8870,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_RightLowerArm": [
@@ -7122,7 +8891,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightLowerArm__2A2A24",
@@ -7140,7 +8910,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightLowerArm__A0A862",
@@ -7158,7 +8929,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightLowerArm__000000",
@@ -7176,7 +8948,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_RightLowerLeg": [
@@ -7196,7 +8969,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightLowerLeg__2E3446",
@@ -7214,7 +8988,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_RightLowerLeg__000000",
@@ -7232,7 +9007,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_RightUpperArm": [
@@ -7252,7 +9028,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_RightUpperArm__6E5C80",
@@ -7270,7 +9047,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightUpperArm__000000",
@@ -7288,7 +9066,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_RightUpperLeg": [
@@ -7308,7 +9087,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_RightUpperLeg__5C4E3A",
@@ -7326,7 +9106,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_RightUpperLeg__000000",
@@ -7344,7 +9125,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ],
  "Zombie_UpperTorso": [
@@ -7364,7 +9146,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_UpperTorso__5E7E40",
@@ -7382,7 +9165,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   },
   {
    "name": "Zombie_UpperTorso__5C4E3A",
@@ -7400,7 +9184,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_UpperTorso__4A4436",
@@ -7418,7 +9203,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_UpperTorso__4A3A6A",
@@ -7436,7 +9222,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": true
+   "fabric": true,
+   "textured": false
   },
   {
    "name": "Zombie_UpperTorso__000000",
@@ -7454,7 +9241,8 @@
    ],
    "neon": false,
    "transparency": 0,
-   "fabric": false
+   "fabric": false,
+   "textured": false
   }
  ]
 }

@@ -766,56 +766,6 @@ local function buildStructure(kind: string, origin: CFrame, layered: boolean?, k
 end
 Map.structure = buildStructure
 
--- A grave a dummy dug: a mound and a headstone with the name on it, at `origin` (on the ground,
--- the stone at its -Z end). Built of small bricks so a hit shatters it like the rest of the map;
--- once broken it does not come back.
--- Only the newest MAX_GRAVES stand; the oldest goes when a new one is dug.
-local MAX_GRAVES = 10
-local graves: { Model } = {}
-function Map.grave(origin: CFrame, name: string)
-	local model = Instance.new("Model")
-	model.Name = "Grave"
-	local function slab(size: Vector3, at: Vector3, color: Color3, material: Enum.Material)
-		local n = Vector3.new(math.max(1, math.round(size.X / 0.6)), math.max(1, math.round(size.Y / 0.6)), math.max(1, math.round(size.Z / 0.6)))
-		local brick = size / n
-		for x = 1, n.X do
-			for y = 1, n.Y do
-				for z = 1, n.Z do
-					local cube = block(brick, Vector3.zero, color, material, model)
-					cube.CFrame = origin * CFrame.new(at + (Vector3.new(x, y, z) - (n + Vector3.one) / 2) * brick)
-				end
-			end
-		end
-	end
-	slab(Vector3.new(2.4, 0.6, 4.2), Vector3.new(0, 0.3, 0.6), DIRT, Enum.Material.Ground)
-	slab(Vector3.new(2.4, 3, 0.6), Vector3.new(0, 1.5, -1.8), STONE, Enum.Material.Slate)
-	local plate = block(Vector3.new(2.2, 1.6, 0.05), Vector3.zero, STONE, Enum.Material.Slate, model)
-	plate.CFrame = origin * CFrame.new(0, 1.9, -1.8 + 0.33)
-	local gui = Instance.new("SurfaceGui")
-	gui.Face = Enum.NormalId.Back -- toward the mound
-	gui.PixelsPerStud = 60
-	local text = Instance.new("TextLabel")
-	text.Size = UDim2.fromScale(1, 1)
-	text.BackgroundTransparency = 1
-	text.Font = Enum.Font.Garamond
-	text.TextScaled = true
-	text.TextColor3 = Color3.fromRGB(60, 56, 52)
-	text.Text = "R.I.P.\n" .. name
-	text.Parent = gui
-	gui.Parent = plate
-	model:SetAttribute("Total", bulk(model:GetChildren()))
-	model:SetAttribute("Spot", origin) -- where it stands, and who lies in it (server/World raises them)
-	model:SetAttribute("Buried", name)
-	model:SetAttribute("DugAt", os.clock())
-	link(model:GetChildren(), origin)
-	model.Parent = folder
-	table.insert(graves, model)
-	while #graves > MAX_GRAVES do
-		table.remove(graves, 1):Destroy()
-	end
-	return model
-end
-
 -- A breakable floor/deck tile: blasts hide it, it comes back after REGEN.
 -- `piece`: split into columns this size when hit (a big tile that still breaks small).
 function Map.tile(size: Vector3, position: Vector3, color: Color3, material: Enum.Material, piece: Vector3?)
@@ -857,7 +807,7 @@ local function damaged(model: Model)
 	end
 	later(REGEN, function()
 		model:Destroy()
-		if model:GetAttribute("Origin") then -- a grave (Map.grave) stays broken
+		if model:GetAttribute("Origin") then
 			buildStructure(model.Name, model:GetAttribute("Origin"), true)
 		end
 	end)
@@ -927,7 +877,7 @@ end
 local lastHit = setmetatable({}, { __mode = "k" }) -- [model] = os.clock() of its latest hit
 local function idleCheck(model: Model, stamp: number)
 	if lastHit[model] ~= stamp or model.Parent ~= folder or not model:GetAttribute("Origin") then
-		return -- hit again since, fell down whole (it rebuilds on its own), or a grave (stays broken)
+		return -- hit again since, or fell down whole (it rebuilds on its own)
 	end
 	if model:GetAttribute("Rebuilding") or Map.holds > 0 then -- a disaster on: mend after it
 		task.delay(1, idleCheck, model, stamp)

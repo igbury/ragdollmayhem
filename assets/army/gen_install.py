@@ -30,7 +30,7 @@ local KIT = {{ -- [mesh name] = {{ piece, colour, its centre in the piece's spac
 }}
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local loaded = if MODEL_ID ~= 0 then game:GetObjects("rbxassetid://" .. MODEL_ID)[1] else workspace:FindFirstChild("ArmyKit") or workspace:FindFirstChild("Scene")
+local loaded = if MODEL_ID ~= 0 then game:GetObjects("rbxassetid://" .. MODEL_ID)[1] else workspace:FindFirstChild("ArmyKit") or workspace:FindFirstChild("Scene") or workspace:FindFirstChild("Casts") or workspace:FindFirstChild("Bandages")
 assert(loaded, "no ArmyKit: set MODEL_ID, or import ArmyKit.glb with File > Import 3D first")
 local old = ReplicatedStorage:FindFirstChild("ArmyKit")
 local kit = Instance.new("Folder")

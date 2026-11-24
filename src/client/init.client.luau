@@ -1000,6 +1000,8 @@ local HOLD = {
 	Sniper = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.5), support = Vector3.new(0, 0.15, -1.3) },
 	Rocket = { grip = CFrame.new(0, -0.2, 0), hand = Vector3.new(-0.1, 0.35, 0.4), support = Vector3.new(0, 0, -0.85) },
 	Tomato = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
+	Bandage = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
+	Cast = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 }
 do -- the minigun's barrels spin while the trigger is held, run up and wind down (WeaponMeshes.pose)
 	local speed, angle = 0, 0
@@ -1486,12 +1488,10 @@ local function punch()
 	hands[nextHand].t = 0
 	nextHand = nextHand == "right" and "left" or "right"
 	local result = aim(PUNCH_RANGE)
-	if result and (dummyOf(result.Instance) or (result.Instance.Parent and result.Instance.Parent.Name == "Grave")) then
+	if result and dummyOf(result.Instance) then
 		punchRemote:FireServer(result.Instance)
 		Fx.hit(result.Position)
-		if dummyOf(result.Instance) then
-			Sfx.playLocal(Sfx.PUNCH, result.Position) -- ponytail: a dodged punch still smacks for us
-		end
+		Sfx.playLocal(Sfx.PUNCH, result.Position) -- ponytail: a dodged punch still smacks for us
 	end
 end
 
@@ -3943,5 +3943,7 @@ end)
 
 -- the first-time tutorial: outlines on its dummies, what to do next (server/Tutorial)
 require(script:WaitForChild("TutorialHud")).start()
+-- the Bandage / Cast in hand: the stump / broken limb the crosshair is on lights up (server Body.playerBandage / playerCast)
+require(script:WaitForChild("MedicAim")).start(dummyFolder)
 require(script:WaitForChild("Disasters")).start() -- tornado, tsunami, meteors, nuke (server/Disasters)
 require(script:WaitForChild("CashHud")).start() -- the cash counter, top right

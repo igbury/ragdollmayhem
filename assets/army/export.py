@@ -19,12 +19,13 @@ import bpy
 from mathutils import Matrix, Vector
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_", "Tank_")
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_", "Tank_", "Bandage_", "Cast_", "Sling_", "Crutch")
 NEON = {"FF3030", "30FF60", "FFFFFF", "FF8A20", "FFF6D0", "3060FF", "FFF4C8", "F4F4E6"}
 SEE_THROUGH = {"8FD0F0": 0.55, "2AA8D8": 0.15, "5AB4E0": 0.1, "364A66": 0.25, "1E2634": 0.15}
 # the zombie's cloth (build.py: rags, mud, trousers, patch, tie, bandage, rope): Fabric when installed,
 # so in the game's flat light the rags have a weave instead of looking like plastic
-FABRIC = {"6A604C", "4A4436", "5C4E3A", "2E3446", "5A6680", "4A3A6A", "D8D2C0", "7C6C48"}
+FABRIC = {"6A604C", "4A4436", "5C4E3A", "2E3446", "5A6680", "4A3A6A", "D8D2C0", "7C6C48", "F1EDE3", "D9D1BF",  # + the bandages' gauze
+          "2F5DA8", "22467F", "E8EEF6"}  # + the sling's cloth
 TRI_CAP = 19000
 
 
@@ -64,6 +65,13 @@ def main():
             sub.materials.append(mat)
             for p in sub.polygons:
                 p.use_smooth = False
+            # a textured colour (the casts' plaster, build.py _cast_uv) keeps its UVs: the image goes in the .glb
+            textured = mat.use_nodes and any(n.type == "TEX_IMAGE" for n in mat.node_tree.nodes) and me.uv_layers.active
+            if textured:
+                src, dst = me.uv_layers.active.data, sub.uv_layers.new(name="UVMap").data
+                for p_new, p_old in zip(sub.polygons, faces):
+                    for li_new, li_old in zip(p_new.loop_indices, p_old.loop_indices):
+                        dst[li_new].uv = src[li_old].uv
             sub.transform(turn)
             sub.update()
             tris = sum(len(p.vertices) - 2 for p in sub.polygons)
@@ -76,7 +84,8 @@ def main():
                 "name": sub.name, "color": hexcol, "tris": tris,
                 "at": [round(x, 4) for x in r], "size": [round(s.x, 4), round(s.z, 4), round(s.y, 4)],
                 "neon": hexcol in NEON, "transparency": SEE_THROUGH.get(hexcol, 0),
-                "fabric": ob.name.startswith("Zombie_") and hexcol in FABRIC,
+                "fabric": ob.name.startswith(("Zombie_", "Bandage_", "Sling_")) and hexcol in FABRIC,
+                "textured": bool(textured),
             })
         manifest[ob.name] = entries
     # export only the split meshes, each at the origin (positions live in the manifest)

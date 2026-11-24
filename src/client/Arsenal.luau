@@ -1,6 +1,7 @@
 -- The weapon picker (Q, the backpack, or J): an open comic book, two pages of panels per spread, one panel
--- per weapon coloured by its category (a click anywhere on it takes the weapon, or buys it),
--- turned with the arrows halfway up the outer edges (or the arrow keys).
+-- per weapon coloured by its category (a click anywhere on it takes the weapon, or buys it). Bookmarks down
+-- the left edge pick the category dealt; its pages are turned with the arrows low on the outer edges (or the
+-- arrow keys, or the wheel).
 -- A page turns like the main menu's (client/Menu turn()): peeled by its corner, its grey back over the spread.
 -- A tap on the backdrop closes it. Shares the hotbar's selection and loadout (client/WeaponBar).
 local UIS = game:GetService("UserInputService")
@@ -19,16 +20,19 @@ local HALFTONE_IMAGE = "rbxassetid://82675619059195" -- same 64px dot tile as cl
 local INK = 3 -- px, panel outline
 local TURN_TIME = 0.5 -- s a page turn (the menu's takes 0.9; leafing through the arsenal wants it quicker)
 local ICON_ZOOM = 1.3 -- the icon camera's distance (client/WeaponBar icon()): the model at about three quarters of its box
--- category -> fill and the ink its halftone and shading lean to (client/Menu's pairs)
+-- category -> fill, the ink its halftone and shading lean to (client/Menu's pairs) and its bookmark's label
 local KINDS = {
-	thrown = { color = Color3.fromRGB(232, 70, 56), ink = Color3.fromRGB(140, 15, 30) }, -- explosives
-	gun = { color = Color3.fromRGB(55, 110, 215), ink = Color3.fromRGB(10, 20, 60) }, -- ranged
-	melee = { color = Color3.fromRGB(255, 212, 45), ink = Color3.fromRGB(225, 150, 15) },
-	other = { color = Color3.fromRGB(95, 190, 75), ink = Color3.fromRGB(30, 70, 25) }, -- abilities and the rest
+	melee = { color = Color3.fromRGB(255, 212, 45), ink = Color3.fromRGB(225, 150, 15), label = "MELEE" },
+	gun = { color = Color3.fromRGB(55, 110, 215), ink = Color3.fromRGB(10, 20, 60), label = "GUNS" }, -- ranged
+	thrown = { color = Color3.fromRGB(232, 70, 56), ink = Color3.fromRGB(140, 15, 30), label = "BOOM!" }, -- explosives
+	medical = { color = Color3.fromRGB(95, 190, 75), ink = Color3.fromRGB(30, 70, 25), label = "MEDIC" }, -- bandage, cast
+	ability = { color = Color3.fromRGB(165, 90, 230), ink = Color3.fromRGB(60, 20, 110), label = "ANIME" }, -- the Anime Pack
 }
+local TABS = { "melee", "gun", "thrown", "medical", "ability" } -- the bookmarks, top down
 local function kindOf(tag: string): string
-	return if tag == "heavy" or tag == "thrown" then "thrown" elseif KINDS[tag] then tag else "other"
+	return if tag == "heavy" or tag == "thrown" then "thrown" elseif tag == "tool" then "medical" elseif KINDS[tag] then tag else "ability"
 end
+local TAB_W, TAB_H, TAB_OUT, TAB_GAP = 0.13, 0.11, 0.085, 0.016 -- book scale: a bookmark's length, height, how far it sticks out, the gap down
 -- A page is three rows of random height, and a row holds two panels side by side or one across: a weapon
 -- whose name is long gets a row to itself, short names go two to a row (in their order, so a short one whose
 -- neighbours are long can end up alone). One seed per opening, so the rows' heights change each time but
@@ -58,9 +62,10 @@ local function rowsOf(cards: { any }): { { any } }
 	end
 	return rows
 end
--- one page's panels, row by row, as { x, y, w, h } in page scale; counts[j]: panels in row j (1 or 2)
+-- one page's panels, row by row, as { x, y, w, h } in page scale; counts[j]: panels in row j (1 or 2). Rows
+-- are cut for a full page, so a category's short last page keeps them their size and leaves the rest blank.
 local function pageRects(rng: Random, counts: { number }): { { number } }
-	local heights = weights(rng, #counts, 0.7, 1.4)
+	local heights = weights(rng, ROWS, 0.7, 1.4)
 	local inner, out, along = 1 - 2 * MARGIN, {}, MARGIN
 	for j, count in counts do
 		local w = inner / count
@@ -206,7 +211,7 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	halftone(flap, Color3.fromRGB(170, 175, 195), 2)
 	-- the cover art on the right page, seen as the book opens: four colour blocks, one per category
 	local coverArt = new("Frame", pages[1], { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 51, Visible = false })
-	for k, kind in { "melee", "gun", "thrown", "other" } do
+	for k, kind in { "melee", "gun", "thrown", "medical" } do
 		local c = KINDS[kind]
 		local block = new("Frame", coverArt, {
 			Position = UDim2.fromScale(0.05 + ((k - 1) % 2) * 0.45, 0.04 + (k > 2 and 0.46 or 0)), Size = UDim2.fromScale(0.43, 0.44),
@@ -216,12 +221,12 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		halftone(block, c.ink, 53)
 		ink(block, INK)
 	end
-	-- the page-turn arrows, halfway up the outer edges
+	-- the page-turn arrows, low on the outer edges (by the corner a page is turned by; the bookmarks have the left edge above)
 	local turners = {}
 	for side = 0, 1 do
 		local b = letters(book, if side == 0 then "<" else ">", {
 			Name = if side == 0 then "PrevPage" else "NextPage", AnchorPoint = Vector2.new(0.5, 0.5),
-			Position = UDim2.fromScale(side, 0.5), Size = UDim2.fromScale(0.065, 0.092), ZIndex = 55,
+			Position = UDim2.fromScale(side, 0.88), Size = UDim2.fromScale(0.065, 0.092), ZIndex = 55,
 			BackgroundTransparency = 0, BackgroundColor3 = KINDS.melee.color, TextColor3 = WHITE,
 		})
 		new("UIAspectRatioConstraint", b, { AspectRatio = 1 })
@@ -236,6 +241,8 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	local tutorialCard -- the pistol's: the tutorial's "pick" step rings it (below)
 	local layout = {} -- pages: { rects, cards }
 	local spread, turning, seed = 0, false, 0
+	local kind: string? = nil -- the open bookmark: only its category's panels are dealt; nil: all of them
+	local tabs = {}
 	-- deal page `index` (0-based) onto a page frame; what it held before goes
 	local function showPage(holder: Frame, index: number)
 		for _, card in cards do
@@ -268,19 +275,23 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			local price = lock and i <= #weapons and Progression.PRICE[w.id]
 			local afford = price and (player:GetAttribute(Progression.CASH) or 0) >= price
 			card.button.Text = afford and `BUY {lock}` or lock or equipped and "EQUIPPED!" or "EQUIP" -- out of reach: just what it takes (80$)
-			card.button.BackgroundColor3 = if afford then KINDS.other.ink elseif equipped then WHITE else BLACK
+			card.button.BackgroundColor3 = if afford then KINDS.medical.ink elseif equipped then WHITE else BLACK
 			card.button.TextColor3 = if equipped and not lock then BLACK else WHITE
 			card.glyphs.Enabled = card.button.TextColor3 == WHITE -- black on white needs no outline
 			-- locked out of reach: the panel fades toward grey; equipped: a heavy frame
-			local c = KINDS[kindOf(w.tag)]
+			local c = KINDS[card.kind]
 			local dim = lock and not afford
 			card.gradient.Color = shading(if dim then c.color:Lerp(GREY, 0.65) else c.color, c.ink)
 			card.stroke.Thickness = if equipped then INK * 2.5 else INK
 			if card.vp then card.vp.ImageColor3 = if dim then Color3.fromRGB(150, 150, 150) else WHITE end
 		end
-		-- deal the rows onto pages, ROWS a page; the leftovers get a short page
+		-- deal the open bookmark's rows onto pages, ROWS a page; the leftovers get a short page
 		table.clear(layout)
-		local rows = rowsOf(order)
+		local shown = {}
+		for _, card in order do
+			if kind == nil or card.kind == kind then table.insert(shown, card) end
+		end
+		local rows = rowsOf(shown)
 		for first = 1, #rows, ROWS do
 			local p, counts = { cards = {} }, {}
 			for j = first, math.min(first + ROWS - 1, #rows) do
@@ -386,7 +397,11 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		api.freeze(on)
 		UIS.MouseIconEnabled = on
 		if on then
-			if opening then seed = math.random(1, 1e6) end
+			if opening then
+				seed = math.random(1, 1e6)
+				if tutorialCard and player:GetAttribute("TutorialStep") == "pick" then kind = tutorialCard.kind end -- the pistol's bookmark
+				for _, t in tabs do t.show(true) end
+			end
 			refresh(true)
 			if opening and tutorialCard and player:GetAttribute("TutorialStep") == "pick" then -- straight to the pistol's spread
 				for n, p in layout do
@@ -475,7 +490,7 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			end
 			choose(i); setOpen(false)
 		end)
-		local card = { i = i, pack = e.pack ~= nil, glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
+		local card = { i = i, kind = kindOf(w.tag), pack = e.pack ~= nil, glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
 		-- hover: the panel grows from its centre, drawn over its neighbours
 		local grow = new("UIScale", frame, {})
 		local function hover(on)
@@ -507,6 +522,69 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		cards[i] = card
 		table.insert(order, card)
 	end
+	-- The bookmarks: a tab per category (one with a panel) down the left page's outer edge, tucked under the
+	-- page (drawn below it). A click deals that category from its first page; the open one goes a shade
+	-- darker and slides further under, and a click on it again closes it: every category, as with none open.
+	local y = 0.05
+	for _, k in TABS do
+		local has = false
+		for _, card in order do has = has or card.kind == k end
+		if not has then continue end
+		local c = KINDS[k]
+		local frame = new("Frame", book, {
+			Name = "Tab_" .. k, Size = UDim2.fromScale(TAB_W, TAB_H), Position = UDim2.fromScale(-TAB_OUT, y), BorderSizePixel = 0, ZIndex = 40,
+		})
+		local gradient = shade(frame, c.color, c.ink)
+		halftone(frame, c.ink, 41)
+		new("UICorner", frame, { CornerRadius = UDim.new(0.18, 0) })
+		ink(frame, INK).LineJoinMode = Enum.LineJoinMode.Round -- (a mitred one ignores the corner)
+		local label = letters(frame, c.label, { Size = UDim2.fromScale(TAB_OUT / TAB_W, 1), ZIndex = 42, Rotation = -4 })
+		new("UIPadding", label, { PaddingTop = UDim.new(0.3, 0), PaddingBottom = UDim.new(0.18, 0), PaddingLeft = UDim.new(0.1, 0), PaddingRight = UDim.new(0.06, 0) })
+		new("UITextSizeConstraint", label, { MaxTextSize = 26 })
+		local at = y
+		local tab = { kind = k }
+		function tab.show(now: boolean?)
+			local open = kind == k
+			gradient.Color = shading(if open then c.color:Lerp(BLACK, 0.22) else c.color, c.ink)
+			local to = UDim2.fromScale(if open then -TAB_OUT * 0.68 else -TAB_OUT, at)
+			if now then
+				frame.Position = to
+			else
+				TweenService:Create(frame, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Position = to }):Play()
+			end
+		end
+		label.Activated:Connect(function()
+			if turning then return end
+			kind = if kind == k then nil else k -- the open one again: closed, every category back
+			Sfx.ui(Sfx.COMIC_PAGE_TURN, 0.4)
+			for _, t in tabs do t.show() end
+			refresh(false) -- its first spread
+		end)
+		tab.show(true)
+		table.insert(tabs, tab)
+		y += TAB_H + TAB_GAP
+	end
+	-- the tutorial's "pick" step: the whole screen dims to 70% but for a hole over the pistol's panel
+	-- (four black bars round it, over the book; not Active, so taps still reach the panel and the backdrop)
+	local spot = new("Frame", screen, { Name = "TutorialSpot", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ZIndex = 60, Visible = false })
+	local bars = {}
+	for k = 1, 4 do
+		bars[k] = new("Frame", spot, { BackgroundColor3 = Color3.new(0, 0, 0), BackgroundTransparency = 0.3, BorderSizePixel = 0, ZIndex = 60 })
+	end
+	RunService.RenderStepped:Connect(function()
+		local f = tutorialCard and tutorialCard.frame
+		spot.Visible = cover.Visible and f ~= nil and player:GetAttribute("TutorialStep") == "pick"
+		if not spot.Visible then return end
+		local full = spot.AbsoluteSize
+		local pad = math.max(f.AbsoluteSize.X, f.AbsoluteSize.Y) * 0.05 + 6 -- room for the pulsing red ring
+		local a = f.AbsolutePosition - spot.AbsolutePosition - Vector2.new(pad, pad)
+		local b = a + f.AbsoluteSize + Vector2.new(pad, pad) * 2
+		if not f.Visible then a, b = full, full end -- turned away: just dim it all
+		bars[1].Position, bars[1].Size = UDim2.new(), UDim2.fromOffset(full.X, a.Y) -- above
+		bars[2].Position, bars[2].Size = UDim2.fromOffset(0, b.Y), UDim2.fromOffset(full.X, full.Y - b.Y) -- below
+		bars[3].Position, bars[3].Size = UDim2.fromOffset(0, a.Y), UDim2.fromOffset(a.X, b.Y - a.Y) -- left
+		bars[4].Position, bars[4].Size = UDim2.fromOffset(b.X, a.Y), UDim2.fromOffset(full.X - b.X, b.Y - a.Y) -- right
+	end)
 	player.AttributeChanged:Connect(function(attribute) -- cash in, a weapon bought
 		if cover.Visible and (attribute == Progression.CASH or attribute:sub(1, 3) == "Own") then refresh(true) end
 	end)
@@ -517,6 +595,12 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		elseif isOpen and input.KeyCode == Enum.KeyCode.Escape then setOpen(false)
 		elseif isOpen and input.KeyCode == Enum.KeyCode.Right then turn(1)
 		elseif isOpen and input.KeyCode == Enum.KeyCode.Left then turn(-1) end
+	end)
+	-- the wheel leafs through it: up a spread back, down the next (processed ignored: the book's frames take the wheel)
+	UIS.InputChanged:Connect(function(input)
+		if isOpen and input.UserInputType == Enum.UserInputType.MouseWheel and input.Position.Z ~= 0 then
+			turn(if input.Position.Z > 0 then -1 else 1)
+		end
 	end)
 	local SPIN, HOVER_SPIN = 0.35, 0.42 -- rad/s: a slow turntable, 20% faster under the mouse
 	local elapsed = 0

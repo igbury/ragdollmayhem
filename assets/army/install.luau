@@ -6,15 +6,68 @@
 -- MERGE true: the import holds only some pieces (e.g. PoliceCar.glb): those replace their folders and
 -- the rest of the kit stays.
 local MODEL_ID = 0
-local MERGE = false
+local MERGE = true -- Casts.glb: the casts, slings and crutch only
 
 local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space (studs), neon, transparency, fabric }
+	["Bandage_Socket__D9D1BF"] = { "Bandage_Socket", "D9D1BF", Vector3.new(-0.0, 0.0, 0.0), false, 0, true },
+	["Bandage_Socket__F1EDE3"] = { "Bandage_Socket", "F1EDE3", Vector3.new(0.0, 0.14, 0.0), false, 0, true },
+	["Bandage_Socket__EDE3C8"] = { "Bandage_Socket", "EDE3C8", Vector3.new(-0.0, 0.155, 0.0), false, 0, false },
+	["Bandage_Socket__000000"] = { "Bandage_Socket", "000000", Vector3.new(-0.0, 0.1429, 0.0), false, 0, false },
+	["Bandage_Stump__D9D1BF"] = { "Bandage_Stump", "D9D1BF", Vector3.new(-0.0, -0.225, -0.0037), false, 0, true },
+	["Bandage_Stump__F1EDE3"] = { "Bandage_Stump", "F1EDE3", Vector3.new(-0.0, -0.2819, 0.0), false, 0, true },
+	["Bandage_Stump__AEB4BE"] = { "Bandage_Stump", "AEB4BE", Vector3.new(-0.12, -0.5, -0.585), false, 0, false },
+	["Bandage_Stump__EDE3C8"] = { "Bandage_Stump", "EDE3C8", Vector3.new(0.2, -0.47, -0.575), false, 0, false },
+	["Bandage_Stump__000000"] = { "Bandage_Stump", "000000", Vector3.new(-0.0, -0.2645, -0.0169), false, 0, false },
 	["Baton__9EA2AC"] = { "Baton", "9EA2AC", Vector3.new(-0.0, 0.88, 0.19), false, 0, false },
 	["Baton__34343A"] = { "Baton", "34343A", Vector3.new(-0.0, 0.095, 0.14), false, 0, false },
 	["Baton__2A2A30"] = { "Baton", "2A2A30", Vector3.new(-0.0, 0.125, 0.1512), false, 0, false },
 	["Baton__17171C"] = { "Baton", "17171C", Vector3.new(-0.0, 1.31, 0.0), false, 0, false },
 	["Baton__7A5434"] = { "Baton", "7A5434", Vector3.new(-0.0, -0.78, 0.0), false, 0, false },
 	["Baton__000000"] = { "Baton", "000000", Vector3.new(-0.0, 0.6675, 0.1372), false, 0, false },
+	["Cast_LeftFoot__F3F0E8"] = { "Cast_LeftFoot", "F3F0E8", Vector3.new(-0.0005, -0.0319, 0.1754), false, 0, false },
+	["Cast_LeftFoot__F7F6F1"] = { "Cast_LeftFoot", "F7F6F1", Vector3.new(0.0086, -0.1805, -0.3285), false, 0, false },
+	["Cast_LeftFoot__2A2D33"] = { "Cast_LeftFoot", "2A2D33", Vector3.new(-0.0, -0.435, 0.1), false, 0, false },
+	["Cast_LeftFoot__4A505A"] = { "Cast_LeftFoot", "4A505A", Vector3.new(-0.0, -0.49, 0.12), false, 0, false },
+	["Cast_LeftFoot__353A44"] = { "Cast_LeftFoot", "353A44", Vector3.new(0.0008, -0.0551, -0.2276), false, 0, false },
+	["Cast_LeftFoot__AEB4BE"] = { "Cast_LeftFoot", "AEB4BE", Vector3.new(-0.51, -0.06, -0.2), false, 0, false },
+	["Cast_LeftFoot__000000"] = { "Cast_LeftFoot", "000000", Vector3.new(-0.0078, -0.057, 0.146), false, 0, false },
+	["Cast_LeftHand__F3F0E8"] = { "Cast_LeftHand", "F3F0E8", Vector3.new(0.0179, 0.3479, 0.0077), false, 0, false },
+	["Cast_LeftHand__F7F6F1"] = { "Cast_LeftHand", "F7F6F1", Vector3.new(0.0181, 0.0723, 0.0077), false, 0, false },
+	["Cast_LeftHand__000000"] = { "Cast_LeftHand", "000000", Vector3.new(0.0181, 0.3339, 0.0078), false, 0, false },
+	["Cast_LeftLowerArm__F3F0E8"] = { "Cast_LeftLowerArm", "F3F0E8", Vector3.new(-0.0004, -0.0005, -0.0003), false, 0, false },
+	["Cast_LeftLowerArm__000000"] = { "Cast_LeftLowerArm", "000000", Vector3.new(-0.0004, -0.0008, -0.0005), false, 0, false },
+	["Cast_LeftLowerLeg__F3F0E8"] = { "Cast_LeftLowerLeg", "F3F0E8", Vector3.new(-0.0036, -0.0032, -0.0009), false, 0, false },
+	["Cast_LeftLowerLeg__353A44"] = { "Cast_LeftLowerLeg", "353A44", Vector3.new(-0.0016, -0.4913, 0.0164), false, 0, false },
+	["Cast_LeftLowerLeg__AEB4BE"] = { "Cast_LeftLowerLeg", "AEB4BE", Vector3.new(-0.47, -0.45, 0.0), false, 0, false },
+	["Cast_LeftLowerLeg__000000"] = { "Cast_LeftLowerLeg", "000000", Vector3.new(-0.0178, -0.0031, 0.0104), false, 0, false },
+	["Cast_LeftUpperArm__F3F0E8"] = { "Cast_LeftUpperArm", "F3F0E8", Vector3.new(0.0326, -0.2495, 0.0057), false, 0, false },
+	["Cast_LeftUpperArm__F7F6F1"] = { "Cast_LeftUpperArm", "F7F6F1", Vector3.new(0.0778, 0.1632, -0.0119), false, 0, false },
+	["Cast_LeftUpperArm__000000"] = { "Cast_LeftUpperArm", "000000", Vector3.new(0.0341, -0.2291, -0.0031), false, 0, false },
+	["Cast_LeftUpperLeg__F3F0E8"] = { "Cast_LeftUpperLeg", "F3F0E8", Vector3.new(-0.0125, -0.3353, 0.002), false, 0, false },
+	["Cast_LeftUpperLeg__F7F6F1"] = { "Cast_LeftUpperLeg", "F7F6F1", Vector3.new(-0.0121, 0.185, 0.0016), false, 0, false },
+	["Cast_LeftUpperLeg__000000"] = { "Cast_LeftUpperLeg", "000000", Vector3.new(-0.012, -0.3086, 0.0016), false, 0, false },
+	["Cast_RightFoot__F3F0E8"] = { "Cast_RightFoot", "F3F0E8", Vector3.new(0.0005, -0.0319, 0.1754), false, 0, false },
+	["Cast_RightFoot__F7F6F1"] = { "Cast_RightFoot", "F7F6F1", Vector3.new(-0.0086, -0.1805, -0.3285), false, 0, false },
+	["Cast_RightFoot__2A2D33"] = { "Cast_RightFoot", "2A2D33", Vector3.new(-0.0, -0.435, 0.1), false, 0, false },
+	["Cast_RightFoot__4A505A"] = { "Cast_RightFoot", "4A505A", Vector3.new(-0.0, -0.49, 0.12), false, 0, false },
+	["Cast_RightFoot__353A44"] = { "Cast_RightFoot", "353A44", Vector3.new(-0.0008, -0.0551, -0.2276), false, 0, false },
+	["Cast_RightFoot__AEB4BE"] = { "Cast_RightFoot", "AEB4BE", Vector3.new(0.51, -0.06, -0.2), false, 0, false },
+	["Cast_RightFoot__000000"] = { "Cast_RightFoot", "000000", Vector3.new(0.0078, -0.057, 0.146), false, 0, false },
+	["Cast_RightHand__F3F0E8"] = { "Cast_RightHand", "F3F0E8", Vector3.new(-0.0179, 0.3479, 0.0077), false, 0, false },
+	["Cast_RightHand__F7F6F1"] = { "Cast_RightHand", "F7F6F1", Vector3.new(-0.0181, 0.0723, 0.0077), false, 0, false },
+	["Cast_RightHand__000000"] = { "Cast_RightHand", "000000", Vector3.new(-0.0181, 0.3339, 0.0078), false, 0, false },
+	["Cast_RightLowerArm__F3F0E8"] = { "Cast_RightLowerArm", "F3F0E8", Vector3.new(0.0004, -0.0005, -0.0003), false, 0, false },
+	["Cast_RightLowerArm__000000"] = { "Cast_RightLowerArm", "000000", Vector3.new(0.0004, -0.0008, -0.0005), false, 0, false },
+	["Cast_RightLowerLeg__F3F0E8"] = { "Cast_RightLowerLeg", "F3F0E8", Vector3.new(0.0036, -0.0032, -0.0009), false, 0, false },
+	["Cast_RightLowerLeg__353A44"] = { "Cast_RightLowerLeg", "353A44", Vector3.new(0.0016, -0.4913, 0.0164), false, 0, false },
+	["Cast_RightLowerLeg__AEB4BE"] = { "Cast_RightLowerLeg", "AEB4BE", Vector3.new(0.47, -0.45, 0.0), false, 0, false },
+	["Cast_RightLowerLeg__000000"] = { "Cast_RightLowerLeg", "000000", Vector3.new(0.0178, -0.0031, 0.0104), false, 0, false },
+	["Cast_RightUpperArm__F3F0E8"] = { "Cast_RightUpperArm", "F3F0E8", Vector3.new(-0.0326, -0.2495, 0.0057), false, 0, false },
+	["Cast_RightUpperArm__F7F6F1"] = { "Cast_RightUpperArm", "F7F6F1", Vector3.new(-0.0778, 0.1632, -0.0119), false, 0, false },
+	["Cast_RightUpperArm__000000"] = { "Cast_RightUpperArm", "000000", Vector3.new(-0.0341, -0.2291, -0.0031), false, 0, false },
+	["Cast_RightUpperLeg__F3F0E8"] = { "Cast_RightUpperLeg", "F3F0E8", Vector3.new(0.0125, -0.3353, 0.002), false, 0, false },
+	["Cast_RightUpperLeg__F7F6F1"] = { "Cast_RightUpperLeg", "F7F6F1", Vector3.new(0.0121, 0.185, 0.0016), false, 0, false },
+	["Cast_RightUpperLeg__000000"] = { "Cast_RightUpperLeg", "000000", Vector3.new(0.012, -0.3086, 0.0016), false, 0, false },
 	["City_Bus__2850BE"] = { "City_Bus", "2850BE", Vector3.new(-0.0, 2.5104, 0.0), false, 0, false },
 	["City_Bus__1C1C20"] = { "City_Bus", "1C1C20", Vector3.new(-0.0, 3.75, 0.0), false, 0, false },
 	["City_Bus__18181A"] = { "City_Bus", "18181A", Vector3.new(-0.0, 1.0, 0.0), false, 0, false },
@@ -63,6 +116,12 @@ local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space 
 	["Cop_Wheel__8A8E98"] = { "Cop_Wheel", "8A8E98", Vector3.new(-0.0, 0.0, 0.0), false, 0, false },
 	["Cop_Wheel__3A3C44"] = { "Cop_Wheel", "3A3C44", Vector3.new(-0.0, 0.0554, 0.0), false, 0, false },
 	["Cop_Wheel__000000"] = { "Cop_Wheel", "000000", Vector3.new(-0.0, 0.0, 0.0), false, 0, false },
+	["Crutch__3A3F48"] = { "Crutch", "3A3F48", Vector3.new(-0.0, -0.1, -0.01), false, 0, false },
+	["Crutch__2F6BD8"] = { "Crutch", "2F6BD8", Vector3.new(-0.0, -0.03, 0.1975), false, 0, false },
+	["Crutch__B8BEC8"] = { "Crutch", "B8BEC8", Vector3.new(-0.0, -0.1668, 0.3588), false, 0, false },
+	["Crutch__7C838F"] = { "Crutch", "7C838F", Vector3.new(-0.0, -1.435, 0.26), false, 0, false },
+	["Crutch__1A1C20"] = { "Crutch", "1A1C20", Vector3.new(-0.0, -1.5975, 0.26), false, 0, false },
+	["Crutch__000000"] = { "Crutch", "000000", Vector3.new(-0.0, -0.5929, 0.128), false, 0, false },
 	["Factory_Forklift__EBB91E"] = { "Factory_Forklift", "EBB91E", Vector3.new(-0.0, 3.0, 0.0), false, 0, false },
 	["Factory_Forklift__18181A"] = { "Factory_Forklift", "18181A", Vector3.new(-0.0, 1.2985, -0.2), false, 0, false },
 	["Factory_Forklift__2A2A30"] = { "Factory_Forklift", "2A2A30", Vector3.new(-0.0, 1.25, -0.15), false, 0, false },
@@ -165,6 +224,18 @@ local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space 
 	["Park_Car__121214"] = { "Park_Car", "121214", Vector3.new(-0.0, 1.75, 0.6), false, 0, false },
 	["Park_Car__364A66"] = { "Park_Car", "364A66", Vector3.new(-0.0, 3.29, 0.5001), false, 0.25, false },
 	["Park_Car__000000"] = { "Park_Car", "000000", Vector3.new(-0.0, 2.0062, 0.0), false, 0, false },
+	["Sling_Left__2F5DA8"] = { "Sling_Left", "2F5DA8", Vector3.new(-1.006, -0.4187, -0.3879), false, 0, true },
+	["Sling_Left__E8EEF6"] = { "Sling_Left", "E8EEF6", Vector3.new(-0.5253, 0.4406, -0.1993), false, 0, true },
+	["Sling_Left__22467F"] = { "Sling_Left", "22467F", Vector3.new(-0.4563, 0.4389, -0.1295), false, 0, true },
+	["Sling_Left__1E2228"] = { "Sling_Left", "1E2228", Vector3.new(-0.4787, 0.0466, -0.5529), false, 0, false },
+	["Sling_Left__AEB4BE"] = { "Sling_Left", "AEB4BE", Vector3.new(-0.4888, 0.0455, -0.5811), false, 0, false },
+	["Sling_Left__000000"] = { "Sling_Left", "000000", Vector3.new(-0.5366, 0.1848, -0.2039), false, 0, false },
+	["Sling_Right__2F5DA8"] = { "Sling_Right", "2F5DA8", Vector3.new(1.006, -0.4187, -0.3879), false, 0, true },
+	["Sling_Right__E8EEF6"] = { "Sling_Right", "E8EEF6", Vector3.new(0.5278, 0.4406, -0.1993), false, 0, true },
+	["Sling_Right__22467F"] = { "Sling_Right", "22467F", Vector3.new(0.4563, 0.4389, -0.1295), false, 0, true },
+	["Sling_Right__1E2228"] = { "Sling_Right", "1E2228", Vector3.new(0.4787, 0.0466, -0.5529), false, 0, false },
+	["Sling_Right__AEB4BE"] = { "Sling_Right", "AEB4BE", Vector3.new(0.4888, 0.0455, -0.5811), false, 0, false },
+	["Sling_Right__000000"] = { "Sling_Right", "000000", Vector3.new(0.5366, 0.1848, -0.2039), false, 0, false },
 	["Soldier_Head__6E8A3A"] = { "Soldier_Head", "6E8A3A", Vector3.new(-0.0, 0.2214, -0.0076), false, 0, false },
 	["Soldier_Head__4E6428"] = { "Soldier_Head", "4E6428", Vector3.new(-0.0, -0.07, 0.03), false, 0, false },
 	["Soldier_Head__1C1C20"] = { "Soldier_Head", "1C1C20", Vector3.new(-0.0, 0.3132, 0.0011), false, 0, false },
@@ -417,7 +488,7 @@ local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space 
 }
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local loaded = if MODEL_ID ~= 0 then game:GetObjects("rbxassetid://" .. MODEL_ID)[1] else workspace:FindFirstChild("ArmyKit") or workspace:FindFirstChild("Scene")
+local loaded = if MODEL_ID ~= 0 then game:GetObjects("rbxassetid://" .. MODEL_ID)[1] else workspace:FindFirstChild("ArmyKit") or workspace:FindFirstChild("Scene") or workspace:FindFirstChild("Casts") or workspace:FindFirstChild("Bandages")
 assert(loaded, "no ArmyKit: set MODEL_ID, or import ArmyKit.glb with File > Import 3D first")
 local old = ReplicatedStorage:FindFirstChild("ArmyKit")
 local kit = Instance.new("Folder")
@@ -464,4 +535,4 @@ for name in KIT do
 end
 loaded:Destroy()
 kit.Parent = ReplicatedStorage
-return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 405, table.concat(missing, ", "))
+return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 476, table.concat(missing, ", "))

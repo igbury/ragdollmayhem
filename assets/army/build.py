@@ -1724,7 +1724,388 @@ def vehicles():
         bpy.data.objects[n].location = bpy.data.objects["City_Car"].location
 
 
-PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_", "Tank_")
+# ---------------------------------------------------------------- Bandages -------------------
+# What a Medic (server Body.bandage) wraps a stump in, once a limb is gone. Modelled in STUMP space,
+# not on a body part: the origin is the cut, +Y points out where the limb was, and the limb is 1 stud
+# across in X and Z, so the game scales X / Z to the part it sits on (any arm or leg fits).
+#  * Bandage_Stump: a limb end (wrist, elbow, ankle, knee): overlapping turns of crepe up the limb
+#    and recurrent turns folded over the rounded end, as a stump is really dressed; tucked tail, clip.
+#  * Bandage_Socket: the shoulder or hip (the limb gone at the torso): a domed gauze pad on a square
+#    dressing, held with crossed strips of tape.
+GAUZE, GAUZE_SHADE, TAPE, CLIP = "F1EDE3", "D9D1BF", "EDE3C8", "AEB4BE"
+
+
+def bandages():
+    p = Piece("Bandage_Stump", exact=True)
+    p.cyl((1.05, 1.05), 0.74, (0, -0.39, 0), GAUZE_SHADE, segs=20)  # the under layer: no skin between the turns
+    for i in range(5):  # the turns up the limb, each a little wider and tilted the other way
+        d = 1.07 + 0.012 * i
+        p.cyl((d, d), 0.17, (0, -0.66 + i * 0.13, 0), GAUZE if i % 2 == 0 else GAUZE_SHADE,
+              rot=(9 * (-1) ** i, 0, 6 * (-1) ** (i + 1)), segs=20)
+    p.ball((1.1, 0.64, 1.1), (0, -0.04, 0), GAUZE, cut=0.5, segs=20, rings=10)  # over the end
+    for a in (0, 60, 120):  # recurrent turns crossing over the end
+        p.ball((0.24, 0.7, 1.15), (0, -0.04, 0), GAUZE_SHADE, rot=(0, a, 0), cut=0.5, segs=12, rings=8)
+    p.box((0.34, 0.2, 0.035), (0.08, -0.5, -0.565), GAUZE_SHADE, rot=(0, 0, 14), bevel=0.01)  # the tail
+    p.box((0.17, 0.1, 0.04), (-0.12, -0.5, -0.585), CLIP, bevel=0.01)  # its clip
+    p.box((0.1, 0.36, 0.03), (0.2, -0.47, -0.575), TAPE, bevel=0.01)  # tape over the tail
+    p.finish()
+
+    p = Piece("Bandage_Socket", exact=True)
+    p.box((1.3, 0.05, 1.3), (0, 0.0, 0), GAUZE_SHADE, bevel=0.02)  # the dressing square
+    p.ball((1.1, 0.56, 1.1), (0, 0.0, 0), GAUZE, cut=0.5, segs=20, rings=10)  # the pad
+    for a in (45, -45):  # crossed tape
+        p.ball((0.2, 0.62, 1.55), (0, 0.0, 0), TAPE, rot=(0, a, 0), cut=0.5, segs=12, rings=8)
+    p.finish()
+
+
+# ---------------------------------------------------------------- Casts ----------------------
+# A plaster cast on a broken arm or leg (server Body.cast: a Medic or the player's Cast item), and what
+# comes with it: an arm in a cast rides in a sling (Sling_*: the arm held bent across the chest, welded
+# there in the game so it never swings: SLING_POSE), a leg in a cast is held stiff and the dummy goes
+# on crutches (Crutch, one in each hand).
+#
+# The cast is a SHELL of the dummy's own body mesh (dummy_body.obj, the Roblox Boy parts the game uses):
+# smoothed once, pushed out CAST_T along its normals, cut off with planes where the cast ends and closed
+# back to the skin round each cut, so it follows the real hand (the thumb, the heel of the hand, the
+# knuckles), the elbow and the ankle instead of a tube round a box. One piece per body part, in that
+# part's space. Where the cast ends at the skin the stockinette under it is folded back over the edge:
+# a rolled cotton lip. The plaster carries a texture (cast_texture.py: weave, turns, what friends wrote
+# on it), UV-mapped round the limb (u) and along it (v, CAST_V: each piece its own stretch of the image).
+PLASTER, COTTON, SHOE_GREY, SHOE_SOLE, VELCRO, BUCKLE = "F3F0E8", "F7F6F1", "4A505A", "2A2D33", "353A44", "AEB4BE"
+CAST_T = 0.06  # studs of plaster over the skin
+CAST_V = {"UpperArm": 0.0, "LowerArm": 1.0, "Hand": 2.1, "UpperLeg": 2.9, "LowerLeg": 4.0, "Foot": 5.2}  # studs into the image
+AXIS = {"x": 0, "y": 1, "z": 2}
+# what of each part the long cast covers, in the part's space: (axis, keep from, keep to; None: the
+# part's own end), and the cut that shows (the stockinette lip): (axis, value, +1/-1 out of the cast)
+CAST_CUTS = {
+    "UpperArm": (("y", None, 0.14), ("y", 0.14, 1)),  # from the elbow to mid upper arm
+    "LowerArm": (None, None),
+    "Hand": (("y", 0.1, None), ("y", 0.1, -1)),  # the wrist and the heel of the hand, the fingers and thumb free
+    "UpperLeg": (("y", None, 0.16), ("y", 0.16, 1)),  # from the knee to mid thigh
+    "LowerLeg": (None, None),
+    "Foot": (("z", -0.3, None), ("z", -0.3, -1)),  # heel to the ball of the foot, the toes out (front is -Z)
+}
+
+
+def body_shell(p, part, t, h, keep=None, lip=None, close=None, xf=None, smooth=0.5, clip=None):
+    """Body part `part`'s own mesh as a shell `t` studs off the skin, kept to `keep` (axis, lo, hi in
+    Roblox part space), each cut closed back to the skin (colour `close`, else `h`), the `lip` cut
+    (axis, value, out) with a rolled cotton lip. `clip`: (point, normal), Roblox part space: all past
+    that plane goes too. `xf`: a Roblox-space Matrix it is moved by after."""
+    _, vs, fs, _ = _body(part)
+    bm = bmesh.new()
+    bv = [bm.verts.new(R2B @ v) for v in vs]
+    for f in fs:
+        try:
+            bm.faces.new([bv[i] for i in f])
+        except ValueError:
+            pass
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=2e-4)  # stored per face corner: weld it
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    if smooth:  # one rounder step: plaster is smoother than the faceted skin under it
+        bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=1, use_grid_fill=True, smooth=smooth)
+    if keep:
+        axis, lo, hi = keep
+        for val, sign in ((lo, -1), (hi, 1)):
+            if val is None:
+                continue
+            n, c = Vector((0, 0, 0)), Vector((0, 0, 0))
+            n[AXIS[axis]], c[AXIS[axis]] = sign, val
+            bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=R2B @ c,
+                                   plane_no=R2B @ n, clear_outer=True)
+    if clip:
+        bmesh.ops.bisect_plane(bm, geom=bm.verts[:] + bm.edges[:] + bm.faces[:], plane_co=R2B @ clip[0],
+                               plane_no=R2B @ clip[1], clear_outer=True)
+    bm.normal_update()
+    skin = {v: (v.co.copy(), v.normal.copy()) for v in bm.verts}
+    for v in bm.verts:
+        v.co += v.normal * t
+    col, edge_col, lip_col = p._col(h), p._col(close or h), p._col(COTTON)
+    for f in bm.faces:
+        f.material_index = col
+    out = None
+    if lip:
+        out = Vector((0, 0, 0))
+        out[AXIS[lip[0]]] = lip[2]
+        out = R2B @ out
+
+    def on_lip(v):
+        return lip is not None and abs((R2B @ skin[v][0])[AXIS[lip[0]]] - lip[1]) < 3e-3
+
+    # round each cut: a chain of new rings from the shell's edge back down to the skin
+    chains = {}
+    for e in [e for e in bm.edges if e.is_boundary]:
+        for v in e.verts:
+            if v in chains:
+                continue
+            base, n = skin[v]
+            if on_lip(v):  # folded back over the plaster's edge and down to the skin past it
+                pts = [base + n * (t + 0.018) + out * 0.022, base + n * (t * 0.55) + out * 0.05, base + n * 0.005 + out * 0.055]
+            else:
+                pts = [base + n * 0.004]
+            chains[v] = [v] + [bm.verts.new(q) for q in pts]
+    for e in [e for e in bm.edges if e.is_boundary and len(e.link_faces) == 1]:
+        a, b = chains[e.verts[0]], chains[e.verts[1]]
+        lipped = len(a) == len(b) == 4
+        if len(a) != len(b):
+            a, b = a[:2], b[:2]
+        for k in range(len(a) - 1):
+            try:
+                f = bm.faces.new((a[k], b[k], b[k + 1], a[k + 1]))
+            except ValueError:
+                continue
+            f.material_index = lip_col if lipped else edge_col
+    if xf is not None:
+        m = R2B.to_4x4() @ xf @ R2B.to_4x4()
+        bmesh.ops.transform(bm, matrix=m, verts=bm.verts[:])
+    vmap = {v: p.bm.verts.new(v.co) for v in bm.verts}
+    for f in bm.faces:
+        nf = p.bm.faces.new([vmap[v] for v in f.verts])
+        nf.material_index = f.material_index
+    bm.free()
+
+
+def casts():
+    made = []
+    for side in ("Left", "Right"):
+        for part, (keep, lip) in CAST_CUTS.items():
+            p = Piece(f"Cast_{side}{part}", exact=True)
+            body_shell(p, side + part, CAST_T, PLASTER, keep, lip)
+            out = -1 if side == "Left" else 1  # the outer side
+            if part == "Foot":  # in a cast shoe: a rocker sole with tread, two velcro straps with D-rings
+                sx, sy, sz = R15["Foot"]
+                bottom = -sy / 2 - CAST_T
+                p.box((sx * 0.92, 0.1, sz * 0.8), (0, bottom - 0.05, 0.1), SHOE_SOLE, bevel=0.045)
+                for i in range(5):
+                    p.box((sx * 0.86, 0.03, 0.06), (0, bottom - 0.105, -0.2 + i * 0.16), SHOE_GREY, bevel=0.01)
+                body_shell(p, side + part, CAST_T + 0.03, VELCRO, ("z", -0.27, -0.13))  # over the forefoot
+                p.box((0.035, 0.14, 0.1), ((sx / 2 + CAST_T + 0.03) * out, -0.06, -0.2), BUCKLE, bevel=0.01)
+            elif part == "LowerLeg":  # and the shoe's other strap, round the ankle (the shin's cast hides the foot's there)
+                body_shell(p, side + part, CAST_T + 0.03, VELCRO, ("y", -0.52, -0.38))
+                p.box((0.035, 0.1, 0.14), ((R15["LowerLeg"][0] / 2 + CAST_T + 0.04) * out, -0.45, 0), BUCKLE, bevel=0.01)
+            made.append((p.finish(), part))
+    for ob, part in made:
+        _cast_uv(ob, part)
+    return [ob.name for ob, _ in made]
+
+
+# -- the sling ---------------------------------------------------------------------------------
+# The arm in a cast is held bent across the chest. SLING_POSE: where the arm's parts sit against the
+# UpperTorso (Roblox CFrames, worked out here on the real body meshes, the left one mirrored), copied
+# into the game (server Body.SLING, which welds the arm there: printed by sling_luau()). The sling, one
+# piece in UpperTorso space: a fabric pouch cradling the forearm from the elbow to past the wrist (a
+# shell of the forearm, over the cast, its top cut off level), its edge piped white, and a padded strap
+# from the pouch's wrist end up to the neck, round the back of it and down to the elbow end.
+SLING, SLING_DARK, SLING_HEM, STRAP_BLACK = "2F5DA8", "22467F", "E8EEF6", "1E2228"
+# the joints' pivots on the standing dummy (against the UpperTorso, right side): Roblox R15 rig
+# attachments, measured against the body meshes (RIG)
+S_PIVOT, E_PIVOT, W_PIVOT = Vector((1.0, 0.56, 0.06)), Vector((1.25, -0.3, 0.12)), Vector((1.35, -0.84, 0.1))
+# where the upper arm and the forearm point, held in the sling (right arm, UpperTorso axes; front is -Z):
+# the upper arm down the side, a little forward; the forearm across the front of the belly, the hand a
+# little higher than the elbow
+SLING_UPPER, SLING_FORE = Vector((0.06, -1.0, -0.42)), Vector((-0.78, 0.1, -0.62))
+
+
+def sling_pose(side="Right"):
+    """{part: Matrix}: the slung arm's parts against the UpperTorso (Roblox space). The shoulder turns
+    the arm so the elbow's hinge (the forearm swings about the upper arm's X) bends it onto SLING_FORE."""
+    T = Matrix.Translation
+    rig = {k: Vector(RIG["Right" + k]) for k in ("UpperArm", "LowerArm", "Hand")}
+    rest_u = (E_PIVOT - S_PIVOT).normalized()
+    u, f = SLING_UPPER.normalized(), SLING_FORE.normalized()
+    y, z = -u, -(f - u * f.dot(u)).normalized()
+    turn = Matrix((y.cross(z), y, z)).transposed()  # local axes: -Y down the arm, -Z where the forearm goes
+    rest = Matrix(((1, 0, 0), (0, 1, 0), (0, 0, 1)))
+    yr = -rest_u
+    zr = Vector((0, 0, 1)) - yr * yr.z
+    zr.normalize()
+    rest = Matrix((yr.cross(zr), yr, zr)).transposed()  # the hanging arm's own frame
+    shoulder = (turn @ rest.inverted()).to_4x4()
+    elbow = Matrix.Rotation(math.acos(max(-1, min(1, f.dot(u)))), 4, "X")
+    up = T(S_PIVOT) @ shoulder @ T(rig["UpperArm"] - S_PIVOT)
+    lo = up @ T(E_PIVOT - rig["UpperArm"]) @ (rest.to_4x4() @ elbow @ rest.inverted().to_4x4()) @ T(rig["LowerArm"] - E_PIVOT)
+    hand = lo @ T(rig["Hand"] - rig["LowerArm"])  # the wrist held straight in the cast
+    out = {"UpperArm": up, "LowerArm": lo, "Hand": hand}
+    if side == "Left":
+        S = Matrix.Diagonal((-1, 1, 1, 1))
+        out = {k: S @ m @ S for k, m in out.items()}
+    return out
+
+
+def sling_luau():
+    """The Body.SLING table for the server, from SLING_POSE."""
+    def cf(m):
+        nums = list(m.translation) + [m[i][j] for i in range(3) for j in range(3)]
+        return "CFrame.new(" + ", ".join(f"{x:.4f}" for x in nums) + ")"
+    lines = []
+    for side in ("Left", "Right"):
+        pose = sling_pose(side)
+        lines.append(f"\t{side} = {{ " + ", ".join(f"{k} = {cf(pose[k])}" for k in ("UpperArm", "LowerArm", "Hand")) + " },")
+    return "Body.SLING = {\n" + "\n".join(lines) + "\n}"
+
+
+def _band(p, pts, normals, width, thick, h):
+    """A flat strap through `pts` (Roblox space), its face turned out along `normals`."""
+    loops = []
+    for i, (c, n) in enumerate(zip(pts, normals)):
+        tng = (pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)]).normalized()
+        across = tng.cross(n).normalized()
+        n = across.cross(tng).normalized()
+        w, d = across * width / 2, n * thick / 2
+        loops.append([tuple(c - w - d), tuple(c + w - d), tuple(c + w + d), tuple(c - w + d)])
+    p._solid(loops, (0, 0, 0), h, (0, 0, 0), closed=False)
+    i = p._col(h)
+    for loop in (loops[0], loops[-1]):
+        vs = [p.bm.verts.new(R2B @ Vector(q)) for q in loop]
+        p.bm.faces.new(vs).material_index = i
+
+
+def _spline(ctrl, step):
+    """Catmull-Rom through the control points, about `step` studs apart."""
+    out = []
+    pts = [ctrl[0]] + ctrl + [ctrl[-1]]
+    for i in range(1, len(pts) - 2):
+        p0, p1, p2, p3 = pts[i - 1], pts[i], pts[i + 1], pts[i + 2]
+        n = max(2, int((p2 - p1).length / step))
+        for k in range(n):
+            t = k / n
+            out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    out.append(ctrl[-1])
+    return out
+
+
+def sling(side):
+    from mathutils.bvhtree import BVHTree
+    s = 1 if side == "Right" else -1
+    pose = sling_pose(side)
+    lo = pose["LowerArm"]
+    p = Piece(f"Sling_{side}", exact=True)
+    # the pouch: the forearm's shell over the cast, all of it above a level plane a little over the
+    # arm's middle gone (world up, brought into the forearm's space)
+    up = (lo.to_3x3().inverted() @ Vector((0, 1, 0))).normalized()
+    body_shell(p, side + "LowerArm", CAST_T + 0.06, SLING, close=SLING_HEM, xf=lo, clip=(up * 0.08, up))
+    # the strap: the pouch's wrist end, up the chest to the neck on the good side, round the back of the
+    # neck, down the hurt side to the elbow end; laid on the torso's surface where it touches it
+    _, vs, fs, _ = _body("UpperTorso")
+    tree = BVHTree.FromPolygons(vs, fs)
+    wrist = lo @ Vector((0, -0.38, 0))
+    elbow = lo @ Vector((0, 0.42, 0))
+    ctrl = [wrist + Vector((0, 0.2, 0)), Vector((-0.35 * s, 0.55, -0.66)), Vector((-0.36 * s, 0.93, -0.3)),
+            Vector((-0.3 * s, 1.0, 0.12)), Vector((0.0, 0.98, 0.38)), Vector((0.3 * s, 1.0, 0.12)),
+            Vector((0.4 * s, 0.93, -0.3)), Vector((0.5 * s, 0.55, -0.66)), elbow + Vector((0, 0.2, 0))]
+    pts, nrm = [], []
+    for q in _spline(ctrl, 0.06):
+        loc, n, _, dist = tree.find_nearest(q)
+        if loc is not None and dist < 0.22:
+            pts.append(loc + n * 0.04)
+            nrm.append(n)
+        else:
+            pts.append(q)
+            nrm.append((q - Vector((0, 0.3, 0))).normalized())
+    _band(p, pts, nrm, 0.2, 0.04, SLING_DARK)
+    _band(p, pts[len(pts) // 3: 2 * len(pts) // 3], nrm[len(pts) // 3: 2 * len(pts) // 3], 0.26, 0.07, SLING_HEM)  # the neck pad
+    # the buckle where the strap meets the pouch's wrist end
+    i = 4
+    tng = (pts[i + 1] - pts[i - 1]).normalized()
+    m = Matrix((nrm[i].cross(tng).normalized(), tng, nrm[i])).transposed()
+    rot = tuple(math.degrees(a) for a in m.to_euler("XYZ"))
+    p.box((0.27, 0.17, 0.05), tuple(pts[i] + nrm[i] * 0.03), STRAP_BLACK, rot=rot, bevel=0.02)
+    p.box((0.15, 0.06, 0.03), tuple(pts[i] + nrm[i] * 0.06), BUCKLE, rot=rot, bevel=0.01)
+    return p.finish()
+
+
+# -- the crutches ------------------------------------------------------------------------------
+# A forearm crutch, in the HAND's space (one piece for either hand, the dummy's arm hanging): the moulded
+# handle goes through the fist front to back, the aluminium shaft drops from behind it to a ridged rubber
+# ferrule on the ground (CRUTCH_DROP below the fist) and rises behind the forearm to the cuff, a C of
+# plastic round the back of the forearm below the elbow. The lower tube telescopes into the upper one
+# (a lock ring, its push-button holes showing).
+ALU, ALU_DARK, CRUTCH_BLUE, GRIP_GREY, RUBBER = "B8BEC8", "7C838F", "2F6BD8", "3A3F48", "1A1C20"
+CRUTCH_GRIP = Vector((0.0, -0.1, -0.04))  # the middle of the fist's hole (hand space; x 0: either hand)
+CRUTCH_DROP = 2.0  # studs from the fist down to the tip
+
+
+def _tube(p, a, b, d, h, segs=12):
+    dirv = (b - a).normalized()
+    e = Vector((0, 1, 0)).rotation_difference(dirv).to_euler("XYZ")
+    p.cyl(d, (b - a).length, tuple((a + b) / 2), h, rot=tuple(math.degrees(x) for x in e), segs=segs)
+
+
+def crutch():
+    p = Piece("Crutch", exact=True)
+    g = CRUTCH_GRIP
+    back = g + Vector((0, 0, 0.3))  # the shaft, behind the fist
+    tip = back + Vector((0, -CRUTCH_DROP, 0))
+    mid = back + Vector((0, -0.85, 0))  # where the lower tube goes into the upper one
+    cuff_c = Vector((0.0, 0.8, 0.1))  # the forearm's axis where the cuff holds it (hand space)
+    rx, rz = 0.33, 0.33
+    top = cuff_c + Vector((0, -0.2, rz + 0.03))
+    # the handle through the fist, a blue collar where it meets the shaft
+    p.cyl((0.15, 0.13), 0.5, tuple(g + Vector((0, 0, 0.03))), GRIP_GREY, axis="z", segs=14, bevel=0.025)
+    p.box((0.18, 0.3, 0.16), tuple(back + Vector((0, 0.02, 0))), CRUTCH_BLUE, bevel=0.04)
+    # the shaft: the upper tube down to the lock ring, the lower one telescoped in, its holes
+    _tube(p, back, mid, 0.12, ALU)
+    _tube(p, mid, tip + Vector((0, 0.18, 0)), 0.1, ALU_DARK)
+    p.cyl(0.15, 0.06, tuple(mid), CRUTCH_BLUE, segs=14, bevel=0.01)
+    for i in range(5):
+        p.cyl(0.03, 0.03, (back.x, mid.y - 0.16 - i * 0.12, back.z - 0.045), RUBBER, axis="z", segs=8)
+    # the ferrule, ridged
+    p.cyl(0.15, 0.22, tuple(tip + Vector((0, 0.11, 0))), RUBBER, segs=14, bevel=0.03)
+    for k in range(3):
+        p.cyl(0.17, 0.03, tuple(tip + Vector((0, 0.05 + k * 0.06, 0))), RUBBER, segs=14)
+    # up behind the forearm to the cuff
+    _tube(p, back, top, 0.12, ALU)
+    # the cuff: a C round the back of the forearm, open in front, a thick rolled rim
+    loops = []
+    for k in range(17):
+        a = math.radians(-120 + 240 * k / 16)  # 0: straight back (+Z)
+        sa, ca = math.sin(a), math.cos(a)
+        loops.append([(cuff_c.x + (rx + dr) * sa, cuff_c.y + dy, cuff_c.z + (rz + dr) * ca)
+                      for dr, dy in ((0.0, -0.12), (0.05, -0.12), (0.05, 0.12), (0.0, 0.12))])
+    p._solid(loops, (0, 0, 0), CRUTCH_BLUE, (0, 0, 0), closed=False)
+    i = p._col(CRUTCH_BLUE)
+    for loop in (loops[0], loops[-1]):
+        p.bm.faces.new([p.bm.verts.new(R2B @ Vector(q)) for q in loop]).material_index = i
+    p.box((0.14, 0.26, 0.07), tuple(top + Vector((0, 0.06, -0.01))), CRUTCH_BLUE, bevel=0.025)  # its mount
+    return p.finish()
+
+
+def medical():
+    """The casts, both slings and the crutch."""
+    return casts() + [sling("Right").name, sling("Left").name, crutch().name]
+
+
+def _cast_uv(ob, part):
+    """UVs for the plaster: u once round the limb (the image tiles across), v along it (cast_texture.py)."""
+    me = ob.data
+    uv = me.uv_layers.new(name="UVMap")
+    plaster = next(i for i, m in enumerate(me.materials) if m.name == PLASTER)
+    foot = part == "Foot"
+    for poly in me.polygons:
+        if poly.material_index != plaster:
+            continue
+        us, vs = [], []
+        for li in poly.loop_indices:
+            x, y, z = R2B @ me.vertices[me.loops[li].vertex_index].co  # Roblox space
+            along, a, b = (z, x, y) if foot else (y, x, z)
+            us.append((math.atan2(a, b) / (2 * math.pi)) % 1.0)
+            vs.append((CAST_V[part] + along + 0.8) / 6.0)
+        if max(us) - min(us) > 0.5:  # across the seam: keep the face whole (the texture tiles)
+            us = [u + 1 if u < 0.5 else u for u in us]
+        for li, u, v in zip(poly.loop_indices, us, vs):
+            uv.data[li].uv = (u, v)
+    m = me.materials[plaster]
+    nodes, links = m.node_tree.nodes, m.node_tree.links
+    if not any(n.type == "TEX_IMAGE" for n in nodes):
+        path = os.path.join(REPO, "assets", "army", "cast_plaster.png") if REPO else bpy.path.abspath("//cast_plaster.png")
+        img = bpy.data.images.load(path, check_existing=True)
+        tex = nodes.new("ShaderNodeTexImage")
+        tex.image = img
+        bsdf = next(n for n in nodes if n.type == "BSDF_PRINCIPLED")
+        links.new(tex.outputs["Color"], bsdf.inputs[0])
+
+
+PREFIXES = ("Soldier_", "Heavy_", "Worker_", "Zombie_", "Heli_", "Baton", "Cop_", "Sport_", "Park_", "City_", "Factory_", "Tank_", "Bandage_", "Cast_", "Sling_", "Crutch")
 
 
 def build_all():
@@ -1741,6 +2122,8 @@ def build_all():
     sport_car()
     vehicles()
     tank()
+    bandages()
+    medical()
     # lay them out for a look (object origins stay at the attach point; only the display moves)
     x = 0
     for prefix in ("Soldier_", "Heavy_", "Worker_", "Zombie_"):

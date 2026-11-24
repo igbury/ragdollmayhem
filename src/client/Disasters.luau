@@ -899,38 +899,20 @@ function BUILD.Ufo(t0: number, data)
 	end
 end
 
--- Night (the mood), comic tombstones pushing up out of the ground where the zombies climb out, dirt
--- flying; at dawn the stones sink again.
+-- Night (the mood), dirt flying where the zombies climb out of the ground.
 function BUILD.Zombies(t0: number, data)
-	local stones = {}
-	for i, grave in data.graves do
-		task.delay(math.max(t0 + grave.t - now(), 0), function()
-			local stone = model("Tombstone", 2.2, Vector3.new(3, 4, 1), Color3.fromRGB(130, 130, 140))
-			local cf = CFrame.new(grave.at) * CFrame.Angles(0, grave.yaw, 0)
-			stones[stone] = cf
-			puff(grave.at, Color3.fromRGB(110, 80, 55), 8, 1.2, 5)
+	for i, spot in data.spots do
+		task.delay(math.max(t0 + spot.t - now(), 0), function()
+			puff(spot.at, Color3.fromRGB(110, 80, 55), 8, 1.2, 5)
 			if i % 3 == 1 then
-				word(grave.at + UP * 9, "BRAAAINS!", 3)
+				word(spot.at + UP * 9, "BRAAAINS!", 3)
 			end
-			local t1 = now()
-			drive(t1, 0.5, {}, function(t)
-				stone.CFrame = cf * CFrame.new(0, -6 * (1 - t / 0.5), 0)
-			end)
-			task.delay(0.55, function()
-				stone.CFrame = cf
-			end)
 		end)
 	end
 	onDawn = function()
 		onDawn = nil
 		endNight()
 		word(data.centre + UP * 25, "DAWN!", 5)
-		for stone, cf in stones do
-			local t1 = now()
-			drive(t1, 2, { stone }, function(t)
-				stone.CFrame = cf * CFrame.new(0, -6 * t / 2, 0)
-			end, 0.1)
-		end
 	end
 end
 

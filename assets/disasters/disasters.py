@@ -1,4 +1,4 @@
-# The disasters' meshes (client/Disasters): the bomb, meteor, wave, UFO, volcano, bolt, ice, cloud and tombstone, built in code
+# The disasters' meshes (client/Disasters): the bomb, meteor, wave, UFO, volcano, bolt, ice and cloud, built in code
 # in the weapons' comic style (assets/weapons/comic_weapons.py: Builder parts, flat shading, comic.punch
 # colours, the black inverted-hull outline) and written by assets/weapons/export.py to
 # src/client/DisasterMeshes/<Name>.luau (EditableMesh data, no upload). Axes as export.py: Blender +Z up,
@@ -30,7 +30,6 @@ SILVER, PURPLE, GLASS, BEAM, LIGHT = (0.75, 0.78, 0.83), (0.45, 0.2, 0.62), (0.4
 ZAP = (1.0, 0.88, 0.15)
 ICE_LIGHT, ICE_TIP, ICE_DARK = (0.66, 0.9, 1.0), (0.92, 0.98, 1.0), (0.42, 0.66, 0.86)
 PUFF, PUFF_SHADE = (0.97, 0.97, 0.98), (0.8, 0.82, 0.86)
-STONE, STONE_DARK, DIRT = (0.55, 0.56, 0.6), (0.36, 0.37, 0.42), (0.36, 0.25, 0.17)
 
 
 def lathe(b, profile, rgb, seg=16):
@@ -283,19 +282,8 @@ def cloud(b):
             loop[b.col] = (*rgb, 1)
 
 
-def tombstone(b):
-    """A crooked comic tombstone on a dirt mound, ~2.4 high, origin at its foot, the stone's face toward -Y."""
-    b.hexa({(ix, iy, iz): V(((-0.6, 0.6)[ix] + 0.08 * iz, (-0.18, 0.18)[iy], (0.0, 1.6)[iz])) for ix in (0, 1) for iy in (0, 1)
-            for iz in (0, 1)}, STONE, 0.05)
-    b.cyl((0.13, 0, 1.6), "y", 0.36, 0.6, STONE, seg=12)  # the rounded top
-    b.box(V((-0.08, -0.22, 0.75)), V((0.08, -0.17, 1.55)), STONE_DARK)  # the cross
-    b.box(V((-0.32, -0.22, 1.18)), V((0.32, -0.17, 1.32)), STONE_DARK)
-    b.hexa({(ix, iy, iz): V(((-0.75, 0.75)[ix] * (1 - 0.3 * iz), (-2.0, -0.2)[iy] * (1 - 0.15 * iz), (0.0, 0.35)[iz]))
-            for ix in (0, 1) for iy in (0, 1) for iz in (0, 1)}, DIRT, 0.1)  # the grave's mound
-
-
 MODELS = {"NukeBomb": nuke, "Meteor": meteor, "TsunamiWave": wave, "Ufo": ufo, "Volcano": volcano, "Bolt": bolt,
-          "IceShards": ice, "CloudPuff": cloud, "Tombstone": tombstone}
+          "IceShards": ice, "CloudPuff": cloud}
 
 
 def build(name):
@@ -368,7 +356,7 @@ def main():
         out = argv[1] if len(argv) > 1 else HERE
         views = {"NukeBomb": [(1, -1, 0.3)], "Meteor": [(1, -1, 0.6)], "TsunamiWave": [(0.35, -1, 0.25), (1, 0, 0.05)],
                  "Ufo": [(1, -1, 0.35)], "Volcano": [(1, -1, 0.5)], "Bolt": [(0.3, -1, 0.1)], "IceShards": [(1, -1, 0.4)],
-                 "CloudPuff": [(1, -1, 0.3)], "Tombstone": [(1, -1, 0.3)]}
+                 "CloudPuff": [(1, -1, 0.3)]}
         for name, ob in obs.items():
             for i, view in enumerate(views[name]):
                 render(ob, os.path.join(out, f"{name}{i}.png"), view, 1.0, (12, (0, 2.5, 1.8)) if view == (1, 0, 0.05) else None)

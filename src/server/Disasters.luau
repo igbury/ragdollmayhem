@@ -506,16 +506,16 @@ function RUN.Ufo(map: string, centre: Vector3, t0: number)
 	waitFor(t0, duration)
 end
 
--- Night falls; zombies climb out of graves round the players (one a tombstone each, the client's) and
+-- Night falls; zombies climb out of the ground round the players (a dirt puff each, the client's) and
 -- go for whoever is near. At dawn the ones left burn away.
 function RUN.Zombies(map: string, centre: Vector3, t0: number)
 	local rng = Random.new()
 	local duration = Shared.BY_ID.Zombies.duration
-	local graves = {}
+	local spots = {}
 	for i = 1, 10 do
-		table.insert(graves, { at = ring(rng, centre, 30, 70), t = 1.5 + (i - 1) * 0.7, yaw = rng:NextNumber(0, math.pi * 2) })
+		table.insert(spots, { at = ring(rng, centre, 30, 70), t = 1.5 + (i - 1) * 0.7, yaw = rng:NextNumber(0, math.pi * 2) })
 	end
-	tell(map, "start", "Zombies", t0, { centre = centre, graves = graves })
+	tell(map, "start", "Zombies", t0, { centre = centre, spots = spots })
 	-- the zombies there were before: dawn leaves them be (ours are found again by kind and place, as
 	-- dressing one swaps its model for a new one)
 	local before = {}
@@ -524,9 +524,9 @@ function RUN.Zombies(map: string, centre: Vector3, t0: number)
 			before[model] = true
 		end
 	end)
-	for _, grave in graves do
-		waitFor(t0, grave.t + 0.6) -- the tombstone first, then the zombie out of the ground in front of it
-		K.spawnZombie(CFrame.new(grave.at + UP * 3) * CFrame.Angles(0, grave.yaw, 0))
+	for _, spot in spots do
+		waitFor(t0, spot.t + 0.6) -- the dirt first, then the zombie out of the ground
+		K.spawnZombie(CFrame.new(spot.at + UP * 3) * CFrame.Angles(0, spot.yaw, 0))
 	end
 	waitFor(t0, duration - 3)
 	tell(map, "dawn")

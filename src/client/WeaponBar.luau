@@ -27,8 +27,9 @@ local GROUP = { -- outline colour per weapon group (Weapons `tag`)
 	gun = Color3.fromRGB(255, 220, 90),
 	thrown = Color3.fromRGB(120, 230, 140),
 	heavy = Color3.fromRGB(255, 90, 80),
+	tool = Color3.fromRGB(240, 240, 235),
 }
-local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVES", heavy = "EXPLOSIVES" } -- wheel page per group
+local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVES", heavy = "EXPLOSIVES", tool = "TOOLS" } -- wheel page per group
 local ABOUT = {
 	Bow = "Hold attack to draw; release to shoot. Arrows drop.",
 	Fists = "Punches, kicks, dive kicks",
@@ -46,6 +47,8 @@ local ABOUT = {
 	Grenade = "Two second fuse, then BOOM",
 	Molotov = "Breaks on impact, sets fire",
 	Tomato = "Harmless. Deeply humiliating",
+	Bandage = "Aim at a torn-off limb's stump and click to dress it",
+	Cast = "Aim at a broken arm or leg and click to set it in plaster",
 	Rocket = "Flies straight, blows up anything",
 	Crowbar = "Knocks the weapon out of their hands",
 	Sledgehammer = "Floors them, the ground shakes",

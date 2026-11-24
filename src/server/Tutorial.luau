@@ -2,7 +2,7 @@
 -- skips the menu and lands on the arena (client/Menu; the server allows no other map). There:
 --  1. "kill": the arena is emptied of its dummies (unless someone else is playing in it right then) and
 --     five plain ones are put round the spawn, marked "TutorialFor" = their UserId (client/TutorialHud
---     outlines them in yellow through walls). They never hit back (Mourners), the player's blows count
+--     outlines them in yellow through walls). They never hit back (Calm), the player's blows count
 --     double until it is done, one slammed into a wall always dies, and their deaths bring no police
 --     (main script: spawnDummy, hit, landImpact, kill).
 --  2. "pick": once one of them is dead, buy the pistol in the Arsenal and take it (it costs less than a kill

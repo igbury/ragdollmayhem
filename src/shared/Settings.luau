@@ -1,7 +1,7 @@
 -- The player settings (the toolbox SETTINGS page, client/Toolbox + client/Music), kept as player
 -- attributes and saved with the progress (server/Progress). One list for client and server.
 -- DEFAULTS: what an attribute that was never set means. RANGE: a number setting's min and max.
--- World settings (GRAVITY, RAGDOLL DAMAGE, GRAVE ZOMBIES, BURNING DUMMIES) follow the host: the player who joined
+-- World settings (GRAVITY, RAGDOLL DAMAGE, BURNING DUMMIES) follow the host: the player who joined
 -- the server first (Settings.host). DAMAGE and BONES follow whoever lands the blow.
 local Players = game:GetService("Players")
 
@@ -13,7 +13,6 @@ Settings.DEFAULTS = {
 	SfxVolume = 1,
 	NeverWanted = true, -- WANTED STARS off (server/Wanted): off unless the player turns them on
 	RagdollDamage = true, -- falls, throws and slams hurt (server landImpact)
-	GraveZombies = true, -- an unbroken grave lets a zombie out after a minute (server/Graves)
 	BurningDummies = true, -- fire sets dummies alight and it spreads between them (server/Specials)
 	BoneScale = 1, -- how easily bones break
 	Gravity = 1, -- times the normal workspace gravity
