@@ -1,0 +1,3633 @@
+{
+ "Arena_AdColumn": [
+  {
+   "name": "Arena_AdColumn__8F887D",
+   "color": "8F887D",
+   "tris": 236,
+   "at": [
+    -0.0,
+    0.4,
+    0.0
+   ],
+   "size": [
+    4.6,
+    0.8,
+    4.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__2E5C48",
+   "color": "2E5C48",
+   "tris": 314,
+   "at": [
+    0.0,
+    5.65,
+    -0.0
+   ],
+   "size": [
+    4.2,
+    9.7,
+    4.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__E8506E",
+   "color": "E8506E",
+   "tris": 108,
+   "at": [
+    -0.0,
+    3.6,
+    -2.02
+   ],
+   "size": [
+    1.75,
+    3.0,
+    0.12
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F6C84A",
+   "color": "F6C84A",
+   "tris": 24,
+   "at": [
+    -0.0,
+    3.7,
+    -2.0402
+   ],
+   "size": [
+    1.2,
+    1.7,
+    0.14
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__3A7AD8",
+   "color": "3A7AD8",
+   "tris": 108,
+   "at": [
+    1.7494,
+    6.2,
+    -1.01
+   ],
+   "size": [
+    0.9629,
+    3.0,
+    1.5595
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F6F2E8",
+   "color": "F6F2E8",
+   "tris": 24,
+   "at": [
+    1.7669,
+    6.3,
+    -1.0201
+   ],
+   "size": [
+    0.7212,
+    1.7,
+    1.1092
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F7C52E",
+   "color": "F7C52E",
+   "tris": 108,
+   "at": [
+    1.7494,
+    3.6,
+    1.01
+   ],
+   "size": [
+    0.9629,
+    3.0,
+    1.5595
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__D63A32",
+   "color": "D63A32",
+   "tris": 24,
+   "at": [
+    1.7669,
+    3.7,
+    1.0201
+   ],
+   "size": [
+    0.7212,
+    1.7,
+    1.1092
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__9A5ADC",
+   "color": "9A5ADC",
+   "tris": 108,
+   "at": [
+    -0.0,
+    6.2,
+    2.02
+   ],
+   "size": [
+    1.75,
+    3.0,
+    0.12
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__8EE0C0",
+   "color": "8EE0C0",
+   "tris": 132,
+   "at": [
+    -0.8154,
+    6.2,
+    0.1602
+   ],
+   "size": [
+    2.8308,
+    3.0,
+    3.9
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F08A24",
+   "color": "F08A24",
+   "tris": 108,
+   "at": [
+    -1.7494,
+    3.6,
+    1.01
+   ],
+   "size": [
+    0.9629,
+    3.0,
+    1.5595
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__2C2E36",
+   "color": "2C2E36",
+   "tris": 24,
+   "at": [
+    -1.7669,
+    3.7,
+    1.0201
+   ],
+   "size": [
+    0.7212,
+    1.7,
+    1.1092
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F49AC0",
+   "color": "F49AC0",
+   "tris": 24,
+   "at": [
+    -1.7669,
+    6.3,
+    -1.0201
+   ],
+   "size": [
+    0.7212,
+    1.7,
+    1.1092
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__234A3A",
+   "color": "234A3A",
+   "tris": 236,
+   "at": [
+    -0.0,
+    9.05,
+    0.0
+   ],
+   "size": [
+    4.5,
+    0.5,
+    4.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__F2B53A",
+   "color": "F2B53A",
+   "tris": 100,
+   "at": [
+    0.0,
+    10.7,
+    -0.0
+   ],
+   "size": [
+    0.6657,
+    0.9,
+    0.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_AdColumn__000000",
+   "color": "000000",
+   "tris": 1678,
+   "at": [
+    -0.0,
+    5.5758,
+    0.0
+   ],
+   "size": [
+    4.7374,
+    11.2884,
+    4.7374
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Anvil": [
+  {
+   "name": "Arena_Anvil__8A5A36",
+   "color": "8A5A36",
+   "tris": 52,
+   "at": [
+    -0.0,
+    1.5,
+    0.0
+   ],
+   "size": [
+    4.2897,
+    3.0,
+    4.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Anvil__B98250",
+   "color": "B98250",
+   "tris": 212,
+   "at": [
+    0.3698,
+    3.2,
+    0.5391
+   ],
+   "size": [
+    4.1519,
+    6.4932,
+    4.5783
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Anvil__5E3C24",
+   "color": "5E3C24",
+   "tris": 52,
+   "at": [
+    -0.0,
+    3.02,
+    0.0
+   ],
+   "size": [
+    2.5348,
+    0.06,
+    2.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Anvil__2C2E36",
+   "color": "2C2E36",
+   "tris": 292,
+   "at": [
+    -0.0,
+    4.8,
+    -0.9661
+   ],
+   "size": [
+    2.4,
+    3.6,
+    7.1322
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Anvil__4E5260",
+   "color": "4E5260",
+   "tris": 120,
+   "at": [
+    0.97,
+    7.0,
+    -0.03
+   ],
+   "size": [
+    4.4401,
+    1.9898,
+    5.14
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Anvil__000000",
+   "color": "000000",
+   "tris": 728,
+   "at": [
+    0.529,
+    3.9741,
+    -0.8512
+   ],
+   "size": [
+    5.4393,
+    8.1606,
+    7.4771
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Bench": [
+  {
+   "name": "Arena_Bench__2C2E36",
+   "color": "2C2E36",
+   "tris": 576,
+   "at": [
+    -0.0,
+    1.6209,
+    0.1326
+   ],
+   "size": [
+    5.42,
+    3.2418,
+    1.9616
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Bench__4E5260",
+   "color": "4E5260",
+   "tris": 216,
+   "at": [
+    -0.0,
+    2.05,
+    -0.1
+   ],
+   "size": [
+    5.5,
+    0.16,
+    1.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Bench__8A5A36",
+   "color": "8A5A36",
+   "tris": 324,
+   "at": [
+    -0.0,
+    2.1404,
+    0.1234
+   ],
+   "size": [
+    6.0,
+    1.1209,
+    1.8268
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Bench__B98250",
+   "color": "B98250",
+   "tris": 432,
+   "at": [
+    -0.0,
+    2.3404,
+    0.3534
+   ],
+   "size": [
+    6.0,
+    1.5209,
+    1.4868
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Bench__000000",
+   "color": "000000",
+   "tris": 1548,
+   "at": [
+    -0.0,
+    1.6212,
+    0.132
+   ],
+   "size": [
+    6.0774,
+    3.3199,
+    2.0414
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Brazier": [
+  {
+   "name": "Arena_Brazier__8E5A26",
+   "color": "8E5A26",
+   "tris": 60,
+   "at": [
+    -0.0,
+    1.6,
+    -0.3733
+   ],
+   "size": [
+    2.854,
+    3.2728,
+    2.5444
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__C8843A",
+   "color": "C8843A",
+   "tris": 196,
+   "at": [
+    -0.0,
+    1.8,
+    -0.225
+   ],
+   "size": [
+    3.0981,
+    3.6,
+    3.05
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__EAB66A",
+   "color": "EAB66A",
+   "tris": 52,
+   "at": [
+    -0.0,
+    3.68,
+    0.0
+   ],
+   "size": [
+    2.6323,
+    0.24,
+    2.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__121214",
+   "color": "121214",
+   "tris": 52,
+   "at": [
+    -0.0,
+    3.6,
+    0.0
+   ],
+   "size": [
+    2.2423,
+    0.14,
+    2.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__FF7A1E",
+   "color": "FF7A1E",
+   "tris": 24,
+   "at": [
+    -0.0,
+    4.5,
+    0.0495
+   ],
+   "size": [
+    1.9499,
+    1.6,
+    1.901
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__FFD040",
+   "color": "FFD040",
+   "tris": 20,
+   "at": [
+    0.2,
+    4.4,
+    0.1
+   ],
+   "size": [
+    1.2,
+    1.4,
+    1.0392
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Brazier__000000",
+   "color": "000000",
+   "tris": 404,
+   "at": [
+    -0.0,
+    2.6323,
+    -0.2062
+   ],
+   "size": [
+    3.1981,
+    5.4157,
+    3.1876
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_BullGate": [
+  {
+   "name": "Arena_BullGate__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    27.4,
+    1.0,
+    4.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__D2CBBE",
+   "color": "D2CBBE",
+   "tris": 892,
+   "at": [
+    -0.0,
+    10.2,
+    0.0
+   ],
+   "size": [
+    28.6,
+    18.4,
+    4.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__F1EDE4",
+   "color": "F1EDE4",
+   "tris": 444,
+   "at": [
+    -0.0,
+    10.3,
+    0.0
+   ],
+   "size": [
+    28.0,
+    17.0,
+    4.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__C88A1E",
+   "color": "C88A1E",
+   "tris": 228,
+   "at": [
+    -0.0,
+    12.15,
+    -1.715
+   ],
+   "size": [
+    26.0,
+    11.5,
+    0.89
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__F2B53A",
+   "color": "F2B53A",
+   "tris": 1408,
+   "at": [
+    -0.0,
+    12.85,
+    -1.805
+   ],
+   "size": [
+    26.1624,
+    10.7,
+    0.87
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 396,
+   "at": [
+    -0.0,
+    21.4979,
+    -0.4511
+   ],
+   "size": [
+    4.08,
+    5.4041,
+    4.7422
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__121214",
+   "color": "121214",
+   "tris": 296,
+   "at": [
+    0.0,
+    20.93,
+    -2.07
+   ],
+   "size": [
+    2.833,
+    4.26,
+    1.02
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__E8DDC0",
+   "color": "E8DDC0",
+   "tris": 288,
+   "at": [
+    -0.0,
+    23.8622,
+    -0.3866
+   ],
+   "size": [
+    7.2626,
+    2.578,
+    1.4829
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__6E6252",
+   "color": "6E6252",
+   "tris": 144,
+   "at": [
+    -0.0,
+    26.0423,
+    -1.0688
+   ],
+   "size": [
+    9.7172,
+    2.5404,
+    1.1484
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullGate__000000",
+   "color": "000000",
+   "tris": 4312,
+   "at": [
+    -0.0,
+    13.6557,
+    -0.3096
+   ],
+   "size": [
+    28.7354,
+    27.4467,
+    5.1547
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_BullStatue": [
+  {
+   "name": "Arena_BullStatue__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 108,
+   "at": [
+    -0.0,
+    1.0,
+    0.0
+   ],
+   "size": [
+    4.6,
+    2.0,
+    9.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 108,
+   "at": [
+    -0.0,
+    2.05,
+    0.0
+   ],
+   "size": [
+    4.8,
+    0.3,
+    9.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__C8843A",
+   "color": "C8843A",
+   "tris": 1368,
+   "at": [
+    -0.0,
+    5.5046,
+    -0.8252
+   ],
+   "size": [
+    3.9,
+    5.9909,
+    8.8504
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__8E5A26",
+   "color": "8E5A26",
+   "tris": 608,
+   "at": [
+    -0.0,
+    4.6492,
+    -0.1231
+   ],
+   "size": [
+    2.95,
+    4.8983,
+    11.2462
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__F2B53A",
+   "color": "F2B53A",
+   "tris": 120,
+   "at": [
+    -0.0,
+    4.2,
+    -5.5
+   ],
+   "size": [
+    1.1,
+    1.1,
+    0.1902
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__121214",
+   "color": "121214",
+   "tris": 96,
+   "at": [
+    -0.0,
+    5.9,
+    -4.6
+   ],
+   "size": [
+    2.3,
+    0.4,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__E8DDC0",
+   "color": "E8DDC0",
+   "tris": 112,
+   "at": [
+    -0.0,
+    6.6653,
+    -4.4974
+   ],
+   "size": [
+    4.8128,
+    1.0811,
+    2.2876
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__6E6252",
+   "color": "6E6252",
+   "tris": 40,
+   "at": [
+    -0.0,
+    7.2,
+    -6.0
+   ],
+   "size": [
+    4.6158,
+    0.6035,
+    0.9188
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_BullStatue__000000",
+   "color": "000000",
+   "tris": 2560,
+   "at": [
+    -0.0,
+    4.251,
+    -0.477
+   ],
+   "size": [
+    4.9161,
+    8.618,
+    12.074
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Column": [
+  {
+   "name": "Arena_Column__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.4,
+    0.0
+   ],
+   "size": [
+    3.8,
+    0.8,
+    3.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Column__26262C",
+   "color": "26262C",
+   "tris": 496,
+   "at": [
+    -0.0,
+    6.4,
+    0.0
+   ],
+   "size": [
+    3.8,
+    11.2,
+    3.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Column__B8322A",
+   "color": "B8322A",
+   "tris": 52,
+   "at": [
+    -0.0,
+    5.7,
+    0.0
+   ],
+   "size": [
+    2.4373,
+    8.6,
+    2.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Column__F2B53A",
+   "color": "F2B53A",
+   "tris": 52,
+   "at": [
+    -0.0,
+    9.2,
+    0.0
+   ],
+   "size": [
+    2.5348,
+    0.26,
+    2.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Column__000000",
+   "color": "000000",
+   "tris": 708,
+   "at": [
+    -0.0,
+    6.0,
+    0.0
+   ],
+   "size": [
+    3.9354,
+    12.1354,
+    3.9354
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Crane": [
+  {
+   "name": "Arena_Crane__A9A9B0",
+   "color": "A9A9B0",
+   "tris": 324,
+   "at": [
+    -0.0,
+    20.55,
+    2.8
+   ],
+   "size": [
+    7.0,
+    41.1,
+    12.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__F7C52E",
+   "color": "F7C52E",
+   "tris": 3804,
+   "at": [
+    1.0375,
+    24.9771,
+    -9.05
+   ],
+   "size": [
+    5.525,
+    46.1098,
+    38.1
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__2C2E36",
+   "color": "2C2E36",
+   "tris": 296,
+   "at": [
+    -0.0,
+    37.0189,
+    -4.5322
+   ],
+   "size": [
+    4.0,
+    22.0765,
+    28.3357
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__8FD0F0",
+   "color": "8FD0F0",
+   "tris": 108,
+   "at": [
+    2.4,
+    42.3,
+    -2.5
+   ],
+   "size": [
+    2.86,
+    1.2,
+    1.6
+   ],
+   "neon": false,
+   "transparency": 0.45
+  },
+  {
+   "name": "Arena_Crane__4E5260",
+   "color": "4E5260",
+   "tris": 12,
+   "at": [
+    -0.0,
+    40.95,
+    5.6
+   ],
+   "size": [
+    2.2,
+    0.2,
+    8.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__D63A32",
+   "color": "D63A32",
+   "tris": 80,
+   "at": [
+    -0.0,
+    48.3,
+    0.0
+   ],
+   "size": [
+    0.5,
+    0.5,
+    0.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__8A5A36",
+   "color": "8A5A36",
+   "tris": 216,
+   "at": [
+    -0.0,
+    25.48,
+    -17.6
+   ],
+   "size": [
+    3.6,
+    0.94,
+    1.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__B98250",
+   "color": "B98250",
+   "tris": 108,
+   "at": [
+    -0.0,
+    25.48,
+    -17.6
+   ],
+   "size": [
+    3.6,
+    0.3,
+    1.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Crane__000000",
+   "color": "000000",
+   "tris": 4948,
+   "at": [
+    0.165,
+    24.276,
+    -9.0383
+   ],
+   "size": [
+    7.4461,
+    48.668,
+    38.1927
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Forge": [
+  {
+   "name": "Arena_Forge__3C3942",
+   "color": "3C3942",
+   "tris": 540,
+   "at": [
+    -0.0,
+    0.9008,
+    -0.2019
+   ],
+   "size": [
+    11.0,
+    1.8016,
+    8.4038
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__8F887D",
+   "color": "8F887D",
+   "tris": 216,
+   "at": [
+    -0.0,
+    13.0,
+    0.0
+   ],
+   "size": [
+    10.0,
+    24.0,
+    7.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__6A645C",
+   "color": "6A645C",
+   "tris": 36,
+   "at": [
+    -0.0,
+    4.0,
+    0.0
+   ],
+   "size": [
+    10.06,
+    3.34,
+    7.06
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 216,
+   "at": [
+    -0.0,
+    16.5,
+    0.05
+   ],
+   "size": [
+    10.6,
+    19.0,
+    7.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 216,
+   "at": [
+    -0.0,
+    3.475,
+    -3.72
+   ],
+   "size": [
+    5.6,
+    4.55,
+    0.76
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__121214",
+   "color": "121214",
+   "tris": 120,
+   "at": [
+    0.75,
+    13.775,
+    -0.51
+   ],
+   "size": [
+    6.3,
+    24.95,
+    6.82
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__FF7A1E",
+   "color": "FF7A1E",
+   "tris": 296,
+   "at": [
+    0.697,
+    13.925,
+    -0.8
+   ],
+   "size": [
+    5.8787,
+    25.65,
+    7.0
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__FFD040",
+   "color": "FFD040",
+   "tris": 120,
+   "at": [
+    -0.0,
+    2.5,
+    -3.9
+   ],
+   "size": [
+    3.0,
+    1.0,
+    1.0
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__2C2E36",
+   "color": "2C2E36",
+   "tris": 1108,
+   "at": [
+    0.0887,
+    13.0172,
+    -0.0144
+   ],
+   "size": [
+    13.968,
+    23.6656,
+    7.3288
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__7A4A2E",
+   "color": "7A4A2E",
+   "tris": 136,
+   "at": [
+    -6.8,
+    2.4,
+    -1.0
+   ],
+   "size": [
+    3.0,
+    2.4,
+    3.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__5E3C24",
+   "color": "5E3C24",
+   "tris": 432,
+   "at": [
+    -0.875,
+    3.0,
+    -0.05
+   ],
+   "size": [
+    15.05,
+    6.0,
+    5.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__8A5A36",
+   "color": "8A5A36",
+   "tris": 28,
+   "at": [
+    -6.8,
+    3.5,
+    1.8
+   ],
+   "size": [
+    0.4,
+    2.4691,
+    2.296
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Forge__000000",
+   "color": "000000",
+   "tris": 3464,
+   "at": [
+    -0.6631,
+    13.3761,
+    -0.2019
+   ],
+   "size": [
+    15.6092,
+    26.8877,
+    8.5392
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_ForgeGate": [
+  {
+   "name": "Arena_ForgeGate__5C5864",
+   "color": "5C5864",
+   "tris": 648,
+   "at": [
+    -0.0,
+    11.3074,
+    -0.2567
+   ],
+   "size": [
+    29.2923,
+    23.034,
+    5.3865
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_ForgeGate__3C3942",
+   "color": "3C3942",
+   "tris": 1224,
+   "at": [
+    -0.0,
+    12.0974,
+    -0.1787
+   ],
+   "size": [
+    28.6,
+    24.1948,
+    5.6425
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_ForgeGate__FF4E1A",
+   "color": "FF4E1A",
+   "tris": 272,
+   "at": [
+    -0.0,
+    12.5698,
+    -2.7
+   ],
+   "size": [
+    26.0263,
+    17.0604,
+    1.4
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_ForgeGate__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 360,
+   "at": [
+    0.0,
+    19.8,
+    -2.62
+   ],
+   "size": [
+    5.6,
+    3.6,
+    1.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_ForgeGate__121214",
+   "color": "121214",
+   "tris": 120,
+   "at": [
+    -0.0,
+    19.8,
+    -3.32
+   ],
+   "size": [
+    1.0,
+    1.4,
+    0.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_ForgeGate__000000",
+   "color": "000000",
+   "tris": 2624,
+   "at": [
+    -0.0,
+    11.9927,
+    -0.4646
+   ],
+   "size": [
+    29.4315,
+    24.5412,
+    6.3508
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Fountain": [
+  {
+   "name": "Arena_Fountain__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 864,
+   "at": [
+    -0.0,
+    0.8,
+    0.0
+   ],
+   "size": [
+    16.2,
+    1.6,
+    16.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Fountain__F1EDE4",
+   "color": "F1EDE4",
+   "tris": 1012,
+   "at": [
+    -0.0,
+    5.55,
+    0.0
+   ],
+   "size": [
+    16.7,
+    7.9,
+    16.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Fountain__8F887D",
+   "color": "8F887D",
+   "tris": 28,
+   "at": [
+    -0.0,
+    0.25,
+    0.0
+   ],
+   "size": [
+    13.4886,
+    0.5,
+    13.4886
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Fountain__4FB4EC",
+   "color": "4FB4EC",
+   "tris": 164,
+   "at": [
+    -0.0,
+    4.575,
+    0.0
+   ],
+   "size": [
+    13.2115,
+    8.15,
+    13.2115
+   ],
+   "neon": false,
+   "transparency": 0.3
+  },
+  {
+   "name": "Arena_Fountain__D2CBBE",
+   "color": "D2CBBE",
+   "tris": 196,
+   "at": [
+    -0.0,
+    4.875,
+    0.0
+   ],
+   "size": [
+    6.2,
+    7.35,
+    6.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Fountain__F2B53A",
+   "color": "F2B53A",
+   "tris": 504,
+   "at": [
+    -0.0,
+    7.8571,
+    0.0
+   ],
+   "size": [
+    6.46,
+    4.7859,
+    6.46
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Fountain__BCE6FF",
+   "color": "BCE6FF",
+   "tris": 220,
+   "at": [
+    -0.0,
+    6.475,
+    0.0
+   ],
+   "size": [
+    5.869,
+    9.15,
+    5.869
+   ],
+   "neon": false,
+   "transparency": 0.45
+  },
+  {
+   "name": "Arena_Fountain__000000",
+   "color": "000000",
+   "tris": 2988,
+   "at": [
+    -0.0,
+    5.5132,
+    0.0
+   ],
+   "size": [
+    16.8354,
+    11.1618,
+    16.8354
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Gate": [
+  {
+   "name": "Arena_Gate__8F887D",
+   "color": "8F887D",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    20.0,
+    1.0,
+    4.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__B25C46",
+   "color": "B25C46",
+   "tris": 216,
+   "at": [
+    -0.0,
+    7.0,
+    0.0
+   ],
+   "size": [
+    19.2,
+    12.0,
+    3.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__8A4234",
+   "color": "8A4234",
+   "tris": 144,
+   "at": [
+    -0.0,
+    7.0,
+    0.0
+   ],
+   "size": [
+    19.26,
+    10.12,
+    3.26
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 216,
+   "at": [
+    -0.0,
+    13.35,
+    0.0
+   ],
+   "size": [
+    19.9,
+    0.7,
+    3.9
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 216,
+   "at": [
+    -0.0,
+    13.95,
+    0.0
+   ],
+   "size": [
+    19.3,
+    0.5,
+    3.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__2C2E36",
+   "color": "2C2E36",
+   "tris": 1700,
+   "at": [
+    -0.0,
+    13.6984,
+    0.0
+   ],
+   "size": [
+    16.6,
+    5.3969,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__FFE29A",
+   "color": "FFE29A",
+   "tris": 216,
+   "at": [
+    -0.0,
+    15.4,
+    0.0
+   ],
+   "size": [
+    17.1,
+    1.3,
+    1.1
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__4E5260",
+   "color": "4E5260",
+   "tris": 72,
+   "at": [
+    -0.0,
+    14.375,
+    0.0
+   ],
+   "size": [
+    17.1314,
+    4.75,
+    1.1314
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__F2B53A",
+   "color": "F2B53A",
+   "tris": 100,
+   "at": [
+    0.0,
+    16.6,
+    -0.0
+   ],
+   "size": [
+    0.7608,
+    0.8,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__F6F2E8",
+   "color": "F6F2E8",
+   "tris": 108,
+   "at": [
+    -0.0,
+    10.0,
+    0.0
+   ],
+   "size": [
+    9.4,
+    2.0,
+    0.36
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__D63A32",
+   "color": "D63A32",
+   "tris": 1640,
+   "at": [
+    -0.0,
+    10.0,
+    0.0
+   ],
+   "size": [
+    9.8,
+    2.34,
+    0.56
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Gate__000000",
+   "color": "000000",
+   "tris": 4844,
+   "at": [
+    -0.0,
+    8.5011,
+    0.0
+   ],
+   "size": [
+    20.1354,
+    17.1377,
+    4.1354
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_House": [
+  {
+   "name": "Arena_House__8F887D",
+   "color": "8F887D",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    16.6,
+    1.0,
+    14.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__FE01FE",
+   "color": "FE01FE",
+   "tris": 108,
+   "at": [
+    -0.0,
+    7.5,
+    0.0
+   ],
+   "size": [
+    16.0,
+    13.0,
+    14.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__F6F0E2",
+   "color": "F6F0E2",
+   "tris": 4884,
+   "at": [
+    -0.0,
+    7.5,
+    0.0
+   ],
+   "size": [
+    17.08,
+    13.0,
+    15.08
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 2808,
+   "at": [
+    -0.0,
+    10.975,
+    -0.675
+   ],
+   "size": [
+    16.5,
+    20.95,
+    15.85
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__C8523C",
+   "color": "C8523C",
+   "tris": 80,
+   "at": [
+    -0.0,
+    16.7335,
+    0.0
+   ],
+   "size": [
+    17.0,
+    5.667,
+    15.6939
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__9C3A2C",
+   "color": "9C3A2C",
+   "tris": 204,
+   "at": [
+    -0.0,
+    17.481,
+    0.0
+   ],
+   "size": [
+    17.3,
+    4.9379,
+    12.8713
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__B25C46",
+   "color": "B25C46",
+   "tris": 108,
+   "at": [
+    4.5,
+    18.6,
+    2.8
+   ],
+   "size": [
+    1.9,
+    5.0,
+    1.9
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__4E5260",
+   "color": "4E5260",
+   "tris": 28,
+   "at": [
+    4.5,
+    21.7,
+    2.8
+   ],
+   "size": [
+    0.8,
+    0.6,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__5E3C24",
+   "color": "5E3C24",
+   "tris": 432,
+   "at": [
+    -0.0,
+    4.775,
+    -7.37
+   ],
+   "size": [
+    13.2,
+    7.55,
+    0.86
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__8A5A36",
+   "color": "8A5A36",
+   "tris": 108,
+   "at": [
+    -0.0,
+    4.3,
+    -7.15
+   ],
+   "size": [
+    2.0,
+    1.6,
+    0.42
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__F2B53A",
+   "color": "F2B53A",
+   "tris": 80,
+   "at": [
+    0.9,
+    3.1,
+    -7.36
+   ],
+   "size": [
+    0.3,
+    0.3,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__D63A32",
+   "color": "D63A32",
+   "tris": 144,
+   "at": [
+    -0.0,
+    6.5913,
+    -8.0729
+   ],
+   "size": [
+    6.1,
+    1.0826,
+    2.2542
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__F6F2E8",
+   "color": "F6F2E8",
+   "tris": 36,
+   "at": [
+    1.0,
+    6.7,
+    -8.0
+   ],
+   "size": [
+    5.0,
+    0.8652,
+    2.1084
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__2C3C5C",
+   "color": "2C3C5C",
+   "tris": 2052,
+   "at": [
+    -0.0,
+    7.2,
+    0.0
+   ],
+   "size": [
+    16.54,
+    9.2,
+    14.54
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__3C7A5C",
+   "color": "3C7A5C",
+   "tris": 1080,
+   "at": [
+    -0.0,
+    7.2,
+    -7.1
+   ],
+   "size": [
+    15.5,
+    9.4,
+    0.16
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__F6C84A",
+   "color": "F6C84A",
+   "tris": 240,
+   "at": [
+    -0.2772,
+    8.7,
+    -7.45
+   ],
+   "size": [
+    12.1088,
+    0.6,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__9A5ADC",
+   "color": "9A5ADC",
+   "tris": 240,
+   "at": [
+    0.2772,
+    8.7,
+    -7.45
+   ],
+   "size": [
+    12.1088,
+    0.6,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__F4F4F4",
+   "color": "F4F4F4",
+   "tris": 240,
+   "at": [
+    -0.2772,
+    8.7,
+    -7.45
+   ],
+   "size": [
+    9.8912,
+    0.6,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__E8506E",
+   "color": "E8506E",
+   "tris": 240,
+   "at": [
+    0.2772,
+    8.7,
+    -7.45
+   ],
+   "size": [
+    9.8912,
+    0.6,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_House__000000",
+   "color": "000000",
+   "tris": 13220,
+   "at": [
+    -0.0,
+    10.9882,
+    -0.6793
+   ],
+   "size": [
+    17.4354,
+    22.1118,
+    17.1768
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Kiosk": [
+  {
+   "name": "Arena_Kiosk__8F887D",
+   "color": "8F887D",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.25,
+    0.0
+   ],
+   "size": [
+    6.0,
+    0.5,
+    4.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__F49AC0",
+   "color": "F49AC0",
+   "tris": 360,
+   "at": [
+    -0.0,
+    5.175,
+    0.0
+   ],
+   "size": [
+    5.6,
+    9.35,
+    4.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__2C2E36",
+   "color": "2C2E36",
+   "tris": 108,
+   "at": [
+    -0.0,
+    3.2,
+    -2.05
+   ],
+   "size": [
+    4.2,
+    1.8,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__F6F2E8",
+   "color": "F6F2E8",
+   "tris": 540,
+   "at": [
+    -0.0,
+    3.875,
+    -0.2571
+   ],
+   "size": [
+    5.8,
+    3.55,
+    5.2858
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__8EE0C0",
+   "color": "8EE0C0",
+   "tris": 784,
+   "at": [
+    -0.0,
+    6.825,
+    -0.2
+   ],
+   "size": [
+    6.65,
+    8.85,
+    5.1717
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__F7C52E",
+   "color": "F7C52E",
+   "tris": 268,
+   "at": [
+    -0.0,
+    7.4,
+    -0.9
+   ],
+   "size": [
+    1.8,
+    10.0,
+    3.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__7A4A2E",
+   "color": "7A4A2E",
+   "tris": 100,
+   "at": [
+    1.4,
+    2.75,
+    -2.35
+   ],
+   "size": [
+    0.6657,
+    0.7,
+    0.7
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__D63A32",
+   "color": "D63A32",
+   "tris": 972,
+   "at": [
+    -0.0058,
+    8.8319,
+    -1.33
+   ],
+   "size": [
+    5.0,
+    7.9361,
+    3.26
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__DFA35A",
+   "color": "DFA35A",
+   "tris": 44,
+   "at": [
+    -0.0,
+    6.9,
+    0.0
+   ],
+   "size": [
+    2.6,
+    3.0,
+    2.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__B07830",
+   "color": "B07830",
+   "tris": 48,
+   "at": [
+    -0.0,
+    6.9,
+    0.0
+   ],
+   "size": [
+    1.4616,
+    3.0,
+    1.4616
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Kiosk__000000",
+   "color": "000000",
+   "tris": 3332,
+   "at": [
+    -0.0,
+    6.4008,
+    -0.2802
+   ],
+   "size": [
+    6.7467,
+    12.8984,
+    5.4303
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Lamp": [
+  {
+   "name": "Arena_Lamp__2C2E36",
+   "color": "2C2E36",
+   "tris": 692,
+   "at": [
+    -0.0,
+    4.855,
+    0.0
+   ],
+   "size": [
+    4.4,
+    9.71,
+    1.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Lamp__4E5260",
+   "color": "4E5260",
+   "tris": 488,
+   "at": [
+    -0.0,
+    5.1275,
+    0.0
+   ],
+   "size": [
+    4.2485,
+    9.255,
+    1.1
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Lamp__FFE29A",
+   "color": "FFE29A",
+   "tris": 216,
+   "at": [
+    -0.0,
+    8.65,
+    0.0
+   ],
+   "size": [
+    4.25,
+    1.05,
+    0.85
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Lamp__F2B53A",
+   "color": "F2B53A",
+   "tris": 80,
+   "at": [
+    -0.0,
+    10.1,
+    0.0
+   ],
+   "size": [
+    0.45,
+    0.6,
+    0.45
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Lamp__000000",
+   "color": "000000",
+   "tris": 1476,
+   "at": [
+    -0.0,
+    5.2005,
+    0.0
+   ],
+   "size": [
+    4.4774,
+    10.479,
+    1.5785
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Mixer": [
+  {
+   "name": "Arena_Mixer__2C2E36",
+   "color": "2C2E36",
+   "tris": 552,
+   "at": [
+    -0.0,
+    2.6275,
+    -0.9247
+   ],
+   "size": [
+    2.6,
+    4.306,
+    5.4493
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__1C1C20",
+   "color": "1C1C20",
+   "tris": 328,
+   "at": [
+    -0.0,
+    0.9,
+    0.6
+   ],
+   "size": [
+    3.5,
+    1.7549,
+    1.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__A9A9B0",
+   "color": "A9A9B0",
+   "tris": 72,
+   "at": [
+    -0.0,
+    0.9,
+    0.6
+   ],
+   "size": [
+    3.56,
+    0.856,
+    0.9
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__4E5260",
+   "color": "4E5260",
+   "tris": 100,
+   "at": [
+    -0.0,
+    0.6,
+    -3.8
+   ],
+   "size": [
+    0.76,
+    0.7228,
+    0.1522
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__F08A24",
+   "color": "F08A24",
+   "tris": 180,
+   "at": [
+    -0.0,
+    3.3583,
+    0.2276
+   ],
+   "size": [
+    2.4,
+    3.5632,
+    4.3189
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__4A4A50",
+   "color": "4A4A50",
+   "tris": 44,
+   "at": [
+    -0.0,
+    4.6375,
+    -1.6675
+   ],
+   "size": [
+    1.3,
+    1.2494,
+    0.9682
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__F7C52E",
+   "color": "F7C52E",
+   "tris": 108,
+   "at": [
+    1.3,
+    2.2,
+    1.4
+   ],
+   "size": [
+    0.8,
+    1.0,
+    0.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Mixer__000000",
+   "color": "000000",
+   "tris": 1384,
+   "at": [
+    -0.0,
+    2.6433,
+    -0.7425
+   ],
+   "size": [
+    3.6244,
+    5.337,
+    6.3586
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Oak": [
+  {
+   "name": "Arena_Oak__6E4A2E",
+   "color": "6E4A2E",
+   "tris": 128,
+   "at": [
+    0.1004,
+    4.5113,
+    0.0
+   ],
+   "size": [
+    5.5383,
+    9.0226,
+    2.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Oak__FE01FE",
+   "color": "FE01FE",
+   "tris": 1176,
+   "at": [
+    -0.0,
+    10.818,
+    0.0
+   ],
+   "size": [
+    10.6,
+    7.172,
+    10.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Oak__7ACC5A",
+   "color": "7ACC5A",
+   "tris": 300,
+   "at": [
+    0.4524,
+    12.805,
+    -0.45
+   ],
+   "size": [
+    6.1972,
+    3.81,
+    4.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Oak__000000",
+   "color": "000000",
+   "tris": 1604,
+   "at": [
+    -0.0,
+    7.3723,
+    0.0
+   ],
+   "size": [
+    10.74,
+    14.8153,
+    10.54
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Pine": [
+  {
+   "name": "Arena_Pine__6E4A2E",
+   "color": "6E4A2E",
+   "tris": 28,
+   "at": [
+    -0.0,
+    1.5,
+    0.0
+   ],
+   "size": [
+    1.5,
+    3.0,
+    1.5
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Pine__2C6E46",
+   "color": "2C6E46",
+   "tris": 72,
+   "at": [
+    -0.0,
+    7.95,
+    0.0
+   ],
+   "size": [
+    7.228,
+    10.1,
+    7.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Pine__3E8A56",
+   "color": "3E8A56",
+   "tris": 72,
+   "at": [
+    -0.0,
+    10.8,
+    0.0
+   ],
+   "size": [
+    5.9991,
+    9.2,
+    5.7378
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Pine__000000",
+   "color": "000000",
+   "tris": 172,
+   "at": [
+    -0.0,
+    7.7058,
+    0.0
+   ],
+   "size": [
+    7.3512,
+    15.4954,
+    7.7295
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Shop": [
+  {
+   "name": "Arena_Shop__8F887D",
+   "color": "8F887D",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    16.6,
+    1.0,
+    14.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__FE01FE",
+   "color": "FE01FE",
+   "tris": 108,
+   "at": [
+    -0.0,
+    7.75,
+    0.0
+   ],
+   "size": [
+    16.0,
+    13.5,
+    14.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__B25C46",
+   "color": "B25C46",
+   "tris": 108,
+   "at": [
+    -0.0,
+    4.0,
+    0.0
+   ],
+   "size": [
+    16.2,
+    6.0,
+    14.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__8A4234",
+   "color": "8A4234",
+   "tris": 48,
+   "at": [
+    -0.0,
+    4.25,
+    0.0
+   ],
+   "size": [
+    16.26,
+    4.6,
+    14.26
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__F6F0E2",
+   "color": "F6F0E2",
+   "tris": 3192,
+   "at": [
+    -0.0,
+    8.45,
+    0.0
+   ],
+   "size": [
+    17.08,
+    14.9,
+    15.08
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__8FD0F0",
+   "color": "8FD0F0",
+   "tris": 216,
+   "at": [
+    -0.35,
+    3.6,
+    -7.15
+   ],
+   "size": [
+    13.3,
+    4.0,
+    0.42
+   ],
+   "neon": false,
+   "transparency": 0.45
+  },
+  {
+   "name": "Arena_Shop__F49AC0",
+   "color": "F49AC0",
+   "tris": 108,
+   "at": [
+    -5.8,
+    2.2,
+    -6.4
+   ],
+   "size": [
+    1.2,
+    1.0,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__F7C52E",
+   "color": "F7C52E",
+   "tris": 464,
+   "at": [
+    -2.0013,
+    5.4532,
+    -6.74
+   ],
+   "size": [
+    5.2,
+    7.5064,
+    1.48
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__8EE0C0",
+   "color": "8EE0C0",
+   "tris": 108,
+   "at": [
+    0.2,
+    2.2,
+    -6.4
+   ],
+   "size": [
+    1.2,
+    1.0,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__F08A24",
+   "color": "F08A24",
+   "tris": 108,
+   "at": [
+    2.2,
+    2.5,
+    -6.4
+   ],
+   "size": [
+    1.2,
+    1.6,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__3A7AD8",
+   "color": "3A7AD8",
+   "tris": 108,
+   "at": [
+    5.6,
+    3.2,
+    -7.12
+   ],
+   "size": [
+    2.2,
+    4.4,
+    0.36
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__D63A32",
+   "color": "D63A32",
+   "tris": 192,
+   "at": [
+    -0.0,
+    6.5963,
+    -8.1661
+   ],
+   "size": [
+    15.0,
+    1.6926,
+    2.4878
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__F6F2E8",
+   "color": "F6F2E8",
+   "tris": 192,
+   "at": [
+    1.0,
+    6.5963,
+    -8.1661
+   ],
+   "size": [
+    15.0,
+    1.6926,
+    2.4878
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__2C2E36",
+   "color": "2C2E36",
+   "tris": 824,
+   "at": [
+    -1.6,
+    13.85,
+    -2.165
+   ],
+   "size": [
+    8.8,
+    12.3,
+    12.83
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__2C3C5C",
+   "color": "2C3C5C",
+   "tris": 1512,
+   "at": [
+    -0.0,
+    7.7,
+    0.0
+   ],
+   "size": [
+    16.54,
+    9.8,
+    14.54
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__3C7A5C",
+   "color": "3C7A5C",
+   "tris": 432,
+   "at": [
+    -0.0,
+    11.2,
+    -7.1
+   ],
+   "size": [
+    15.1,
+    3.0,
+    0.16
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 1068,
+   "at": [
+    -0.0,
+    5.965,
+    -1.975
+   ],
+   "size": [
+    17.08,
+    7.17,
+    13.25
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__4A4A52",
+   "color": "4A4A52",
+   "tris": 12,
+   "at": [
+    -0.0,
+    14.55,
+    0.0
+   ],
+   "size": [
+    15.6,
+    0.2,
+    13.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__8A5A36",
+   "color": "8A5A36",
+   "tris": 52,
+   "at": [
+    -4.0,
+    18.9,
+    2.5
+   ],
+   "size": [
+    3.3148,
+    3.0,
+    3.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__5E3C24",
+   "color": "5E3C24",
+   "tris": 52,
+   "at": [
+    -4.0,
+    21.0,
+    2.5
+   ],
+   "size": [
+    3.5097,
+    1.2,
+    3.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__A9A9B0",
+   "color": "A9A9B0",
+   "tris": 108,
+   "at": [
+    4.0,
+    15.4,
+    3.0
+   ],
+   "size": [
+    3.0,
+    1.8,
+    2.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__4E5260",
+   "color": "4E5260",
+   "tris": 36,
+   "at": [
+    4.0,
+    16.45,
+    3.0
+   ],
+   "size": [
+    1.3315,
+    0.3,
+    1.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Shop__000000",
+   "color": "000000",
+   "tris": 9156,
+   "at": [
+    -0.0,
+    10.7989,
+    -0.9259
+   ],
+   "size": [
+    17.2154,
+    21.7331,
+    17.0672
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_Statue": [
+  {
+   "name": "Arena_Statue__8F887D",
+   "color": "8F887D",
+   "tris": 108,
+   "at": [
+    -0.0,
+    0.6,
+    0.0
+   ],
+   "size": [
+    13.0,
+    1.2,
+    13.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 108,
+   "at": [
+    -0.0,
+    1.7,
+    0.0
+   ],
+   "size": [
+    10.6,
+    1.0,
+    10.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__D2CBBE",
+   "color": "D2CBBE",
+   "tris": 1568,
+   "at": [
+    0.5143,
+    14.35,
+    0.0
+   ],
+   "size": [
+    9.0287,
+    24.3,
+    8.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__F2B53A",
+   "color": "F2B53A",
+   "tris": 1252,
+   "at": [
+    0.425,
+    14.3029,
+    -0.075
+   ],
+   "size": [
+    8.95,
+    21.6059,
+    8.25
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 196,
+   "at": [
+    -0.0,
+    5.1,
+    -0.425
+   ],
+   "size": [
+    10.7,
+    5.8,
+    9.85
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__121214",
+   "color": "121214",
+   "tris": 260,
+   "at": [
+    -0.0013,
+    4.366,
+    -4.26
+   ],
+   "size": [
+    4.4,
+    0.6481,
+    0.12
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__7ACC5A",
+   "color": "7ACC5A",
+   "tris": 200,
+   "at": [
+    -0.0,
+    3.3,
+    -4.6
+   ],
+   "size": [
+    10.2462,
+    0.9,
+    1.1
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__F1EDE4",
+   "color": "F1EDE4",
+   "tris": 1412,
+   "at": [
+    0.0977,
+    16.8593,
+    -0.0
+   ],
+   "size": [
+    9.0261,
+    16.1816,
+    2.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__C88A1E",
+   "color": "C88A1E",
+   "tris": 108,
+   "at": [
+    -0.0,
+    15.75,
+    -1.32
+   ],
+   "size": [
+    1.2,
+    0.8,
+    0.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__D63A32",
+   "color": "D63A32",
+   "tris": 272,
+   "at": [
+    -0.0,
+    16.6979,
+    2.7625
+   ],
+   "size": [
+    4.5,
+    7.3137,
+    3.1588
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__9C3A2C",
+   "color": "9C3A2C",
+   "tris": 136,
+   "at": [
+    -0.0,
+    16.8926,
+    2.9055
+   ],
+   "size": [
+    1.5,
+    6.926,
+    3.4344
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_Statue__000000",
+   "color": "000000",
+   "tris": 5620,
+   "at": [
+    -0.0,
+    13.2511,
+    0.0
+   ],
+   "size": [
+    13.1354,
+    26.6377,
+    13.1354
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_TalosGate": [
+  {
+   "name": "Arena_TalosGate__DCD5C6",
+   "color": "DCD5C6",
+   "tris": 216,
+   "at": [
+    -0.0,
+    0.5,
+    0.0
+   ],
+   "size": [
+    27.6,
+    1.0,
+    4.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__26262C",
+   "color": "26262C",
+   "tris": 1096,
+   "at": [
+    -0.0,
+    8.8,
+    0.0
+   ],
+   "size": [
+    27.4,
+    15.6,
+    4.4
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__B8322A",
+   "color": "B8322A",
+   "tris": 120,
+   "at": [
+    -0.0,
+    8.0,
+    0.0
+   ],
+   "size": [
+    26.0,
+    12.6,
+    3.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__F2B53A",
+   "color": "F2B53A",
+   "tris": 356,
+   "at": [
+    -0.0,
+    19.7735,
+    0.0
+   ],
+   "size": [
+    26.0,
+    12.647,
+    3.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__39D0E6",
+   "color": "39D0E6",
+   "tris": 216,
+   "at": [
+    -0.0,
+    11.0,
+    -1.4
+   ],
+   "size": [
+    20.4,
+    1.2,
+    0.6
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__8E5A26",
+   "color": "8E5A26",
+   "tris": 432,
+   "at": [
+    -0.0,
+    15.625,
+    0.0
+   ],
+   "size": [
+    28.4,
+    8.05,
+    4.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__C8843A",
+   "color": "C8843A",
+   "tris": 108,
+   "at": [
+    -0.0,
+    18.0,
+    0.0
+   ],
+   "size": [
+    28.0,
+    2.8,
+    4.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__EAB66A",
+   "color": "EAB66A",
+   "tris": 396,
+   "at": [
+    -0.0,
+    18.0,
+    -2.05
+   ],
+   "size": [
+    21.5,
+    1.5,
+    0.2
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__4FA88E",
+   "color": "4FA88E",
+   "tris": 252,
+   "at": [
+    -0.0,
+    18.0,
+    -2.12
+   ],
+   "size": [
+    20.6,
+    0.6,
+    0.24
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__C88A1E",
+   "color": "C88A1E",
+   "tris": 108,
+   "at": [
+    -0.0,
+    19.95,
+    0.0
+   ],
+   "size": [
+    10.0,
+    0.7,
+    1.6
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosGate__000000",
+   "color": "000000",
+   "tris": 3300,
+   "at": [
+    -0.0,
+    13.0426,
+    0.0
+   ],
+   "size": [
+    28.5354,
+    26.2207,
+    4.7354
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ],
+ "Arena_TalosHead": [
+  {
+   "name": "Arena_TalosHead__C8843A",
+   "color": "C8843A",
+   "tris": 948,
+   "at": [
+    0.1907,
+    2.5262,
+    -0.6974
+   ],
+   "size": [
+    8.339,
+    9.3137,
+    8.9948
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__8E5A26",
+   "color": "8E5A26",
+   "tris": 432,
+   "at": [
+    0.2724,
+    2.3314,
+    0.1
+   ],
+   "size": [
+    7.6943,
+    8.6414,
+    9.0
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__39D0E6",
+   "color": "39D0E6",
+   "tris": 240,
+   "at": [
+    -0.3474,
+    3.0261,
+    -4.2
+   ],
+   "size": [
+    4.9986,
+    1.9345,
+    0.6
+   ],
+   "neon": true,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__EAB66A",
+   "color": "EAB66A",
+   "tris": 216,
+   "at": [
+    -0.5329,
+    3.6494,
+    -4.15
+   ],
+   "size": [
+    5.8008,
+    2.0439,
+    0.8
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__D63A32",
+   "color": "D63A32",
+   "tris": 192,
+   "at": [
+    -1.6693,
+    7.6268,
+    0.7961
+   ],
+   "size": [
+    2.2254,
+    3.7095,
+    8.639
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__4FA88E",
+   "color": "4FA88E",
+   "tris": 36,
+   "at": [
+    -0.7333,
+    4.3719,
+    0.0
+   ],
+   "size": [
+    7.2928,
+    2.9734,
+    4.3
+   ],
+   "neon": false,
+   "transparency": 0
+  },
+  {
+   "name": "Arena_TalosHead__000000",
+   "color": "000000",
+   "tris": 2064,
+   "at": [
+    -0.0,
+    3.6741,
+    -0.0403
+   ],
+   "size": [
+    8.8594,
+    11.7483,
+    10.4467
+   ],
+   "neon": false,
+   "transparency": 0
+  }
+ ]
+}

@@ -42,11 +42,24 @@ local CAGES = {
 		{ "Bar", Vector3.new(1, 25, 16), Vector3.new(-8.1, 12.5, 0) }, { "Bar", Vector3.new(1, 25, 16), Vector3.new(8.1, 12.5, 0) },
 	} },
 }
--- Dungeons (design "Lochy Myth Yard"): each boss sits in a pit cut through the arena's grass rim down
--- to the bedrock (DEEP), walled RAMPART above the grass and crenellated, paved in the arena plaza's
--- stone rings, with a short ramp and a red arch toward the arena. Kept clear of the north launch ramp.
+-- Dungeons: each boss sits in a pit cut through the rim's ground down to the bedrock (DEEP), walled
+-- RAMPART above it and crenellated, paved in the arena plaza's stone rings, with a short ramp out and a
+-- gate over its top. Every one is in its own lair (Map.LAIRS, design "Mayhem Park 2.0"): the Cyclops at a
+-- forge under the volcano, the Minotaur in the hedge labyrinth, Talos on the lake's island. A lair's frame
+-- is the pit's centre on the ground; in lair space the ramp leads out toward +z.
 local PIT, DEEP, RAMPART, RAMP_HALF, RAMP_LONG = 22, 3, 6, 9, 6
-local YARD = { z = -170, x = { Cyclops = -112, Minotaur = -56, Talos = 56 } }
+local LAIRS = Map.LAIRS
+-- Round each lair (lair space, ArenaKit models via Map.structure; turns of 90 degrees, 2 = facing +z):
+-- the gate over the ramp's top, what stands outside, and where its name board is (x, z; facing +z).
+local LAIR_LOOK = {
+	Cyclops = { gate = "ForgeGate", sign = { 20, 34 }, props = { { "Forge", -22, 38, 3 }, { "Anvil", -12, 39, 2 } } },
+	-- the board out at the labyrinth's way in, the bull in its dead-end corner by the gate
+	Minotaur = { gate = "BullGate", sign = { 17, 57 }, props = { { "BullStatue", -19, 33, 3 } } },
+	Talos = { gate = "TalosGate", sign = { 20, 34 }, props = {
+		{ "MinoanColumn", -16, 31 }, { "MinoanColumn", 16, 31 }, { "Brazier", -10, 33 }, { "Brazier", 10, 33 },
+		{ "TalosHead", -26, 32, 2 },
+	} },
+}
 local LOOK = {
 	plaza = Color3.fromRGB(176, 170, 160), dark = Color3.fromRGB(150, 144, 136), path = Color3.fromRGB(160, 150, 136),
 	marble = Color3.fromRGB(226, 222, 214), brick = Color3.fromRGB(170, 95, 80), gate = Color3.fromRGB(200, 50, 45),
@@ -116,10 +129,12 @@ local function torch(parent, x, z, y)
 	light.Color, light.Brightness, light.Range, light.Shadows = LOOK.flame, 0.6, 14, false
 	light.Parent = flame
 end
--- One boss's dungeon around base (the pit floor's centre). Returns the arch to hang its name on.
-local function dungeon(ground, kind, base, floors)
+-- One boss's dungeon in its lair (frame: the pit's centre on the ground, the ramp out toward its +z). Built
+-- round the origin, then moved onto the frame. `themed`: the lair's own gate stands over the ramp (an
+-- ArenaKit model), so no red arch. Returns the red arch's lintel, to hang its name on (nil when themed).
+local function dungeon(ground, kind, frame, floors, themed)
 	local model = Instance.new("Model"); model.Name = kind .. "Dungeon"; model.Parent = ground
-	local b, c, low = base.X, base.Z, base.Y
+	local b, c, low = 0, 0, -DEEP
 	local x0, x1, z0, z1 = b - PIT, b + PIT, c - PIT, c + PIT -- the hole; z1 faces the arena
 	local theme = THEME[kind]
 	local n = 12
@@ -159,12 +174,16 @@ local function dungeon(ground, kind, base, floors)
 	ramp.TopSurface, ramp.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	ramp.Parent = model
 	table.insert(floors, ramp)
-	-- the red arch over the top of the ramp, like the arena's gate, and a torch on each corner
+	-- the red arch over the top of the ramp, like the arena's gate (unless the lair has its own), and a
+	-- torch on each corner
 	local top = z1 + RAMP_LONG + 1
-	for _, side in { -1, 1 } do
-		slab(model, "Arch", Vector3.new(2, 16, 2), Vector3.new(b + side * (RAMP_HALF + 2), 8, top), LOOK.gate, Enum.Material.Wood)
+	local lintel
+	if not themed then
+		for _, side in { -1, 1 } do
+			slab(model, "Arch", Vector3.new(2, 16, 2), Vector3.new(b + side * (RAMP_HALF + 2), 8, top), LOOK.gate, Enum.Material.Wood)
+		end
+		lintel = slab(model, "Arch", Vector3.new(2 * RAMP_HALF + 6, 3, 2.4), CFrame.new(b, 17.5, top) * CFrame.Angles(0, math.pi, 0), LOOK.gate, Enum.Material.Wood)
 	end
-	local lintel = slab(model, "Arch", Vector3.new(2 * RAMP_HALF + 6, 3, 2.4), CFrame.new(b, 17.5, top) * CFrame.Angles(0, math.pi, 0), LOOK.gate, Enum.Material.Wood)
 	for _, x in { x0 + 0.5, x1 - 0.5 } do
 		for _, z in { z0 + 0.5, z1 - 0.5 } do torch(model, x, z, RAMPART) end
 	end
@@ -196,26 +215,34 @@ local function dungeon(ground, kind, base, floors)
 			end
 		end
 	end
+	for _, part in model:GetDescendants() do
+		if part:IsA("BasePart") then part.CFrame = frame * part.CFrame end
+	end
 	return lintel
 end
 -- In or out of a dungeon, a boss walks by the ramp: the pit's walls are too tall to climb.
-local function inDungeon(p, b, c)
-	local dx, dz = math.abs(p.X - b), p.Z - c
+local function inDungeon(p, frame)
+	local q = frame:PointToObjectSpace(p)
+	local dx, dz = math.abs(q.X), q.Z
 	return dx < PIT and dz > -PIT and dz < PIT or dx < RAMP_HALF + 1 and dz >= PIT and dz < PIT + RAMP_LONG
 end
 local function route(d, goal)
-	local pit = d.cage:GetAttribute("Pit")
-	if not pit then return goal end
-	local b, c, at = pit.X, pit.Z, d.root.Position
-	local here, there = inDungeon(at, b, c), inDungeon(goal, b, c)
+	local frame = d.cage:GetAttribute("Lair")
+	if not frame then return goal end
+	local at = d.root.Position
+	local here, there = inDungeon(at, frame), inDungeon(goal, frame)
 	if here == there then return goal end
-	local foot = Vector3.new(b, at.Y, c + PIT - 3)
-	local head = Vector3.new(b, at.Y, c + PIT + RAMP_LONG + 4)
+	local q = frame:PointToObjectSpace(at) -- the boss in lair space
+	local function out(z) -- on the ramp's line at its own height
+		local w = frame:PointToWorldSpace(Vector3.new(0, 0, z))
+		return Vector3.new(w.X, at.Y, w.Z)
+	end
+	local foot, head = out(PIT - 3), out(PIT + RAMP_LONG + 4)
 	if here then -- going out: line up under the ramp, then climb it
-		return (math.abs(at.X - b) < 3 and at.Z > c + PIT - 6) and head or foot
+		return (math.abs(q.X) < 3 and q.Z > PIT - 6) and head or foot
 	end
 	-- coming home: to the top of the ramp, down it, then (inside) straight to the goal
-	return (math.abs(at.X - b) < 3 and at.Z < head.Z + 2) and foot or head
+	return (math.abs(q.X) < 3 and q.Z < PIT + RAMP_LONG + 6) and foot or head
 end
 local function groundAt(position, reach)
 	local hit = workspace:Raycast(position + Vector3.yAxis * (reach or 6), Vector3.yAxis * -40, groundParams)
@@ -278,7 +305,7 @@ local function recall(d)
 	if d.state == "Caged" then return end
 	drop(d)
 	d.moving, d.goal, d.skip = 0, nil, {}
-	d.model:PivotTo(CFrame.new(d.home) * CFrame.Angles(0, math.pi, 0))
+	d.model:PivotTo(CFrame.new(d.home) * d.turn)
 	d.prompt.ActionText = "Release"
 	setBars(d.cage, true)
 	openGate(d, false)
@@ -333,7 +360,9 @@ end
 function Monsters.spawn(kind, home, cage)
 	local def = Definitions[kind]
 	local model = Rig.build(kind)
-	model:PivotTo(CFrame.new(home) * CFrame.Angles(0, math.pi, 0))
+	-- on its stand it looks out of its lair, up the ramp (lair +z)
+	local turn = cage:GetAttribute("Lair").Rotation * CFrame.Angles(0, math.pi, 0)
+	model:PivotTo(CFrame.new(home) * turn)
 	model.Parent = folder
 	Ragdoll.setup(model)
 	local button = cage:FindFirstChild("Challenge")
@@ -347,7 +376,7 @@ function Monsters.spawn(kind, home, cage)
 	local dummies = workspace:FindFirstChild("Dummies")
 	ray.FilterDescendantsInstances = kit and { model, kit, cage:FindFirstChild("Gate"), cage:FindFirstChild("Floors"), cage:FindFirstChild("Challenge"), cage:FindFirstChild("Sign"), dummies } or { model, cage, dummies }
 	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart,
-		home = home, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0, skip = {} }
+		home = home, turn = turn, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0, skip = {} }
 	actors[model] = d
 	d.joints = {}
 	for _, obj in model:GetDescendants() do if obj:IsA("Motor6D") then d.joints[obj.Name] = obj end end
@@ -379,8 +408,8 @@ local function wanderGoal(d)
 		local spot = Vector3.new(math.random(-240, 240), 0, math.random(-240, 240))
 		local y = groundAt(spot + Vector3.yAxis * 30, 0)
 		local pit = false
-		for _, b in YARD.x do
-			if b ~= d.home.X and inDungeon(spot, b, YARD.z) then pit = true end
+		for kind, frame in LAIRS do
+			if kind ~= d.kind and inDungeon(spot, frame) then pit = true end
 		end
 		if y and not pit then return Vector3.new(spot.X, y, spot.Z) end
 	end
@@ -516,33 +545,55 @@ function Monsters.start(remotes, api)
 	events = Instance.new("RemoteEvent"); events.Name = "MythFx"; events.Parent = remotes
 	local ground = Instance.new("Folder"); ground.Name = "MythYard"; ground.Parent = workspace
 	local floors, holes = {}, {}
-	for _, b in YARD.x do
-		table.insert(holes, { b - PIT, b + PIT, YARD.z - PIT, YARD.z + PIT })
-		table.insert(holes, { b - RAMP_HALF - 1, b + RAMP_HALF + 1, YARD.z + PIT, YARD.z + PIT + RAMP_LONG })
+	-- a lair-space rectangle as the world box round it (the lairs turn by quarter turns: still a rectangle)
+	local function hole(frame, x0, x1, z0, z1)
+		local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+		for _, corner in { Vector3.new(x0, 0, z0), Vector3.new(x1, 0, z0), Vector3.new(x0, 0, z1), Vector3.new(x1, 0, z1) } do
+			local w = frame:PointToWorldSpace(corner)
+			lo, hi = lo:Min(w), hi:Max(w)
+		end
+		local function r(v) return math.round(v * 1000) / 1000 end
+		table.insert(holes, { r(lo.X), r(hi.X), r(lo.Z), r(hi.Z) })
 	end
-	-- the yard is the arena's grass rim north of it (Map.build): cut the pits through it, walk on it
+	for _, frame in LAIRS do
+		hole(frame, -PIT, PIT, -PIT, PIT)
+		hole(frame, -RAMP_HALF - 1, RAMP_HALF + 1, PIT, PIT + RAMP_LONG)
+	end
+	-- the lairs are out on the rim round the arena (Map.build): cut the pits through it, walk on it
 	local map = workspace:FindFirstChild("Map")
 	local rim = map and map:FindFirstChild("Rim") -- breakable floor tiles (Map.build)
 	if rim then
 		carve(rim:GetChildren(), holes)
 		table.insert(floors, rim)
 	end
-	local entrance = block(ground, "EntranceSign", Vector3.new(19, 5, 0.8), Vector3.new(-84, 5, -88), Color3.fromRGB(28, 30, 33))
-	entrance.CFrame *= CFrame.Angles(0, math.pi, 0)
-	entrance.CanCollide = false
-	plaque(entrance, "MYTH YARD\nLET ONE OUT  /  FEED IT DUMMIES", Color3.fromRGB(240, 193, 82))
 	local kitRoot = ReplicatedStorage:FindFirstChild("MythKit")
+	-- the lairs' own gates and props (Blender, assets/arena) when the arena kit is in; else the red arches
+	local themed = ReplicatedStorage:FindFirstChild("ArenaKit") ~= nil
 	for _, kind in { "Cyclops", "Minotaur", "Talos" } do
 		local def = Definitions[kind]
 		local spec = CAGES[kind]
 		local kit = kitRoot and kitRoot:FindFirstChild(kind) and kitRoot[kind]:FindFirstChild("Cage")
-		local base = Vector3.new(YARD.x[kind], -DEEP, YARD.z)
-		local arch = dungeon(ground, kind, base, floors)
-		-- the cage faces the entrance (+z); cage space is turned half round onto the yard
-		local pivot = CFrame.new(base) * CFrame.Angles(0, math.pi, 0)
+		local frame = LAIRS[kind]
+		local lair = LAIR_LOOK[kind]
+		local arch = dungeon(ground, kind, frame, floors, themed)
+		local bottom = frame * CFrame.new(0, -DEEP, 0) -- the pit's floor, in lair space
+		local base = bottom.Position
+		-- the cage faces the way out (lair +z); cage space is turned half round onto the lair
+		local pivot = bottom * CFrame.Angles(0, math.pi, 0)
 		local home = base + Vector3.yAxis * 6 * def.scale
 		local cage = Instance.new("Model"); cage.Name = kind .. "Cage"; cage.Parent = ground
-		cage:SetAttribute("Pit", base)
+		cage:SetAttribute("Lair", frame)
+		if themed then
+			Map.structure(lair.gate, frame * CFrame.new(0, 0, PIT + RAMP_LONG + 1) * CFrame.Angles(0, math.pi, 0))
+			for _, prop in lair.props do
+				Map.structure(prop[1], frame * CFrame.new(prop[2], 0, prop[3]) * CFrame.Angles(0, (prop[4] or 0) * math.pi / 2, 0))
+			end
+		end
+		-- its name board beside the gate, facing whoever comes up to it
+		local entrance = block(ground, "EntranceSign", Vector3.new(14, 4.5, 0.8), Vector3.zero, Color3.fromRGB(28, 30, 33))
+		entrance.CFrame = frame * CFrame.new(lair.sign[1], 5, lair.sign[2]) * CFrame.Angles(0, math.pi, 0)
+		entrance.CanCollide = false
+		plaque(entrance, def.name .. "\nLET ONE OUT  /  FEED IT DUMMIES", def.accent)
 		local front = 16
 		if kit then
 			home = pivot * kit:GetAttribute("Stand") + Vector3.yAxis * 6 * def.scale
@@ -580,28 +631,30 @@ function Monsters.start(remotes, api)
 			end
 		else
 			for x = -10, 10, 4 do
-				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), base + Vector3.new(x, 8.5, 10), Color3.fromRGB(43, 47, 51))
-				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), base + Vector3.new(x, 8.5, -10), Color3.fromRGB(43, 47, 51))
+				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(x, 8.5, 10), Color3.fromRGB(43, 47, 51))
+				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(x, 8.5, -10), Color3.fromRGB(43, 47, 51))
 			end
 			for _, sign in { -1, 1 } do
-				for z = -6, 6, 4 do block(cage, "Bar", Vector3.new(0.5, 17, 0.5), base + Vector3.new(sign * 10, 8.5, z), Color3.fromRGB(43, 47, 51)) end
+				for z = -6, 6, 4 do block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(sign * 10, 8.5, z), Color3.fromRGB(43, 47, 51)) end
 			end
 		end
-		local button = block(cage, "Challenge", Vector3.new(3, 2.5, 2.5), base + Vector3.new(0, 1.25, front), def.accent)
+		local button = block(cage, "Challenge", Vector3.new(3, 2.5, 2.5), Vector3.zero, def.accent)
+		button.CFrame = bottom * CFrame.new(0, 1.25, front)
 		local p = Instance.new("ProximityPrompt")
 		p.ActionText, p.ObjectText = "Release", def.name
 		p.KeyboardKeyCode, p.HoldDuration, p.MaxActivationDistance = Enum.KeyCode.Y, 0.4, 12
 		p.RequiresLineOfSight, p.Parent = false, button
 		local board
 		if kit then
-			board = block(cage, "Sign", Vector3.new(9, 2.6, 0.4), base + Vector3.new(0, 4.6, spec.sign), Color3.fromRGB(28, 30, 33))
+			board = block(cage, "Sign", Vector3.new(9, 2.6, 0.4), Vector3.zero, Color3.fromRGB(28, 30, 33))
+			board.CFrame = bottom * CFrame.new(0, 4.6, spec.sign) * CFrame.Angles(0, math.pi, 0)
 			board.CanCollide = false
 		else
-			board = block(cage, "Sign", Vector3.new(17, 3.5, 0.6), base + Vector3.new(0, 19, 10), Color3.fromRGB(28, 30, 33))
+			board = block(cage, "Sign", Vector3.new(17, 3.5, 0.6), Vector3.zero, Color3.fromRGB(28, 30, 33))
+			board.CFrame = bottom * CFrame.new(0, 19, 10) * CFrame.Angles(0, math.pi, 0)
 		end
-		board.CFrame *= CFrame.Angles(0, math.pi, 0)
 		plaque(board, def.name .. "\n" .. def.hint, def.accent)
-		plaque(arch, def.name, LOOK.marble, Enum.Font.FredokaOne)
+		if arch then plaque(arch, def.name, LOOK.marble, Enum.Font.FredokaOne) end
 		Monsters.spawn(kind, home, cage)
 	end
 	if map then table.insert(floors, map) end -- out of the yard it walks the whole arena map

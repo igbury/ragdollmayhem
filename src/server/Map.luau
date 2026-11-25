@@ -562,33 +562,50 @@ local function shatter(hits: { BasePart }, standing: boolean?, inside: (BasePart
 	return out
 end
 
--- Skins: a kind can stand as a Blender model (ReplicatedStorage.ArmyKit; assets/army/build.py vehicles)
--- instead of its bricks: the model plus invisible boxes to bump into and stand on, until a hit reaches
--- it. Then it turns in place into the model's own cubes (CarVoxels, assets/army/voxels.py) and from
--- there breaks, settles and mends like any structure; built again, it is the model again. A place
--- without the kit gets the kind's old bricks (KINDS) instead.
--- Map.SKINS[kind] = { pieces = { kit piece, ... }, paint = Color3? (the stand-in PAINT colour),
---   material = Enum.Material? (its bricks; default SmoothPlastic), boxes = { { CFrame, Vector3 }, ... } }
+-- Skins: a kind can stand as a Blender model instead of its bricks: the model plus invisible boxes to
+-- bump into and stand on, until a hit reaches it. Then it turns in place into the model's own cubes and
+-- from there breaks, settles and mends like any structure; built again, it is the model again. A place
+-- without the kit gets the kind's old bricks (KINDS) instead. Two kits: ReplicatedStorage.ArmyKit
+-- (assets/army: the vehicles, cubes in CarVoxels) and ReplicatedStorage.ArenaKit (assets/arena: Mayhem
+-- Park's props and the boss lairs, cubes and boxes in ArenaVoxels).
+-- Map.SKINS[kind] = { kit = "ArenaKit"? (default ArmyKit), pieces = { kit piece, ... }, paint = Color3?
+--   (the stand-in PAINT colour), material = Enum.Material? (its bricks; default SmoothPlastic),
+--   boxes = { { CFrame, Vector3 }, ... } }
 local SKINS = {}
 Map.SKINS = SKINS
-local Voxels = require(script.Parent.CarVoxels)
+local VOXELS = { ArmyKit = require(script.Parent.CarVoxels), ArenaKit = require(script.Parent.ArenaVoxels) }
 local PAINT = "FE01FE"
 
 local function skinned(kind: string)
 	local skin = SKINS[kind]
-	local kit = skin and game:GetService("ReplicatedStorage"):FindFirstChild("ArmyKit")
+	local name = skin and skin.kit or "ArmyKit"
+	local kit = skin and game:GetService("ReplicatedStorage"):FindFirstChild(name)
+	local voxels = VOXELS[name]
 	if not kit then
-		return nil, nil
+		return nil, nil, nil
 	end
 	for _, piece in skin.pieces do
-		if not kit:FindFirstChild(piece) or not Voxels[piece] then
-			return nil, nil
+		if not kit:FindFirstChild(piece) or not voxels[piece] then
+			return nil, nil, nil
 		end
 	end
-	return skin, kit
+	return skin, kit, voxels
 end
 
-local function buildSkin(kind: string, origin: CFrame, skin, kit: Instance)
+-- An arena kit piece as a kind: its boxes from ArenaVoxels, its bricks without the kit those of
+-- `fallback` (a kind of KINDS).
+local function arenaSkin(kind: string, piece: string, fallback: string, paint: Color3?, material: Enum.Material?)
+	local b = VOXELS.ArenaKit[piece].boxes
+	local list = {}
+	for i = 1, #b, 6 do
+		table.insert(list, { CFrame.new(b[i], b[i + 1], b[i + 2]), Vector3.new(b[i + 3], b[i + 4], b[i + 5]) })
+	end
+	SKINS[kind] = { kit = "ArenaKit", pieces = { piece }, paint = paint, material = material, boxes = list }
+	KINDS[kind] = KINDS[kind] or KINDS[fallback]
+end
+Map.arenaSkin = arenaSkin
+
+local function buildSkin(kind: string, origin: CFrame, skin, kit: Instance, Voxels)
 	local model = Instance.new("Model")
 	model.Name = kind
 	local total = 0
@@ -621,7 +638,7 @@ end
 
 -- A skinned structure a hit reached: the model and its boxes give way to its cubes, joined up like bricks.
 local function unskin(model: Model)
-	local skin, kit = skinned(model.Name)
+	local skin, kit, Voxels = skinned(model.Name)
 	if not (skin and kit and model:GetAttribute("Skinned")) then
 		return
 	end
@@ -668,9 +685,9 @@ local INSTANT = {}
 -- `keep` (a repair): bricks in these slots are still standing, so they are put straight back and
 -- only the rest slide in.
 local function buildStructure(kind: string, origin: CFrame, layered: boolean?, keep: { [string]: boolean }?)
-	local skin, kit = skinned(kind)
+	local skin, kit, voxels = skinned(kind)
 	if skin and kit then -- a skin always comes back whole (a repair too)
-		buildSkin(kind, origin, skin, kit)
+		buildSkin(kind, origin, skin, kit, voxels)
 		return
 	end
 	local model = Instance.new("Model")
@@ -1259,6 +1276,37 @@ function KINDS.Steps(add)
 end
 
 -- What the floor tile at (x, z) is made of.
+-- Mayhem Park 2.0: the arena's props as Blender models (assets/arena/build.py, ReplicatedStorage.ArenaKit),
+-- each breaking into its own cubes; without the kit the old bricks of the kind named last stand in.
+-- One house or oak model makes a street or a park: each kind paints the stand-in colour its own way.
+arenaSkin("Statue", "Arena_Statue", "Statue", nil, Enum.Material.Marble)
+arenaSkin("Lamp", "Arena_Lamp", "Post", nil, Enum.Material.Metal)
+arenaSkin("Bench", "Arena_Bench", "Bench", nil, Enum.Material.WoodPlanks)
+arenaSkin("Fountain", "Arena_Fountain", "Fountain", nil, Enum.Material.Marble)
+arenaSkin("AdColumn", "Arena_AdColumn", "Pillar")
+arenaSkin("ParkGate", "Arena_Gate", "Arch", nil, Enum.Material.Brick)
+for kind, paint in { HouseA = Color3.fromRGB(244, 214, 140), HouseB = Color3.fromRGB(150, 200, 214), HouseC = Color3.fromRGB(236, 160, 150) } do
+	arenaSkin(kind, "Arena_House", "House", paint)
+end
+arenaSkin("Shop", "Arena_Shop", "House", Color3.fromRGB(236, 226, 200))
+arenaSkin("Kiosk", "Arena_Kiosk", "Crates")
+for kind, paint in { OakA = Color3.fromRGB(70, 160, 70), OakB = Color3.fromRGB(116, 180, 64), OakC = Color3.fromRGB(230, 150, 58) } do
+	arenaSkin(kind, "Arena_Oak", "Tree", paint)
+end
+arenaSkin("ParkPine", "Arena_Pine", "Pine")
+arenaSkin("Mixer", "Arena_Mixer", "Crates", nil, Enum.Material.Metal)
+arenaSkin("Crane", "Arena_Crane", "Tower", nil, Enum.Material.Metal)
+-- the bosses' lairs (Monsters puts them up round the pits)
+arenaSkin("ForgeGate", "Arena_ForgeGate", "Arch", nil, Enum.Material.Basalt)
+arenaSkin("Forge", "Arena_Forge", "Tower", nil, Enum.Material.Slate)
+arenaSkin("Anvil", "Arena_Anvil", "Rock", nil, Enum.Material.Metal)
+arenaSkin("BullGate", "Arena_BullGate", "Arch", nil, Enum.Material.Marble)
+arenaSkin("BullStatue", "Arena_BullStatue", "Statue", nil, Enum.Material.Metal)
+arenaSkin("TalosGate", "Arena_TalosGate", "Arch")
+arenaSkin("TalosHead", "Arena_TalosHead", "Rock", nil, Enum.Material.Metal)
+arenaSkin("Brazier", "Arena_Brazier", "Post", nil, Enum.Material.Metal)
+arenaSkin("MinoanColumn", "Arena_Column", "Pillar")
+
 local function floorLook(x: number, z: number, ix: number, iz: number): (Color3, Enum.Material)
 	local r = math.sqrt(x * x + z * z)
 	if r < 20 then -- plaza: rings of stone
@@ -1291,13 +1339,21 @@ local CROP = Color3.fromRGB(118, 164, 62)
 local VOLCANO = Vector3.new(176, 0, -176) -- the lava fields (NE): a moat of lava 32..48 out from it
 Map.CRATER = VOLCANO + Vector3.new(2, 26, -2) -- the top of its lava crater (the volcano disaster erupts it)
 local WATER = { { 144, 240, -64, 64 }, { -64, -32, 208, 240 } } -- the lake (E) and the park's pond (S)
-local DRY = { 176, 208, -16, 16 } -- the lake's island
+-- the lake's island (Talos's lair) and the causeway out to it from the west shore
+local DRY = { { 160, 240, -32, 32 }, { 144, 160, -16, 16 } }
 local function within(x: number, z: number, r): boolean
 	return x > r[1] and x < r[2] and z > r[3] and z < r[4]
 end
 local function wet(x: number, z: number): boolean
-	return (within(x, z, WATER[1]) or within(x, z, WATER[2])) and not within(x, z, DRY)
+	return (within(x, z, WATER[1]) or within(x, z, WATER[2])) and not (within(x, z, DRY[1]) or within(x, z, DRY[2]))
 end
+-- The bosses' lairs, each where its boss belongs (Monsters digs the pits and builds round them): the pit's
+-- centre on the ground, turned so its ramp (lair space +z) leads out toward the arena.
+Map.LAIRS = {
+	Cyclops = CFrame.new(176, 0, -96) * CFrame.Angles(0, -math.pi / 2, 0), -- a forge at the volcano's foot, out west
+	Minotaur = CFrame.new(-61, 0, 140) * CFrame.Angles(0, math.pi, 0), -- behind the hedge labyrinth south-west, out north
+	Talos = CFrame.new(200, 0, 0) * CFrame.Angles(0, -math.pi / 2, 0), -- the bronze island in the lake, out west over the causeway
+}
 -- Colour and material of the rim tile centred at (x, z), and whether it is lava.
 local function rimLook(x: number, z: number): (Color3, Enum.Material, boolean?)
 	local volcano = math.max(math.abs(x - VOLCANO.X), math.abs(z - VOLCANO.Z))
@@ -1307,6 +1363,9 @@ local function rimLook(x: number, z: number): (Color3, Enum.Material, boolean?)
 		return BASALT, Enum.Material.Basalt
 	elseif volcano < 64 then
 		return ASH, Enum.Material.Ground
+	end
+	if within(x, z, DRY[2]) then -- the causeway to the island
+		return PATH, Enum.Material.Cobblestone
 	end
 	if within(x, z, { 128, 256, -80, 80 }) then -- the lake's beach and island
 		return SAND, Enum.Material.Sand
@@ -1671,14 +1730,14 @@ local function districts(at: (string, number, number, number?) -> ())
 	at("Rock", 116, -238)
 	sign("LAVA FIELDS", v + Vector3.yAxis * 52, Color3.fromRGB(255, 130, 60))
 
-	-- E: the lake (water down to the bedrock), an island with trees, a pier off the west shore, boats.
+	-- E: the lake (water down to the bedrock), Talos's island and its causeway, a pier off the west shore, boats.
 	for _, r in WATER do
 		workspace.Terrain:FillBlock(CFrame.new((r[1] + r[2]) / 2, -CUBE / 2, (r[3] + r[4]) / 2), Vector3.new(r[2] - r[1], CUBE, r[4] - r[3]), Enum.Material.Water)
 	end
-	-- the island's own tiles stand in the water: clear it there again
-	workspace.Terrain:FillBlock(CFrame.new((DRY[1] + DRY[2]) / 2, -CUBE / 2, (DRY[3] + DRY[4]) / 2), Vector3.new(DRY[2] - DRY[1], CUBE, DRY[4] - DRY[3]), Enum.Material.Air)
-	at("Tree", 186, -6)
-	at("Pine", 200, 8)
+	-- the island's and the causeway's own tiles stand in the water: clear it there again
+	for _, r in DRY do
+		workspace.Terrain:FillBlock(CFrame.new((r[1] + r[2]) / 2, -CUBE / 2, (r[3] + r[4]) / 2), Vector3.new(r[2] - r[1], CUBE, r[4] - r[3]), Enum.Material.Air)
+	end
 	landmark("Pier", function(add)
 		add(c(158, 0.7, 40), Vector3.new(32, 0.6, 6), PLANK, Enum.Material.WoodPlanks)
 		for _, x in { 146, 156, 166 } do
@@ -1696,7 +1755,7 @@ local function districts(at: (string, number, number, number?) -> ())
 			add(CFrame.new(0, 1.4, 0), Vector3.new(4.6, 0.4, 1.4), PLANK, Enum.Material.WoodPlanks) -- a seat
 		end, CFrame.new(b[1], 0, b[2]) * CFrame.Angles(0, b[3], 0))
 	end
-	sign("LAKE", Vector3.new(192, 30, 0), Color3.fromRGB(110, 190, 255))
+	sign("LAKE", Vector3.new(196, 24, 50), Color3.fromRGB(110, 190, 255))
 
 	-- SE: downtown, a 3 x 3 grid of blocks between streets (the rim tiles), a tower in the middle one.
 	local TOWN = { Color3.fromRGB(184, 176, 164), Color3.fromRGB(132, 140, 156), Color3.fromRGB(170, 120, 96), Color3.fromRGB(96, 104, 120), Color3.fromRGB(200, 184, 150) }
@@ -1723,8 +1782,8 @@ local function districts(at: (string, number, number, number?) -> ())
 	end
 	sign("DOWNTOWN", Vector3.new(184, 132, 184), Color3.fromRGB(255, 220, 140))
 
-	-- S: the city park (its pond is in WATER), trees round it, a gazebo, benches, flower beds; a hedge maze
-	-- beside the trampolines.
+	-- S: the city park (its pond is in WATER), trees round it, a gazebo, benches, flower beds; the
+	-- Minotaur's hedge labyrinth beside the trampolines.
 	for _, t in { { -72, 176 }, { -40, 184 }, { -76, 214 }, { -24, 248 }, { 30, 180 }, { 60, 196 }, { 72, 244 }, { 26, 246 }, { -56, 248 }, { 44, 214 } } do
 		at(t[1] % 3 == 0 and "Pine" or "Tree", t[1], t[2])
 	end
@@ -1749,16 +1808,20 @@ local function districts(at: (string, number, number, number?) -> ())
 	end
 	boxes("FlowerBeds", beds)
 	sign("CITY PARK", Vector3.new(8, 28, 216), Color3.fromRGB(140, 235, 150))
+	-- the hedge labyrinth in front of the Minotaur's lair (Map.LAIRS: its pit x -83..-39, z 118..162, the gate
+	-- at z 111): in at the north, a serpentine with dead ends, out at the gate. Hedges 6 high, butted, never
+	-- overlapping (two faces in one place flicker); between the farm's silos (x < -90) and the trampolines.
 	local hedge = Color3.fromRGB(44, 112, 52)
 	local maze = {}
-	for _, w in { -- { x0, x1, z0, z1 } 6 high; in at the north (arena) side, out at the east
-		{ -80, -78, 96, 160 }, { -80, -58, 96, 98 }, { -46, -44, 96, 148 }, { -80, -44, 158, 160 },
-		{ -72, -44, 110, 112 }, { -80, -54, 124, 126 }, { -70, -44, 138, 140 }, { -62, -60, 140, 158 }, { -56, -54, 112, 124 },
+	for _, w in { -- { x0, x1, z0, z1 }
+		{ -89, -70, 86, 88 }, { -62, -34, 86, 88 }, -- the front, the way in between
+		{ -89, -87, 88, 118 }, { -36, -34, 88, 118 }, -- the sides, up to the pit's corners
+		{ -87, -48, 94, 96 }, { -74, -36, 102, 104 }, -- two rows: round the east end, then round the west
+		{ -56, -54, 88, 94 }, { -80, -78, 96, 102 }, -- dead ends
 	} do
 		table.insert(maze, { c((w[1] + w[2]) / 2, 3, (w[3] + w[4]) / 2), Vector3.new(w[2] - w[1], 6, w[4] - w[3]), hedge, Enum.Material.Grass })
 	end
 	boxes("HedgeMaze", maze)
-	sign("HEDGE MAZE", Vector3.new(-62, 16, 128), Color3.fromRGB(120, 210, 120))
 
 	-- SW: the farm, all in small pieces: a plank barn with a loft, stalls, sliding doors and a cupola; two
 	-- silos of stacked rings; a windmill on a tapering tower; wheat, pumpkins and carrots on the field strips
@@ -2351,49 +2414,51 @@ function Map.build(hurt: (Model, number, Vector3, string?) -> ())
 	local function at(kind: string, x: number, z: number, turns: number?)
 		buildStructure(kind, CFrame.new(x, 0, z) * CFrame.Angles(0, (turns or 0) * math.pi / 2, 0))
 	end
-	-- plaza: a ring of posts, the statue looking down the north path
+	-- Mayhem Park 2.0 (the props are Blender models, see arenaSkin). Plaza: a ring of lamps, the hero
+	-- statue at its north end facing the spawn, advertising columns on the diagonals as cover
 	for i = 1, 8 do
 		local angle = (i + 0.5) / 8 * math.pi * 2
-		at("Post", math.round(math.cos(angle) * 20 / 2) * 2, math.round(math.sin(angle) * 20 / 2) * 2)
+		at("Lamp", math.round(math.cos(angle) * 20 / 2) * 2, math.round(math.sin(angle) * 20 / 2) * 2)
 	end
-	at("Statue", 0, -40)
-	-- town (NE): two rows of houses either side of the street at x = 52, doors onto it
-	for _, z in { -36, -64 } do
-		at("House", 38, z)
-		at("House", 66, z, 2)
+	at("Statue", 0, -40, 2)
+	for _, d in { { 24, 24 }, { -24, 24 }, { 24, -24 }, { -24, -24 } } do
+		at("AdColumn", d[1], d[2])
 	end
-	at("Crates", 52, -24)
-	-- park (NW): the fountain, benches round it, trees
+	-- park gates on the four paths out
+	at("ParkGate", 0, 72)
+	at("ParkGate", 0, -72)
+	at("ParkGate", 72, 0, 1)
+	at("ParkGate", -72, 0, 1)
+	-- town (NE): houses and a corner cafe either side of the street at x = 52, doors onto it
+	at("HouseA", 38, -36, 3)
+	at("Shop", 38, -64, 3)
+	at("HouseB", 66, -36, 1)
+	at("HouseC", 66, -64, 1)
+	-- park (NW): the fountain, benches round it, oaks in two greens and an autumn one, a pine, an ice-cream kiosk
 	at("Fountain", -48, -48)
 	at("Bench", -48, -34, 2)
 	at("Bench", -34, -48, 1)
 	at("Bench", -62, -48, 3)
-	for _, t in { { -32, -32 }, { -68, -28 }, { -28, -70 }, { -70, -70 }, { -52, -72 }, { -72, -52 }, { -36, -66 } } do
-		at("Tree", t[1], t[2])
+	for i, t in { { -38, -24 }, { -68, -28 }, { -28, -70 }, { -70, -70 }, { -52, -72 }, { -74, -58 } } do
+		at(if i == 4 then "ParkPine" else ({ "OakA", "OakB", "OakC" })[i % 3 + 1], t[1], t[2])
 	end
+	at("Kiosk", -28, -38, 1)
 	-- bowling (SW): the lane runs along z = 52, pins at its west end; cover beside it
 	bowling(52, -70)
 	at("Wall", -52, 32)
 	at("Rock", -36, 70)
-	at("Tree", -72, 30)
-	-- building site (SE): two scaffolds, crate stacks, rocks
+	at("OakB", -72, 30)
+	-- building site (SE): two scaffolds, a tower crane swinging its load over them, a cement mixer, crates
 	at("Scaffold", 44, 56)
 	at("Scaffold", 66, 34, 1)
+	at("Crane", 70, 70)
+	at("Mixer", 50, 72)
 	at("Crates", 30, 40)
-	at("Crates", 70, 70)
 	at("Tower", 30, 70)
-	at("Rock", 56, 28)
-	-- cover along the paths, between the zones
-	at("Pillar", 24, 24)
-	at("Pillar", -24, 24)
-	at("Pillar", 24, -24)
-	at("Pillar", -24, -24)
-	at("Arch", 0, 72)
-	at("Arch", 72, 0, 1)
-	at("Arch", -72, 0, 1)
+	at("Rock", 40, 26)
 	-- movement: flats at the town's west end (an alley to the houses, a step up from their roofs), a
 	-- walled alley in the southwest, steps up east of the plaza toward the scaffold's top deck
-	at("Apartment", 14, -64)
+	at("Apartment", 18, -64) -- east of the north gate
 	at("HighWall", -48, 6)
 	at("HighWall", -48, 18)
 	at("Steps", 46, 14) -- x 24..68, clear of the pillar and the east arch; top 16, 9 short of the scaffold's 26 deck
@@ -2413,15 +2478,18 @@ function Map.build(hurt: (Model, number, Vector3, string?) -> ())
 	end)
 	sign("LAUNCH RAMP", Vector3.new(0, 40, -150), Color3.fromRGB(255, 160, 90))
 	sign("BULLSEYE", Vector3.new(0, 14, -222), Color3.fromRGB(255, 120, 100))
-	-- E: parkour canyon, two walls 20 apart (replaces the old test wall)
+	-- E: parkour canyon, two walls 20 apart (replaces the old test wall), split in the middle (z -20..20)
 	landmark("Canyon", function(add)
 		for _, x in { 100, 124 } do
 			for i = 0, 7 do
+				if i == 3 or i == 4 then
+					continue -- a gap in the middle: the way between the arena and the causeway to Talos's island
+				end
 				add(CFrame.new(x, 24, -70 + i * 20), Vector3.new(4, 48, 20), i % 2 == 0 and Color3.fromRGB(70, 80, 106) or Color3.fromRGB(92, 102, 134), Enum.Material.Concrete)
 			end
 		end
 	end)
-	sign("PARKOUR CANYON", Vector3.new(112, 54, 0), Color3.fromRGB(140, 170, 255))
+	sign("PARKOUR CANYON", Vector3.new(112, 54, -48), Color3.fromRGB(140, 170, 255))
 	-- W: drop tower, ledges spiralling up to a platform 80 up. The ledges stand clear of the column, so
 	-- they are "Fixed": shot to bits, but never dropped for touching nothing.
 	local tower = Vector3.new(-150, 0, 0)
