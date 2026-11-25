@@ -14,12 +14,14 @@
 --                                                                Bought 3 / 10 / 20 weapons, Owns every weapon
 --  6  Playtime        when do players stop coming back           1 / 3 / 5 / 10 / 15 / 30 min, 1 / 2 / 5 h in a map
 --  7  Shop            does a shop visit turn into a purchase     Opened shop, Saw a pass prompt, Bought a pass
---  8  Moves           how much of the movement kit gets used     1 / 2 / 3 / 5 / 8 / 11 moves (all not cut)
+--  8  CursorReminder  does the Ctrl reminder get the mouse        Saw cursor reminder, Locked within 10 s
+--                     locked again (a session per reminder)
 --  9  Sandbox         is the Toolbox found and used              Opened Toolbox, Spawned a character, Built a block
 -- 10  Stickers        do the challenges pull players along       1 / 3 / 5 / 8 / 12 stickers (shared/Stickers)
 -- Retired 2026-11-21 (their meaning changed; never reuse the names): MeleeWeapons, RangedWeapons,
 -- ExplosiveWeapons (kill-count unlock order, now weapons are bought), Movement (stuck at the cut Wall
--- flip), Menus (stuck at the WeaponWheel, which the Arsenal replaced).
+-- flip), Menus (stuck at the WeaponWheel, which the Arsenal replaced). Retired 2026-11-25: Moves (crouch
+-- and slide were cut, its last step could no longer be reached).
 --
 -- Custom events (CustomField01 = the value): MoveUsed "Move - <name>", MenuOpened "Menu - <name>"
 -- (once per player each), WeaponBought "Weapon - <id>" (value: its price), PassPrompt
@@ -45,7 +47,8 @@ local ARSENAL = { "First paid kill", "Opened Arsenal", "Can afford a weapon", "B
 local BOUGHT_STEPS = { [1] = 4, [3] = 6, [10] = 7, [20] = 8 } -- weapons bought = the Arsenal step it reaches
 local PLAYTIME_MINUTES = { 1, 3, 5, 10, 15, 30, 60, 120, 300 }
 local SHOP = { "Opened shop", "Saw a pass prompt", "Bought a pass" }
-local MOVE_STEPS = { 1, 2, 3, 5, 8, 11 } -- 11 = every move not cut (client/init mv.cut: slam, flip, vault)
+local CURSOR = { "Saw cursor reminder", "Locked within 10 s" }
+local CURSOR_WINDOW = 11 -- the client's 10 s, plus the remote's latency
 local SANDBOX = { "Opened Toolbox", "Spawned a character", "Built a block" }
 local STICKER_STEPS = { 1, 3, 5, 8, 12 } -- 12 = every sticker in shared/Stickers today
 -- Move remote reports (main server script, MOVE_NAMES) = the ability they mean
@@ -77,6 +80,7 @@ end
 --   steps = { [funnel] = highest step sent }, bought = weapons bought with cash }
 local data = {}
 local shopVisit = {} -- [player] = the Shop funnel's session id for this visit
+local cursorReminder = {} -- [player] = { session, at } of the last Ctrl reminder
 
 local function send(player: Player, funnel: string, step: number, name: string, session: string?)
 	if STUDIO then
@@ -136,7 +140,6 @@ local function countNames(steps: { number }, one: string, many: string): { strin
 end
 local KILL_NAMES = countNames(KILL_STEPS, "kill", "kills")
 local STICKER_NAMES = countNames(STICKER_STEPS, "sticker", "stickers")
-local MOVE_NAMES = countNames(MOVE_STEPS, "move", "moves")
 local PLAYTIME_NAMES = {}
 for i, m in PLAYTIME_MINUTES do
 	PLAYTIME_NAMES[i] = if m < 60 then `{m} min` else `{m // 60} h`
@@ -218,12 +221,26 @@ function Funnels.move(player: Player, name: string)
 	end
 	d.moves[move] = true
 	custom(player, "MoveUsed", "Move - " .. move)
-	local n = 0
-	for _ in d.moves do
-		n += 1
-	end
-	reach(player, "Moves", milestone(MOVE_STEPS, n), MOVE_NAMES)
 	Funnels.changed(player)
+end
+
+-- `player`'s client showed the Ctrl reminder ("reminded") or locked the mouse while it showed ("locked").
+function Funnels.cursor(player: Player, what: any)
+	local last = cursorReminder[player]
+	if what == "reminded" then
+		if last and os.clock() - last.at < 8 then
+			return -- the client waits 10 s between them: anything faster is spam
+		end
+		local session = HttpService:GenerateGUID(false)
+		cursorReminder[player] = { session = session, at = os.clock() }
+		send(player, "CursorReminder", 1, CURSOR[1], session)
+	elseif what == "locked" and last and last.session then
+		local session = last.session
+		last.session = nil -- answered once
+		if os.clock() - last.at <= CURSOR_WINDOW then
+			send(player, "CursorReminder", 2, CURSOR[2], session)
+		end
+	end
 end
 
 -- `player`'s client says it opened menu `name` (anything outside MENUS is ignored).
@@ -326,7 +343,7 @@ function Funnels.save(player: Player)
 end
 
 function Funnels.forget(player: Player)
-	data[player], shopVisit[player] = nil, nil
+	data[player], shopVisit[player], cursorReminder[player] = nil, nil, nil
 end
 
 return Funnels

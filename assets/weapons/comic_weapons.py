@@ -523,6 +523,38 @@ def cast_roll(b):
     b.ball((-0.08, -0.3, -0.48), 0.025, WATER, seg=8, rings=6)
 
 
+GLASS = (0.78, 0.9, 0.96)
+GLASS_RIM = (0.6, 0.78, 0.9)
+SERUM = (0.3, 0.95, 0.35)  # only the default: the game tints the "Liquid" piece per item (client/WeaponMeshes TINT)
+
+
+def syringe(b):
+    """A big comic syringe, needle forward (-Y), held round the barrel like a pistol (the origin): the
+    death and the healing syringe share it, the serum in the barrel is the moving piece "Liquid" so the
+    client can colour it per item."""
+    b.moving("Liquid")
+    b.cyl((0, -0.17, 0), "y", 0.46, 0.105, SERUM, seg=14)  # the serum, the front of the barrel
+    b.moving(None)
+    b.cyl((0, 0.2, 0), "y", 0.28, 0.105, GLASS, seg=14)  # the empty glass behind it
+    b.cyl((0, 0.075, 0), "y", 0.05, 0.11, RUBBER, seg=14)  # the plunger's rubber stopper on the serum
+    for y in (-0.41, 0.33):  # the glass rims at both ends
+        b.cyl((0, y, 0), "y", 0.04, 0.118, GLASS_RIM, seg=14)
+    for k in range(5):  # the scale marks along the top and both sides
+        y = -0.33 + k * 0.13
+        w = 0.05 if k % 2 else 0.09
+        b.box(V((-w / 2, y - 0.012, 0.1)), V((w / 2, y + 0.012, 0.115)), BLACK)
+        for s in (-1, 1):
+            b.box(V((s * 0.1 - 0.008, y - 0.012, -w / 2)), V((s * 0.1 + 0.008, y + 0.012, w / 2)), BLACK)
+    b.cyl((0, -0.46, 0), "y", 0.06, 0.06, GLASS_RIM, r2=0.035, seg=10)  # the nozzle
+    b.cyl((0, -0.52, 0), "y", 0.07, 0.045, ORANGE, seg=8)  # the needle's hub
+    b.tube((0, -0.555, 0), (0, -0.98, 0), 0.014, STEEL, seg=6)  # the needle
+    b.cyl((0, -1.01, 0), "y", 0.06, 0.014, SILVER, r2=0.002, seg=6)  # its point
+    b.box(V((-0.27, 0.35, -0.045)), V((0.27, 0.39, 0.045)), WHITE, 0.012)  # the finger flange
+    b.box(V((-0.025, 0.1, -0.025)), V((0.025, 0.66, 0.025)), WHITE)  # the plunger rod, a cross
+    b.box(V((-0.07, 0.1, -0.012)), V((0.07, 0.66, 0.012)), WHITE)
+    b.cyl((0, 0.68, 0), "y", 0.04, 0.12, WHITE, seg=14)  # the thumb pad
+
+
 # name -> (builder, comic.shape ops) ; the ops as comic.RULES gives the older ones
 WEAPONS = {
     "Crowbar": (crowbar, [("thick", 1.25)]),
@@ -542,6 +574,7 @@ WEAPONS = {
     "Landmine": (landmine, []),
     "Bandage": (bandage, [("thick", 1.1)]),
     "Cast": (cast_roll, [("thick", 1.1)]),
+    "Syringe": (syringe, [("thick", 1.15)]),
 }
 
 

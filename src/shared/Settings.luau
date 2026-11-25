@@ -12,6 +12,7 @@ Settings.DEFAULTS = {
 	MusicVolume = 1,
 	SfxVolume = 1,
 	NeverWanted = true, -- WANTED STARS off (server/Wanted): off unless the player turns them on
+	PlayerHarm = false, -- PLAYER DAMAGE: off = the player cannot be hurt, thrown or knocked over (server knockPlayer, client onCharacter)
 	RagdollDamage = true, -- falls, throws and slams hurt (server landImpact)
 	BurningDummies = true, -- fire sets dummies alight and it spreads between them (server/Specials)
 	BoneScale = 1, -- how easily bones break

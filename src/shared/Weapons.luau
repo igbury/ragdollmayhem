@@ -37,18 +37,18 @@ return {
 	{ id = "Chainsaw", name = "CHAINSAW", tag = "melee", short = "CHNS", kind = "melee", auto = true, hurt = "blade", cd = 0.12, range = 9, dmg = 1.2, push = 6, knockdown = 1 },
 	{ id = "Lasso", name = "LASSO", tag = "melee", short = "LSO", kind = "thrown", cd = 1.5, range = 45 },
 	-- RANGED
-	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1, hip = 0.08 },
+	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1 },
 	{ id = "Bow", name = "HUNTER BOW", tag = "gun", short = "BOW", kind = "bow", hurt = "blade", cd = 0.7, range = 260, dmg = 4, push = 35, speed = 190 },
-	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2, hip = 0.1 },
-	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09, hip = 0.1 },
-	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1, hip = 0.045 },
-	{ id = "Sniper", name = "SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 7, push = 130, chip = 2.5, hip = 0.25 },
-	{ id = "Taser", name = "TASER", tag = "gun", short = "TSR", kind = "gun", hurt = "blunt", cd = 1.2, range = 35, dmg = 1, push = 5, hip = 0.06 },
-	{ id = "Frostgun", name = "FROST GUN", tag = "gun", short = "FRST", kind = "gun", cd = 0.8, range = 120, dmg = 1, hip = 0.06 },
-	{ id = "Boilgun", name = "BOIL GUN", tag = "gun", short = "BOIL", kind = "gun", cd = 0.9, range = 30, dmg = 1, push = 35, hip = 0.1 },
-	{ id = "Flamethrower", name = "FLAMETHROWER", tag = "gun", short = "FLAM", kind = "gun", auto = true, cd = 0.1, range = 18, dmg = 2.5, hip = 0.1 },
-	{ id = "Minigun", name = "MINIGUN", tag = "gun", short = "MINI", kind = "gun", auto = true, spinUp = 0.5, hurt = "bullet", cd = 0.06, range = 350, dmg = 0.9, push = 12, chip = 0.8, spread = 0.035, hip = 0.06 },
-	{ id = "Harpoon", name = "HARPOON", tag = "gun", short = "HARP", kind = "gun", cd = 1.4, range = 120, dmg = 4, speed = 160, hip = 0.05 },
+	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2 },
+	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09 },
+	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1 },
+	{ id = "Sniper", name = "SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 7, push = 130, chip = 2.5 },
+	{ id = "Taser", name = "TASER", tag = "gun", short = "TSR", kind = "gun", hurt = "blunt", cd = 1.2, range = 35, dmg = 1, push = 5 },
+	{ id = "Frostgun", name = "FROST GUN", tag = "gun", short = "FRST", kind = "gun", cd = 0.8, range = 120, dmg = 1 },
+	{ id = "Boilgun", name = "BOIL GUN", tag = "gun", short = "BOIL", kind = "gun", cd = 0.9, range = 30, dmg = 1, push = 35 },
+	{ id = "Flamethrower", name = "FLAMETHROWER", tag = "gun", short = "FLAM", kind = "gun", auto = true, cd = 0.1, range = 18, dmg = 2.5 },
+	{ id = "Minigun", name = "MINIGUN", tag = "gun", short = "MINI", kind = "gun", auto = true, spinUp = 0.5, hurt = "bullet", cd = 0.06, range = 350, dmg = 0.9, push = 12, chip = 0.8 },
+	{ id = "Harpoon", name = "HARPOON", tag = "gun", short = "HARP", kind = "gun", cd = 1.4, range = 120, dmg = 4, speed = 160 },
 	-- EXPLOSIVES
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },
@@ -56,7 +56,7 @@ return {
 	{ id = "TNT", name = "TNT", tag = "thrown", short = "TNT", kind = "thrown", cd = 2.5, speed = 45 },
 	{ id = "C4", name = "C4", tag = "thrown", short = "C4", kind = "thrown", cd = 0.6, speed = 45 },
 	{ id = "Landmine", name = "LANDMINE", tag = "thrown", short = "MINE", kind = "thrown", cd = 1.0 },
-	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140, hip = 0.12 },
+	{ id = "Rocket", name = "ROCKET LAUNCHER", tag = "heavy", short = "RPG", kind = "rocket", cd = 2.2, range = 500, speed = 140 },
 	-- TOOLS
 	-- bandage: aim at the stump of a torn-off limb (within `range`) and click: it is dressed and stops
 	-- bleeding (server Body.playerBandage; client MedicAim shows which stump the click would take)
@@ -64,4 +64,8 @@ return {
 	-- cast: aim at an arm or a leg with a broken bone and click: it goes in a plaster cast (server
 	-- Body.playerCast; client MedicAim lights up the limb)
 	{ id = "Cast", name = "PLASTER CAST", tag = "tool", short = "CAST", kind = "cast", cd = 1.2, range = 10 },
+	-- syringes: aim at a dummy within `range` and click (server Body.playerSyringe); one mesh, the serum's
+	-- colour set per id (client/WeaponMeshes VARIANTS)
+	{ id = "DeathSyringe", name = "DEATH SYRINGE", tag = "tool", short = "DTH", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "HealSyringe", name = "HEALING SYRINGE", tag = "tool", short = "HEAL", kind = "syringe", cd = 1.5, range = 9 },
 }

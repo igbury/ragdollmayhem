@@ -5,6 +5,13 @@
 -- work out where a moving one is from the same numbers (along, waveFront), so nothing streams per frame.
 local Disasters = {}
 
+-- Off on live servers until RELEASE (2026-11-26 17:00 Polish time, CET = 16:00 UTC); Studio always on.
+-- Checked every time, so running servers switch on by themselves, no restart.
+Disasters.RELEASE = 1795708800
+function Disasters.live(): boolean
+	return game:GetService("RunService"):IsStudio() or workspace:GetServerTimeNow() >= Disasters.RELEASE
+end
+
 Disasters.AUTO_MIN, Disasters.AUTO_MAX = 180, 240
 Disasters.COOLDOWN = 30
 Disasters.LEAD = 4 -- s of countdown between the banner and the strike

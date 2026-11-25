@@ -623,6 +623,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			setOpen(false)
 		end)
 	end
+	local disasterHint = hint(worldSide, `Sets it off right where you are. Then wait {Disasters.COOLDOWN} s. One also strikes on its own every few minutes.`, 11)
 	task.spawn(function() -- the server's reply sets the cooldown; then the countdown on the buttons
 		disasterRemote = ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Disaster")
 		;(disasterRemote :: RemoteEvent).OnClientEvent:Connect(function(what, a, b)
@@ -633,6 +634,11 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			end
 		end)
 		while true do
+			local live = Disasters.live() -- hidden until the release (shared/Disasters)
+			disasterHead.Visible, disasterHint.Visible = live, live
+			for _, r in disasterRows do
+				r.Visible = live
+			end
 			local left = math.ceil(readyAt - os.clock())
 			for kind, label in disasterLabels do
 				label.Text = if left > 0 then `{kind.name} {left}s` else kind.name
@@ -640,7 +646,6 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 			task.wait(0.5)
 		end
 	end)
-	hint(worldSide, `Sets it off right where you are. Then wait {Disasters.COOLDOWN} s. One also strikes on its own every few minutes.`, 11)
 
 	local buildLabel = function() end -- the BUILD page, below
 	local showBlocks = function() end
@@ -773,6 +778,7 @@ function Toolbox.start(gui: ScreenGui, actionRemote: RemoteEvent, api, aim)
 	slider("EFFECTS VOLUME", "SfxVolume", 4, 0.1)
 	heading(settingsPage, "GAME", 6)
 	toggle("WANTED STARS", "NeverWanted", 7, true)
+	toggle("PLAYER DAMAGE", "PlayerHarm", 9)
 	toggle("RAGDOLL DAMAGE", "RagdollDamage", 8)
 	toggle("BURNING DUMMIES", "BurningDummies", 10)
 	slider("BONE BREAKING", "BoneScale", 11, 0.5, true)

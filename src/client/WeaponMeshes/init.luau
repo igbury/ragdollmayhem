@@ -14,11 +14,29 @@ local WeaponMeshes = {}
 
 local SPACING = 12
 local GLOW = { Lightsaber = Color3.fromRGB(110, 200, 255) } -- weapons that give off light (create)
+-- Items that share another's mesh with some of its moving pieces recoloured: id = { data module, piece -> colour }.
+-- The syringes' serum is the "Liquid" piece of Syringe (assets/weapons/comic_weapons.py).
+local VARIANTS = {
+	DeathSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(150, 40, 230) } },
+	HealSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(255, 70, 110) } },
+}
+local function dataOf(id: string): ModuleScript?
+	local variant = VARIANTS[id]
+	return script:FindFirstChild(if variant then variant.data else id) :: ModuleScript?
+end
 
 -- noOutline: skip the comic outline shell (the pure black faces), which doubles every weapon's
 -- triangles; each icon atlas must stay under the 20k cap.
-local function fill(mesh: EditableMesh, data, offset: Vector3, noOutline: boolean?)
+-- tint: piece name -> colour for that piece's faces (VARIANTS); its outline stays black.
+local function fill(mesh: EditableMesh, data, offset: Vector3, noOutline: boolean?, tint: { [string]: Color3 }?)
 	local v, n, c = {}, {}, {}
+	local tinted = {} -- vertex id -> the colour id its piece is tinted with
+	for name, color in tint or {} do
+		local id = mesh:AddColor(color, 1)
+		for _, i in (data.p and data.p[name] or { v = {} }).v do
+			tinted[i] = id
+		end
+	end
 	local black = {}
 	for i = 1, #data.c, 3 do
 		black[(i + 2) // 3] = data.c[i] == 0 and data.c[i + 1] == 0 and data.c[i + 2] == 0
@@ -39,7 +57,7 @@ local function fill(mesh: EditableMesh, data, offset: Vector3, noOutline: boolea
 		end
 		local face = mesh:AddTriangle(v[f[i]], v[f[i + 1]], v[f[i + 2]])
 		mesh:SetFaceNormals(face, { n[f[i + 3]], n[f[i + 4]], n[f[i + 5]] })
-		local color = c[f[i + 6]]
+		local color = if black[f[i + 6]] then c[f[i + 6]] else tinted[f[i]] or c[f[i + 6]]
 		mesh:SetFaceColors(face, { color, color, color })
 	end
 	return v, n
@@ -90,7 +108,7 @@ end
 -- own space; a part from create() has its CFrame at that origin, not at the box centre.
 local boxes = {}
 function WeaponMeshes.bounds(id: string): (Vector3?, Vector3?)
-	local data = script:FindFirstChild(id)
+	local data = dataOf(id)
 	if not data then
 		return nil, nil
 	end
@@ -106,7 +124,7 @@ local live = {}
 -- grip), not the bounding-box centre. Destroy it when done. Yields. `module`: a data module kept
 -- elsewhere (client/DisasterMeshes), for a model that is not a weapon (no icon); default: script[id].
 function WeaponMeshes.create(id: string, module: ModuleScript?): MeshPart?
-	local data = module or script:FindFirstChild(id)
+	local data = module or dataOf(id)
 	if not data then
 		return nil
 	end
@@ -119,7 +137,7 @@ function WeaponMeshes.create(id: string, module: ModuleScript?): MeshPart?
 		local ok, part = pcall(function()
 			mesh = AssetService:CreateEditableMesh() -- may be refused in a live game: blocks then
 			local d = require(data)
-			moving = pieces(d, fill(mesh, d, Vector3.zero))
+			moving = pieces(d, fill(mesh, d, Vector3.zero, false, VARIANTS[id] and VARIANTS[id].tint))
 			return meshPart(mesh, id)
 		end)
 		if not ok then
@@ -208,11 +226,17 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 		local ok, result = pcall(function()
 			local parts, at = {}, {}
 			local mesh, used, k = nil, 0, 0
+			local entries = {} -- { icon id, data module, tint }
 			for _, data in script:GetChildren() do
-				if data.Name == "BoxingGloveLeft" or data.Name == "Baton" then
-					continue -- never an icon (the glove's mirror, the cops' baton)
+				if data.Name ~= "BoxingGloveLeft" and data.Name ~= "Baton" and data.Name ~= "Syringe" then -- never an icon (the glove's mirror, the cops' baton, the variants' base)
+					table.insert(entries, { data.Name, data })
 				end
-				local d = require(data)
+			end
+			for id, variant in VARIANTS do
+				table.insert(entries, { id, script[variant.data], variant.tint })
+			end
+			for _, entry in entries do
+				local d = require(entry[2])
 				local tris = visibleTris(d)
 				if mesh and used + tris > ATLAS_CAP then -- full: this one starts the next atlas
 					table.insert(parts, meshPart(mesh, "WeaponAtlas"))
@@ -223,8 +247,8 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 				used += tris
 				local offset = Vector3.new(0, k * SPACING, 0)
 				local lo, hi = bounds(d)
-				fill(mesh, d, offset, true)
-				at[data.Name] = { part = #parts + 1, centre = offset + (lo + hi) / 2, size = hi - lo }
+				fill(mesh, d, offset, true, entry[3])
+				at[entry[1]] = { part = #parts + 1, centre = offset + (lo + hi) / 2, size = hi - lo }
 			end
 			if mesh then
 				table.insert(parts, meshPart(mesh, "WeaponAtlas"))

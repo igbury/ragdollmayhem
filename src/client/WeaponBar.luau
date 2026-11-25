@@ -49,6 +49,8 @@ local ABOUT = {
 	Tomato = "Harmless. Deeply humiliating",
 	Bandage = "Aim at a torn-off limb's stump and click to dress it",
 	Cast = "Aim at a broken arm or leg and click to set it in plaster",
+	DeathSyringe = "Jab a dummy: it staggers, then drops dead",
+	HealSyringe = "Jab a dummy: fully healed, even back from the dead",
 	Rocket = "Flies straight, blows up anything",
 	Crowbar = "Knocks the weapon out of their hands",
 	Sledgehammer = "Floors them, the ground shakes",
@@ -203,10 +205,16 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	end
 	local flash: (string) -> () -- the banner over the hotbar, below
 	-- Buying (server/Progress checks it): picking a weapon you can afford asks first, picking it again
-	-- within CONFIRM_TIME buys it; the Arsenal's BUY button buys at once.
+	-- within CONFIRM_TIME buys it; the Arsenal's BUY button buys at once. Short of cash, the buy opens
+	-- the cash pack that covers it instead (shared/Shop.packFor).
 	local CONFIRM_TIME = 4
 	local asked, askedAt = nil, 0
 	local function buy(i: number)
+		local short = (Progression.PRICE[weapons[i].id] or 0) - (player:GetAttribute(Progression.CASH) or 0)
+		if short > 0 then
+			game:GetService("MarketplaceService"):PromptProductPurchase(player, Shop.packFor(short).product)
+			return
+		end
 		ReplicatedStorage.Remotes.Action:FireServer("buy", weapons[i].id)
 	end
 	local function take(i: number)
@@ -214,14 +222,12 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		local price = need and i <= #weapons and Progression.PRICE[weapons[i].id]
 		if price then
 			local cash = player:GetAttribute(Progression.CASH) or 0
-			if cash < price then
-				flash(`{weapons[i].name}: {cash} / {price}$`)
-			elseif asked == i and os.clock() - askedAt < CONFIRM_TIME then
+			if asked == i and os.clock() - askedAt < CONFIRM_TIME then
 				asked = nil
 				buy(i)
 			else
 				asked, askedAt = i, os.clock()
-				flash(`BUY {weapons[i].name} FOR {price}$? PICK AGAIN`)
+				flash(if cash < price then `{weapons[i].name}: {cash} / {price}$ · PICK AGAIN FOR CASH` else `BUY {weapons[i].name} FOR {price}$? PICK AGAIN`)
 			end
 			return
 		end

@@ -221,6 +221,7 @@ function TutorialHud.start()
 		return nil
 	end
 	local controlsToken = 0
+	local controlsShown = {} -- weapon id -> its controls were already shown
 	local function showControls()
 		local char = player.Character
 		local id = char and char:GetAttribute("EquippedWeapon")
@@ -230,11 +231,14 @@ function TutorialHud.start()
 				w = each
 			end
 		end
-		local text = w and player:GetAttribute("Map") and controlsOf(w, TouchControls.active())
+		local text = w and not controlsShown[w.id] and player:GetAttribute("Map") and controlsOf(w, TouchControls.active())
+		if text then
+			controlsShown[w.id] = true -- each weapon's controls once a session
+		end
 		controlsToken += 1
 		local token = controlsToken
 		setLine(controls, text or nil)
-		task.delay(4, function()
+		task.delay(2, function()
 			if controlsToken == token then
 				setLine(controls, nil)
 			end

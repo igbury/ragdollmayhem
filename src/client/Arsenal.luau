@@ -289,7 +289,8 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		table.clear(layout)
 		local shown = {}
 		for _, card in order do
-			if kind == nil or card.kind == kind then table.insert(shown, card) end
+			-- the medic kit lives under its own bookmark only, not in the all-weapons view
+			if (kind == nil and card.kind ~= "medical") or card.kind == kind then table.insert(shown, card) end
 		end
 		local rows = rowsOf(shown)
 		for first = 1, #rows, ROWS do

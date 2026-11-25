@@ -873,7 +873,7 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		local pellet = weaponId == "Shotgun"
 		local tracer = part(Enum.PartType.Block, TRACER)
 		run(sniper and 0.35 or big and 0.14 or 0.08, { tracer }, function(a)
-			local w = (sniper and 0.55 or big and 0.35 or pellet and 0.1 or 0.18) * (1 - a)
+			local w = (sniper and 0.9 or big and 0.6 or pellet and 0.2 or 0.35) * (1 - a)
 			tracer.Size = Vector3.new(w, w, (to - muzzle).Magnitude)
 			tracer.CFrame = CFrame.lookAt(muzzle:Lerp(to, 0.5), to)
 			tracer.Transparency = 0.2 + 0.8 * a

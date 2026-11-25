@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Shop = require(ReplicatedStorage.Shared.Shop)
 local Funnels = require(script.Parent.Funnels)
+local Progress = require(script.Parent.Progress)
 
 local ShopServer = {}
 
@@ -16,7 +17,28 @@ for _, item in Shop.PASSES do
 	end
 end
 
+local packs = {} -- [product id] = cash it pays
+for _, pack in Shop.CASH_PACKS do
+	packs[pack.product] = pack.cash
+end
+
+-- The cash packs (shared/Shop): paid only once Progress has saved them, else Roblox retries later.
+local function processReceipt(info): Enum.ProductPurchaseDecision
+	local cash = packs[info.ProductId]
+	local player = Players:GetPlayerByUserId(info.PlayerId)
+	if cash and player and Progress.grantCash(player, cash, info.PurchaseId) then
+		return Enum.ProductPurchaseDecision.PurchaseGranted
+	end
+	if not cash then
+		warn("Shop: unknown product", info.ProductId)
+	end
+	return Enum.ProductPurchaseDecision.NotProcessedYet
+end
+
 local function check(player: Player)
+	if game:GetService("RunService"):IsStudio() then
+		return -- a Studio play is a first visit: the owner's passes stay off (a purchase in the session still counts)
+	end
 	for _, item in Shop.PASSES do
 		if item.pass > 0 then
 			task.spawn(function()
@@ -36,6 +58,7 @@ function ShopServer.start()
 	for _, player in Players:GetPlayers() do
 		check(player)
 	end
+	MarketplaceService.ProcessReceipt = processReceipt
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passId, bought)
 		local key = byPass[passId]
 		if bought and key then

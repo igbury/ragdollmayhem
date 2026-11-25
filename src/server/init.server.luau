@@ -38,13 +38,14 @@ local MAX_STRUCK_GAP = 80
 local MAX_SLAM_LOST = 140 -- studs/s a held body can lose in one hit, as its holder reports it (the grab drags at 90)
 local MAX_DUMMIES = 30
 local MAX_HP = 100
+local BULLET_RADIUS = 0.35 -- a player's bullet is a ball this wide, not a line (useWeapon)
 
 -- the vitals note shows the name (client), so enough of them that an arena of ~30 rarely repeats one
 local NAMES = { "Noemi", "Jia", "Kofi", "Ruth", "Dot", "Fatima", "Wanda", "Thandi", "Milo", "Otto", "Bruno", "Ines",
 	"Nadia", "Sven", "Priya", "Rocco", "Mabel", "Ike", "Yuki", "Bart", "Olga", "Femi", "Lars", "Ada", "Hugo", "Rosa",
 	"Dmitri", "Lulu", "Pablo", "Agnes", "Kwame", "Bea", "Igor", "Sunny", "Moses", "Greta", "Raj", "Fern", "Duke", "Vera" }
 local ZONES = {
-	Head = { damage = 14, daze = 20, lines = { "My head!", "Ow, I see stars...", "Not the face!", "Who turned off the lights?",
+	Head = { damage = 24, daze = 20, lines = { "My head!", "Ow, I see stars...", "Not the face!", "Who turned off the lights?",
 		"I think I bit my tongue.", "Ow! I needed those brain cells!", "Everything's spinning..." } },
 	Chest = { damage = 10, daze = 14, lines = { "My chest!", "Oof!", "Can't... breathe...", "Right in the lunch!",
 		"I felt that in my spine.", "That's where my heart is!" } },
@@ -1151,7 +1152,7 @@ local function release(d, velocity: Vector3, owner: Player?)
 	end
 	if d.heldBy then
 		if d.dragging then
-			Tutorial.event(d.heldBy, "drop") -- let go without the kick: back to "grab it with F"
+			Tutorial.event(d.heldBy, "drop") -- let go without the kick: the kick hint is skipped for good
 		end
 		held[d.heldBy] = nil
 		d.heldBy = nil
@@ -1972,7 +1973,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 			else
 				addInjury(d, "head wound")
 				bleed(d, hole(), 2)
-				d.hp -= 60 * harmScale
+				d.hp -= MAX_HP * math.max(harmScale, 1) -- a bullet to the head kills, whatever the DAMAGE slider says
 				bone = "ok"
 			end
 		elseif info.limb then
@@ -2009,7 +2010,7 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 		elseif info.zone == "Head" then
 			addInjury(d, "head wound")
 			bleed(d, hole(), 2)
-			d.hp -= 50 * harmScale
+			d.hp -= MAX_HP * 0.9 * math.max(harmScale, 1) -- a blade to the head: almost always the end
 			bone = "ok"
 		elseif heavy then
 			addInjury(d, info.label)
@@ -2670,6 +2671,10 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, 
 		Progress.Funnels.menu(player, arg)
 		return
 	end
+	if action == "cursor" then -- the Ctrl reminder shown / answered, for the CursorReminder funnel
+		Progress.Funnels.cursor(player, arg)
+		return
+	end
 	if action == "buy" then -- a weapon for cash (server/Progress checks the id and the price)
 		if not rateLimited(player, 0.25, "buy") then
 			Progress.buy(player, arg)
@@ -3193,6 +3198,9 @@ do -- the tank (server/Tank): its shells blow up like a big rocket, it bowls dum
 		end)
 	end
 	function PoliceCar.fling(player: Player, velocity: Vector3)
+		if not Progress.Settings.get(player, "PlayerHarm") then
+			return -- PLAYER DAMAGE off: a wreck sets you down, it does not throw you
+		end
 		hazardRemote:FireClient(player, velocity)
 	end
 end
@@ -3593,6 +3601,9 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 	elseif weapon.kind == "cast" then
 		Body.playerCast(origin, dir, weapon.range)
 		return
+	elseif weapon.kind == "syringe" then
+		Body.playerSyringe(player, id, origin, dir, weapon.range)
+		return
 	end
 	if require(script.Specials).fire(weapon, player, char, origin, dir, aimed == true) then
 		return
@@ -3651,6 +3662,8 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			result, aim = SwingArc.cast(origin, aim, swing, weapon.range, params, function(inst)
 				return dummyOf(inst) ~= nil or Monsters.isMonster(inst)
 			end)
+		elseif weapon.hurt == "bullet" then -- a fat round: it clips a body the thin line would just miss
+			result = workspace:Spherecast(origin, BULLET_RADIUS, aim * weapon.range, params)
 		else
 			result = workspace:Raycast(origin, aim * weapon.range, params)
 		end
@@ -3885,6 +3898,9 @@ local playerWake = setmetatable({}, { __mode = "k" }) -- [character] = token of 
 -- A player with the boxing guard up (right mouse, "Guarding") blocks it: no damage, no knock-down,
 -- only a shove and the thud on the gloves; `unblockable` (machines, not attacks) goes through.
 function knockPlayer(player: Player, humanoid: Humanoid, velocity: Vector3, damage: number, down: number, unblockable: boolean?)
+	if not Progress.Settings.get(player, "PlayerHarm") then
+		return -- PLAYER DAMAGE off (the default): untouchable, no hurt, no throw, no knock-down
+	end
 	local char = player.Character
 	if not unblockable and char and char:GetAttribute("Guarding") and not char:GetAttribute("Ragdolled") then
 		local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -4483,6 +4499,44 @@ Body.MEDIC_LINES = { "Medic! Coming through!", "Hang on, I'm a medic!", "Keep pr
 -- item's reach and BANDAGE_AIM studs of the line (client MedicAim lights up the same one), is
 -- dressed and stops bleeding; the rest of the body's wounds bleed on.
 Body.BANDAGE_AIM = 1.4
+-- The player's syringes (shared/Weapons): the dummy the crosshair is on, within the item's reach, gets the jab.
+-- DeathSyringe: poison; it staggers, then drops dead POISON_TIME later (the kill is the player's, as a
+-- blow's would be). HealSyringe: a full heal (revive: wounds, bones, blood), the dead brought back too,
+-- and it cures a poisoning still working.
+Body.POISON_TIME = 1.6
+Body.POISONED = { "Ugh... what was in that?!", "I don't feel so good...", "My... my heart..." }
+function Body.playerSyringe(player: Player, id: string, origin: Vector3, dir: Vector3, range: number)
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Include
+	params.FilterDescendantsInstances = { dummyFolder }
+	local hit = workspace:Raycast(origin, dir * range, params)
+	local d = hit and dummies[hit.Instance:FindFirstAncestorOfClass("Model")]
+	if not d or d.model:GetAttribute("TutorialFor") then
+		return
+	end
+	if id == "HealSyringe" then
+		Sfx.play(Sfx.SYRINGE_HEAL, hit.Position)
+		d.poisonedAt = nil
+		local wasDead = d.state == "Dead"
+		revive(d)
+		if not wasDead then
+			say(d, pick(Body.THANKS))
+		end
+	elseif d.state ~= "Dead" and not d.poisonedAt then
+		local at = os.clock()
+		d.poisonedAt = at
+		d.blame, d.blameAt, d.blameWeapon = player, at, id
+		say(d, pick(Body.POISONED), "shout")
+		Sfx.play(Sfx.POISON_CHOKE, hit.Position)
+		knockDown(d, Body.POISON_TIME + 1, "Knocked down")
+		task.delay(Body.POISON_TIME, function()
+			if d.poisonedAt == at and d.model.Parent and d.state ~= "Dead" then
+				d.poisonedAt, d.hp = nil, 0
+				kill(d, "Poison")
+			end
+		end)
+	end
+end
 function Body.playerBandage(player: Player, origin: Vector3, dir: Vector3, range: number)
 	local best, bestOff, owner = nil, Body.BANDAGE_AIM, nil
 	for model, d in dummies do

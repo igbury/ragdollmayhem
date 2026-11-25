@@ -232,6 +232,7 @@ local mv = {
 	simple = function(): boolean return false end, -- the easy touch controls are on (TouchControls replaces it)
 	sprintHeld = false, -- Shift
 	freeCursor = false, -- O: a free cursor in third person
+	ctrlCursor = false, -- Ctrl toggles: a free cursor in any view
 	sprintToggle = false, -- gamepad / touch: press to run, stops when you stop moving
 	crouchHeld = false,
 	low = false, -- hips lowered: sliding or crouching
@@ -542,6 +543,140 @@ local controlsHint = label({
 	Position = UDim2.new(0, 16, 1, -16),
 	Size = UDim2.fromOffset(240, 16),
 })
+-- keycap chips over the hint, comic book style like the Arsenal: a yellow key, then what it does, on an
+-- inked paper panel with a hard shadow, slightly tilted; 3 to a row. By touch: only the ones with a
+-- button of their own (client/TouchControls, WeaponBar's backpack), named after it, top left (the
+-- thumbstick has the bottom left)
+local keyChips = Instance.new("Frame")
+keyChips.BackgroundTransparency = 1
+keyChips.AnchorPoint = Vector2.new(0, 1)
+keyChips.Position = UDim2.new(0, 16, 1, -40)
+keyChips.Size = UDim2.fromOffset(420, 90)
+keyChips.Parent = gui
+do
+	local INK, PAPER, KEY = Color3.fromRGB(15, 15, 20), Color3.fromRGB(250, 246, 232), Color3.fromRGB(255, 212, 45)
+	local function ink(parent: Instance, thickness: number)
+		local s = Instance.new("UIStroke")
+		s.Thickness, s.Color, s.LineJoinMode = thickness, INK, Enum.LineJoinMode.Round
+		s.ApplyStrokeMode, s.Parent = Enum.ApplyStrokeMode.Border, parent -- the box, not the key's letter
+		return s
+	end
+	local paints = {} -- KeyCode -> paint(pressed): held down (or its state on), the chip's colours flip to ink
+	local looks = {} -- function(touch): the chip as keyboard or touch shows it
+	local rows = Instance.new("UIListLayout")
+	rows.VerticalAlignment, rows.Padding, rows.SortOrder = Enum.VerticalAlignment.Bottom, UDim.new(0, 10), Enum.SortOrder.LayoutOrder
+	rows.Parent = keyChips
+	local row
+	-- key, what it does, its KeyCode, the touch button doing it (nil: none). The touch ones first: one row.
+	for i, chip in {
+		{ "V", "TOGGLE PERSPECTIVE", Enum.KeyCode.V, "VIEW" }, { "E", "GRAB", Enum.KeyCode.E, "GRAB" }, { "Q", "ARSENAL", Enum.KeyCode.Q, "🎒" },
+		{ "F", "DRAG", Enum.KeyCode.F }, { "TAB", "TOOLBOX", Enum.KeyCode.Tab }, { "CTRL", "FREE MOUSE", Enum.KeyCode.LeftControl },
+	} do
+		if i % 3 == 1 then
+			row = Instance.new("Frame")
+			row.LayoutOrder, row.BackgroundTransparency, row.Size = i, 1, UDim2.new(1, 0, 0, 34)
+			local list = Instance.new("UIListLayout")
+			list.FillDirection, list.Padding, list.SortOrder = Enum.FillDirection.Horizontal, UDim.new(0, 10), Enum.SortOrder.LayoutOrder
+			list.Parent = row
+			row.Parent = keyChips
+		end
+		local holder = Instance.new("Frame") -- the panel and its shadow, tilted together
+		holder.LayoutOrder, holder.AutomaticSize, holder.Size = i, Enum.AutomaticSize.X, UDim2.fromOffset(0, 34)
+		holder.BackgroundTransparency, holder.Rotation = 1, if i % 2 == 0 then 2 else -2
+		local shadow = Instance.new("Frame")
+		shadow.Size, shadow.Position, shadow.BackgroundColor3 = UDim2.fromScale(1, 1), UDim2.fromOffset(4, 4), INK
+		Instance.new("UICorner").Parent = shadow
+		shadow.Parent = holder
+		local pill = Instance.new("Frame")
+		pill.AutomaticSize, pill.Size, pill.BackgroundColor3, pill.ZIndex = Enum.AutomaticSize.X, UDim2.fromOffset(0, 34), PAPER, 2
+		Instance.new("UICorner").Parent = pill
+		local pillLine = ink(pill, 3)
+		local list = Instance.new("UIListLayout")
+		list.FillDirection, list.VerticalAlignment, list.Padding = Enum.FillDirection.Horizontal, Enum.VerticalAlignment.Center, UDim.new(0, 10)
+		list.SortOrder, list.Parent = Enum.SortOrder.LayoutOrder, pill
+		local pad = Instance.new("UIPadding")
+		pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 4), UDim.new(0, 10)
+		pad.Parent = pill
+		local key = Instance.new("TextLabel")
+		key.LayoutOrder, key.AutomaticSize, key.Size, key.ZIndex = 1, Enum.AutomaticSize.X, UDim2.fromOffset(26, 26), 3
+		key.BackgroundColor3, key.TextColor3 = KEY, INK
+		key.Font, key.TextSize, key.Text = Enum.Font.LuckiestGuy, 16, chip[1]
+		local keyPad = Instance.new("UIPadding")
+		keyPad.PaddingLeft, keyPad.PaddingRight, keyPad.PaddingTop = UDim.new(0, 6), UDim.new(0, 6), UDim.new(0, 3) -- LuckiestGuy sits high
+		keyPad.Parent = key
+		local keyRound = Instance.new("UICorner")
+		keyRound.CornerRadius, keyRound.Parent = UDim.new(0, 6), key
+		local keyLine = ink(key, 2.5)
+		key.Parent = pill
+		local what = Instance.new("TextLabel")
+		what.LayoutOrder, what.AutomaticSize, what.Size, what.ZIndex = 2, Enum.AutomaticSize.X, UDim2.fromOffset(0, 26), 3
+		what.BackgroundTransparency, what.TextColor3 = 1, INK
+		what.Font, what.TextSize, what.Text = Enum.Font.LuckiestGuy, 17, chip[2]
+		local whatPad = Instance.new("UIPadding")
+		whatPad.PaddingTop, whatPad.Parent = UDim.new(0, 3), what
+		what.Parent = pill
+		pill.Parent = holder
+		holder.Parent = row
+		table.insert(looks, function(touch: boolean)
+			holder.Visible = not touch or chip[4] ~= nil
+			key.Text = if touch then chip[4] or chip[1] else chip[1]
+		end)
+		local shown = false
+		paints[chip[3]] = function(down: boolean)
+			if down == shown then
+				return
+			end
+			shown = down
+			pill.BackgroundColor3, pillLine.Color, what.TextColor3 = if down then INK else PAPER, if down then PAPER else INK, if down then PAPER else INK
+			key.BackgroundColor3, key.TextColor3, keyLine.Color = if down then INK else KEY, if down then KEY else INK, if down then KEY else INK
+		end
+	end
+	-- a chip also stays pressed while what its key turned on is on
+	local held = {}
+	local function on(code: Enum.KeyCode): boolean
+		local picker = gui:GetAttribute("WeaponPickerOpen") == true
+		local toolboxOpen = (gui:FindFirstChild("Toolbox") :: GuiObject?) ~= nil and (gui:FindFirstChild("Toolbox") :: GuiObject).Visible
+		if code == Enum.KeyCode.F then
+			return holding ~= nil and holding.drag == true
+		elseif code == Enum.KeyCode.E then
+			return holding ~= nil and not holding.drag
+		elseif code == Enum.KeyCode.V then
+			return player.CameraMode ~= Enum.CameraMode.LockFirstPerson
+		elseif code == Enum.KeyCode.Tab then
+			return toolboxOpen
+		elseif code == Enum.KeyCode.Q then
+			return picker and not toolboxOpen -- the Arsenal (and the build wheel, also on Q)
+		end
+		return mv.ctrlCursor == true -- Ctrl
+	end
+	UserInputService.InputBegan:Connect(function(input)
+		held[input.KeyCode] = not UserInputService:GetFocusedTextBox() or nil
+	end)
+	UserInputService.InputEnded:Connect(function(input) held[input.KeyCode] = nil end)
+	RunService.Heartbeat:Connect(function()
+		if keyChips.Visible then
+			for code, paint in paints do
+				paint(held[code] == true or on(code))
+			end
+		end
+	end)
+	local TouchControls = require(script:WaitForChild("TouchControls"))
+	local function showChips()
+		local touch = TouchControls.active()
+		keyChips.Visible = controlsHint.Visible
+		keyChips.AnchorPoint = Vector2.new(0, if touch then 0 else 1)
+		keyChips.Position = if touch then UDim2.fromOffset(16, 70) else UDim2.new(0, 16, 1, -40)
+		rows.VerticalAlignment = if touch then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom
+		for _, look in looks do
+			look(touch)
+		end
+	end
+	controlsHint:GetPropertyChangedSignal("Visible"):Connect(showChips)
+	UserInputService.LastInputTypeChanged:Connect(function()
+		task.defer(showChips) -- after TouchControls has judged the new input
+	end)
+	task.defer(showChips)
+end
 UserInputService.InputBegan:Connect(function(input, processed)
 	if not processed and input.KeyCode == Enum.KeyCode.H then
 		controls.Visible = not controls.Visible
@@ -782,6 +917,8 @@ local GLOVE_REST = Vector3.new(0.35, 0.25, -0.3) -- boxing: arm offset (x outwar
 local GLOVE_TIP, GLOVE_WRIST = 25, 0.6
 -- bare fists sit this much further apart and nearer the camera (a weapon's hand keeps its tuned spot)
 local FIST_SPREAD, FIST_PULL = 0.3, 0.3
+local BULLET_CURVE = math.rad(2) -- how far off a ragdoll a bullet still bends into it (useWeapon)
+local BULLET_CURVE_PARTS = { "Head", "UpperTorso", "LowerTorso" }
 local ARM_STRETCH = 1.15
 local armModel: Model? = nil
 local arms = {} -- [side] = { pieces = { { part, offset from the hand } }, wrist = Vector3, grip = CFrame }
@@ -1002,6 +1139,9 @@ local HOLD = {
 	Tomato = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 	Bandage = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
 	Cast = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
+	-- needle up out of the fist (the mesh points -Z: turned 90 degrees about X)
+	DeathSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
+	HealSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
 }
 do -- the minigun's barrels spin while the trigger is held, run up and wind down (WeaponMeshes.pose)
 	local speed, angle = 0, 0
@@ -1189,14 +1329,25 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 			end
 		end
 	end
-	-- hip fire: the shot leaves somewhere in a wide cone round the crosshair; aiming (first or third
-	-- person) closes it, and once fully up the shot goes exactly to the crosshair
+	-- no spread: the shot goes down the crosshair. A bullet just off a ragdoll curves into it: the
+	-- body part nearest the crosshair within BULLET_CURVE, if nothing stands in between
 	local aimed = if detonate then 1 else math.max(ads, thirdAim)
-	local spread = aimed > 0.95 and 0 or (weapon.hip or 0) * (1 - aimed)
-	if spread > 0 then
-		dir = (CFrame.lookAlong(Vector3.zero, dir)
-			* CFrame.Angles(0, 0, math.random() * math.pi * 2)
-			* CFrame.Angles(spread * math.sqrt(math.random()), 0, 0)).LookVector -- sqrt: even over the cone, not bunched in the middle
+	if weapon.hurt == "bullet" and not (result and dummyOf(result.Instance)) then
+		local best, crosshairDir = math.cos(BULLET_CURVE), dir
+		local los = RaycastParams.new()
+		los.FilterDescendantsInstances = { char }
+		for _, m in dummyFolder:GetChildren() do
+			for _, name in BULLET_CURVE_PARTS do
+				local p = m:FindFirstChild(name) :: BasePart?
+				local to = p and p.Position - head.Position
+				if to and to.Magnitude <= (weapon.range or 300) and to.Unit:Dot(crosshairDir) > best then
+					local seen = workspace:Raycast(head.Position, to, los)
+					if not seen or seen.Instance:IsDescendantOf(m) then
+						best, dir = to.Unit:Dot(crosshairDir), to.Unit
+					end
+				end
+			end
+		end
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)
@@ -1236,7 +1387,7 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 	if weapon.hurt == "bullet" and not detonate then -- where the round lands, guessed here too: no round trip for our own hits
 		local params = RaycastParams.new()
 		params.FilterDescendantsInstances = { char }
-		local shot = workspace:Raycast(head.Position, dir * (weapon.range or 300), params)
+		local shot = workspace:Spherecast(head.Position, 0.35, dir * (weapon.range or 300), params) -- the server's BULLET_RADIUS
 		if shot then
 			local monsters = workspace:FindFirstChild("Monsters")
 			local onBody = shot.Instance:IsDescendantOf(dummyFolder) or (monsters ~= nil and shot.Instance:IsDescendantOf(monsters))
@@ -1994,6 +2145,18 @@ end)
 local function onCharacter(char: Model)
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	local root = char:WaitForChild("HumanoidRootPart")
+	-- PLAYER DAMAGE off (the default, shared/Settings): cars, tanks and monsters bumping into us
+	-- cannot tip us over either. The own ragdoll key goes through Physics, so it still works.
+	local function harmable()
+		local on = player:GetAttribute("PlayerHarm") == true
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.FallingDown, on)
+		humanoid:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, on)
+	end
+	harmable()
+	local harmConn = player:GetAttributeChangedSignal("PlayerHarm"):Connect(harmable)
+	char.Destroying:Connect(function()
+		harmConn:Disconnect()
+	end)
 	weaponVisual.sway:reset()
 	weaponVisual.recoil:reset()
 	weaponVisual.lastAction, weaponVisual.lastCooldown = "", nil
@@ -2939,13 +3102,42 @@ bind("Sprint", "Run", function(began, input)
 		mv.sprintToggle = not mv.sprintToggle
 	end
 end, Enum.KeyCode.LeftShift, Enum.KeyCode.ButtonL3)
-bind("Crouch", "Slide", function(began, input)
-	if input.KeyCode == Enum.KeyCode.LeftControl then
-		mv.crouchHeld = began
-	elseif began then
-		mv.crouchHeld = not mv.crouchHeld
-	end
-end, Enum.KeyCode.LeftControl, Enum.KeyCode.ButtonB)
+-- Ctrl toggles a free cursor in first and third person, weapon out or not (MoveCamera, the mouse
+-- icon). Left free 10 s where it would otherwise be locked, a reminder says Ctrl locks it again; the
+-- CursorReminder funnel (server/Funnels) learns whether it was locked within 10 s of that.
+-- (a function, not a do block: this script is at Luau's 200-local limit)
+task.spawn(function()
+	local freedAt = 0
+	local reminder = label({ Text = "PRESS CTRL TO LOCK THE MOUSE AGAIN", TextSize = 24, TextColor3 = Color3.fromRGB(255, 220, 60),
+		AnchorPoint = Vector2.new(0.5, 0), Position = UDim2.new(0.5, 0, 0, 80), Size = UDim2.fromOffset(600, 30), Visible = false })
+	UserInputService.InputBegan:Connect(function(input, processed)
+		if processed or input.KeyCode ~= Enum.KeyCode.LeftControl then
+			return
+		end
+		mv.ctrlCursor = not mv.ctrlCursor
+		local at = os.clock()
+		freedAt = at
+		if not mv.ctrlCursor then
+			if reminder.Visible then
+				reminder.Visible = false
+				actionRemote:FireServer("cursor", "locked")
+			end
+			return
+		end
+		task.delay(10, function()
+			if freedAt ~= at or not (isFirstPerson() or thirdWeapon) then
+				return -- locked again, or nothing would lock it now
+			end
+			reminder.Visible = true
+			actionRemote:FireServer("cursor", "reminded")
+			task.delay(10, function()
+				if freedAt == at then
+					reminder.Visible = false -- left free: the funnel stops at the first step
+				end
+			end)
+		end)
+	end)
+end)
 bind("Dash", "Dash", function(began)
 	if began then
 		mv.dash()
@@ -2977,7 +3169,7 @@ RunService:BindToRenderStep("MoveCameraRestore", Enum.RenderPriority.Camera.Valu
 	end
 end)
 RunService:BindToRenderStep("MoveCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
-	local free = mv.freeCursor and not isFirstPerson() -- O in third person
+	local free = mv.ctrlCursor or mv.freeCursor and not isFirstPerson() -- Ctrl anywhere, O in third person
 	if gui:GetAttribute("WeaponPickerOpen") or free then
 		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
 	elseif thirdWeapon then -- after the camera scripts, which would set their own mouse behaviour
@@ -3204,7 +3396,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local dragView = (holding ~= nil and holding.drag == true) or os.clock() < puntUntil
 	local show = isFirstPerson() and not Menu.active and (not holding or dragView) and humanoid and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 	local moving = humanoid and humanoid.MoveDirection.Magnitude > 0 and 1 or 0
-	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or (not isFirstPerson() and (not thirdWeapon or mv.freeCursor == true))
+	UserInputService.MouseIconEnabled = gui:GetAttribute("WeaponPickerOpen") == true or mv.ctrlCursor or (not isFirstPerson() and (not thirdWeapon or mv.freeCursor == true))
 	crosshair.Visible = isFirstPerson() or thirdWeapon
 
 	-- sprint

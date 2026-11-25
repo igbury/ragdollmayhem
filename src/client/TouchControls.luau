@@ -54,10 +54,9 @@ local LAYOUT = {
 	Grab = { 22, -160, 48, "GRAB" },
 	View = { -35, -160, 48, "VIEW" },
 	Run = { -160, -100, 50, "RUN", true },
-	Slide = { -165, -160, 48, "SLIDE", true },
 	-- Slam = { -220, -100, 50, "SLAM", true }, -- cut for now (init.client mv.cut.slam)
 }
-local CAS_ACTIONS = { "Sprint", "Crouch", "Dash", "Slam" } -- init.client's bind()
+local CAS_ACTIONS = { "Sprint", "Dash", "Slam" } -- init.client's bind()
 
 local function fake(kind: Enum.UserInputType, key: Enum.KeyCode?): any
 	return { UserInputType = kind, KeyCode = key or Enum.KeyCode.Unknown }
@@ -209,9 +208,6 @@ function TouchControls.start(mv, dummyFolder: Folder, aiming: () -> boolean)
 	button("Run").Activated:Connect(function()
 		mv.sprintToggle = not mv.sprintToggle
 	end)
-	button("Slide").Activated:Connect(function()
-		mv.crouchHeld = not mv.crouchHeld
-	end)
 
 	local mode = Instance.new("TextButton") -- EASY / PRO
 	mode.AnchorPoint = Vector2.new(0.5, 0.5)
@@ -235,9 +231,6 @@ function TouchControls.start(mv, dummyFolder: Folder, aiming: () -> boolean)
 		mode.TextColor3 = on and Color3.fromRGB(120, 230, 140) or Color3.fromRGB(255, 160, 70)
 		for _, b in buttons do
 			b.button.Visible = not (b.pro and on)
-		end
-		if on then
-			mv.crouchHeld = false -- no slide in EASY
 		end
 	end
 	Music.changed:Connect(function(name)

@@ -95,6 +95,11 @@ Sfx.SHOTGUN_SHOT = "117229013127458"
 Sfx.SLEDGEHAMMER_SLAM = "130568679725455"
 Sfx.SNIPER_SHOT = "104464912204799"
 Sfx.SPEAR_STAB = "110593610162886"
+-- the syringes (free Creator Store clips, loaded and measured in Studio 2026-11-25): the jab 0.57 s,
+-- the heal 1.43 s, the poisoned dummy choking 2.51 s (ProSoundEffects)
+Sfx.SYRINGE_JAB = "113781899146705"
+Sfx.SYRINGE_HEAL = "132624504008840"
+Sfx.POISON_CHOKE = "9113800060"
 Sfx.TASER_ZAP = "96777932211472"
 Sfx.TIRE_SCREECH = "133635771779455"
 Sfx.TNT_FUSE = "120888223565853"
@@ -175,6 +180,8 @@ Sfx.WEAPON = {
 	TNT = { fire = { Sfx.THROW, 0.8 } },
 	C4 = { fire = { Sfx.THROW, 1.1 } },
 	Landmine = { fire = { Sfx.THROW, 0.7 } },
+	DeathSyringe = { fire = { Sfx.SYRINGE_JAB } },
+	HealSyringe = { fire = { Sfx.SYRINGE_JAB } },
 }
 -- s between fire sounds of the fast auto weapons (server/Specials.hushed, client useWeapon)
 Sfx.HUSH = { Flamethrower = 0.45, Chainsaw = 0.5 }

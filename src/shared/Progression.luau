@@ -23,6 +23,9 @@ Progression.KIND_CASH = { Hooligan = 1.1 }
 -- ~11$ a kill) gave: a buy every 1-4 min for the first 20 min, everything in ~5 h, ~2.5 h with 2X CASH.
 -- The cheap melee weapons were then pushed up between the early guns and explosives, so the first buys
 -- alternate ranged / melee / explosive (2026-11-22; the sim not rerun: the first buys take about twice as long).
+-- Then mid game (Lasso..Shotgun) went up ~1.5x and late game (Boilgun..Rocket) 2x, so the cash packs
+-- (shared/Shop) have something to shorten. End game (Boilgun..Rocket) then went to 5000-6000: more than
+-- the 2500 pack, so short of cash they open the 6000 one. Everything ~12 h now, ~6 h with 2X CASH (2026-11-25, not rerun).
 -- ponytail: kill rates are guesses; retune once Analytics shows real kills per minute
 Progression.PRICE = {
 	Handgun = 5,
@@ -40,21 +43,21 @@ Progression.PRICE = {
 	BoxingGloves = 380,
 	Lightsaber = 420,
 	TNT = 450,
-	Lasso = 470,
-	Taser = 500,
-	Pan = 520,
-	Chainsaw = 550,
-	C4 = 600,
-	Landmine = 650,
-	Katana = 700,
-	Rifle = 750,
-	Harpoon = 800,
-	Shotgun = 950,
-	Boilgun = 1050,
-	Sniper = 1250,
-	Flamethrower = 1250,
-	Minigun = 1700,
-	Rocket = 2000,
+	Lasso = 700,
+	Taser = 750,
+	Pan = 800,
+	Chainsaw = 850,
+	C4 = 900,
+	Landmine = 1000,
+	Katana = 1050,
+	Rifle = 1150,
+	Harpoon = 1200,
+	Shotgun = 1450,
+	Boilgun = 5000,
+	Sniper = 5500,
+	Flamethrower = 5500,
+	Minigun = 6000,
+	Rocket = 6000,
 }
 Progression.GROUP = { Frostgun = true } -- only for joining the group
 

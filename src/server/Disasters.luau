@@ -610,7 +610,7 @@ local function begin(id: string, map: string, around: Player, by: Player?)
 end
 
 local function onTrigger(player: Player, kind: any)
-	if typeof(kind) ~= "string" or not RUN[kind] or Shop.locked(player, "SandboxPlus") then
+	if typeof(kind) ~= "string" or not RUN[kind] or not Shared.live() or Shop.locked(player, "SandboxPlus") then
 		return
 	end
 	local map, root = player:GetAttribute("Map"), rootOf(player)
@@ -635,13 +635,14 @@ local function autoLoop()
 	local rng = Random.new()
 	while true do
 		task.wait(rng:NextNumber(Shared.AUTO_MIN, Shared.AUTO_MAX))
-		if workspace:GetAttribute("TimeFrozen") then
+		if workspace:GetAttribute("TimeFrozen") or not Shared.live() then
 			continue
 		end
 		local maps, seen = {}, {}
 		for _, player in Players:GetPlayers() do
 			local map = player:GetAttribute("Map")
-			if map and not busy[map] and not seen[map] and #playersIn(map) > 0 then
+			-- never on a first-timer's tutorial (server/Tutorial)
+			if map and not player:GetAttribute("Tutorial") and not busy[map] and not seen[map] and #playersIn(map) > 0 then
 				seen[map] = true
 				table.insert(maps, map)
 			end

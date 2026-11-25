@@ -64,6 +64,7 @@ local DAILY = { 20, 30, 40, 50, 60, 80, 100 }
 local lastAt = {} -- [player] = where their root was at the last walk sample
 local loaded = {} -- [player] = true once their saved counters are in (no save before that: it would wipe them)
 local dirty = {} -- [player] = true: changed since the last save
+local receipts = {} -- [player] = the last cash-pack receipt ids paid (Progress.grantCash), saved
 
 local function snapshot(player: Player)
 	local data = {}
@@ -95,6 +96,7 @@ local function snapshot(player: Player)
 			table.insert(data.stickers, sticker.id)
 		end
 	end
+	data.receipts = receipts[player]
 	return data
 end
 
@@ -147,6 +149,7 @@ local function watchDaily(player: Player)
 end
 
 local function load(player: Player)
+	receipts[player] = {}
 	for _, attribute in Progression.ATTRIBUTE do
 		player:SetAttribute(attribute, player:GetAttribute(attribute) or 0)
 	end
@@ -192,6 +195,13 @@ local function load(player: Player)
 				end
 			end
 			dirty[player] = true
+		end
+		if type(data.receipts) == "table" then
+			for _, id in data.receipts do
+				if type(id) == "string" then
+					table.insert(receipts[player], id)
+				end
+			end
 		end
 		if type(data.daily) == "table" and tonumber(data.daily.day) and tonumber(data.daily.streak) then
 			player:SetAttribute("DailyDay", tonumber(data.daily.day))
@@ -309,6 +319,35 @@ function Progress.buy(player: Player, id: any): boolean
 	return true
 end
 
+-- A cash pack bought (server/Shop's ProcessReceipt): true once `cash` for `receipt` is saved, so Roblox
+-- may stop retrying; false = not yet (saves not in, or the save failed: Roblox asks again later).
+-- The receipt ids paid go in the save too, so a retry after a save that did go through pays nothing.
+local RECEIPTS_KEPT = 50
+function Progress.grantCash(player: Player, cash: number, receipt: string): boolean
+	if not loaded[player] then
+		if game:GetService("RunService"):IsStudio() and player:GetAttribute("ProgressLoaded") then
+			-- Studio's load fails without API access, and its test purchases are free: this session's only
+			player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + cash)
+			return true
+		end
+		return false -- not loaded (or the load failed): nothing here may be saved, Roblox retries later
+	end
+	local paid = receipts[player]
+	if not table.find(paid, receipt) then
+		table.insert(paid, receipt)
+		if #paid > RECEIPTS_KEPT then
+			table.remove(paid, 1)
+		end
+		player:SetAttribute(Progression.CASH, (player:GetAttribute(Progression.CASH) or 0) + cash)
+		dirty[player] = true
+	end
+	if not store then
+		return true -- Studio without API access: this session's only
+	end
+	save(player)
+	return not dirty[player]
+end
+
 -- InGroup (shared/Progression's group rule): GetGroupsAsync, not IsInGroup, which caches a "no"
 -- for the whole session and would miss someone joining mid-game.
 local function checkGroup(player: Player)
@@ -332,7 +371,7 @@ function Progress.start()
 	Players.PlayerAdded:Connect(load)
 	Players.PlayerRemoving:Connect(function(player)
 		save(player)
-		loaded[player], dirty[player], lastAt[player] = nil, nil, nil
+		loaded[player], dirty[player], lastAt[player], receipts[player] = nil, nil, nil, nil
 		Funnels.forget(player)
 	end)
 	game:BindToClose(function()

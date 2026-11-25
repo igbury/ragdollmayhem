@@ -17,6 +17,25 @@ Shop.PASSES = {
 	{ key = "SandboxPlus", name = "SANDBOX +", price = 100, pass = 2094442786 }, -- every Toolbox kind, teams, spawning more than 1, higher caps
 }
 
+-- Cash packs: developer products, bought again and again (server/Shop's ProcessReceipt pays them,
+-- client/WeaponBar's buy opens one when short of cash). Kept well under ALL WEAPONS' worth (~86$ per R$) so the pass stays
+-- the best deal; `price` is only shown until Roblox answers with the real one.
+Shop.CASH_PACKS = {
+	{ product = 3736190763, cash = 1000, price = 49 },
+	{ product = 3736190836, cash = 2500, price = 99 },
+	{ product = 3736190967, cash = 6000, price = 199 },
+}
+
+-- The cash pack for someone `short` cash: the smallest that covers it, else the biggest.
+function Shop.packFor(short: number)
+	for _, pack in Shop.CASH_PACKS do
+		if pack.cash >= short then
+			return pack
+		end
+	end
+	return Shop.CASH_PACKS[#Shop.CASH_PACKS]
+end
+
 -- [weapon tag (shared/Weapons)] = the pass that unlocks every weapon with it
 Shop.UNLOCKS = { gun = "AllGuns", melee = "AllMelee", thrown = "AllExplosives", heavy = "AllExplosives" }
 -- 2X CASH (key DoubleKO): each kill pays this many times the cash
