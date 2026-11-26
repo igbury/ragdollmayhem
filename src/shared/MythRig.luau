@@ -63,9 +63,9 @@ local function rings(wrist, ankle)
 	}
 end
 Rig.RINGS = {
-	Cyclops = rings(5.555, Vector3.new(2.505, 1.05, 0)),
+	Cyclops = rings(5.93, Vector3.new(2.505, 1.05, 0)),
 	Minotaur = rings(5.505, Vector3.new(2.455, 1.35, 0)),
-	Talos = rings(5.505, Vector3.new(2.455, 0.95, 0.12)),
+	Talos = rings(5.755, Vector3.new(2.555, 0.95, 0.12)),
 }
 function Rig.build(kind)
 	local def = assert(Mythology[kind])
@@ -107,7 +107,7 @@ function Rig.build(kind)
 	detail(m, hips, "Belt", Vector3.new(3.8, 0.65, 2.6), CFrame.new(0, 0.7, 0), Color3.fromRGB(48, 37, 27))
 	detail(m, hips, "Buckle", Vector3.new(0.7, 0.65, 0.2), CFrame.new(0, 0.7, -1.35), def.accent, Enum.PartType.Block)
 	if kind == "Cyclops" then
-		local eye = detail(m, head, "Eye", Vector3.new(2.2, 2.2, 1), CFrame.new(0, 0.25, -1.75), Color3.fromRGB(238, 229, 201), nil, true)
+		local eye = detail(m, head, "Eye", Vector3.new(2.6, 2.6, 1.2), CFrame.new(0, 0.45, -1.7), Color3.fromRGB(238, 229, 201), nil, true)
 		eye:SetAttribute("WeakPoint", true)
 		detail(m, eye, "Iris", Vector3.new(0.85, 0.95, 0.3), CFrame.new(0, 0, -0.4), def.accent)
 		detail(m, eye, "Pupil", Vector3.new(0.36, 0.65, 0.18), CFrame.new(0, 0, -0.58), Color3.fromRGB(20, 22, 20))

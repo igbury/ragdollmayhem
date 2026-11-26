@@ -3,7 +3,7 @@
 --  * uploaded through Open Cloud as a Model: MODEL_ID is its asset id;
 --  * imported with Studio's File > Import 3D: set MODEL_ID 0, the imported "MythKit" (or "Scene") in Workspace is used.
 -- Then save the place: ReplicatedStorage.MythKit is not part of the Rojo project.
-local MODEL_ID = 0
+local MODEL_ID = 91685969000473
 
 local KIT = { -- [mesh] = { kind, section, group, colour, neon, box centre in its group's space (studs) }
 	["Chain_Anchor__3C3E46"] = { "Chain", "Parts", "Anchor", "3C3E46", false, Vector3.new(-0.0, 0.0, 0.0) },
