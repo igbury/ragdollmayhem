@@ -220,6 +220,7 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model, bossView: Vie
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
 	camera.Parent = viewport
+	self.homeFov = camera.FieldOfView
 	viewport.CurrentCamera = camera
 	self.camera, self.viewport, self.framing = camera, viewport, framing or { x = 0.5, y = 0.5, zoom = 1 }
 	self.lookAt = Vector3.new(0, seatTop + 1.2, -0.3)
@@ -382,23 +383,63 @@ local function ease(x: number): number
 	return x * x * (3 - 2 * x)
 end
 
-local function blend(pose: Pose, target: Pose, w: number)
-	if w <= 0 then
-		return
+-- Leaving for the game (PLAY): client/PlayIntro, keyed in Blender (assets/menu/play_intro.py) and baked
+-- per frame. He hears the click, pumps a fist, leans on his knees and stands (the chair fades), takes
+-- the headphones off, cracks his neck, turns his back on the camera and struts off; the camera eases in
+-- from its menu spot to the clip's own and from PUSH_AT pushes into the back of his head, where
+-- LEAVE_TIME cuts to the game. ZOOM_AT is when he starts walking: the menu floods blue and his view
+-- grows to the whole screen. In seconds since PLAY.
+local B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+local DIGIT = {}
+for i = 1, #B64 do
+	DIGIT[string.byte(B64, i)] = i - 1
+end
+local INTRO_JOINTS = { "waist", "neck", "lShoulder", "lElbow", "lWrist", "rShoulder", "rElbow", "rWrist", "lHip", "lKnee", "lAnkle", "rHip", "rKnee", "rAnkle" }
+
+-- one clip frame: { root = CFrame, [joint] = CFrame, camera = CFrame, fov = number }
+local function decodeIntro(clip): { { [string]: any } }
+	local data, per = clip.data, clip.per
+	local frames = table.create(clip.frames)
+	for f = 0, clip.frames - 1 do
+		local at = f * per + 1
+		local function num(chars: number, lo: number, hi: number): number
+			local n = 0
+			for i = at, at + chars - 1 do
+				n = n * 64 + DIGIT[string.byte(data, i)]
+			end
+			at += chars
+			return lo + (hi - lo) * n / (64 ^ chars - 1)
+		end
+		local function quat(): CFrame
+			local x, y, z = num(2, -1, 1), num(2, -1, 1), num(2, -1, 1)
+			return CFrame.new(0, 0, 0, x, y, z, math.sqrt(math.max(0, 1 - x * x - y * y - z * z)))
+		end
+		local function pos(): Vector3
+			return Vector3.new(num(3, -32, 32), num(3, -32, 32), num(3, -32, 32))
+		end
+		local frame = {}
+		local rootAt = pos()
+		frame.root = CFrame.new(rootAt) * quat()
+		for _, key in INTRO_JOINTS do
+			frame[key] = quat()
+		end
+		local camAt = pos()
+		frame.camera = CFrame.new(camAt) * quat()
+		frame.fov = num(2, 0, 120)
+		frames[f + 1] = frame
 	end
-	for key, goal in target do
-		pose[key] = (pose[key] or (if key == "root" then CFrame.identity else Vector3.zero)):Lerp(goal, w)
-	end
+	return frames
 end
 
--- Leaving for the game (PLAY), in seconds since PLAY:
---   hop off the chair (it fades), camera still -> turn round (headphones fade), walk off ->
---   ZOOM_AT the camera chases him and the menu floods blue ->
---   LEAVE_TIME the camera is at the back of his head and the menu cuts to the game.
-MenuPuppet.ZOOM_AT = 1.5
-MenuPuppet.LEAVE_TIME = 3.2
-local WALK_FROM, WALK_SPEED = 1.15, 7
-local CHASE_FAR = 6 -- studs behind the head the chase settles at before pushing in
+local intro = require(script.Parent:WaitForChild("PlayIntro"))
+local introFrames: { { [string]: any } }? = nil
+local INTRO_LENGTH = (intro.frames - 1) / intro.fps
+MenuPuppet.ZOOM_AT = 92 / intro.fps -- the first step of the walk
+MenuPuppet.LEAVE_TIME = INTRO_LENGTH
+local PUSH_AT = 116 / intro.fps -- from here the camera closes in on the game's chase camera
+local CHASE_FAR = 6 -- studs behind the head the push starts from
+local EASE_IN = 0.6 -- the menu camera hands over to the clip's over this long
+local STAND_UP = { 0.93, 1.5 } -- seconds: the clip's root goes from the chair to the floor
 
 -- Camera `d` studs behind the back of a head (centre `head`, back face `back` studs behind it),
 -- looking the way `fwd` (flat) points. Shared with the game camera, so the cut lines up.
@@ -414,41 +455,43 @@ end
 
 function MenuPuppet:leave()
 	self.leaveAt = self.t
+	introFrames = introFrames or decodeIntro(intro)
+end
+
+-- the clip at `e` seconds, between its baked frames
+local function introAt(e: number): { [string]: any }
+	local frames = introFrames :: { { [string]: any } }
+	local x = math.clamp(e * intro.fps, 0, #frames - 1)
+	local i = math.floor(x)
+	local a, b = frames[i + 1], frames[math.min(i + 2, #frames)]
+	local w = x - i
+	local out = {}
+	for key, value in a do
+		out[key] = if typeof(value) == "number" then value + (b[key] - value) * w else value:Lerp(b[key], w)
+	end
+	return out
 end
 
 function MenuPuppet:leavePose(e: number, t: number): Pose
-	local pose = self:sitPose(t)
-	-- hop: an arc off the seat onto the floor, then the knees take the landing
-	local u = math.clamp(e / 0.5, 0, 1)
-	local stand = { waist = v(0), neck = v(0) }
-	pair(stand, "Hip", v(0))
-	pair(stand, "Knee", v(0))
-	pair(stand, "Ankle", v(0))
-	pair(stand, "Shoulder", v(0, 0, -4))
-	pair(stand, "Elbow", v(10))
-	pair(stand, "Wrist", v(0))
-	blend(pose, stand, ease(u))
-	local landing = math.sin(math.pi * math.clamp((e - 0.45) / 0.3, 0, 1))
-	local crouch = {}
-	pair(crouch, "Hip", v(28))
-	pair(crouch, "Knee", v(-45))
-	pair(crouch, "Ankle", v(17))
-	pair(crouch, "Shoulder", v(20, 0, -12))
-	blend(pose, crouch, landing)
-
-	-- turn round, then walk
-	local yaw = math.pi * ease((e - 0.75) / 0.5)
-	local walk = math.max(0, e - WALK_FROM)
-	local p = walk * 9
-	local stride = {}
-	stride.rHip, stride.lHip = v(math.sin(p) * 32), v(-math.sin(p) * 32)
-	stride.rKnee, stride.lKnee = v(-math.max(0, math.sin(p + 1.3)) * 50), v(-math.max(0, math.sin(p + 1.3 + math.pi)) * 50)
-	stride.rShoulder, stride.lShoulder = v(-math.sin(p) * 28, 0, -4), v(math.sin(p) * 28, 0, 4)
-	stride.waist = v(-4)
-	local w = ease(walk / 0.3)
-	blend(pose, stride, w)
-	local hop = self.sitRoot:Lerp(self.standRoot, ease(u)) * CFrame.new(0, math.sin(math.pi * u) * 0.7 - landing * 0.3, 0)
-	pose.root = CFrame.new(0, 0, walk * WALK_SPEED) * hop * CFrame.Angles(0, yaw, 0) * CFrame.new(0, math.abs(math.sin(p)) * 0.12 * w, 0)
+	local clip = introAt(e)
+	-- this avatar's own chair and floor heights, not the Blender proxy's: shift the root by the
+	-- difference, the sitting one while he sits and the standing one once he's up
+	local up = ease((e - STAND_UP[1]) / (STAND_UP[2] - STAND_UP[1]))
+	local fit = (self.sitRoot.Position - intro.sitRoot):Lerp(self.standRoot.Position - intro.standRoot, up)
+	local pose: Pose = { root = clip.root + fit }
+	for _, key in INTRO_JOINTS do
+		pose[key] = clip[key]
+	end
+	-- from the live sitting pose (its swing and nod) into the clip's first frames
+	local w = ease(e / 0.15)
+	if w < 1 then
+		local sit = self:sitPose(t)
+		for key, value in sit do
+			local from = if typeof(value) == "Vector3" then CFrame.Angles(math.rad(value.X), math.rad(value.Y), math.rad(value.Z)) else value
+			pose[key] = from:Lerp(pose[key], w)
+		end
+	end
+	pose.camera, pose.fov = clip.camera, clip.fov
 	return pose
 end
 
@@ -476,6 +519,9 @@ function MenuPuppet:step(t: number)
 	self.t = t
 	if self.bossJoints then
 		local roar = (t + 3) % BOSS_ROAR_EVERY -- the first roar 6 s in
+		if self.leaveAt and t - self.leaveAt < BOSS_ROAR then
+			roar = t - self.leaveAt -- and one as he gets up to go and fight it
+		end
 		if roar < BOSS_ROAR then
 			MythRig.pose(self.bossJoints, "Taunt", self.bossKind, t, 0, roar / BOSS_ROAR, 0, true, { since = t - roar })
 		else
@@ -495,10 +541,11 @@ function MenuPuppet:step(t: number)
 	parts.LowerTorso.CFrame = root * self.rootJoint
 	for _, j in self.joints do
 		local a = pose[j.key] or Vector3.zero
-		parts[j.part].CFrame = parts[j.parent].CFrame * j.a * CFrame.Angles(math.rad(a.X), math.rad(a.Y), math.rad(a.Z)) * j.b
+		local turn = if typeof(a) == "CFrame" then a else CFrame.Angles(math.rad(a.X), math.rad(a.Y), math.rad(a.Z))
+		parts[j.part].CFrame = parts[j.parent].CFrame * j.a * turn * j.b
 	end
-	-- headphones fade away while he turns round
-	local gone = e and ease((e - 0.8) / 0.35) or 0
+	-- the headphones fade as his hands lift them off, the chair as he gets up (the clip's moments)
+	local gone = e and ease((e - intro.phonesOff[1]) / (intro.phonesOff[2] - intro.phonesOff[1])) or 0
 	for _, x in self.extras do
 		x.part.CFrame = parts[x.on].CFrame * x.offset
 		if x.phone then
@@ -506,19 +553,24 @@ function MenuPuppet:step(t: number)
 		end
 	end
 	if e then
-		local fade = ease((e - 0.2) / 0.3) -- the chair goes as he lands
+		local fade = ease((e - intro.chairFade[1]) / (intro.chairFade[2] - intro.chairFade[1]))
 		for _, c in self.chairParts do
 			c.part.Transparency = c.alpha + (1 - c.alpha) * fade
 		end
-		-- the camera holds still, then chases him and pushes straight in to the back of his head,
-		-- widening to the game's field of view on the way
-		local head = parts.Head
-		local fwd = (self.base * pose.root).LookVector * Vector3.new(1, 0, 1)
-		local push = math.clamp((e - MenuPuppet.ZOOM_AT - 0.3) / (MenuPuppet.LEAVE_TIME - MenuPuppet.ZOOM_AT - 0.3), 0, 1) ^ 2
-		local d = CHASE_FAR * (1 - push)
-		local chase = MenuPuppet.chaseCamera(head.Position, fwd.Unit, MenuPuppet.headBack(head), d)
-		self.camera.CFrame = self.camHome:Lerp(chase, ease((e - MenuPuppet.ZOOM_AT) / 1))
-		self.camera.FieldOfView = 30 + 40 * push
+		-- the camera: from its menu spot onto the clip's, and from PUSH_AT onto the game's chase camera
+		-- behind this avatar's own head, closing in to the spot the game camera takes over at
+		local k = ease(e / EASE_IN)
+		local cam = self.camHome:Lerp(self.base * pose.camera, k)
+		local fov = self.homeFov + (pose.fov - self.homeFov) * k
+		if e > PUSH_AT then
+			local head = parts.Head
+			local fwd = (self.base * pose.root).LookVector * Vector3.new(1, 0, 1)
+			local u = math.clamp((e - PUSH_AT) / (INTRO_LENGTH - PUSH_AT), 0, 1)
+			local chase = MenuPuppet.chaseCamera(head.Position, fwd.Unit, MenuPuppet.headBack(head), CHASE_FAR * (1 - u * u))
+			cam = cam:Lerp(chase, ease(u * 2) * 0.5 + u * 0.5)
+		end
+		self.camera.CFrame = cam
+		self.camera.FieldOfView = fov
 	end
 end
 
