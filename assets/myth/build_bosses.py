@@ -205,107 +205,120 @@ def collar(p, y, z, r, back):
 
 
 # ---------------------------------------------------------------- Cyclops ------------------
+# v2 silhouette: top-heavy brute. A huge head slung low in front of a hunched back, one eye the size of
+# the face, gorilla shoulders and Popeye forearms ending in fists that nearly drag, short bowed legs.
+CY_WRIST_DIA = 3.3  # the wrist shackles: MythRig.RINGS follows (x = 3.9 + dia / 2 + 0.38)
+
+
+def crack(p, pts, h, r=0.09):
+    """A glowing crack: a thin tube over the surface, jagged by its points."""
+    tube(p, pts, [r] * len(pts), h, segs=6)
+
+
 def cyclops():
     K = "Cyclops"
     out = []
-    # head: a big bald dome, one huge amber eye under a heavy angry lid, tusks out of an underbite
     p = body_piece(K, "Head")
-    p.ball((3.3, 3.2, 3.0), (0, 11.45, -0.65), CY, segs=24, rings=14)
-    p.ball((3.6, 1.8, 2.7), (0, 10.3, -1.0), CY, segs=22, rings=12)  # jaw, wider than the skull
-    p.ball((2.5, 2.5, 1.0), (0, 11.65, -1.85), CY_D, segs=22, rings=12)  # socket
-    p.ball((2.1, 2.1, 1.1), (0, 11.65, -2.0), EYE_W, segs=22, rings=12)
-    p.ball((1.2, 1.2, 0.4), (0, 11.55, -2.48), CY_IRIS, segs=18, rings=10)
-    p.ball((0.3, 0.95, 0.2), (0, 11.55, -2.66), INK, segs=12, rings=8)
-    p.ball((0.32, 0.32, 0.12), (0.32, 11.92, -2.6), WHITE, segs=10, rings=6)
-    p.ball((2.7, 1.1, 1.5), (0, 12.5, -1.75), CY, rot=(-22, 0, 0), segs=20, rings=10)  # the lid, half shut
-    for s in (-1, 1):  # the brow: two slabs in a V, inner ends low
-        p.box((1.7, 0.55, 0.9), (s * 0.78, 12.82, -1.95), CY_D, rot=(-15, 0, s * 22), bevel=0.22)
-    horn(p, curve((0, 12.7, -1.2), (0, 14.0, -1.85), (0, 13.6, -1.0), 5), 0.42, BONE)
-    p.ball((1.0, 0.6, 0.7), (0, 10.95, -2.25), CY_D, segs=14, rings=8)  # nose
-    for s in (-1, 1):
-        p.ball((0.18, 0.14, 0.1), (s * 0.22, 10.82, -2.58), INK, segs=8, rings=4)
-    p.ball((2.8, 1.0, 0.75), (0, 10.22, -2.12), MOUTH, segs=20, rings=10)
-    for x in (-0.95, -0.55, -0.18, 0.18, 0.55, 0.95):  # top fangs, pointing down
-        z = -2.42 + abs(x) * 0.22
-        horn(p, [(x, 10.62, z), (x, 10.38, z - 0.05), (x, 10.12, z)], 0.17, BONE, segs=8)
-    for x in (-0.4, 0.0, 0.4):
-        z = -2.4 + abs(x) * 0.2
-        horn(p, [(x, 9.82, z), (x, 10.02, z - 0.04), (x, 10.2, z)], 0.13, BONE, segs=8)
-    for s in (-1, 1):  # tusks up from the lower jaw
-        horn(p, curve((s * 0.9, 9.95, -2.2), (s * 1.05, 11.0, -2.5), (s * 1.05, 10.4, -2.55), 4), 0.24, BONE)
-        tube(p, [(s * 1.5, 11.35, -0.45), (s * 2.0, 11.7, -0.35), (s * 2.35, 12.15, -0.25)],
-             [(0.5, 0.2), (0.38, 0.15), (0.05, 0.04)], CY_D, segs=10)  # pointed ears
-    grow(p, (0, 10.4, -0.6), 1.2, (0, -0.25, -0.25))  # a bigger head, slung low and forward
+    p.ball((3.5, 2.9, 3.1), (0, 11.55, -0.45), CY, segs=24, rings=14)  # a low, flat skull
+    p.ball((4.1, 2.1, 3.0), (0, 10.15, -1.0), CY, segs=22, rings=12)  # the jaw, far wider than the skull
+    p.ball((3.1, 3.1, 1.1), (0, 11.7, -1.8), CY_D, segs=24, rings=12)  # socket
+    p.ball((2.8, 2.8, 1.3), (0, 11.7, -2.0), EYE_W, segs=26, rings=14)  # the eye: the whole face
+    p.ball((1.75, 1.75, 0.5), (0, 11.62, -2.6), CY_IRIS, segs=22, rings=12)
+    p.ring(0.86, 0.07, (0, 11.62, -2.8), "C0601A", segs=24, sides=5)  # the iris rim
+    p.ball((0.34, 1.35, 0.22), (0, 11.62, -2.86), INK, segs=12, rings=8)  # slit pupil
+    p.ball((0.4, 0.4, 0.14), (0.5, 12.1, -2.78), WHITE, segs=10, rings=6)
+    p.ball((3.4, 1.5, 1.9), (0, 12.62, -1.85), CY, rot=(-24, 0, 0), segs=22, rings=10)  # upper lid, half shut
+    p.ball((3.0, 0.75, 1.5), (0, 10.62, -1.95), CY_D, rot=(16, 0, 0), segs=20, rings=8)  # lower lid: a squint
+    for s in (-1, 1):  # the brow: a hard V, inner ends right down on the lid
+        p.box((2.0, 0.62, 1.0), (s * 0.92, 12.62, -2.42), CY_D, rot=(-18, 0, s * 24), bevel=0.24)
+        p.ball((1.3, 0.9, 1.1), (s * 1.55, 12.35, -1.85), CY, segs=14, rings=8)  # the lid's heavy outer corners
+    horn(p, curve((0, 12.95, -0.9), (0, 14.9, -1.6), (0, 14.4, -0.5), 6), 0.55, BONE, tip=HORN_D, split=0.8)
+    for s in (-1, 1):  # no nose: two slits between the eye and the snarl
+        p.ball((0.22, 0.32, 0.12), (s * 0.3, 10.55, -2.62), INK, rot=(0, 0, s * 25), segs=8, rings=4)
+    p.ball((3.3, 1.15, 0.85), (0, 9.95, -2.25), MOUTH, segs=22, rings=10)  # a wide snarl
+    for i, x in enumerate((-1.25, -0.85, -0.45, -0.05, 0.38, 0.8, 1.2)):  # top fangs, uneven
+        z = -2.55 + abs(x) * 0.22
+        drop = 0.42 if i % 2 else 0.3
+        horn(p, [(x, 10.45, z), (x, 10.45 - drop * 0.5, z - 0.05), (x, 10.45 - drop, z)], 0.19, BONE, segs=8)
+    for s in (-1, 1):  # the underbite: tusks up out of the lower jaw, past the nose
+        horn(p, curve((s * 1.15, 9.55, -2.35), (s * 1.6, 11.35, -2.75), (s * 1.45, 10.4, -2.95), 5), 0.34, BONE, tip=HORN_D, split=0.85)
+        tube(p, [(s * 1.6, 11.35, -0.3), (s * 2.2, 11.75, -0.2), (s * 2.6, 12.25, -0.1)],
+             [(0.55, 0.22), (0.4, 0.16), (0.05, 0.04)], CY_D, segs=10)  # pointed ears
+        p.ball((0.5, 0.18, 0.12), (s * 1.75, 12.35, -1.55), CY_D, rot=(0, 0, s * 35), segs=8, rings=4)  # frown crease
+    grow(p, (0, 10.3, -0.3), 1.38, (0, -0.65, -0.55))  # a huge head, slung low and forward of the neck
     out.append(p)
 
-    # chest: a hunched slab of muscle over a pot belly, a fur mantle, an iron collar
     p = body_piece(K, "UpperTorso")
-    p.ball((5.5, 4.4, 3.7), (0, 8.55, 0.15), CY, segs=24, rings=14)
-    p.ball((4.6, 3.7, 3.5), (0, 7.25, -0.5), CY_L, segs=22, rings=12)  # belly
-    p.ball((4.6, 3.0, 2.8), (0, 9.45, 1.15), CY, segs=20, rings=10)  # hunch
+    p.ball((5.8, 4.4, 3.8), (0, 8.6, 0.2), CY, segs=24, rings=14)
+    p.ball((5.2, 4.1, 3.9), (0, 7.1, -0.75), CY_L, segs=22, rings=12)  # a pot belly
+    p.ball((5.6, 3.6, 3.4), (0, 9.8, 1.35), CY, segs=22, rings=12)  # the hunch, up behind the head
     for s in (-1, 1):
-        p.ball((2.7, 2.0, 1.4), (s * 1.3, 9.15, -1.2), CY, segs=18, rings=10)  # pecs
-        p.ball((2.4, 1.8, 2.4), (s * 1.75, 10.1, 0.35), CY, segs=16, rings=10)  # traps
-    p.ball((0.4, 0.3, 0.2), (0, 6.95, -2.22), CY_D, segs=8, rings=4)
+        p.ball((2.9, 2.0, 1.5), (s * 1.35, 9.2, -1.25), CY, segs=18, rings=10)  # pecs
+        p.ball((3.0, 2.6, 2.8), (s * 2.05, 10.45, 0.35), CY, segs=18, rings=10)  # traps up to the ears
+        p.ball((0.9, 0.35, 0.3), (s * 1.0, 6.4, -2.35), CY_D, rot=(0, 0, s * 20), segs=10, rings=4)  # belly folds
+    p.ball((0.45, 0.32, 0.2), (0, 6.85, -2.6), CY_D, segs=8, rings=4)
     ring = []
-    for i in range(18):  # the mantle, round the neck and over the shoulders
-        a = 2 * math.pi * i / 18
-        x, z = 2.65 * math.sin(a), 0.2 - 1.75 * math.cos(a)
-        ring.append(((x, 10.35 + 0.15 * math.cos(a), z), (math.sin(a), 0.2, -math.cos(a))))
-    p.cyl((5.4, 4.0), 0.9, (0, 10.3, 0.2), FUR, segs=24, d2=4.4)
-    tufts(p, ring, FUR, length=1.0, width=0.7, droop=0.9)
-    tufts(p, [((x * 0.8, y - 0.1, z * 0.8), d) for (x, y, z), d in ring[::2]], FUR_D, length=0.8, width=0.55, droop=1.2)
+    for i in range(20):  # the fur mantle over the hunch
+        a = 2 * math.pi * i / 20
+        x, z = 2.9 * math.sin(a), 0.3 - 1.9 * math.cos(a)
+        ring.append(((x, 10.5 + 0.15 * math.cos(a), z), (math.sin(a), 0.2, -math.cos(a))))
+    p.cyl((5.9, 4.3), 0.9, (0, 10.45, 0.3), FUR, segs=24, d2=4.8)
+    tufts(p, ring, FUR, length=1.2, width=0.8, droop=0.9)
+    tufts(p, [((x * 0.8, y - 0.1, z * 0.8), d) for (x, y, z), d in ring[::2]], FUR_D, length=0.9, width=0.6, droop=1.2)
     collar(p, 10.75, -0.25, 1.55, 1.3)
     out.append(p)
 
-    # hips: a fur kilt on a broad leather belt, a bronze boss on the buckle
     p = body_piece(K, "LowerTorso")
     p.ball((3.9, 2.6, 3.0), (0, 5.75, 0.1), CY, segs=20, rings=10)
-    p.cyl((4.6, 3.6), 1.9, (0, 5.2, 0.05), FUR, segs=24, d2=3.9)
+    p.cyl((4.9, 3.9), 2.3, (0, 5.05, 0.05), FUR, segs=24, d2=4.3)  # a longer kilt: the legs look shorter
     hem = []
-    for i in range(16):
-        a = 2 * math.pi * i / 16
-        hem.append(((2.25 * math.sin(a), 4.35, 0.05 - 1.75 * math.cos(a)), (math.sin(a), -1.5, -math.cos(a))))
-    tufts(p, hem, FUR, length=0.8, width=0.75, droop=0.4)
-    p.cyl((4.3, 3.35), 0.75, (0, 6.3, 0.05), LEATHER, segs=24, bevel=0.1)
-    p.cyl(1.25, 0.3, (0, 6.3, -1.72), BRONZE, axis="z", segs=16, bevel=0.06)
-    p.cyl(0.6, 0.36, (0, 6.3, -1.76), BRONZE_D, axis="z", segs=12)
+    for i in range(18):
+        a = 2 * math.pi * i / 18
+        hem.append(((2.4 * math.sin(a), 4.0, 0.05 - 1.9 * math.cos(a)), (math.sin(a), -1.5, -math.cos(a))))
+    tufts(p, hem, FUR, length=0.95, width=0.8, droop=0.4)
+    p.cyl((4.6, 3.6), 0.85, (0, 6.3, 0.05), LEATHER, segs=24, bevel=0.1)
+    p.cyl(1.5, 0.32, (0, 6.3, -1.85), BRONZE, axis="z", segs=16, bevel=0.06)
+    p.ball((0.7, 0.7, 0.3), (0, 6.3, -2.02), BRONZE_D, segs=12, rings=6)  # a skull-less boss on the buckle
     out.append(p)
 
     for side, s in (("Left", -1), ("Right", 1)):
         p = body_piece(K, side + "UpperArm")
-        p.ball((2.5, 2.4, 2.5), (s * 3.6, 9.35, 0.05), CY, segs=18, rings=10)
-        limb(p, (s * 3.6, 9.0, 0), (s * 3.65, 6.8, -0.05), 1.1, 0.85, CY, bulge=0.2)
-        arm_muscles(p, s, CY)
-        if s < 0:  # an iron pauldron with spikes on the left shoulder
-            pauldron(p, s, 3.75, 9.75, IRON, IRON_L, size=3.0)
-            for dz, dx in ((-0.75, 0.1), (0.0, 0.45), (0.75, 0.1)):
-                base = Vector((s * (3.75 + dx), 10.75 - dx * 0.4, 0.05 + dz))
-                horn(p, [tuple(base), tuple(base + Vector((s * 0.35, 0.55, 0))), tuple(base + Vector((s * 0.7, 1.2, 0)))], 0.3, BONE, segs=8)
-        else:
-            p.cyl(2.25, 0.4, (s * 3.63, 7.6, -0.03), BRONZE, segs=18, bevel=0.06)
+        p.ball((3.3, 3.1, 3.2), (s * 3.75, 9.45, 0.05), CY, segs=20, rings=12)  # boulder shoulders
+        limb(p, (s * 3.65, 9.0, 0), (s * 3.65, 6.8, -0.05), 1.35, 1.0, CY, bulge=0.22)
+        p.ball((1.8, 2.2, 1.6), (s * 3.7, 8.0, -0.6), CY, segs=14, rings=8)
+        p.ball((1.8, 2.3, 1.6), (s * 3.75, 8.3, 0.55), CY, segs=14, rings=8)
+        if s < 0:  # an iron pauldron with bone spikes on the left only
+            pauldron(p, s, 3.85, 9.9, IRON, IRON_L, size=3.4)
+            for dz, dx in ((-0.85, 0.1), (0.0, 0.5), (0.85, 0.1)):
+                base = Vector((s * (3.85 + dx), 11.0 - dx * 0.4, 0.05 + dz))
+                horn(p, [tuple(base), tuple(base + Vector((s * 0.4, 0.7, 0))), tuple(base + Vector((s * 0.8, 1.55, 0)))], 0.36, BONE, segs=8)
+        else:  # the right: bare, a rope of stitched leather and a bronze band
+            p.cyl(2.75, 0.45, (s * 3.66, 7.55, -0.03), BRONZE, segs=18, bevel=0.06)
+            p.box((0.35, 2.6, 0.3), (s * 3.75, 8.6, -1.35), LEATHER_D, rot=(0, 0, s * 18), bevel=0.08)
         out.append(p)
         p = body_piece(K, side + "LowerArm")
-        p.ball((1.8, 1.8, 1.8), (s * 3.6, 6.7, 0), CY, segs=16, rings=10)
-        limb(p, (s * 3.62, 6.6, -0.05), (s * 3.88, 4.35, -0.38), 0.92, 1.12, CY, bulge=0.16)
-        shackle(p, (s * 3.9, 4.45, -0.4), 2.55, (s * 0.12, 1, -0.15), (s, 0, 0))
+        p.ball((2.1, 2.0, 2.1), (s * 3.6, 6.7, 0), CY, segs=16, rings=10)
+        limb(p, (s * 3.62, 6.6, -0.05), (s * 3.88, 4.55, -0.38), 1.05, 1.55, CY, bulge=0.22)  # Popeye forearms
+        shackle(p, (s * 3.9, 4.45, -0.4), CY_WRIST_DIA, (s * 0.12, 1, -0.15), (s, 0, 0))
         out.append(p)
         p = body_piece(K, side + "Hand")
         hand(p, s, CY, CY, BONE, x=3.95)
+        grow(p, (s * 3.9, 4.0, -0.4), 1.45)  # fists that nearly drag on the ground
         out.append(p)
         p = body_piece(K, side + "UpperLeg")
-        limb(p, (s * 1.2, 5.4, 0), (s * 1.12, 2.7, 0), 1.2, 0.86, CY, bulge=0.16)
+        limb(p, (s * 1.25, 5.4, 0), (s * 1.18, 2.7, 0), 1.5, 1.0, CY, bulge=0.2)
         out.append(p)
         p = body_piece(K, side + "LowerLeg")
-        p.ball((1.7, 1.6, 1.7), (s * 1.1, 2.6, -0.05), CY, segs=16, rings=10)
-        limb(p, (s * 1.12, 2.55, 0), (s * 1.2, 0.9, 0), 0.85, 0.7, CY, bulge=0.1)
-        p.ball((1.3, 1.5, 1.2), (s * 1.15, 2.05, 0.32), CY, segs=14, rings=8)
+        p.ball((1.95, 1.7, 1.9), (s * 1.12, 2.6, -0.05), CY, segs=16, rings=10)
+        limb(p, (s * 1.14, 2.55, 0), (s * 1.22, 0.9, 0), 1.0, 0.8, CY, bulge=0.12)
+        p.ball((1.5, 1.6, 1.3), (s * 1.17, 2.05, 0.38), CY, segs=14, rings=8)
         for y in (1.6, 2.1):
-            p.cyl(1.78 - (2.1 - y) * 0.15, 0.22, (s * 1.15, y, 0.02), LEATHER, segs=16)
+            p.cyl(2.0 - (2.1 - y) * 0.15, 0.22, (s * 1.17, y, 0.02), LEATHER, segs=16)
         shackle(p, (s * 1.2, 1.05, 0), 1.85, (0, 1, 0), (s, 0, 0))
         out.append(p)
         p = body_piece(K, side + "Foot")
         foot(p, s, CY, CY, BONE)
+        grow(p, (s * 1.2, 0.0, 0.0), 1.2)
         out.append(p)
     return out
 
@@ -337,203 +350,240 @@ def foot(p, s, skin, toe, nail):
 
 
 # ---------------------------------------------------------------- Minotaur ------------------
+# v2 silhouette: a bull built like a V. Horns twice as wide sweeping forward, the head down to charge on
+# a huge hump, a barrel chest over a narrow waist, a heavy square underbite with fangs, thick thighs.
 def minotaur():
     K = "Minotaur"
     out = []
     p = body_piece(K, "Head")
-    p.ball((2.9, 2.7, 2.7), (0, 11.65, -0.5), MI, segs=22, rings=12)  # skull
-    p.ball((2.3, 1.9, 2.6), (0, 10.65, -1.85), MI_L, rot=(18, 0, 0), segs=20, rings=12)  # muzzle
-    p.ball((2.0, 1.1, 1.0), (0, 10.3, -2.95), MI_NOSE, segs=18, rings=10)
+    p.ball((3.0, 2.6, 2.8), (0, 11.7, -0.45), MI, segs=22, rings=12)  # skull
+    p.ball((2.9, 2.3, 3.1), (0, 10.7, -2.0), MI_L, rot=(18, 0, 0), segs=22, rings=12)  # muzzle
+    p.box((2.8, 1.05, 2.4), (0, 9.7, -1.85), MI, rot=(-8, 0, 0), bevel=0.42)  # a square, jutting jaw
+    p.box((2.4, 0.35, 0.6), (0, 10.2, -2.95), MOUTH, bevel=0.12)  # the snarl line
     for s in (-1, 1):
-        p.ball((0.36, 0.28, 0.2), (s * 0.45, 10.35, -3.42), INK, segs=8, rings=4)
-    p.ring(0.48, 0.12, (0, 9.85, -3.25), GOLD, segs=16, sides=6)
-    p.box((1.6, 0.18, 0.5), (0, 9.95, -2.55), INK, bevel=0.06)  # mouth line
+        horn(p, curve((s * 0.85, 9.95, -2.85), (s * 1.0, 11.0, -3.05), (s * 0.95, 10.6, -3.15), 4), 0.26, BONE, segs=8)  # fangs up
+    p.ball((1.9, 0.95, 0.85), (0, 10.6, -3.25), "7A4A44", segs=18, rings=10)  # a moist pink-brown nose pad
     for s in (-1, 1):
-        p.ball((0.7, 0.42, 0.3), (s * 0.95, 11.5, -1.78), RED_EYE, rot=(0, s * -22, s * -12), segs=12, rings=6)
-        p.box((1.3, 0.5, 0.8), (s * 0.95, 11.88, -1.68), MI_D, rot=(-12, s * -15, s * 24), bevel=0.2)  # brow
-        tube(p, [(s * 1.25, 11.4, -0.2), (s * 1.9, 11.3, -0.05), (s * 2.45, 11.05, 0.05)],
-             [(0.45, 0.22), (0.4, 0.2), (0.06, 0.05)], MI_D, segs=10)  # ears
-        # the horns: out, up, forward, ivory darkening at the tips
-        pts = curve((s * 1.15, 12.25, -0.35), (s * 3.3, 14.9, -1.9), (s * 3.9, 12.6, -0.4), 8)
-        horn(p, pts, 0.62, HORN, tip=HORN_D, split=0.72, segs=14)
-        p.cyl(1.25, 0.35, (s * 1.35, 12.3, -0.35), MI_D, rot=(0, 0, s * -60), segs=12)
-    tufts(p, [((x, 12.9, -0.9 + 0.1 * abs(x)), (x * 0.3, 1, -0.5)) for x in (-0.45, 0.0, 0.45)], MI_D, length=0.9, width=0.5, droop=-0.2)
-    grow(p, (0, 10.4, -0.6), 1.22, (0, -0.35, -0.3))  # a big head, lowered to charge
+        p.ball((0.48, 0.36, 0.22), (s * 0.5, 10.6, -3.68), INK, rot=(0, 0, s * 20), segs=10, rings=5)  # flared nostrils
+    p.ring(0.62, 0.15, (0, 10.05, -3.55), GOLD, segs=18, sides=6)
+    p.box((2.7, 0.45, 0.8), (0, 12.2, -1.55), MI_D, rot=(-10, 0, 0), bevel=0.2)  # one heavy brow ridge
+    for s in (-1, 1):
+        p.ball((1.15, 0.6, 0.32), (s * 0.95, 11.62, -2.05), EYE_W, rot=(0, s * -22, s * -16), segs=14, rings=7)
+        p.ball((0.75, 0.52, 0.26), (s * 0.9, 11.58, -2.2), RED_EYE, rot=(0, s * -22, s * -16), segs=12, rings=6)  # glowing eyes
+        p.ball((0.22, 0.34, 0.12), (s * 0.88, 11.58, -2.32), INK, segs=8, rings=4)
+        p.box((1.5, 0.5, 0.8), (s * 0.85, 12.0, -1.95), MI_D, rot=(-12, s * -15, s * 26), bevel=0.2)  # angry brows
+        tube(p, [(s * 1.35, 11.4, -0.2), (s * 2.0, 11.25, -0.05), (s * 2.6, 10.95, 0.05)],
+             [(0.5, 0.24), (0.42, 0.2), (0.06, 0.05)], MI_D, segs=10)  # ears, pinned back
+        # the horns: out wide, then up and forward like a charging bull's, darkening at the tips
+        pts = curve((s * 1.2, 12.3, -0.35), (s * 4.1, 15.7, -2.9), (s * 5.6, 12.3, 0.3), 10)
+        horn(p, pts, 0.9, HORN, tip=HORN_D, split=0.74, segs=16)
+        p.cyl(1.7, 0.45, (s * 1.45, 12.35, -0.3), BRONZE, rot=(0, 0, s * -58), segs=14, bevel=0.06)  # bronze horn bands
+        p.cyl(1.45, 0.3, (s * 2.35, 12.75, -0.1), BRONZE_D, rot=(0, 0, s * -40), segs=14)
+    tufts(p, [((x, 12.95, -0.8 + 0.1 * abs(x)), (x * 0.3, 1, -0.5)) for x in (-0.5, 0.0, 0.5)], MI_D, length=1.0, width=0.55, droop=-0.2)
+    tufts(p, [((x, 9.2, -1.6), (x * 0.2, -1, -0.3)) for x in (-0.4, 0.0, 0.4)], MI_D, length=0.9, width=0.5, droop=0.2)  # chin beard
+    grow(p, (0, 10.3, -0.3), 1.26, (0, -0.3, -0.45))  # a big head, lowered to charge
     out.append(p)
 
     p = body_piece(K, "UpperTorso")
-    p.ball((5.6, 4.3, 3.5), (0, 8.6, 0.15), MI, segs=24, rings=14)
-    p.ball((4.6, 3.6, 3.4), (0, 10.0, 0.95), MI, segs=20, rings=12)  # the bull's hump
-    p.ball((3.8, 3.2, 3.0), (0, 7.2, -0.35), MI, segs=20, rings=10)
+    p.ball((6.8, 4.6, 3.9), (0, 8.85, 0.1), MI, segs=26, rings=14)  # barrel chest
+    p.ball((5.4, 4.0, 3.8), (0, 10.25, 1.05), MI, segs=22, rings=12)  # the bull's hump
+    p.ball((3.2, 2.8, 2.7), (0, 7.0, -0.2), MI, segs=20, rings=10)  # a narrow waist
     for s in (-1, 1):
-        p.ball((2.7, 2.0, 1.4), (s * 1.3, 9.2, -1.15), MI, segs=18, rings=10)
-        for y in (7.9, 7.1):
-            p.ball((1.0, 0.7, 0.5), (s * 0.55, y, -1.75), MI_L, segs=10, rings=6)  # abs
-    p.ball((1.5, 1.8, 0.6), (0, 9.3, -1.75), MI_L, segs=12, rings=8)
-    tufts(p, [((x, 9.4 - abs(x) * 0.2, -1.95), (x * 0.4, -0.2, -1)) for x in (-0.5, 0.0, 0.5)], MI_L, length=0.8, width=0.5, droop=1.0)
+        p.ball((3.3, 2.4, 1.6), (s * 1.5, 9.2, -1.3), MI, rot=(0, 0, s * -8), segs=18, rings=10)  # slab pecs
+        p.ball((2.6, 2.4, 2.6), (s * 2.3, 10.5, 0.4), MI, segs=16, rings=10)  # traps
+        for y, w in ((8.0, 1.05), (7.25, 0.95), (6.55, 0.85)):
+            p.ball((w, 0.65, 0.5), (s * 0.55, y, -1.45), MI_L, segs=10, rings=6)  # abs
+    p.ball((1.7, 2.0, 0.7), (0, 9.3, -1.95), MI_L, segs=12, rings=8)
+    tufts(p, [((x, 9.5 - abs(x) * 0.2, -2.1), (x * 0.4, -0.2, -1)) for x in (-0.6, 0.0, 0.6)], MI_L, length=0.9, width=0.55, droop=1.0)
     mane = []
-    for i in range(9):  # a dark mane down the hump
-        t = i / 8
-        mane.append(((0, 11.3 - t * 2.8, 0.6 + t * 1.3 + math.sin(t * 3) * 0.2), (0, 0.4, 1)))
-    tufts(p, mane, MI_D, length=0.9, width=0.7, droop=0.8)
-    p.ring(1.95, 0.32, (0, 10.45, -0.1), BRONZE, rot=(90, 0, 0), segs=24, sides=8)
-    for i in range(6):
-        a = 2 * math.pi * (i + 0.5) / 6
-        horn(p, [(1.95 * math.sin(a), 10.5, -0.1 - 1.95 * math.cos(a)), (2.6 * math.sin(a), 10.6, -0.1 - 2.6 * math.cos(a))], 0.2, BRONZE_L, segs=8)
-    collar(p, 10.85, -0.15, 1.45, 1.2)
+    for i in range(10):
+        t = i / 9
+        mane.append(((0, 11.6 - t * 3.0, 0.7 + t * 1.5 + math.sin(t * 3) * 0.2), (0, 0.4, 1)))
+    tufts(p, mane, MI_D, length=1.1, width=0.8, droop=0.8)
+    p.box((0.55, 6.0, 0.3), (0, 8.7, -1.95), LEATHER_D, rot=(0, 0, 38), bevel=0.08)  # a harness strap
+    p.cyl(0.9, 0.3, (0.0, 8.7, -2.12), BRONZE, axis="z", segs=14, bevel=0.05)
+    collar(p, 10.9, -0.15, 1.5, 1.25)
     out.append(p)
 
     p = body_piece(K, "LowerTorso")
-    p.ball((3.8, 2.6, 2.9), (0, 5.75, 0.1), MI, segs=20, rings=10)
-    p.cyl((4.2, 3.3), 0.7, (0, 6.3, 0.05), BRONZE, segs=24, bevel=0.1)
-    for i in range(14):  # pteruges: leather strips, red and dark, bronze tips
+    p.ball((3.4, 2.4, 2.6), (0, 5.8, 0.1), MI, segs=20, rings=10)
+    p.cyl((3.9, 3.1), 0.7, (0, 6.3, 0.05), BRONZE, segs=24, bevel=0.1)
+    for i in range(14):  # pteruges
         a = 2 * math.pi * (i + 0.5) / 14
-        x, z = 2.05 * math.sin(a), 0.05 - 1.6 * math.cos(a)
+        x, z = 1.95 * math.sin(a), 0.05 - 1.5 * math.cos(a)
         col = KILT if i % 2 == 0 else LEATHER_D
-        p.box((0.8, 2.0, 0.18), (x * 1.05, 5.0, z * 1.05), col, rot=(-12 * math.cos(a), math.degrees(-a), 12 * math.sin(a)), bevel=0.06)
-        p.box((0.8, 0.25, 0.22), (x * 1.13, 4.05, z * 1.13), BRONZE_L, rot=(-12 * math.cos(a), math.degrees(-a), 12 * math.sin(a)), bevel=0.05)
-    p.cyl(1.2, 0.32, (0, 6.3, -1.66), GOLD, axis="z", segs=16, bevel=0.06)
-    tube(p, curve((0, 5.9, 1.4), (0.5, 3.4, 2.1), (0.2, 5.2, 2.6), 6), [0.22] * 7, MI, segs=10)  # tail
-    p.ball((0.7, 1.1, 0.7), (0.52, 3.15, 2.1), MI_D, segs=10, rings=6)
+        rot = (-12 * math.cos(a), math.degrees(-a), 12 * math.sin(a))
+        p.box((0.8, 2.2, 0.18), (x * 1.05, 4.9, z * 1.05), col, rot=rot, bevel=0.06)
+        p.box((0.8, 0.25, 0.22), (x * 1.13, 3.85, z * 1.13), BRONZE_L, rot=rot, bevel=0.05)
+    p.cyl(1.3, 0.32, (0, 6.3, -1.55), GOLD, axis="z", segs=16, bevel=0.06)
+    tube(p, curve((0, 5.9, 1.3), (0.6, 2.9, 2.2), (0.2, 5.2, 2.8), 6), [0.24] * 7, MI, segs=10)
+    p.ball((0.8, 1.3, 0.8), (0.62, 2.65, 2.2), MI_D, segs=10, rings=6)
     out.append(p)
 
     for side, s in (("Left", -1), ("Right", 1)):
         p = body_piece(K, side + "UpperArm")
-        p.ball((2.6, 2.5, 2.6), (s * 3.6, 9.35, 0.05), MI, segs=18, rings=10)
-        limb(p, (s * 3.6, 9.0, 0), (s * 3.65, 6.8, -0.05), 1.15, 0.85, MI, bulge=0.22)
-        arm_muscles(p, s, MI)
-        pauldron(p, s, 3.75, 9.8, BRONZE, BRONZE_L, size=3.0)
-        for dz in (-0.6, 0.6):
-            base = Vector((s * 4.3, 10.75, 0.05 + dz))
-            horn(p, [tuple(base), tuple(base + Vector((s * 0.5, 0.6, 0))), tuple(base + Vector((s * 0.9, 1.1, 0)))], 0.24, BRONZE_L, segs=8)
+        p.ball((2.9, 2.8, 2.9), (s * 3.75, 9.4, 0.05), MI, segs=18, rings=10)
+        limb(p, (s * 3.65, 9.0, 0), (s * 3.65, 6.8, -0.05), 1.3, 0.95, MI, bulge=0.25)
+        p.ball((1.8, 2.3, 1.6), (s * 3.7, 8.05, -0.65), MI, segs=14, rings=8)  # bicep
+        p.ball((1.7, 2.3, 1.5), (s * 3.75, 8.35, 0.55), MI, segs=14, rings=8)
+        if s < 0:  # one bronze pauldron, the other shoulder bare
+            pauldron(p, s, 3.85, 9.9, BRONZE, BRONZE_L, size=3.2)
+            for dz in (-0.7, 0.0, 0.7):
+                base = Vector((s * 4.5, 10.85, 0.05 + dz))
+                horn(p, [tuple(base), tuple(base + Vector((s * 0.5, 0.7, 0))), tuple(base + Vector((s * 0.9, 1.35, 0)))], 0.27, BRONZE_L, segs=8)
+        else:
+            for y in (8.9, 8.3):
+                p.cyl(2.55, 0.22, (s * 3.67, y, -0.02), LEATHER_D, segs=16)
         out.append(p)
         p = body_piece(K, side + "LowerArm")
-        p.ball((1.8, 1.8, 1.8), (s * 3.6, 6.7, 0), MI, segs=16, rings=10)
-        limb(p, (s * 3.62, 6.6, -0.05), (s * 3.88, 4.35, -0.38), 0.95, 1.05, MI, bulge=0.15)
-        p.cyl(2.2, 1.0, (s * 3.75, 5.65, -0.2), BRONZE, rot=(-8, 0, s * 6), segs=18, d2=2.45, bevel=0.06)
+        p.ball((1.9, 1.9, 1.9), (s * 3.6, 6.7, 0), MI, segs=16, rings=10)
+        limb(p, (s * 3.62, 6.6, -0.05), (s * 3.88, 4.35, -0.38), 1.05, 1.15, MI, bulge=0.18)
+        p.cyl(2.4, 1.0, (s * 3.75, 5.65, -0.2), BRONZE, rot=(-8, 0, s * 6), segs=18, d2=2.65, bevel=0.06)
         for k in range(3):
             a = math.radians(-60 + k * 60)
-            base = Vector((s * 3.75 + s * 1.15 * math.cos(a), 5.65, -0.2 + 1.15 * math.sin(a)))
-            horn(p, [tuple(base), tuple(base + Vector((s * 0.6 * math.cos(a), 0.1, 0.6 * math.sin(a))))], 0.2, BRONZE_L, segs=8)
+            base = Vector((s * 3.75 + s * 1.25 * math.cos(a), 5.65, -0.2 + 1.25 * math.sin(a)))
+            horn(p, [tuple(base), tuple(base + Vector((s * 0.7 * math.cos(a), 0.1, 0.7 * math.sin(a))))], 0.22, BRONZE_L, segs=8)
         shackle(p, (s * 3.9, 4.45, -0.4), 2.45, (s * 0.12, 1, -0.15), (s, 0, 0))
         out.append(p)
         p = body_piece(K, side + "Hand")
         hand(p, s, MI_D, MI_D, HOOF, x=3.95)
+        grow(p, (s * 3.9, 4.0, -0.4), 1.15)
         out.append(p)
         p = body_piece(K, side + "UpperLeg")
-        limb(p, (s * 1.2, 5.4, 0), (s * 1.12, 2.7, 0), 1.2, 0.85, MI, bulge=0.18)
+        limb(p, (s * 1.2, 5.4, 0), (s * 1.12, 2.7, 0.1), 1.45, 0.9, MI, bulge=0.22)  # huge thighs
+        p.ball((1.7, 2.0, 1.5), (s * 1.25, 4.2, -0.55), MI, segs=14, rings=8)
         out.append(p)
         p = body_piece(K, side + "LowerLeg")
         p.ball((1.7, 1.6, 1.7), (s * 1.1, 2.6, -0.05), MI, segs=16, rings=10)
-        limb(p, (s * 1.12, 2.55, 0.05), (s * 1.2, 1.0, 0), 0.82, 0.6, MI, bulge=0.12)
-        p.ball((1.3, 1.5, 1.2), (s * 1.15, 2.05, 0.32), MI, segs=14, rings=8)
+        limb(p, (s * 1.12, 2.55, 0.15), (s * 1.2, 1.0, 0), 0.85, 0.6, MI, bulge=0.12)
+        p.ball((1.4, 1.7, 1.3), (s * 1.15, 2.1, 0.45), MI, segs=14, rings=8)  # calves set back: a bull's hock
         fet = []
-        for i in range(10):  # shaggy fetlocks over the hooves
+        for i in range(10):
             a = 2 * math.pi * i / 10
-            fet.append(((s * 1.2 + 0.7 * math.sin(a), 0.95, -0.7 * math.cos(a)), (math.sin(a), -0.6, -math.cos(a))))
-        tufts(p, fet, MI_D, length=0.6, width=0.55, droop=0.6)
+            fet.append(((s * 1.2 + 0.72 * math.sin(a), 0.95, -0.72 * math.cos(a)), (math.sin(a), -0.6, -math.cos(a))))
+        tufts(p, fet, MI_D, length=0.65, width=0.6, droop=0.6)
         shackle(p, (s * 1.2, 1.35, 0), 1.75, (0, 1, 0), (s, 0, 0))
         out.append(p)
         p = body_piece(K, side + "Foot")
-        for d in (-0.48, 0.48):  # a cloven hoof
-            p.ball((0.98, 1.3, 2.5), (s * 1.2 + d, 0.5, -0.55), HOOF, cut=0.12, segs=16, rings=10)
-        p.box((0.25, 0.9, 1.2), (s * 1.2, 0.45, -1.3), INK, bevel=0.05)
+        for d in (-0.5, 0.5):
+            p.ball((1.05, 1.35, 2.6), (s * 1.2 + d, 0.5, -0.6), HOOF, cut=0.12, segs=16, rings=10)
+        p.box((0.25, 0.95, 1.3), (s * 1.2, 0.45, -1.35), INK, bevel=0.05)
         out.append(p)
     return out
 
 
 # ---------------------------------------------------------------- Talos --------------------
+# v2 silhouette: a walking monument. A wide armoured block with towering layered pauldrons, a narrow
+# glowing visor under a V brow, a fin of crest spikes, hammer fists, pillar legs, and glowing teal
+# cracks running out of the core across the bronze.
 def talos():
     K = "Talos"
     out = []
-    p = body_piece(K, "Head")  # a crested Corinthian helmet, the face a dark T with teal eyes
-    p.ball((3.0, 3.4, 3.1), (0, 11.45, -0.55), TB, segs=24, rings=14)
-    p.ball((2.7, 2.9, 1.4), (0, 11.15, -1.55), TB_D, segs=22, rings=12)
-    p.box((2.1, 0.5, 0.4), (0, 11.6, -2.15), INK, bevel=0.12)  # the T's bar
-    p.box((0.62, 1.5, 0.4), (0, 10.85, -2.15), INK, bevel=0.12)  # and stem
+    p = body_piece(K, "Head")
+    p.ball((3.1, 3.5, 3.2), (0, 11.5, -0.45), TB, segs=24, rings=14)
+    p.box((2.8, 2.9, 0.9), (0, 11.15, -1.75), TB_D, bevel=0.35)  # the face plate
     for s in (-1, 1):
-        p.ball((0.6, 0.34, 0.2), (s * 0.55, 11.6, -2.33), TEAL, segs=12, rings=6)
-        p.box((0.95, 1.9, 0.5), (s * 0.85, 10.55, -2.0), TB, rot=(0, s * 18, 0), bevel=0.2)  # cheek guards
-        p.box((1.35, 0.34, 0.6), (s * 0.75, 12.0, -2.08), TB_L, rot=(0, 0, s * 18), bevel=0.12)  # brows
-        p.ball((0.3, 0.3, 0.3), (s * 1.42, 11.2, -1.42), TB_L, segs=8, rings=4)
-    p.box((0.5, 0.6, 3.6), (0, 13.05, -0.4), TB_D, bevel=0.15)
-    p.prism([(-2.2, 13.2), (-1.8, 14.3), (-0.6, 15.0), (0.9, 15.1), (2.2, 14.5), (2.9, 13.3), (2.2, 12.6), (-1.6, 13.0)], 0.5, (0, 0, -0.4), CREST, bevel=0.15)
-    for z in (-0.4, 0.7):
-        p.box((3.05, 0.12, 0.12), (0, 12.2 - z * 0.4, z), PATINA, bevel=0)
-    grow(p, (0, 10.4, -0.6), 1.2, (0, -0.2, -0.2))
+        p.box((1.55, 0.6, 0.7), (s * 0.78, 12.2, -2.2), TB_L, rot=(0, 0, s * 24), bevel=0.15)  # a V brow, low over the eyes
+        p.box((1.15, 0.3, 0.32), (s * 0.7, 11.72, -2.24), TEAL, rot=(0, 0, s * 18), bevel=0.06)  # slit eyes, angled down
+        p.box((1.05, 2.1, 0.55), (s * 1.0, 10.5, -1.95), TB, rot=(0, s * 20, 0), bevel=0.2)  # cheek guards
+        p.ball((0.32, 0.32, 0.32), (s * 1.5, 11.25, -1.35), TB_L, segs=8, rings=4)
+    p.box((1.7, 0.95, 0.3), (0, 10.55, -2.25), INK, bevel=0.08)  # the mouth grille
+    for x in (-0.55, -0.18, 0.18, 0.55):
+        p.box((0.16, 0.7, 0.2), (x, 10.55, -2.38), TEAL, bevel=0.03)
+    p.box((0.32, 1.1, 0.4), (0, 11.45, -2.25), TB_L, bevel=0.1)  # nose guard
+    for i in range(7):  # the crest: a fin of red spikes from brow to nape
+        t = i / 6
+        y, z = 13.0 + math.sin(t * math.pi) * 0.5, -1.4 + t * 3.0
+        h = 1.6 + math.sin(t * math.pi) * 1.4
+        horn(p, [(0, y, z), (0, y + h * 0.55, z + 0.35), (0, y + h, z + 0.8)], 0.5, CREST, segs=8)
+    p.box((0.55, 0.6, 3.6), (0, 13.0, -0.3), TB_D, bevel=0.15)
+    crack(p, [(0.9, 12.7, -1.62), (1.15, 12.2, -1.95), (1.0, 11.95, -2.1)], TEAL, r=0.07)
+    grow(p, (0, 10.3, -0.3), 1.22, (0, -0.25, -0.25))
     out.append(p)
 
-    p = body_piece(K, "UpperTorso")  # a muscled cuirass with a teal core
-    p.ball((5.6, 4.4, 3.4), (0, 8.55, 0.05), TB, segs=24, rings=14)
-    p.ball((4.4, 3.0, 2.8), (0, 9.45, 1.0), TB, segs=20, rings=10)
-    p.ball((3.8, 3.1, 2.9), (0, 7.2, -0.45), TB, segs=20, rings=10)  # the belly plate
-    for y, w, z in ((7.85, 2.6, -1.72), (7.15, 2.5, -1.84), (6.45, 2.2, -1.72)):  # ab bands
-        p.box((w, 0.5, 0.4), (0, y, z), TB_L, bevel=0.17)
-    p.box((0.16, 2.3, 0.5), (0, 7.15, -1.84), TA_DARK, bevel=0.05)
+    p = body_piece(K, "UpperTorso")  # a monumental cuirass, a glowing core cracked open
+    p.ball((6.6, 4.8, 3.8), (0, 8.75, 0.05), TB, segs=26, rings=14)
+    p.ball((5.4, 3.4, 3.0), (0, 9.7, 1.0), TB, segs=20, rings=10)
+    p.ball((4.2, 3.2, 3.0), (0, 7.15, -0.45), TB, segs=20, rings=10)
     for s in (-1, 1):
-        p.ball((2.6, 1.7, 0.9), (s * 1.25, 9.25, -1.4), TB_L, segs=18, rings=10)
+        p.box((2.9, 2.3, 0.9), (s * 1.45, 9.25, -1.55), TB_L, rot=(8, s * 12, s * -6), bevel=0.35)  # chest plates
         for k in range(5):
-            p.ball((0.22, 0.22, 0.22), (s * 2.55, 7.4 + k * 0.6, -0.4), TB_D, segs=8, rings=4)
-        p.box((0.14, 1.6, 0.12), (s * 2.0, 7.7, -1.25), PATINA, rot=(0, s * 35, 0), bevel=0)
-    p.cyl(1.0, 0.36, (0, 9.25, -1.82), TEAL, axis="z", segs=16)
-    p.ring(0.62, 0.15, (0, 9.25, -1.86), TB_D, segs=18, sides=6)
-    p.cyl(1.9, 1.2, (0, 10.4, -0.15), TA_DARK, segs=16)  # neck
-    collar(p, 10.75, -0.15, 1.3, 1.1)
+            p.ball((0.24, 0.24, 0.24), (s * 2.85, 7.4 + k * 0.6, -0.5), TB_D, segs=8, rings=4)
+    for y, w, z in ((7.9, 2.9, -1.85), (7.2, 2.7, -1.95), (6.5, 2.4, -1.85)):
+        p.box((w, 0.55, 0.45), (0, y, z), TB_L, bevel=0.18)
+    p.cyl(1.9, 0.5, (0, 9.05, -2.3), TEAL, axis="z", segs=20)  # the core
+    p.ring(1.1, 0.24, (0, 9.05, -2.48), TB_D, segs=22, sides=6)
+    for pts in (  # cracks out of the core
+        [(0.6, 9.5, -2.1), (1.2, 10.1, -1.95), (1.0, 10.6, -1.85), (1.6, 11.0, -1.5)],
+        [(-0.6, 9.4, -2.1), (-1.3, 9.0, -2.0), (-1.9, 9.5, -1.8), (-2.5, 9.0, -1.4)],
+        [(0.3, 8.4, -2.12), (0.75, 7.95, -2.15), (0.5, 7.45, -2.2), (1.1, 6.9, -2.1)],
+        [(-0.5, 8.5, -2.1), (-1.6, 7.9, -1.95), (-2.1, 7.2, -1.7)],
+    ):
+        crack(p, pts, TEAL)
+    p.cyl(2.0, 1.2, (0, 10.4, -0.15), TA_DARK, segs=16)
+    collar(p, 10.75, -0.15, 1.35, 1.1)
     out.append(p)
 
     p = body_piece(K, "LowerTorso")
     p.ball((3.8, 2.6, 2.9), (0, 5.75, 0.1), TA_DARK, segs=20, rings=10)
-    p.cyl((4.3, 3.4), 0.8, (0, 6.3, 0.05), TB_D, segs=24, bevel=0.1)
-    for i in range(12):  # metal pteruges
+    p.cyl((4.6, 3.6), 0.9, (0, 6.3, 0.05), TB_D, segs=24, bevel=0.1)
+    for i in range(12):
         a = 2 * math.pi * (i + 0.5) / 12
-        x, z = 2.05 * math.sin(a), 0.05 - 1.6 * math.cos(a)
+        x, z = 2.2 * math.sin(a), 0.05 - 1.7 * math.cos(a)
         rot = (-10 * math.cos(a), math.degrees(-a), 10 * math.sin(a))
-        p.box((0.95, 1.8, 0.2), (x * 1.06, 5.1, z * 1.06), TB if i % 2 else TB_D, rot=rot, bevel=0.07)
-        p.ball((0.24, 0.24, 0.24), (x * 1.12, 4.45, z * 1.12), TB_D, segs=8, rings=4)
-    p.cyl(1.0, 0.3, (0, 6.3, -1.7), TEAL, axis="z", segs=14)
+        p.box((1.05, 2.0, 0.22), (x * 1.06, 5.0, z * 1.06), TB if i % 2 else TB_D, rot=rot, bevel=0.07)
+        p.ball((0.26, 0.26, 0.26), (x * 1.12, 4.25, z * 1.12), TB_D, segs=8, rings=4)
+    p.cyl(1.1, 0.3, (0, 6.3, -1.8), TEAL, axis="z", segs=14)
     out.append(p)
 
     for side, s in (("Left", -1), ("Right", 1)):
         p = body_piece(K, side + "UpperArm")
-        p.ball((2.0, 2.0, 2.0), (s * 3.6, 9.3, 0.0), TA_DARK, segs=14, rings=8)
-        pauldron(p, s, 3.75, 9.75, TB, TB_L, size=3.3, tilt=25)
-        p.ball((0.4, 0.4, 0.4), (s * 4.25, 10.85, 0.05), TEAL, segs=10, rings=6)
-        limb(p, (s * 3.6, 9.0, 0), (s * 3.62, 6.9, -0.05), 0.95, 0.85, TA_DARK, bulge=0.08)
-        p.cyl(2.1, 1.5, (s * 3.62, 7.7, -0.03), TB_D, segs=18, d2=1.85, bevel=0.08)  # arm plate
+        p.ball((2.3, 2.3, 2.3), (s * 3.6, 9.3, 0.0), TA_DARK, segs=14, rings=8)
+        pauldron(p, s, 3.95, 10.0, TB, TB_L, size=4.2, tilt=24)  # towering, layered pauldrons
+        p.ball((3.6, 1.6, 3.6), (s * 4.45, 8.85, 0.05), TB_D, rot=(0, 0, -s * 34), cut=0.45, segs=18, rings=8)
+        for dz in (-0.9, 0.0, 0.9):  # bronze spikes up the pauldron's ridge
+            base = Vector((s * 3.75, 11.85, 0.05 + dz))
+            horn(p, [tuple(base), tuple(base + Vector((s * 0.25, 0.6, 0))), tuple(base + Vector((s * 0.55, 1.3 - abs(dz) * 0.35, 0)))], 0.3, TB_L, segs=8)
+        p.ball((0.5, 0.5, 0.5), (s * 4.6, 11.25, 0.05), TEAL, segs=10, rings=6)
+        limb(p, (s * 3.6, 9.0, 0), (s * 3.62, 6.9, -0.05), 1.05, 0.95, TA_DARK, bulge=0.08)
+        p.cyl(2.45, 1.6, (s * 3.62, 7.7, -0.03), TB_D, segs=18, d2=2.15, bevel=0.08)
+        crack(p, [(s * 3.0, 8.2, -1.1), (s * 3.3, 7.8, -1.2), (s * 3.1, 7.3, -1.15)], TEAL, r=0.08)
         out.append(p)
         p = body_piece(K, side + "LowerArm")
-        p.ball((1.6, 1.6, 1.6), (s * 3.6, 6.7, 0), TA_DARK, segs=14, rings=8)
-        p.cyl(1.85, 0.2, (s * 3.6, 6.7, 0), TEAL, segs=16)
-        p.cyl(2.0, 2.0, (s * 3.75, 5.45, -0.22), TB, rot=(-8, 0, s * 6), segs=18, d2=2.5, bevel=0.08)
+        p.ball((1.8, 1.8, 1.8), (s * 3.6, 6.7, 0), TA_DARK, segs=14, rings=8)
+        p.cyl(2.05, 0.22, (s * 3.6, 6.7, 0), TEAL, segs=16)
+        p.cyl(2.5, 2.2, (s * 3.75, 5.4, -0.22), TB, rot=(-8, 0, s * 6), segs=18, d2=3.0, bevel=0.1)  # gauntlets
+        crack(p, [(s * 3.2, 6.2, -1.45), (s * 3.55, 5.7, -1.55), (s * 3.3, 5.2, -1.6), (s * 3.6, 4.7, -1.6)], TEAL, r=0.08)
         for k in range(4):
             a = math.radians(-90 + k * 60)
-            p.ball((0.24, 0.24, 0.24), (s * 3.75 + 1.15 * math.cos(a) * s, 5.2, -0.22 + 1.15 * math.sin(a)), TB_D, segs=8, rings=4)
-        shackle(p, (s * 3.9, 4.45, -0.4), 2.45, (s * 0.12, 1, -0.15), (s, 0, 0))
+            p.ball((0.26, 0.26, 0.26), (s * 3.75 + 1.4 * math.cos(a) * s, 5.0, -0.22 + 1.4 * math.sin(a)), TB_D, segs=8, rings=4)
+        shackle(p, (s * 3.9, 4.45, -0.4), 2.95, (s * 0.12, 1, -0.15), (s, 0, 0))
         out.append(p)
-        p = body_piece(K, side + "Hand")  # a blocky bronze fist: hammers
+        p = body_piece(K, side + "Hand")  # hammer fists
         p.box((2.2, 1.8, 2.2), (s * 3.95, 3.25, -0.6), TB, bevel=0.35)
         for d in (-0.6, 0.0, 0.6):
             p.box((0.6, 0.55, 0.75), (s * 3.95 + d, 3.05, -1.75), TB_L, bevel=0.15)
             p.box((0.55, 0.55, 0.6), (s * 3.95 + d, 2.45, -1.4), TB, bevel=0.15)
         p.box((0.75, 1.0, 0.8), (s * 3.95 - s * 1.15, 3.1, -1.25), TB_L, bevel=0.2)
+        grow(p, (s * 3.9, 4.0, -0.4), 1.35)
         out.append(p)
         p = body_piece(K, side + "UpperLeg")
-        limb(p, (s * 1.2, 5.3, 0), (s * 1.12, 2.8, 0), 1.1, 0.9, TB_D, bulge=0.1)
-        p.cyl(2.3, 1.4, (s * 1.16, 4.1, -0.05), TB, segs=18, d2=2.0, bevel=0.06)
+        limb(p, (s * 1.25, 5.3, 0), (s * 1.15, 2.8, 0), 1.25, 1.0, TB_D, bulge=0.1)
+        p.cyl(2.7, 1.6, (s * 1.2, 4.1, -0.05), TB, segs=18, d2=2.35, bevel=0.08)
+        crack(p, [(s * 0.6, 4.6, -1.2), (s * 0.95, 4.2, -1.3), (s * 0.7, 3.7, -1.25)], TEAL, r=0.08)
         out.append(p)
         p = body_piece(K, side + "LowerLeg")
-        p.ball((1.6, 1.6, 1.6), (s * 1.1, 2.6, 0), TA_DARK, segs=14, rings=8)
-        p.ball((1.3, 1.2, 0.8), (s * 1.1, 2.6, -0.75), TB_L, segs=12, rings=8)  # knee cap
-        p.cyl(1.9, 1.75, (s * 1.16, 1.65, -0.02), TB_L, segs=18, d2=1.65, bevel=0.06)  # greave
-        p.box((0.16, 1.2, 0.12), (s * 1.16, 1.75, -0.95), PATINA, bevel=0)
+        p.ball((1.7, 1.7, 1.7), (s * 1.1, 2.6, 0), TA_DARK, segs=14, rings=8)
+        p.ball((1.45, 1.3, 0.9), (s * 1.1, 2.6, -0.8), TB_L, segs=12, rings=8)
+        p.cyl(2.3, 1.85, (s * 1.18, 1.6, -0.02), TB_L, segs=18, d2=1.95, bevel=0.08)  # pillar greaves
         if s > 0:  # the ankle seal (MythRig AnkleSeal, the weak point): a great bronze nail, glowing
-            p.cyl(1.35, 0.3, (1.1, 1.15, -0.95), TB_L, axis="z", segs=16, bevel=0.05)
-            p.ball((0.85, 0.85, 0.45), (1.1, 1.15, -1.1), TEAL, segs=14, rings=8)
-        shackle(p, (s * 1.2, 0.95, 0.12), 1.75, (0, 1, 0), (s, 0, 0))
+            p.cyl(1.45, 0.3, (1.1, 1.15, -1.1), TB_L, axis="z", segs=16, bevel=0.05)
+            p.ball((0.95, 0.95, 0.5), (1.1, 1.15, -1.25), TEAL, segs=14, rings=8)
+        shackle(p, (s * 1.2, 0.95, 0.12), 1.95, (0, 1, 0), (s, 0, 0))
         out.append(p)
         p = body_piece(K, side + "Foot")
-        p.box((2.0, 1.0, 3.0), (s * 1.2, 0.5, -0.55), TB_D, bevel=0.3)
-        p.box((2.05, 0.5, 1.2), (s * 1.2, 0.75, -1.5), TB, bevel=0.2)
+        p.box((2.3, 1.05, 3.2), (s * 1.2, 0.52, -0.55), TB_D, bevel=0.3)
+        p.box((2.35, 0.55, 1.3), (s * 1.2, 0.8, -1.6), TB, bevel=0.2)
         out.append(p)
     return out
 
