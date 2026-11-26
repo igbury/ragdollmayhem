@@ -59,3 +59,14 @@ Session60/180/300. Czasy z testu MCP nie są realne (klikanie przez MCP trwa sek
   więc osobny film tylko by je wydłużył.
 - **Hitstop** (35–80 ms po stronie klienta): nie ruszałem, bo trafienia już mają impact frames i wstrząs.
 - **Testy na prawdziwym telefonie**: nie robiłem. Interfejs używa Scale, a pigułka „TAP TO SKIP” zmienia tekst na dotyku.
+
+## Zrzuty (Studio Play, 26.11.2026)
+
+| Przed | Po |
+|---|---|
+| ![menu przed](zrzuty/pierwsze-5-minut/przed-menu.jpg) | ![menu z bossem](zrzuty/pierwsze-5-minut/po-menu-boss.jpg) |
+| | ![podpowiedź ciosu](zrzuty/pierwsze-5-minut/po-tutorial-podpowiedz.jpg) |
+| | ![pierwszy KO](zrzuty/pierwsze-5-minut/po-pierwszy-ko.jpg) |
+| | ![cyklop w dole](zrzuty/pierwsze-5-minut/po-cyklop-w-dole.jpg) |
+| | ![ryk minotaura](zrzuty/pierwsze-5-minut/po-minotaur-ryk.jpg) |
+| | ![ryk talosa](zrzuty/pierwsze-5-minut/po-talos-ryk.jpg) |
