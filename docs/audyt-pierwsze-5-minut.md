@@ -26,11 +26,12 @@ pierwszego ciosu i KO (lejek Onboarding miał 4 kroki, wszystkie 10 lejków zaj�
 
 | Obszar | Przed | Po | Co zmieniło ocenę |
 |---|---|---|---|
-| Menu: pierwsze wrażenie | 6 | 6 | bez zmian w tym etapie (Menu 2.0 niżej w raporcie) |
+| Menu: pierwsze wrażenie | 6 | 7 | losowy boss (Cyklop / Minotaur / Talos) w 3D za krzesłem, ryczy co 9 s |
 | PLAY → gra | 5 | 8 | pomijanie: klik / tap / Spacja / Enter / A po 0,5 s, napis „CLICK OR SPACE TO SKIP” |
 | Czytelność pierwszego celu | 6 | 8 | 0 klawiszy w kroku „kill”, tylko Q w kroku „pick”; linijka sterowania pięści po zniknięciu menu (4 s) |
 | Pierwszy cios | 6 | 8 | „Walk up to it and LEFT CLICK to punch!” po 6 s, tylko gdy jeszcze nie uderzył |
 | Pierwszy KO / nagroda | 7 | 7 | bez zmian (banknoty działały) |
+| Bossy (2–5 min) | 5 | 8 | +20% skali, ryk przy wypuszczeniu, szarpanie łańcuchów, kołysanie, wstrząs przy trafieniu, baner „X IS LOOSE!”, podpowiedź do dołu po 75 s od końca tutorialu |
 | Komfort (wstrząsy, błyski) | 3 | 8 | suwak SCREEN SHAKE, przełącznik FLASHES, Reduce Motion, limit 1,2 studs |
 | Mierzalność | 4 | 8 | FirstSession (sekundy od wejścia) + Onboarding kroki 5–6 |
 
@@ -48,3 +49,13 @@ Nie zajmuję nowego lejka (limit 10). Zamiast tego:
 Sprawdzone w Studio Play (wydruki zamiast wysyłki): Joined, MenuLoaded, PlayClicked, Entered arena,
 IntroCompleted, IntroSkipped, FirstHit, FirstKO, FirstReward, First kill, Took pistol, TutorialCompleted,
 Session60/180/300. Czasy z testu MCP nie są realne (klikanie przez MCP trwa sekundy na akcję).
+
+## Czego nie zrobiłem (uczciwie)
+
+- **Modele bossów w Blenderze** (oczy, zęby, asymetria) i **klatki kluczowe animacji**: zmiana siatki wymaga
+  ponownego uploadu MeshPartów (klucz API albo Import 3D w Studio). Animacje bossów są proceduralne
+  (`MythRig.pose`): Idle, Walk, Roar, Windup/Strike/Recovery, Charge, Eat, Caged, drgnięcie przy trafieniu.
+- **Kinematyka PLAY z Blendera**: obecne wyjście z menu (awatar zeskakuje i odchodzi, 3,2 s) da się pominąć po 0,5 s,
+  więc osobny film tylko by je wydłużył.
+- **Hitstop** (35–80 ms po stronie klienta): nie ruszałem, bo trafienia już mają impact frames i wstrząs.
+- **Testy na prawdziwym telefonie**: nie robiłem. Interfejs używa Scale, a pigułka „TAP TO SKIP” zmienia tekst na dotyku.

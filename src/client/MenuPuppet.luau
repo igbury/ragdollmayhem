@@ -4,7 +4,17 @@
 -- avatars with Motor6Ds and with AnimationConstraints alike).
 -- Joint signs, as elsewhere in this client: shoulder / hip +X swings the limb forward, elbow +X
 -- bends it, knee -X bends it, waist -X bends forward.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local MythRig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MythRig"))
+
 local MenuPuppet = {}
+-- One of the arena's bosses looms behind the chair (shared/MythRig, the same rig and procedural poses
+-- as in the game), at BOSS_SCALE, BOSS_AT in the scene's space, breathing and now and then straining.
+local BOSS_KINDS = { "Cyclops", "Minotaur", "Talos" }
+local BOSS_SCALE = 2.7
+local BOSS_AT = CFrame.new(8.7, 0, 63.3) * CFrame.Angles(0, math.rad(14), 0) -- facing the camera
+local BOSS_ROAR_EVERY, BOSS_ROAR = 9, 1.8 -- a roar now and then, as long as the game's
+local BOSS_FEET = -30 -- below the panel's bottom edge, so only the top half looms
 MenuPuppet.__index = MenuPuppet
 
 local WOOD = Color3.fromRGB(150, 96, 56)
@@ -197,6 +207,23 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 	self.base = CFrame.Angles(0, math.rad(-28), 0)
 	chair:PivotTo(self.base * chair:GetPivot())
 
+	local okBoss, boss = pcall(MythRig.build, BOSS_KINDS[math.random(#BOSS_KINDS)])
+	if okBoss and boss then
+		boss:ScaleTo(BOSS_SCALE)
+		self.bossJoints = {}
+		for _, j in boss:GetDescendants() do
+			if j:IsA("Motor6D") then
+				j:SetAttribute("RigRestC0", j.C0) -- ScaleTo moved the joints (see MythRig.build)
+				self.bossJoints[j.Name] = j
+			end
+		end
+		boss:PivotTo(self.base * BOSS_AT)
+		local box, size = boss:GetBoundingBox()
+		boss:PivotTo(boss:GetPivot() + Vector3.new(0, BOSS_FEET - (box.Y - size.Y / 2), 0))
+		self.bossKind = boss:GetAttribute("MonsterKind")
+		boss.Parent = world
+	end
+
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
 	camera.CFrame = CFrame.lookAt(Vector3.new(0.8, seatTop + 2.8, -14), Vector3.new(0, seatTop + 1.2, -0.3))
@@ -324,6 +351,14 @@ end
 
 function MenuPuppet:step(t: number)
 	self.t = t
+	if self.bossJoints then
+		local roar = (t + 3) % BOSS_ROAR_EVERY -- the first roar 6 s in
+		if roar < BOSS_ROAR then
+			MythRig.pose(self.bossJoints, "Roar", self.bossKind, t, 0, roar / BOSS_ROAR, 0, true)
+		else
+			MythRig.pose(self.bossJoints, "Caged", self.bossKind, t, 0, 0, 0, true)
+		end
+	end
 	local e = self.leaveAt and t - self.leaveAt
 	local pose
 	if e then
