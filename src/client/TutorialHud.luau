@@ -238,6 +238,7 @@ function TutorialHud.start()
 			Chainsaw = `{HA}: saw`,
 			Flamethrower = `{HA}: spray fire · {M}: aim`,
 			Minigun = `{HA}: spin up and fire · {M}: aim`,
+			Gravgun = `{M}: pull a body in · {A}: launch it (nothing held: punt)`,
 		}
 		if by[w.id] then
 			return by[w.id]

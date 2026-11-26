@@ -1,0 +1,23 @@
+{
+  "tool": "rxz roblox-thumbnail",
+  "version": 1,
+  "canvas": [
+    1920,
+    1080
+  ],
+  "art": "capture.jpg",
+  "game": "Ragdoll Mayhem",
+  "title": "",
+  "kicker": "",
+  "zone": "lower-left",
+  "lines": [],
+  "art_stats": {
+    "mean": 81.3,
+    "range": 156,
+    "border_edge": 18.57,
+    "center_edge": 24.96,
+    "clutter": 0.74,
+    "hues": 6,
+    "focal": 2.61
+  }
+}

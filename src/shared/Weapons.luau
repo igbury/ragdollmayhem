@@ -42,13 +42,18 @@ return {
 	{ id = "Revolver", name = "REVOLVER", tag = "gun", short = "REV", kind = "gun", hurt = "bullet", cd = 0.75, range = 300, dmg = 4.5, push = 75, chip = 2.2 },
 	{ id = "Shotgun", name = "SHOTGUN", tag = "gun", short = "SHTG", kind = "gun", hurt = "bullet", cd = 0.95, range = 110, dmg = 1.3, push = 34, chip = 1.2, pellets = 8, spread = 0.09 },
 	{ id = "Rifle", name = "RIFLE", tag = "gun", short = "RFL", kind = "gun", hurt = "bullet", auto = true, cd = 0.09, range = 400, dmg = 1, push = 16, chip = 1 },
-	{ id = "Sniper", name = "SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 7, push = 130, chip = 2.5 },
+	{ id = "Sniper", name = "HEAVY SNIPER", tag = "gun", short = "SNPR", kind = "gun", hurt = "bullet", cd = 1.6, range = 700, dmg = 21, push = 390, chip = 2.5, torsoKill = true }, -- the head bursts (dmg >= 4), the chest or stomach kills outright
 	{ id = "Taser", name = "TASER", tag = "gun", short = "TSR", kind = "gun", hurt = "blunt", cd = 1.2, range = 35, dmg = 1, push = 5 },
 	{ id = "Frostgun", name = "FROST GUN", tag = "gun", short = "FRST", kind = "gun", cd = 0.8, range = 120, dmg = 1 },
 	{ id = "Boilgun", name = "BOIL GUN", tag = "gun", short = "BOIL", kind = "gun", cd = 0.9, range = 30, dmg = 1, push = 35 },
 	{ id = "Flamethrower", name = "FLAMETHROWER", tag = "gun", short = "FLAM", kind = "gun", auto = true, cd = 0.1, range = 18, dmg = 2.5 },
 	{ id = "Minigun", name = "MINIGUN", tag = "gun", short = "MINI", kind = "gun", auto = true, spinUp = 0.5, hurt = "bullet", cd = 0.06, range = 350, dmg = 0.9, push = 12, chip = 0.8 },
 	{ id = "Harpoon", name = "HARPOON", tag = "gun", short = "HARP", kind = "gun", cd = 1.4, range = 120, dmg = 4, speed = 160 },
+	-- grapple: the hook bites and reels the shooter in; on a dummy the ride ends in a flying kick (dmg, push)
+	{ id = "Grapple", name = "GRAPPLE GUN", tag = "gun", short = "GRPL", kind = "gun", cd = 1.0, range = 160, dmg = 2.5, push = 85, speed = 200 },
+	-- gravity gun: click punts what is in front (range, push); right click pulls a body in from `reach` and
+	-- holds it at the claws; a click then launches it at `launch` studs/s (server/Specials, client gravity)
+	{ id = "Gravgun", name = "GRAVITY GUN", tag = "gun", short = "GRAV", kind = "gun", cd = 0.5, range = 24, dmg = 1.2, push = 120, reach = 70, launch = 170 },
 	-- EXPLOSIVES
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },

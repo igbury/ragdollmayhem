@@ -1,5 +1,5 @@
 -- Main menu: a full-screen comic page. Panels: STATS and SHOP, PLAY, MAP down the left, and the scene,
--- the whole right column: the player's avatar on a chair with a boss towering behind it (MenuPuppet). Panels are real polygons:
+-- the whole right column: the player's avatar on a chair (MenuPuppet). Panels are real polygons:
 -- seam lines are offset by half a gutter, intersected into corners, and each panel is cut to shape by nested CanvasGroups with a hard-stepped UIGradient per
 -- slanted edge (cut()). Outlines are lines drawn corner to corner, so every edge meets its neighbour.
 -- Shading: gradient fills, a tiled halftone (assets/fx/make_halftone.py), drop shadows, 3D lettering.
@@ -49,7 +49,7 @@ local INK = 4 -- px, outline thickness
 -- Seam lines across the page, each through two points in page scale (extended to infinity), and the
 -- panels between them: STATS, SHOP, MAP, PLAY, the scene, in that order.
 -- The layout is a poster (docs/menu-concepts.md compares it with the two others tried): the scene is
--- the whole right column, so the boss stands in it whole and towers behind the avatar; PLAY keeps the
+-- the whole right column, with the avatar on its chair; PLAY keeps the
 -- biggest panel on the left. The scene stays a plain rectangle (no slanted edge): its ViewportFrames do
 -- not render inside a CanvasGroup. Each panel has one slanted edge at most (SHOP_SEAMS says why).
 local SEAMS = {
@@ -60,10 +60,7 @@ local SEAMS = {
 	VM = { Vector2.new(0.31, 0.75), Vector2.new(0.29, 1) }, -- MAP | MODE
 }
 local SCENE = {
-	avatar = { x = 0.25, y = 0.74, zoom = 1.6 }, -- where the avatar sits in the scene (MenuPuppet.new)
-	-- the boss's view in the scene, above the avatar's feet: its own feet land higher up the panel, so
-	-- it reads as standing behind the chair, not in front of it
-	boss = { UDim2.fromScale(0.12, 0.01), UDim2.fromScale(0.88, 0.84) },
+	avatar = { x = 0.5, y = 0.5, zoom = 1.6 / 1.2 }, -- where the avatar sits in the scene (MenuPuppet.new)
 }
 -- The shop page: three rows of three. Only the top seam slants: a panel with two slanted edges nests
 -- one CanvasGroup in another, and those came out plain white now and then (STATS did too). One cut
@@ -703,16 +700,6 @@ layout() -- again, now the bursts exist
 
 -- The player scene: speed lines behind the avatar on its chair, name in a caption box.
 rays(sceneP.content :: GuiObject, 0.5, 0.45, 40, 4, 120, WHITE, 0.45, 0, 160)
--- The boss in a view of its own under the avatar's (MenuPuppet fits it whole into it).
-local bossView = new("ViewportFrame", sceneP.content, {
-	BackgroundTransparency = 1,
-	Position = SCENE.boss[1],
-	Size = SCENE.boss[2],
-	Ambient = Color3.fromRGB(140, 140, 160),
-	LightColor = Color3.fromRGB(255, 240, 225),
-	LightDirection = Vector3.new(0.5, -1, 0.6),
-	ZIndex = 3,
-})
 local viewport = new("ViewportFrame", sceneP.content, {
 	BackgroundTransparency = 1,
 	Size = UDim2.fromScale(1, 1),
@@ -730,7 +717,7 @@ task.spawn(function()
 	if not player:HasAppearanceLoaded() then
 		player.CharacterAppearanceLoaded:Wait()
 	end
-	local ok, made = pcall(MenuPuppet.new, viewport, char, bossView, SCENE.avatar)
+	local ok, made = pcall(MenuPuppet.new, viewport, char, nil, SCENE.avatar) -- no boss behind the avatar (pass a ViewportFrame to bring it back)
 	if ok then
 		puppet = made
 	else
@@ -750,8 +737,6 @@ local function squash(label: TextLabel)
 	end
 end
 
--- The first-time tutorial (server/Tutorial): a player who has not done it never sees the menu (the
--- end of this file sends them straight to the arena).
 local function refresh()
 	mapValue.Text = "< " .. MAPS[mapIndex] .. " >"
 	Menu.mapIndex = mapIndex
@@ -1090,20 +1075,5 @@ end
 -- still in it to the arena ("map").
 gui.Enabled = true
 firstSession("MenuLoaded")
-
--- ...and a first-timer does not wait for that click: once the save says they have not done the
--- tutorial, PLAY presses itself (no time limit, so it never depends on how fast the DataStore is;
--- someone who clicks first just plays). Only the first menu of the session: M back to it stays put.
-if script.Name ~= "MenuAgain" then
-	task.spawn(function()
-		while not player:GetAttribute("ProgressLoaded") do
-			player:GetAttributeChangedSignal("ProgressLoaded"):Wait()
-		end
-		if player:GetAttribute("Tutorial") == true and Menu.active and not leaving and not turning then
-			pow(playP.word)
-			play()
-		end
-	end)
-end
 
 return Menu

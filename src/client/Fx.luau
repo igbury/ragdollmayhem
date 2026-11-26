@@ -457,6 +457,7 @@ local BURST_IMAGE = "rbxassetid://121244599706688"
 local BURST_ASPECT = 1232 / 772 -- burst.png width / height
 local BURST_INK = Color3.fromRGB(70, 10, 10)
 local BURST_YELLOW = Color3.fromRGB(255, 215, 40)
+local TEXT_MAX_PX = 90 -- tallest the word gets on screen; under TextScaled's 100 px cap
 
 function Fx.text(position: Vector3, text: string, color: Color3, scale: number)
 	local comic = scale >= BURST_SCALE
@@ -466,11 +467,11 @@ function Fx.text(position: Vector3, text: string, color: Color3, scale: number)
 	local gui = Instance.new("BillboardGui")
 	local w, h = scale * #text * 0.6, scale * 1.4
 	if comic then
-		local bw = math.max(w * 1.9, scale * 5) -- the burst keeps its own shape, words fit inside it
-		gui.Size = UDim2.fromScale(bw, bw / BURST_ASPECT)
-	else
-		gui.Size = UDim2.fromScale(w, h)
+		w = math.max(w * 1.9, scale * 5) -- the burst keeps its own shape, words fit inside it
+		h = w / BURST_ASPECT
 	end
+	gui.Size = UDim2.fromScale(w, h)
+	local labelShare = comic and 0.46 or 1 -- label height / gui height
 	gui.AlwaysOnTop = true
 	gui.LightInfluence = 0
 	local pop = Instance.new("Frame") -- everything scales together through this
@@ -507,6 +508,12 @@ function Fx.text(position: Vector3, text: string, color: Color3, scale: number)
 	run(comic and 1.2 or 1, { anchor }, function(a)
 		local s = a < 0.12 and a / 0.12 * 1.25 or 1.25 - 0.25 * math.min((a - 0.12) / 0.1, 1)
 		pop.Size = UDim2.fromScale(s, s)
+		-- TextScaled stops at 100 px: up close the bubble would keep growing round a capped word.
+		-- Shrink the whole gui instead so the word never needs more than TEXT_MAX_PX.
+		local dist = math.max((anchor.Position - camera.CFrame.Position).Magnitude, 0.1)
+		local px = h * camera.ViewportSize.Y / (2 * dist * math.tan(math.rad(camera.FieldOfView) / 2))
+		local k = math.min(1, TEXT_MAX_PX / (px * labelShare * s))
+		gui.Size = UDim2.fromScale(w * k, h * k)
 		local fade = math.max(0, (a - 0.7) / 0.3)
 		label.TextTransparency = fade
 		stroke.Transparency = fade
@@ -1100,6 +1107,76 @@ function COMIC_SHOTS.Harpoon(muzzle: Vector3, to: Vector3, aimCf: CFrame, distan
 	end
 end
 
+-- The grapple's hook in flight and in the wall: a steel head and four claws raked back from it.
+local GRAPPLE_SPEED = 200 -- studs/s of the hook (shared/Weapons Grapple.speed)
+local GRAPPLE_PULL = 140 -- studs/s the line reels its shooter in (server/Specials GRAPPLE_PULL)
+local GRAPPLE_STEER = 55 -- studs/s WASD adds on top of the pull while reeled in (forward: faster, sideways: curve)
+local HOOK_AWAY = CFrame.new(0, -500, 0) -- the gun's own Hook piece while the hook is out (WeaponMeshes.pose)
+local function hookParts(): { Part }
+	local bits = { part(Enum.PartType.Ball, STEEL, Enum.Material.Metal) }
+	for _ = 1, 4 do
+		table.insert(bits, part(Enum.PartType.Block, STEEL, Enum.Material.Metal))
+	end
+	return bits
+end
+local function placeHook(bits: { Part }, at: Vector3, look: Vector3)
+	local cf = CFrame.lookAlong(at, look)
+	bits[1].Size = Vector3.one * 0.4
+	bits[1].CFrame = cf
+	for i = 2, 5 do
+		local a = math.pi / 4 + (i - 2) * math.pi / 2
+		local side = cf.RightVector * math.cos(a) + cf.UpVector * math.sin(a)
+		stick(bits[i], at + side * 0.15, at - look * 0.45 + side * 0.4, 0.09)
+	end
+end
+
+function COMIC_SHOTS.Grapple(muzzle: Vector3, to: Vector3, aimCf: CFrame, distance: number, landed: boolean)
+	local look = aimCf.LookVector
+	local bits = hookParts()
+	local line = part(Enum.PartType.Block, ROPE, Enum.Material.SmoothPlastic)
+	table.insert(bits, line)
+	local flight = distance / GRAPPLE_SPEED
+	WeaponMeshes.pose("Grapple", "Hook", HOOK_AWAY)
+	-- out to `to`; a miss winds back in as fast (a hit hands over to EVENTS.Grapple)
+	local back = if landed then 0 else flight
+	run(flight + back, bits, function(a)
+		local t = (flight + back) * a
+		local p = if t <= flight then muzzle:Lerp(to, t / flight) else to:Lerp(muzzle, (t - flight) / math.max(back, 1e-3))
+		placeHook(bits, p, look)
+		stick(line, muzzle, p - look * 0.3, 0.05)
+		if a >= 1 and not landed then
+			WeaponMeshes.pose("Grapple", "Hook", CFrame.identity)
+		end
+	end)
+	Fx.shake(muzzle, 0.25, 0.1)
+	if landed then
+		task.delay(flight, function()
+			Fx.sparks(to, 6, 3, TRACER, -look, 0.3)
+			Fx.text(to + UP * 2, "CLANK!", Color3.fromRGB(255, 220, 60), 2)
+		end)
+	end
+end
+
+-- The gravity gun's punt (server/Specials gravPunt): an orange zero-point shove out of the emitter, rings
+-- rippling down its length, and a hit word where it lands.
+local GRAV = Color3.fromRGB(255, 140, 20)
+function COMIC_SHOTS.Gravgun(muzzle: Vector3, to: Vector3, aimCf: CFrame, distance: number, landed: boolean, onBody: boolean?)
+	local look = aimCf.LookVector
+	local core = part(Enum.PartType.Block, GRAV, Enum.Material.Neon)
+	run(0.18, { core }, function(a)
+		stick(core, muzzle, muzzle:Lerp(to, math.min(a * 1.6, 1)), 0.6 * (1 - a) + 0.05)
+	end)
+	for i = 0, 2 do
+		local at = muzzle + look * (1.5 + i * math.min(distance, 20) / 4)
+		Fx.ring(CFrame.lookAlong(at, look) * CFrame.Angles(math.pi / 2, 0, 0), 0.4 + i * 0.3, 2 + i * 0.8, 0.22 + i * 0.04, GRAV, { thick = 0.6, sides = 8 })
+	end
+	Fx.glint(muzzle, 2.5, GRAV, 0.1)
+	Fx.shake(muzzle, 0.35, 0.12)
+	if landed then
+		Fx.text(to + UP * 2, if onBody then "THOOM!" else "WHUMP!", GRAV, if onBody then 2.6 else 1.8)
+	end
+end
+
 local MELEE = {}
 for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 	if w.kind == "melee" then
@@ -1115,7 +1192,7 @@ local HIT_STRENGTH = {
 	BoxingGloves = 1, BoxingHeavy = 2.4, Pan = 2.2, Sledgehammer = 2.6, Bat = 1.8, Axe = 1.8, Crowbar = 1.3,
 	Katana = 1.5, KnifeSlash = 1, Spear = 1.4, Lightsaber = 1.6, Baton = 1.3,
 	Sniper = 2.4, Revolver = 1.2, Shotgun = 1.1, Harpoon = 1.4, Knife = 1.2,
-	Minigun = 0.3, Chainsaw = 0.3, Lasso = 0, Flamethrower = 0, -- (the throwables' blasts shake on their own)
+	Minigun = 0.3, Chainsaw = 0.3, Lasso = 0, Flamethrower = 0, Grapple = 0, Gravgun = 1.6, -- (the throwables' blasts shake on their own; the grapple's kick has its own)
 	Grenade = 0, Molotov = 0, TNT = 0, C4 = 0, Landmine = 0, Rocket = 0, Bandage = 0, Cast = 0, HealSyringe = 0,
 }
 
@@ -1326,6 +1403,68 @@ function EVENTS.Hook(attacker: Model?, position: Vector3)
 	Fx.shake(position, 0.35, 0.15)
 	if attacker and attacker == player.Character then
 		Fx.hookAt = os.clock() -- our own claw is in: the client plays the tug (WeaponAnims Rip_Crowbar, view hookT)
+	end
+end
+
+-- The grapple's hook has bitten (server/Specials grapple): the line runs from the shooter's gun to it
+-- for `ride` s. Our own: we fly along it (this client moves its own character) until we reach it, the
+-- ride runs out, we jump off or go limp; at the end a hop keeps some of the speed.
+function EVENTS.Grapple(shooter: Model?, anchor: Vector3, ride: number, torso: BasePart?)
+	local root = shooter and shooter:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local hand = shooter and (shooter:FindFirstChild("RightHand") or root) :: BasePart?
+	if not (root and hand) then
+		return
+	end
+	local own = shooter == player.Character
+	local humanoid = shooter:FindFirstChildOfClass("Humanoid")
+	local bits = hookParts()
+	local line = part(Enum.PartType.Block, ROPE, Enum.Material.SmoothPlastic)
+	local t0 = os.clock()
+	if own and humanoid then
+		WeaponMeshes.pose("Grapple", "Hook", HOOK_AWAY)
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping) -- off the floor, or friction fights the pull
+	end
+	local conn
+	conn = RunService.Heartbeat:Connect(function()
+		local at = if torso and torso.Parent then torso.Position else anchor
+		local from = own and Fx.muzzle and Fx.muzzle("Grapple") or hand.Position
+		placeHook(bits, at, (at - from).Unit)
+		stick(line, from, at, 0.06)
+		local done = os.clock() - t0 > ride or not shooter.Parent or shooter:GetAttribute("Ragdolled") == true
+		if own and not done then
+			local to = at - root.Position
+			if to.Magnitude < (if torso then 4 else 3.5) or (humanoid and humanoid.Jump and os.clock() - t0 > 0.2) then
+				done = true
+			else
+				-- WASD free on top of the pull; the pull re-aims every frame, so a sideways push curves in.
+				-- It fades out over the last 12 studs, or at the wall it slid you along it and never arrived.
+				local steer = GRAPPLE_STEER * math.clamp((to.Magnitude - 4) / 12, 0, 1)
+				root.AssemblyLinearVelocity = to.Unit * GRAPPLE_PULL + (humanoid and humanoid.MoveDirection or Vector3.zero) * steer
+			end
+		end
+		if done then
+			conn:Disconnect()
+			line:Destroy()
+			for _, b in bits do
+				b:Destroy()
+			end
+			if own then
+				WeaponMeshes.pose("Grapple", "Hook", CFrame.identity)
+				if root.Parent and not shooter:GetAttribute("Ragdolled") then
+					root.AssemblyLinearVelocity = root.AssemblyLinearVelocity * 0.6 + UP * 22
+				end
+			end
+		end
+	end)
+end
+
+-- The grapple's ride reached the dummy it bit (server/Specials grapple): the flying kick lands.
+function EVENTS.GrappleKick(shooter: Model?, position: Vector3)
+	Fx.hit(position)
+	Fx.shake(position, 0.6, 0.22)
+	Fx.text(position + UP * 2.5, "WHAM!", Color3.fromRGB(255, 220, 60), 2.6)
+	if shooter and shooter == player.Character then
+		Fx.ourHit(position, 2.2)
 	end
 end
 

@@ -1,0 +1,10 @@
+{
+  "game": "Ragdoll Mayhem",
+  "title": "",
+  "kicker": "",
+  "promise": "3 ragdolls flee the Minotaur boss across the arena",
+  "archetype": "Threat Behind",
+  "text": {"style": "none"},
+  "art": {"focus": [0.5, 0.5]},
+  "source": {"model": "Roblox Studio play capture (real game)", "seed": "-", "prompt": "Minotaur pinned in Roar pose 34 studs behind 3 dummy clones (blue/green/red, Looks.face scared) running on the arena lawn near Mayhem Park; camera 15 studs ahead, 2.6 up, FOV 88"}
+}

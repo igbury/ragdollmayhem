@@ -301,6 +301,15 @@ end
 local recoil = 0
 local aiming = false -- right mouse / L2 held: aim down the sights (guns) or show the throw arc (thrown)
 local ads = 0 -- eased 0..1
+-- the sniper's scope clicks like CS:GO: right mouse once zooms, twice zooms further, a third time
+-- lowers it (aiming follows zoom while the sniper is out). On weaponVisual: the script is at
+-- Luau's 200 top-level locals.
+weaponVisual.scope = {
+	zoom = 0, -- 0 off, 1, 2
+	FOV = { 35, 52 }, -- how far each step cuts the field of view
+	SENS = 0.6, -- mouse sensitivity through the scope
+	fov = 0, -- eased toward the step's FOV
+}
 -- boxing block (right mouse / L2 with the gloves): sent to the server, which then blocks every
 -- attack (knockPlayer); guardT eases the first-person gloves up to the face
 local guarding, guardT = false, 0
@@ -1134,6 +1143,8 @@ local HOLD = {
 	Flamethrower = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.05, -1.18) },
 	Minigun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0, -0.88), scale = 0.85 },
 	Harpoon = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.18, -1.2) },
+	Grapple = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, -0.1, -1.0), scale = 0.8 },
+	Gravgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.1, -0.3, 0.2), support = Vector3.new(-0.54, 0.17, -0.29), scale = 0.75 }, -- support: the ribbed side grip (scaled), held two-handed always
 	-- held in the fist (thrown / placed)
 	Lasso = { grip = CFrame.new(0, 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
 	TNT = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
@@ -1475,7 +1486,8 @@ if RunService:IsStudio() then
 			end
 			return arg
 		elseif cmd == "aim" then
-			aiming = arg == true
+			aiming = arg == true or type(arg) == "number" and arg > 0
+			weaponVisual.scope.zoom = if type(arg) == "number" then arg elseif aiming then 1 else 0 -- the sniper's scope step
 			return aiming
 		elseif cmd == "hold" then -- the trigger held (auto weapons, the minigun's spin, the chainsaw)
 			punching = arg == true
@@ -1769,6 +1781,83 @@ local function toggleGrab()
 	end
 end
 
+-- The gravity gun (shared/Weapons Gravgun; fields on weaponVisual: this script is at Luau's 200
+-- top-level locals). Right mouse pulls the body looked at, from as far as `reach`, into the claws
+-- (the server's grab "gravgun": a hard GrabAlign) and holds it GRAV.HOLD studs out; right mouse again
+-- drops it, a click launches it (the punt's mark, so its first wall hits hard). With nothing held a
+-- click is the punt blast (server/Specials gravPunt). While it holds, the three claws open wider and
+-- an orange tether runs from the emitter to the body.
+weaponVisual.grav = {
+	HOLD = 7,
+	OPEN = math.rad(24), -- how much wider the claws open while holding
+	-- each claw's hinge and axis, mesh space (assets/weapons/comic_weapons.py GG_CLAW_HINGE)
+	HINGES = {
+		{ Vector3.new(0, 0.672, -2.48), Vector3.new(1, 0, 0) },
+		{ Vector3.new(-0.36, 0.048, -2.48), Vector3.new(-0.5, 0.866, 0) },
+		{ Vector3.new(0.36, 0.048, -2.48), Vector3.new(-0.5, -0.866, 0) },
+	},
+	open = 0,
+	tether = nil :: BasePart?,
+}
+weaponVisual.gravToggle = function()
+	if holding then
+		if holding.grav then
+			drop(Vector3.zero)
+		end
+		return
+	end
+	local result = aim(Weapons[weaponIndex].reach or 60)
+	local body = result and dummyOf(result.Instance)
+	if not body then
+		return
+	end
+	local part = body:FindFirstChild("UpperTorso") or result.Instance
+	grabRemote:FireServer("grab", part, "gravgun")
+	loose = nil
+	holding = { part = part, dist = weaponVisual.grav.HOLD, since = os.clock(), impact = Impact.new(), grav = true }
+	Sfx.playLocal({ Sfx.HARPOON_REEL, 1.6, 0.7 }, part.Position)
+end
+weaponVisual.gravLaunch = function()
+	local velocity = camera.CFrame.LookVector * (Weapons[weaponIndex].launch or 150)
+	local at = holding.part.Position
+	grabRemote:FireServer("punt", velocity)
+	drop(velocity)
+	if loose then
+		loose.punt = os.clock() -- its first hit is the launch's landing, as a punt's (RenderStepped)
+	end
+	weaponVisual.recoil:fire("Gravgun")
+	Sfx.playLocal({ Sfx.ROCKET_JUMP_POP, 0.7, 1 }, at)
+end
+weaponVisual.gravStep = function(dt: number)
+	local g = weaponVisual.grav
+	local on = holding ~= nil and holding.grav == true and holding.part.Parent ~= nil
+	g.open += ((if on then 1 else 0) - g.open) * math.min(dt * 10, 1)
+	for k, h in g.HINGES do
+		local off = if g.open < 0.01 then CFrame.identity
+			else CFrame.new(h[1]) * CFrame.fromAxisAngle(h[2], g.OPEN * g.open) * CFrame.new(-h[1])
+		WeaponMeshes.pose("Gravgun", "Claw" .. k, off)
+	end
+	local from = on and Fx.muzzle and Fx.muzzle("Gravgun")
+	if not from then
+		if g.tether then
+			g.tether:Destroy()
+			g.tether = nil
+		end
+		return
+	end
+	if not g.tether then
+		local t = Instance.new("Part")
+		t.Anchored, t.CanCollide, t.CanQuery, t.CanTouch, t.CastShadow = true, false, false, false, false
+		t.Material, t.Color = Enum.Material.Neon, Color3.fromRGB(255, 140, 20)
+		t.Parent = camera
+		g.tether = t
+	end
+	local to = holding.part.Position
+	local w = 0.12 + 0.06 * math.sin(os.clock() * 30)
+	g.tether.Size = Vector3.new(w, w, math.max((to - from).Magnitude, 0.05))
+	g.tether.CFrame = CFrame.lookAt(from:Lerp(to, 0.5), to)
+end
+
 -- F on a dummy you are looking at: take it by the chest in one hand and hold it at your side;
 -- sprint and you bend over and grind it into the ground (the per-frame block). F again lets go.
 -- False when F was not for this (no dummy in reach), so it changes weapon as usual.
@@ -1958,6 +2047,10 @@ mv.began = function(input, processed)
 			end
 			return
 		end
+		if holding and holding.grav then
+			weaponVisual.gravLaunch()
+			return
+		end
 		if holding then
 			drop(camera.CFrame.LookVector * THROW_SPEED)
 			return
@@ -2024,7 +2117,14 @@ mv.began = function(input, processed)
 			end
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
-		aiming = true
+		if Weapons[weaponIndex].id == "Sniper" then
+			weaponVisual.scope.zoom = (weaponVisual.scope.zoom + 1) % 3
+			aiming = weaponVisual.scope.zoom > 0
+		elseif Weapons[weaponIndex].id == "Gravgun" then
+			weaponVisual.gravToggle() -- no sights on it: right mouse pulls / drops
+		else
+			aiming = true
+		end
 		if Weapons[weaponIndex].id == "C4" and (player:GetAttribute("C4Out") or 0) > 0 and not Menu.active then
 			useWeapon(Weapons[weaponIndex], nil, true) -- the remote in the left hand: every charge goes off
 		end
@@ -2096,7 +2196,9 @@ mv.ended = function(input)
 			holding.digHeld = false
 		end
 	elseif input.UserInputType == Enum.UserInputType.MouseButton2 or input.KeyCode == Enum.KeyCode.ButtonL2 then
-		aiming = false
+		if Weapons[weaponIndex].id ~= "Sniper" then -- the scope stays up until clicked off
+			aiming = false
+		end
 	end
 end
 UserInputService.InputEnded:Connect(mv.ended)
@@ -2151,6 +2253,7 @@ end)
 
 -- Own ragdoll: the client owns its humanoid, so it switches the state itself.
 local function onCharacter(char: Model)
+	weaponVisual.scope.zoom = 0 -- a new life starts unscoped
 	local humanoid = char:WaitForChild("Humanoid") :: Humanoid
 	local root = char:WaitForChild("HumanoidRootPart")
 	-- PLAYER DAMAGE off (the default, shared/Settings): cars, tanks and monsters bumping into us
@@ -3272,6 +3375,11 @@ RunService.RenderStepped:Connect(function(dt)
 	local humanoid = char and char:FindFirstChildOfClass("Humanoid")
 	local head = char and char:FindFirstChild("Head") :: BasePart?
 
+	-- the gravity gun lets go when it is put away; its claws and tether follow the hold
+	if holding and holding.grav and Weapons[weaponIndex].id ~= "Gravgun" then
+		drop(Vector3.zero)
+	end
+	weaponVisual.gravStep(dt)
 	-- drive the held body part (we own its physics while holding)
 	if holding then
 		local align = holding.part:FindFirstChild("GrabAlign", true) :: AlignPosition?
@@ -3347,6 +3455,11 @@ RunService.RenderStepped:Connect(function(dt)
 			-- held out in front: up against a wall or the floor it stops there and slides, instead of
 			-- being shoved into it (and jammed, or out the other side)
 			align.Position = clearOf(head.Position, head.Position + ray.Direction.Unit * holding.dist, 1, char)
+			-- the gravity gun still hauling it in: the flight and the stop at the claws are no hits
+			if holding.grav and not holding.arrived then
+				holding.impact = Impact.new()
+				holding.arrived = (holding.part.Position - align.Position).Magnitude < 3 and holding.part.AssemblyLinearVelocity.Magnitude < 25
+			end
 			-- swung into the ground or a wall: we own this body, so we see the hit and report it
 			local body = dummyOf(holding.part)
 			local landed = body and Impact.step(holding.impact, body, dt)
@@ -3599,11 +3712,18 @@ RunService.RenderStepped:Connect(function(dt)
 	-- aiming down the sights: zoom in, slow the mouse; the sniper looks through its scope instead
 	local held = Weapons[weaponIndex]
 	local sniper = held.id == "Sniper"
+	local sc = weaponVisual.scope
+	if sniper then
+		aiming = sc.zoom > 0
+	elseif sc.zoom > 0 then -- put the sniper away scoped: the scope goes down with it
+		sc.zoom, aiming = 0, false
+	end
 	local wantAds = aiming and show and (held.kind == "gun" or held.kind == "rocket")
 	ads += ((wantAds and 1 or 0) - ads) * math.min(dt * 14, 1)
-	Fx.fovBoost = (14 * MOVE_FX * sprint + moveFov) * (1 - ads) - ads * (sniper and 52 or 22)
-	-- the scope zooms ~4x, so it turns at a fifth; other sights a little slower; a drawn swing line slower still
-	local adsSlow = 1 - ads * (sniper and 0.8 or 0.35)
+	sc.fov += ((sc.FOV[sc.zoom] or sc.fov) - sc.fov) * math.min(dt * 14, 1)
+	Fx.fovBoost = (14 * MOVE_FX * sprint + moveFov) * (1 - ads) - ads * (sniper and sc.fov or 22)
+	-- the scope turns at sc.SENS; other sights a little slower; a drawn swing line slower still
+	local adsSlow = 1 - ads * (sniper and 1 - sc.SENS or 0.35)
 	if swingUi.cameraScale(adsSlow * (swingUi.slow and swingUi.CAMERA_SLOW or 1)) then
 		UserInputService.MouseDeltaSensitivity = 1
 	else
@@ -3779,13 +3899,17 @@ RunService.RenderStepped:Connect(function(dt)
 				move += Vector3.new(0, 0.1, -0.5) * ext -- reaches further than a jab
 			end
 		end
-		if side == "right" and hold and ads > 0 then -- aiming: the gun comes up to the crosshair (adsFix, below)
+		-- the gravity gun has no sights: it is always held in both hands, the left on its side grip
+		local twoHand = if weapon.id == "Gravgun" then 1 else ads
+		if side == "right" and hold and weapon.id == "Gravgun" then
+			move += hold.hand
+		elseif side == "right" and hold and ads > 0 then -- aiming: the gun comes up to the crosshair (adsFix, below)
 			move = move:Lerp(hold.hand + (adsFix[weapon.id] or Vector3.zero) + Vector3.new(0, 0, -0.35), ads) -- held out, so both hands show
 		elseif side == "right" and hold and weapon.kind == "knife" and knifeT > 0 then -- the arm bends back once it's caught
 			move = move:Lerp(KNIFE_COCK, smooth(math.clamp((knifeT - 0.35) / 0.65, 0, 1)))
-		elseif side == "left" and ads > 0 and leftGrip[weapon.id] then -- and the left hand takes hold of it
+		elseif side == "left" and twoHand > 0 and leftGrip[weapon.id] then -- and the left hand takes hold of it
 			local rest = Vector3.new(h.x * (0.85 - 0.5 * ext), -0.85 + 0.35 * ext, -2.35 - 1.2 * ext)
-			move = move:Lerp(leftGrip[weapon.id] - rest, ads)
+			move = move:Lerp(leftGrip[weapon.id] - rest, twoHand)
 		end
 		if pose then
 			move += (side == "right" and pose.right or pose.left) or Vector3.zero
@@ -3814,7 +3938,7 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 		-- the same wide, near rest for bare fists and anything held; a punch still reaches all the way
 		-- out, and aiming, the drawn bow and a hand reaching for the weapon go exactly where they're put
-		local bare = (1 - ext) * (1 - ads) * (weapon.kind == "bow" and 0 or 1)
+		local bare = (1 - ext) * (1 - twoHand) * (weapon.kind == "bow" and 0 or 1)
 			* (1 - (side == "left" and pose and pose.leftAt and inspectLeft and pose.leftAt.w or 0))
 		local fist = viewCF
 			* CFrame.new(h.x * (0.85 - 0.5 * ext + FIST_SPREAD * bare) + move.X, -0.85 + 0.35 * ext + move.Y,

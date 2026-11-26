@@ -6,6 +6,10 @@
 --  * Boilgun: a short spray of boiling water: knocks back and scalds for a while after (burns).
 --  * Taser: two wires; the dummy drops and twitches.
 --  * Lasso / Harpoon: a rope to the dummy that yanks it in; the lasso then drags it along behind.
+--  * Grapple: the other way round: the hook bites and the line reels the shooter in (a dummy: a flying kick).
+--  * Gravgun: a click with nothing held punts what is in front (a dummy flies, marked like a punt, so it
+--    hits the first wall hard; a loose part gets knocked away). Pulling a body in and launching it is
+--    the grab path (init.server grab "gravgun" / punt / release).
 --  * C4: click sticks a charge to what it hits (MAX_C4), right click sets all of them off.
 --  * Landmine: placed on the floor ahead; armed after a moment, it blows when a dummy steps close.
 --  * Spear: a long thrust that runs through up to SPEAR_PIERCE dummies in a line.
@@ -490,6 +494,77 @@ local function harpoon(weapon, player: Player, char: Model, origin: Vector3, dir
 	end
 end
 
+-- Grapple: the hook bites into whatever it meets and the line reels the SHOOTER in. The shooter's own
+-- client moves its character along the line (Fx "Grapple"); the server only watches where they get to.
+-- Bitten into a dummy, the ride ends in a flying kick that floors it once they reach it.
+local GRAPPLE_PULL = 140 -- studs/s the line reels in (client Fx GRAPPLE_PULL)
+local GRAPPLE_KICK = 7 -- studs from the dummy's torso that count as arrived
+
+local function grapple(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	K.fx:FireAllClients("Shot", char, weapon.id, origin, target, result ~= nil, d ~= nil)
+	if not result then
+		return -- nothing in reach: the hook flies out and the line winds it back
+	end
+	task.wait((target - origin).Magnitude / weapon.speed) -- the hook's flight (the client draws it)
+	local torso = d and d.model:FindFirstChild("UpperTorso") :: BasePart?
+	local ride = (target - origin).Magnitude / GRAPPLE_PULL + 0.7 -- + slack for curving in on WASD
+	K.fx:FireAllClients("Grapple", char, target, ride, torso)
+	play("HARPOON_REEL", origin, 1.25)
+	if not (d and torso) then
+		return
+	end
+	local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	local t0 = os.clock()
+	while os.clock() - t0 < ride + 0.3 do
+		task.wait(0.05)
+		if not (root and root.Parent and torso.Parent) or d.state == "Dead" then
+			return
+		end
+		local gap = torso.Position - root.Position
+		if gap.Magnitude < GRAPPLE_KICK then
+			takeOver(d)
+			local flat = gap * Vector3.new(1, 0, 1)
+			local push = if flat.Magnitude > 0.1 then flat.Unit else dir
+			K.hit(d, torso, push, weapon.dmg, weapon.push, "blunt", torso.Position, root.Position)
+			if d.state ~= "Dead" then
+				K.knockDown(d, 2.5, "Knocked down")
+			end
+			K.fx:FireAllClients("GrappleKick", char, torso.Position)
+			return
+		end
+	end
+end
+
+local GRAV_PUNT_TIME = 3 -- s a punted body lands its first hits hard (init.server PUNT_TIME)
+local GRAV_PUNT_BLAST, GRAV_PUNT_POWER = 3.5, 70 -- radius / power of the dent a punt leaves in the map
+
+local function gravPunt(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local result = workspace:Spherecast(origin, 1.5, dir * weapon.range, exclude(char))
+	local target = result and result.Position or origin + dir * weapon.range
+	local d = result and K.dummyOf(result.Instance)
+	K.fx:FireAllClients("Shot", char, weapon.id, origin, target, result ~= nil, d ~= nil)
+	if not result then
+		return
+	end
+	if d then
+		takeOver(d)
+		K.hit(d, result.Instance, dir, weapon.dmg, 0, "blunt", target, origin)
+		if d.state ~= "Dead" then
+			K.knockDown(d, 2.5, "Knocked down")
+		end
+		setVelocity(d, dir * weapon.push + UP * 35, 4) -- lifted, or it only skids along the floor
+		d.punt = { by = player, untilTime = os.clock() + GRAV_PUNT_TIME }
+	elseif not K.Monsters.damage(result.Instance, weapon.dmg * 10, dir, player) then
+		local p = result.Instance
+		if p:IsA("BasePart") and not p.Anchored then
+			p:ApplyImpulse(dir * weapon.push * p.AssemblyMass)
+		else -- a wall or the floor: the shove caves it in (Map.blast: chunks fly off)
+			K.Map.blast(target, GRAV_PUNT_BLAST, GRAV_PUNT_POWER)
+		end
+	end
+end
+
 local function placeC4(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3, aimed: boolean)
 	local list = charges[player] or {}
 	charges[player] = list
@@ -649,6 +724,8 @@ local HANDLERS = {
 	Taser = tase,
 	Lasso = lasso,
 	Harpoon = harpoon,
+	Grapple = grapple,
+	Gravgun = gravPunt,
 	C4 = placeC4,
 	Landmine = placeMine,
 	Spear = spear,

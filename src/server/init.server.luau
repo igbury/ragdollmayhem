@@ -1139,9 +1139,9 @@ local function release(d, velocity: Vector3, owner: Player?)
 	if by then
 		d.blame, d.blameAt, d.blameWeapon = by, os.clock(), "Body"
 	end
-	if d.dragging then
+	if d.dragging or d.gravgun then
 		task.delay(UNHELD_AFTER, function()
-			if not d.dragging and d.model.Parent then
+			if not d.dragging and not d.gravgun and d.model.Parent then
 				setGroup(d.model, "Default")
 			end
 		end)
@@ -1157,7 +1157,7 @@ local function release(d, velocity: Vector3, owner: Player?)
 		held[d.heldBy] = nil
 		d.heldBy = nil
 	end
-	d.dragging, d.raking, d.furrowAt = nil, nil, nil
+	d.dragging, d.raking, d.furrowAt, d.gravgun = nil, nil, nil, nil
 	d.looseOwner, d.looseSince = owner, os.clock()
 	if not owner then
 		setOwner(d.model, nil)
@@ -2539,13 +2539,19 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		end
 		local d = dummyOf(arg)
 		local head = headOf(player)
+		-- the gravity gun pulls from far off (shared/Weapons Gravgun.reach), only with it in hand
+		local grav = (...) == "gravgun"
+		if grav and (player.Character and player.Character:GetAttribute("EquippedWeapon")) ~= "Gravgun" then
+			return
+		end
 		-- F reaches a little further for the chest (by the collar), see DRAG_CHEST_REACH on the client
-		local reach = GRAB_RANGE + (((...) == "drag" and arg.Name == "UpperTorso") and 4 or 0)
+		local reach = if grav then 70 else GRAB_RANGE + (((...) == "drag" and arg.Name == "UpperTorso") and 4 or 0)
 		if not d or d.heldBy or not head or (arg.Position - head.Position).Magnitude > reach then
 			return
 		end
 		d.heldBy = player
 		d.dragging = (...) == "drag" -- F: by the chest in one hand, ground into the floor on a sprint (scrape)
+		d.gravgun = grav or nil -- flown in to the claws and held there; a click launches it (punt below)
 		d.throwFrom = nil
 		d.looseOwner = nil -- caught again mid-flight: the new holder owns it (knockDown below)
 		held[player] = d
@@ -2561,6 +2567,10 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		align.MaxForce = d.dragging and 90000 or 40000
 		align.MaxVelocity = d.dragging and 200 or 90
 		align.Responsiveness = d.dragging and 90 or 40
+		if grav then -- hauled in hard from the far end of the beam, and clear of the holder (Held)
+			align.MaxForce, align.MaxVelocity, align.Responsiveness = 150000, 160, 60
+			setGroup(d.model, "Held")
+		end
 		align.Parent = attachment
 		if d.dragging then
 			setGroup(d.model, "Held")
@@ -2613,7 +2623,7 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		end
 	elseif action == "punt" then
 		local d = held[player]
-		local torso = d and d.dragging and d.model:FindFirstChild("UpperTorso") :: BasePart?
+		local torso = d and (d.dragging or d.gravgun) and d.model:FindFirstChild("UpperTorso") :: BasePart?
 		local head = headOf(player)
 		if not torso or not head or not finite(arg) or arg.Magnitude < 1 or (torso.Position - head.Position).Magnitude > 14 then
 			return
@@ -2621,7 +2631,9 @@ grabRemote.OnServerEvent:Connect(function(player, action, arg, ...)
 		d.punt = { by = player, untilTime = os.clock() + PUNT_TIME }
 		fxRemote:FireAllClients("Punt", nil, torso.Position, arg.Unit)
 		hit(d, torso, arg.Unit, PUNT_HURT, 0, "blunt", torso.Position, head.Position)
-		Tutorial.event(player, "punt")
+		if d.dragging then -- (a gravity gun launch is no lesson)
+			Tutorial.event(player, "punt")
+		end
 	elseif action == "release" then
 		local d = held[player]
 		if d then
@@ -3705,6 +3717,10 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 			end
 			if result.Instance.Parent then
 				hit(d, result.Instance, blow, weapon.dmg and weapon.dmg * dmgScale, weapon.push and weapon.push * pushScale, weapon.hurt, target, origin)
+				local zone = PARTS[result.Instance.Name] and PARTS[result.Instance.Name].zone
+				if weapon.torsoKill and d.state ~= "Dead" and (zone == "Chest" or zone == "Stomach") then
+					kill(d, "Dead") -- the sniper: a body shot is as final as a head shot
+				end
 			end
 			if id == "Bat" and d.model.Parent then
 				batBlow(d, swing)

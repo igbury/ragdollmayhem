@@ -435,6 +435,251 @@ def harpoon(b):
     b.box(V((-0.03, -0.66, 0.08)), V((0.03, -0.58, 0.12)), METAL)
 
 
+NAVY = (0.14, 0.17, 0.25)
+NAVY_DARK = (0.09, 0.11, 0.16)
+GRAPHITE = (0.29, 0.32, 0.37)
+
+
+def grapple(b):
+    """The grapple gun from assets/weapons/grappling_hook (the NPR hero model, metres, +X forward) at
+    4.5 studs a metre: an AR-style receiver, a fat launch cannon over a line canister, two double
+    clamps, a ladder sight, and the hook sitting just out of the muzzle. The hook, its claws and the
+    line are the "Hook" piece: the client pulls it back into the barrel while it is out (Fx Grapple)."""
+    S = 4.5
+
+    def Y(mx):  # metres forward -> studs along -Y, the grip at the origin
+        return -(mx + 0.098) * S + 0.155
+
+    def Z(mz):
+        return (mz - 0.02) * S + 0.14
+
+    def P(mx, my, mz):
+        return V((my * S, Y(mx), Z(mz)))
+
+    def bx(x0, x1, y0, y1, z0, z1, rgb, bevel=0.0):
+        b.box(P(x1, y0, z0), P(x0, y1, z1), rgb, bevel)
+
+    def cy(x0, x1, r, mz, rgb, seg=12, r2=None):  # a cylinder along the barrel, metres
+        b.cyl(V((0, (Y(x0) + Y(x1)) / 2, Z(mz))), "y", abs(Y(x1) - Y(x0)), r * S, rgb, None if r2 is None else r2 * S, seg)
+
+    # receiver
+    bx(-0.150, 0.035, -0.030, 0.030, 0.058, 0.142, NAVY, 0.02)  # upper
+    bx(-0.082, -0.024, -0.0315, -0.020, 0.088, 0.116, HOLE)  # ejection port
+    bx(-0.150, 0.032, -0.026, 0.026, 0.018, 0.064, GRAPHITE, 0.015)  # lower
+    bx(-0.036, 0.031, -0.029, 0.029, -0.076, 0.040, GRAPHITE, 0.02)  # magwell
+    bx(-0.030, 0.026, -0.023, 0.023, -0.078, -0.060, HOLE)
+    b.cyl(P(-0.012, -0.031, 0.004), "x", 0.05, 0.03, STEEL, seg=8)  # mag release
+    grip(b, (0.04, 0.31), 0.14, (0.22, 0.44), -0.40, 0.075, GRAPHITE, 0.025)
+    trigger_group(b, -0.124, METAL)
+    cy(-0.214, -0.150, 0.0172, 0.084, NAVY, seg=8)  # buffer tube
+    cy(-0.163, -0.151, 0.0225, 0.084, NAVY_DARK, seg=8)  # castle nut
+    # rail: base and chunky teeth up to the sight
+    bx(-0.146, 0.300, -0.0125, 0.0125, 0.128, 0.1525, NAVY_DARK, 0.01)
+    for i in range(12):
+        x = -0.138 + i * 0.0365
+        bx(x, x + 0.016, -0.0135, 0.0135, 0.1525, 0.160, NAVY_DARK)
+    # the launch cannon, its bore, the line canister and its knurled nut
+    cy(0.030, 0.380, 0.042, 0.100, NAVY, seg=12)
+    cy(0.379, 0.3815, 0.034, 0.100, HOLE, seg=12)
+    cy(0.046, 0.335, 0.036, 0.014, NAVY, seg=10)
+    cy(0.024, 0.048, 0.026, 0.014, NAVY_DARK, seg=10)
+    cy(0.330, 0.372, 0.0435, 0.014, NAVY_DARK, seg=12)
+    for k in range(8):  # knurl ribs
+        a = 2 * math.pi * k / 8
+        c = P(0.351, 0.0445 * math.cos(a), 0.014 + 0.0445 * math.sin(a))
+        b.cyl(c, "y", 0.17, 0.022, NAVY_DARK, seg=4)
+    cy(0.372, 0.378, 0.033, 0.014, NAVY, seg=10)
+    cy(0.377, 0.3795, 0.011, 0.014, HOLE, seg=8)
+    # two double clamps: a ring round each barrel, a bridge between, a bolt each side
+    for xc in (0.112, 0.255):
+        cy(xc - 0.016, xc + 0.016, 0.0505, 0.100, NAVY_DARK, seg=12)
+        cy(xc - 0.016, xc + 0.016, 0.0445, 0.014, NAVY_DARK, seg=10)
+        bx(xc - 0.016, xc + 0.016, -0.021, 0.021, 0.040, 0.075, NAVY_DARK)
+        for s in (-1, 1):
+            b.cyl(P(xc, 0.025 * s, 0.057), "x", 0.04, 0.038, STEEL, seg=6)
+    bx(0.150, 0.250, -0.0435, -0.034, 0.092, 0.122, GRAPHITE)  # stencil plate
+    b.cyl(P(0.268, -0.042, 0.107), "x", 0.02, 0.04, YELLOW, seg=6)  # hex badge
+    # ladder sight: low base, tall notched frame at its back, front post at its front
+    bx(0.300, 0.372, -0.015, 0.015, 0.134, 0.154, OD)
+    for s in (-1, 1):
+        bx(0.302, 0.318, 0.011 * s, 0.017 * s, 0.150, 0.222, NAVY)
+    bx(0.303, 0.313, -0.017, 0.017, 0.214, 0.224, NAVY)
+    for z in (0.170, 0.186, 0.202):
+        bx(0.3055, 0.3105, -0.012, 0.012, z, z + 0.004, NAVY)
+    bx(0.360, 0.366, -0.003, 0.003, 0.150, 0.176, OD)
+    # the hook (moving piece): piston disk, shaft, dome, rope eye, four barbed claws, the line
+    b.moving("Hook")
+    cy(0.425, 0.438, 0.031, 0.100, NAVY_DARK, seg=10)
+    cy(0.425, 0.429, 0.0345, 0.100, STEEL, seg=10)
+    cy(0.437, 0.500, 0.0115, 0.100, STEEL, seg=8)
+    b.ball(P(0.506, 0, 0.100), 0.021 * S, STEEL, seg=8, rings=5)
+    bx(0.439, 0.457, -0.0055, 0.0055, 0.066, 0.089, STEEL)
+    for k in range(4):
+        a = math.radians(45 + 90 * k)
+        ca, sa = math.cos(a), math.sin(a)
+
+        def at(t, inward=0.0):
+            mx = 0.508 - 0.075 * (1 - math.cos(t * math.pi / 2))
+            r = 0.013 + 0.058 * math.sin(t * math.pi / 2) - inward
+            return P(mx, r * ca, 0.100 + r * sa)
+
+        b.sweep([at(1.25 * i / 5) for i in range(6)], 0.010 * S, STEEL, seg=5, r_end=0.0015 * S)
+        for t in (0.6, 0.95):  # saw barbs on the inner edge, raked back
+            root = at(t, 0.006)
+            tip = at(t - 0.12, 0.020)
+            b.tube(root, tip, 0.006 * S, STEEL, r2=0.001 * S, seg=4)
+    b.sweep([P(0.379, 0, 0.014), P(0.405, 0, 0.022), P(0.430, 0, 0.045), P(0.448, 0, 0.070)], 0.0045 * S, ROPE, seg=5)
+    b.moving()
+
+
+GG_STEEL = (0.37, 0.42, 0.45)
+GG_ARMOR = (0.23, 0.27, 0.31)
+GG_DARK = (0.12, 0.13, 0.17)
+GG_YOKE = (0.2, 0.15, 0.14)
+GG_COPPER = (0.6, 0.33, 0.19)
+GG_TAPE = (0.68, 0.7, 0.72)
+GG_GLOW = (1.0, 0.55, 0.05)
+GG_HOT = (1.0, 0.93, 0.6)
+GG_CLAW_HINGE = []  # filled by gravgun(): per claw (hinge point, hinge axis) in Roblox mesh space
+
+
+def gravgun(b):
+    """The gravity gun from assets/weapons/gravity_gun (the NPR hero model, metres, +X forward, -Y left)
+    at 4 studs a metre: rear stalk grip (raked down to pistol-like, the origin), dark double yoke
+    between two steel drums, ribbed side grip on the left drum (the support hand), a faceted armour
+    block with glowing vents, copper collar, the glowing core in a three-frame cage, the emitter, and
+    three truss claws, each its own moving piece ("Claw1".."Claw3": they open wider while it holds a
+    body, client Fx; GG_CLAW_HINGE gives each one's hinge)."""
+    S = 4.0
+    gx, gz = -0.268, -0.064  # the grip's middle (hero metres)
+
+    def P(mx, my, mz):  # hero metres -> builder studs: -Y forward, +X right (hero +Y is left)
+        return V((-my * S, -(mx - gx) * S, (mz - gz) * S))
+
+    def H(v):
+        return P(v[0], v[1], v[2])
+
+    def cx(x0, x1, r, rgb, seg=12, r_front=None, y=0.0, z=0.0):  # along the barrel: r at the back
+        b.cyl(P((x0 + x1) / 2, y, z), "y", abs(x1 - x0) * S, (r if r_front is None else r_front) * S, rgb,
+              r * S, seg)
+
+    def cy(y0, y1, r, rgb, x, z, seg=12, r2=None):  # across (hero Y): r at y0... symmetric use only
+        b.cyl(P(x, (y0 + y1) / 2, z), "x", abs(y1 - y0) * S, r * S, rgb, None if r2 is None else r2 * S, seg)
+
+    def obox(c, ax, half, rgb, bevel=0.0):  # an oriented box: centre, 3 unit axes, half sizes (hero)
+        c = V(c)
+        b.hexa({k: H(c + sum(((-1, 1)[k[i]] * half[i] * V(ax[i]) for i in range(3)), V((0, 0, 0))))
+                for k in product((0, 1), repeat=3)}, rgb, bevel)
+
+    X, Y, Z = V((1, 0, 0)), V((0, 1, 0)), V((0, 0, 1))
+    YX = -0.17
+    # rear stalk grip, raked 60 deg down from the yoke, black tape at its root, steel spine, round foot
+    g0 = V((YX - 0.068, 0, -0.012))
+    gd = V((-0.5, 0, -0.866))
+    gu = gd.cross(Y).normalized()  # 'up' across the stalk (its back)
+    obox(g0 + gd * 0.052, (gd, Y, gu), (0.048, 0.021, 0.026), GG_DARK, 0.01)
+    obox(g0 + gd * 0.012, (gd, Y, gu), (0.014, 0.025, 0.03), BLACK)
+    obox(g0 + gd * 0.055, (gd, Y, gu), (0.036, 0.011, 0.004), GG_STEEL)  # spine on the back
+    obox(g0 + gd * 0.104, (gd, Y, gu), (0.008, 0.027, 0.031), GG_DARK, 0.008)  # the foot
+    obox(g0 + gd * -0.008, (gd, Y, gu), (0.018, 0.025, 0.034), GG_YOKE)  # mount into the yoke
+    # yoke: two dark plates, a groove between; the drums either side, stepped flanges, hubs
+    for s in (-1, 1):
+        cy(s * 0.006, s * 0.031, 0.088, GG_YOKE, YX, 0, seg=14)
+        cy(s * 0.030, s * 0.098, 0.079, GG_STEEL, YX, 0, seg=14)
+        cy(s * 0.098, s * 0.112, 0.06, GG_STEEL, YX, 0, seg=12)
+        cy(s * 0.110, s * 0.118, 0.028, GG_DARK, YX, 0, seg=8)
+    cy(-0.007, 0.007, 0.07, GG_DARK, YX, 0, seg=12)
+    # side grip on the left drum (-Y), ribbed; red switch at its root; the taped-on gauge on top
+    cy(-0.104, -0.12, 0.032, GG_STEEL, YX, -0.008, seg=10)
+    cy(-0.12, -0.24, 0.022, GG_DARK, YX, -0.008, seg=8)
+    for k in range(6):
+        y = -0.13 - k * 0.018
+        cy(y, y - 0.007, 0.0255, BLACK, YX, -0.008, seg=8)
+    cy(-0.236, -0.244, 0.018, GG_DARK, YX, -0.008, seg=8)
+    b.box(P(YX + 0.033, -0.11, 0.016), P(YX + 0.047, -0.126, 0.036), RED)
+    b.cyl(P(YX - 0.004, -0.072, 0.086), "z", 0.023 * S, 0.024 * S, GG_STEEL, seg=10)
+    b.cyl(P(YX - 0.004, -0.072, 0.098), "z", 0.003 * S, 0.019 * S, PAPER, seg=10)
+    b.box(P(YX - 0.004, -0.0735, 0.0995), P(YX + 0.01, -0.0705, 0.101), RED)  # needle
+    for a0, a1 in ((40, 72), (108, 140)):  # tape over the drum top, either side of the gauge
+        a, c = math.radians((a0 + a1) / 2), V((YX, -0.072, 0))
+        rad = V((math.cos(a), 0, math.sin(a)))
+        tan = V((-math.sin(a), 0, math.cos(a)))
+        obox(c + rad * 0.081, (tan, Y, rad), (0.083 * math.radians(a1 - a0) / 2, 0.017, 0.002), GG_TAPE)
+    # armour block: octagonal, tapered front; top plate and lamp; vents; radiator fins; copper collar
+    cx(-0.125, -0.108, 0.07, GG_ARMOR, seg=8, r_front=0.094)
+    cx(-0.108, 0.03, 0.094, GG_ARMOR, seg=8)
+    cx(0.03, 0.05, 0.094, GG_ARMOR, seg=8, r_front=0.078)
+    b.box(P(-0.095, -0.035, 0.088), P(0.015, 0.035, 0.104), GG_ARMOR, 0.02)
+    b.box(P(-0.014, -0.013, 0.104), P(0.004, 0.013, 0.11), GG_GLOW)
+    sl = V((math.sin(math.radians(22)), 0, math.cos(math.radians(22))))  # slanted slots
+    for s in (-1, 1):
+        for i in range(3):
+            c = V((-0.07 + 0.032 * i, s * 0.0885, -0.004))
+            obox(c, (X, Y, sl), (0.0085, 0.004, 0.032), BLACK)
+            obox(c + Y * s * 0.0035, (X, Y, sl), (0.005, 0.002, 0.027), GG_GLOW)
+    for i in range(6):
+        x = -0.095 + i * 0.022
+        b.box(P(x - 0.003, -0.042, -0.112), P(x + 0.003, 0.042, -0.086), GG_STEEL)
+    cx(0.04, 0.084, 0.094, GG_COPPER, seg=14)
+    # the core: glowing cylinder, hot ribs, in a cage of three frames and three rods; the front collar
+    cx(0.08, 0.33, 0.052, GG_GLOW, seg=12)
+    for k in range(6):
+        a = 2 * math.pi * k / 6 + math.pi / 6
+        n = V((0, math.cos(a), math.sin(a)))
+        obox(V((0.205, 0, 0)) + n * 0.054, (X, n.cross(X), n), (0.12, 0.004, 0.003), GG_HOT)
+
+    def rot(ang):  # local (x, t, r) of a radial frame at angle ang (deg, 90 = top) -> hero
+        p = math.radians(ang - 90)
+        return lambda x, t, r: V((x, t * math.cos(p) - r * math.sin(p), t * math.sin(p) + r * math.cos(p)))
+
+    for ang in (90, 210, 330):
+        R = rot(ang)
+        ax, at, ar = X, (R(0, 1, 0) - R(0, 0, 0)), (R(0, 0, 1) - R(0, 0, 0))
+        for t in (-1, 1):
+            obox(R(0.205, t * 0.022, 0.074), (ax, at, ar), (0.125, 0.006, 0.006), GG_STEEL)
+        for x in (0.088, 0.205, 0.322):
+            obox(R(x, 0, 0.074), (ax, at, ar), (0.007, 0.028, 0.006), GG_STEEL)
+        Rr = rot(ang + 60)
+        b.tube(H(Rr(0.08, 0, 0.068)), H(Rr(0.33, 0, 0.068)), 0.005 * S, GG_DARK, seg=6)
+    cx(0.325, 0.333, 0.088, GG_ARMOR, seg=12, r_front=0.098)
+    cx(0.333, 0.352, 0.098, GG_ARMOR, seg=12)
+    cx(0.352, 0.36, 0.098, GG_ARMOR, seg=12, r_front=0.088)
+    cx(0.358, 0.364, 0.052, GG_DARK, seg=12)
+    cx(0.362, 0.367, 0.034, GG_GLOW, seg=12)
+    cx(0.364, 0.369, 0.021, GG_STEEL, seg=10)
+    b.ball(P(0.37, 0, 0), 0.01 * S, GG_HOT, seg=8, rings=5)
+    # three claws: bracket and axle on the collar stay; the truss arms, elbow, tip and LED move
+    HX, HR = 0.352, 0.104
+    a1, l1 = math.radians(58), 0.11
+    a2, l2 = math.radians(-36), 0.09
+    E = (HX + l1 * math.cos(a1), HR + l1 * math.sin(a1))
+    Tp = (E[0] + l2 * math.cos(a2), E[1] + l2 * math.sin(a2))
+    Tip = (Tp[0] + 0.01, Tp[1] - 0.03)
+    GG_CLAW_HINGE.clear()
+    for k, ang in enumerate((90, 210, 330)):
+        R = rot(ang)
+        at, ar = R(0, 1, 0) - R(0, 0, 0), R(0, 0, 1) - R(0, 0, 0)
+        obox(R(HX - 0.008, 0, HR - 0.008), (X, at, ar), (0.017, 0.02, 0.01), GG_ARMOR)
+        b.tube(H(R(HX, -0.026, HR)), H(R(HX, 0.026, HR)), 0.0085 * S, GG_STEEL, seg=8)
+        g = [R(HX - 0.012, -0.03, HR + 0.004), R(HX - 0.03, -0.03, HR + 0.07),
+             R(HX - 0.03, 0.03, HR + 0.07), R(HX - 0.012, 0.03, HR + 0.004)]
+        b.sweep([H(p) for p in g], 0.0038 * S, GG_STEEL, seg=4)  # wire guard
+        hinge, axis = H(R(HX, 0, HR)), H(R(HX, 1, HR)) - H(R(HX, 0, HR))
+        GG_CLAW_HINGE.append(((-hinge.x, hinge.z, hinge.y), (-axis.x, axis.z, axis.y)))  # Roblox space
+        b.moving(f"Claw{k + 1}")
+        for t in (-1, 1):
+            b.tube(H(R(HX, t * 0.017, HR)), H(R(E[0], t * 0.007, E[1])), 0.005 * S, GG_STEEL, seg=4)
+            b.tube(H(R(E[0], t * 0.007, E[1])), H(R(Tp[0], t * 0.003, Tp[1])), 0.0045 * S, GG_STEEL, seg=4)
+        for f in (0.35, 0.68):
+            mx, mr = HX + (E[0] - HX) * f, HR + (E[1] - HR) * f
+            h = 0.017 + (0.007 - 0.017) * f
+            b.tube(H(R(mx, -h, mr)), H(R(mx, h, mr)), 0.0035 * S, GG_STEEL, seg=4)
+        b.tube(H(R(E[0], -0.014, E[1])), H(R(E[0], 0.014, E[1])), 0.009 * S, GG_DARK, seg=8)
+        b.tube(H(R(Tp[0], 0, Tp[1])), H(R(Tip[0], 0, Tip[1])), 0.0048 * S, GG_STEEL, r2=0.002 * S, seg=4)
+        b.ball(H(R(Tip[0], 0, Tip[1] + 0.003)), 0.005 * S, GG_HOT, seg=6, rings=4)
+        b.moving()
+
+
 # ---- thrown (held in the fist) ----
 
 def tnt(b):
@@ -569,6 +814,8 @@ WEAPONS = {
     "Flamethrower": (flamethrower, [("thick", 1.3), ("cross", "y", -1.6, -2.2, 1.2)]),
     "Minigun": (minigun, [("thick", 1.15)]),
     "Harpoon": (harpoon, [("thick", 1.3), ("cross", "y", -2.6, -3.1, 1.3)]),
+    "Grapple": (grapple, [("thick", 1.1)]),
+    "Gravgun": (gravgun, [("thick", 1.05)]),
     "TNT": (tnt, [("thick", 1.1)]),
     "C4": (c4, [("thick", 1.1)]),
     "Landmine": (landmine, []),

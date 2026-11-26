@@ -177,6 +177,8 @@ Sfx.WEAPON = {
 	Flamethrower = { fire = { Sfx.FLAMETHROWER_BURST or Sfx.DASH_WHOOSH, Sfx.FLAMETHROWER_BURST and 1 or 0.6, 0.7 } }, -- once every HUSH s
 	Minigun = { fire = { Sfx.MINIGUN_SHOT or Sfx.RIFLE, Sfx.MINIGUN_SHOT and 1 or 1.25, 0.7 }, hit = BULLET },
 	Harpoon = { fire = { Sfx.HARPOON_FIRE or Sfx.BOW_RELEASE, Sfx.HARPOON_FIRE and 1 or 0.8 }, hit = { Sfx.KNIFE_HIT, 1 } },
+	Grapple = { fire = { Sfx.HARPOON_FIRE or Sfx.BOW_RELEASE, Sfx.HARPOON_FIRE and 1.3 or 1 }, hit = { Sfx.CROWBAR_HIT, 0.8 } },
+	Gravgun = { fire = { Sfx.ROCKET_JUMP_POP, 0.7 }, hit = { Sfx.BODY_THUD, 0.9 } },
 	TNT = { fire = { Sfx.THROW, 0.8 } },
 	C4 = { fire = { Sfx.THROW, 1.1 } },
 	Landmine = { fire = { Sfx.THROW, 0.7 } },
