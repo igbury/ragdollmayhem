@@ -143,11 +143,15 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model, bossView: Vie
 			end
 		end
 	end
-	-- headphones: a band over the head and a cup on each ear, carried by the head like an accessory
+	-- headphones: a band over the head and a cup on each ear, carried by the head like an accessory.
+	-- Their own model, not the character's: fading a part under the Humanoid makes Roblox rebuild the
+	-- whole character's look, and in a ViewportFrame he vanishes for as long as the fade runs.
 	local hs = parts.Head.Size
 	local DARK, GREY, RED = Color3.fromRGB(30, 30, 36), Color3.fromRGB(70, 70, 80), Color3.fromRGB(232, 70, 56)
+	local headphones = Instance.new("Model")
+	headphones.Name = "Headphones"
 	local function phone(size: Vector3, offset: CFrame, color: Color3, cylinder: boolean?)
-		local p = box(model, size, CFrame.identity, color)
+		local p = box(headphones, size, CFrame.identity, color)
 		p.CanCollide = false
 		if cylinder then
 			p.Shape = Enum.PartType.Cylinder -- axis along X: faces out of the ears
@@ -173,6 +177,7 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model, bossView: Vie
 	dummy.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
 	dummy.Parent = model
 	model.Parent = world
+	headphones.Parent = world
 	self.parts, self.joints, self.extras = parts, joints, extras
 
 	-- Measurements for the poses: where the hips are, how tall the legs are.
@@ -560,7 +565,21 @@ function MenuPuppet:step(t: number)
 		-- the camera: from its menu spot onto the clip's, and from PUSH_AT onto the game's chase camera
 		-- behind this avatar's own head, closing in to the spot the game camera takes over at
 		local k = ease(e / EASE_IN)
-		local cam = self.camHome:Lerp(self.base * pose.camera, k)
+		local goal = self.base * pose.camera
+		local pos = self.camHome.Position:Lerp(goal.Position, k)
+		local rot = self.camHome.Rotation:Lerp(goal.Rotation, k)
+		-- aimed so he slides from his spot in the menu shot to his spot in the clip's: blending the two
+		-- rotations alone swings him out past the panel's edge while the camera is still far off
+		local at = parts.UpperTorso.Position
+		local from = self.camHome:VectorToObjectSpace(at - self.camHome.Position).Unit
+		local to = goal:VectorToObjectSpace(at - goal.Position).Unit
+		local want = rot:VectorToWorldSpace(from:Lerp(to, k).Unit)
+		local need = (at - pos).Unit
+		local axis = want:Cross(need)
+		if axis.Magnitude > 1e-4 then
+			rot = CFrame.fromAxisAngle(axis.Unit, math.atan2(axis.Magnitude, want:Dot(need))) * rot
+		end
+		local cam = CFrame.new(pos) * rot
 		local fov = self.homeFov + (pose.fov - self.homeFov) * k
 		if e > PUSH_AT then
 			local head = parts.Head

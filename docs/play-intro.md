@@ -39,10 +39,17 @@ bash assets/menu/make_mp4.sh                      # renderuje klatki i składa d
 
 **Sprawdzone:**
 
-- Play w Studio z prawdziwym kliknięciem PLAY: cała sekwencja, cięcie do FPP i `IntroCompleted` w konsoli bez błędów.
+- Play w Studio z prawdziwym kliknięciem PLAY: cała sekwencja, cięcie do FPP i `IntroCompleted` w konsoli bez błędów. Nagranie po poprawkach: `docs/play-intro/studio_play_test.mp4`.
+- Pomijanie kliknięciem: działa. Spacji nie dało się sprawdzić przez MCP, bo między wywołaniami mija ok. 5 s, a cała animacja trwa 4,67 s. Kod Spacji i Entera jest ten sam co kliknięcia (`SKIP_KEYS` w `Menu.luau`).
 - Film z Blendera: arkusz klatek co 7 klatek.
+- Kadr: sonda w każdej klatce rzutuje tułów awatara przez kamerę jego ViewportFrame. Po poprawce kamery ani jedna próbka nie wychodzi poza kadr. Wcześniej w 0,1–0,4 s po kliknięciu tułów był 38° od osi przy połowie kąta widzenia ok. 19°, czyli za lewą krawędzią panelu.
 
-**Znana drobnostka:** w pierwszych 0,6 s, gdy kamera menu przechodzi w kamerę animacji, awatar przez chwilę dotyka lewej krawędzi panelu.
+**Poprawione:**
+
+- Ucieczka awatara za lewą krawędź po kliknięciu. Kamera nie miesza już samych obrotów; celuje tak, żeby awatar przesuwał się płynnie z miejsca w kadrze menu na miejsce w kadrze klipu.
+- Słuchawki są w osobnym modelu, nie w modelu postaci z Humanoidem. Zmiana przezroczystości części pod Humanoidem może wymusić ponowne składanie wyglądu postaci.
+
+**Znany problem (rzadki):** na 1 z 5 nagrań po poprawkach (i na nagraniach sprzed nich) awatar znika na ok. 0,3 s mniej więcej 1,8–2,2 s po kliknięciu. Boss w drugim widoku zostaje. Moment nie jest stały względem klipu. W tych klatkach sonda nie widzi żadnej zmiany: przezroczystość 0, pozycje części, kamera, FOV, `Visible`, `ZIndex`, rozmiar viewportu, liczba widocznych viewportów i czas klatki są stałe, a części ciała mają już `RenderFidelity = Precise`. Wygląda to na usterkę renderowania ViewportFrame w silniku, nie na błąd danych. Nie udało się go wywołać na żądanie, więc nie jest naprawiony.
 
 **Niesprawdzone:**
 
