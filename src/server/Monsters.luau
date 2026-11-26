@@ -36,6 +36,7 @@ local LINK_PITCH = 1.9 * LINK_SCALE -- a link 3.7 studs long; the next one hangs
 -- gate over its top. Every one is in its own lair (Map.LAIRS, design "Mayhem Park 2.0"): the Cyclops at a
 -- forge under the volcano, the Minotaur in the hedge labyrinth, Talos on the lake's island. A lair's frame
 -- is the pit's centre on the ground; in lair space the ramp leads out toward +z.
+local ROAR = 1.8 -- seconds it roars when let out, before it goes hunting
 local PIT, DEEP, RAMPART, RAMP_HALF, RAMP_LONG = 22, 3, 6, 9, 6
 local LAIRS = Map.LAIRS
 -- Round each lair (lair space): a pylon either side of the way out, wide of the ramp so a 36-stud boss
@@ -340,7 +341,9 @@ local function release(d)
 	d.prompt.ActionText = "Recall"
 	unchain(d)
 	voice(d, Sfx.ZOMBIE_ATTACK)
-	state(d, "Idle")
+	state(d, "Roar", ROAR) -- MythRig poses it; client/MythPresentation announces it
+	d.moving = 0
+	if events then events:FireAllClients("loose", d.kind, d.root.Position) end
 end
 local drop
 -- Chains it once its pose has settled (the server poses it at 20 Hz), unless it got out again meanwhile.
@@ -541,6 +544,10 @@ end
 local function think(d, now)
 	if d.state == "Caged" then return end
 	if d.state == "Eat" then chew(d, now); return end
+	if d.state == "Roar" then
+		if now < d.untilTime then return end
+		state(d, "Idle")
+	end
 	if d.state == "Windup" and now >= d.untilTime then
 		if d.kind == "Minotaur" then
 			d.chargeDirection = flat(d.impact - d.root.Position)

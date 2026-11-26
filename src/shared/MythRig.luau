@@ -158,19 +158,35 @@ function Rig.pose(joints, state, kind, elapsed, moving, phase, hurt, authoritati
 	local stride = math.sin(elapsed * (kind == "Minotaur" and 9 or 5)) * moving
 	local breath = math.sin(elapsed * 1.8) * 0.025
 	local lift, bend = 0, 0
+	local spread, head, sway = 0, 0, stride * 0.07 -- arms out sideways, head back, hips swaying with the steps
 	if state == "Windup" then lift, bend = -1.8 * phase, -0.22 * phase
 	elseif state == "Strike" then lift, bend = 0.65, 0.4
-	elseif state == "Recovery" then lift, bend = 0.65 * (1 - phase), 0.4 * (1 - phase)
+	elseif state == "Recovery" then -- follow-through: it hangs on the blow, then eases back
+		local back = 1 - (1 - phase) ^ 3
+		lift, bend = 0.65 * (1 - back), 0.4 * (1 - back)
 	elseif state == "Charge" then lift, bend = -0.8, 0.35
 	elseif state == "Eat" then -- both hands at the mouth, chewing
 		local chomp = math.sin(elapsed * 9)
 		lift, bend = -1.5 + chomp * 0.15, 0.25 + chomp * 0.12
+	elseif state == "Roar" then -- let out: a crouch, then up and back with arms flung wide, shaking
+		local crouch = math.clamp(phase / 0.2, 0, 1)
+		local open = math.clamp((phase - 0.2) / 0.15, 0, 1) * (1 - math.clamp((phase - 0.85) / 0.15, 0, 1))
+		local shake = math.sin(elapsed * 38) * 0.035 * open
+		bend = 0.3 * crouch * (1 - open) - 0.32 * open + shake
+		lift = -0.4 * crouch * (1 - open) - 1.25 * open
+		spread, head = 0.75 * open, -0.55 * open + shake
+	elseif state == "Caged" then -- straining at the chains now and then
+		local tug = math.max(0, math.sin(elapsed * 0.9)) ^ 6
+		bend, lift, head = 0.12 * tug, 0.35 * tug, 0.2 * tug
 	end
 	for name, j in joints do
 		local x, z = 0, 0
-		if name == "Waist" then x = breath + bend - hurt * 0.14
-		elseif name == "Neck" then x = -bend * 0.4
-		elseif name:find("Shoulder") then x = lift + (name == "LeftShoulder" and stride or -stride) * 0.35; z = name == "LeftShoulder" and -0.12 or 0.12
+		if name == "Waist" then x = breath + bend - hurt * 0.14; z = sway
+		elseif name == "Neck" then x = -bend * 0.4 + head + hurt * 0.25; z = -sway * 0.8
+		elseif name:find("Shoulder") then
+			local left = name == "LeftShoulder"
+			x = lift + (if left then stride else -stride) * 0.35 - hurt * 0.3
+			z = (if left then -1 else 1) * (0.12 + spread)
 		elseif name:find("Elbow") then x = -0.12 - math.abs(lift) * 0.25
 		elseif name:find("Hip") then x = (name == "LeftHip" and stride or -stride) * 0.45
 		elseif name:find("Knee") then x = math.max(0, (name == "LeftKnee" and -stride or stride)) * 0.55 end
