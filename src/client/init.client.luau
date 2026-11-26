@@ -1144,6 +1144,8 @@ local HOLD = {
 	Minigun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0, -0.88), scale = 0.85 },
 	Harpoon = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, 0.18, -1.2) },
 	Grapple = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.2, 0.05, 0.45), support = Vector3.new(0, -0.1, -1.0), scale = 0.8 },
+	BalloonGun = { grip = CFrame.new(0, -0.09, -0.08), hand = Vector3.new(-0.25, 0.2, 0.1), support = Vector3.new(-0.12, 0, 0.1), scale = 0.8 }, -- the 90s comic revolver (assets/weapons/revolver_90s), bigger than the Revolver
+	LeafBlower = { grip = CFrame.Angles(math.rad(18), 0, 0), body = CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(-0.1, 0.05, -0.5), scale = 0.6 }, -- by its top handle (assets/weapons/leafblower_90s), one-handed, the nozzle tipped up at the crosshair; body: hung from the lowered hand, nozzle forward
 	Gravgun = { grip = CFrame.new(0, 0.12, -0.04), hand = Vector3.new(-0.1, -0.3, 0.2), support = Vector3.new(-0.54, 0.17, -0.29), scale = 0.75 }, -- support: the ribbed side grip (scaled), held two-handed always
 	-- held in the fist (thrown / placed)
 	Lasso = { grip = CFrame.new(0, 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
@@ -1156,6 +1158,7 @@ local HOLD = {
 	Tomato = { grip = CFrame.new(0, 0.2, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 	Bandage = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
 	Cast = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
+	Balloon = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 }, -- the bunch held by its strings, balloons up
 	-- needle up out of the fist (the mesh points -Z: turned 90 degrees about X)
 	DeathSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
 	HealSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
@@ -1368,6 +1371,21 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)
+	if weapon.thrust then -- the leaf blower pushes back on its holder; pointed at the ground it lifts
+		local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if root and hum then
+			if dir.Y < -0.5 then -- off the ground: Running would snap the root straight back down
+				hum:ChangeState(Enum.HumanoidStateType.Freefall)
+			end
+			local v = root.AssemblyLinearVelocity - dir * weapon.thrust * (0.25 + 0.75 * math.max(0, -dir.Y))
+			-- a hover, not a jetpack: full lift within 10 studs of the ground, too weak to hold you up above that
+			local params = RaycastParams.new()
+			params.FilterDescendantsInstances = { char }
+			local low = workspace:Raycast(root.Position, Vector3.new(0, -10, 0), params) ~= nil
+			root.AssemblyLinearVelocity = Vector3.new(v.X, math.min(v.Y, weapon.thrust * (if low then 1 else 0.4)), v.Z)
+		end
+	end
 	if weapon.id == "Sniper" and aimed > 0.95 then
 		Fx.scopedShotAt = now -- through the scope: its hit gets the impact frames (Fx)
 	end
@@ -4174,7 +4192,7 @@ RunService.RenderStepped:Connect(function(dt)
 	local rightHand = char and char:FindFirstChild("RightHand") :: BasePart?
 	if bodyWeapon.part and rightHand then
 		local grip = rightHand:FindFirstChild("RightGripAttachment") :: Attachment?
-		local meshCF = rightHand.CFrame * (grip and grip.CFrame or DEFAULT_GRIP) * BODY_GRIP * HOLD[bodyWeapon.id].grip
+		local meshCF = rightHand.CFrame * (grip and grip.CFrame or DEFAULT_GRIP) * BODY_GRIP * (HOLD[bodyWeapon.id].body or HOLD[bodyWeapon.id].grip)
 		local leftHand = char:FindFirstChild("LeftHand") :: BasePart?
 		-- aimed (or just fired from the hip), or one of the two-handed ones carried at the hip
 		-- (WeaponAnims.HOLD): held between the hands, pointing where the camera looks
@@ -4268,7 +4286,7 @@ end)
 
 -- the first-time tutorial: outlines on its dummies, what to do next (server/Tutorial)
 require(script:WaitForChild("TutorialHud")).start()
--- the Bandage / Cast in hand: the stump / broken limb the crosshair is on lights up (server Body.playerBandage / playerCast)
+-- the Bandage / Cast / Balloon in hand: the stump / broken limb / body part the crosshair is on lights up (server Body.playerBandage / playerCast, Specials tieByHand)
 require(script:WaitForChild("MedicAim")).start(dummyFolder)
 require(script:WaitForChild("Disasters")).start() -- tornado, tsunami, meteors, nuke (server/Disasters)
 require(script:WaitForChild("CashHud")).start() -- the cash counter, top right

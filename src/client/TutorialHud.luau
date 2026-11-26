@@ -239,6 +239,9 @@ function TutorialHud.start()
 			Flamethrower = `{HA}: spray fire · {M}: aim`,
 			Minigun = `{HA}: spin up and fire · {M}: aim`,
 			Gravgun = `{M}: pull a body in · {A}: launch it (nothing held: punt)`,
+			BalloonGun = `{A}: tie a balloon to the limb you hit · 3 lift them up`,
+			Balloon = `{A}: tie a balloon to a limb in reach · 3 lift them up`,
+			LeafBlower = `{HA}: blow them away · aim down: hover`,
 		}
 		if by[w.id] then
 			return by[w.id]

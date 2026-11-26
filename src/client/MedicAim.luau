@@ -5,6 +5,8 @@
 --  * Cast (server Body.playerCast): the arm or leg the crosshair is on, within range, when a bone in it is
 --    broken ("Broken" on a part) and it is not in a cast yet ("Cast"): its upper part, lower part and
 --    hand / foot all light up.
+--  * Balloon (server Specials tieByHand): the body part the crosshair is on, within range (a hat or hair:
+--    the head), where the balloon would be tied.
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
@@ -17,7 +19,7 @@ local MedicAim = {}
 local AIM = 1.4 -- studs off the line (server Body.BANDAGE_AIM)
 local RANGE = {}
 for _, w in Weapons do
-	if w.kind == "bandage" or w.kind == "cast" then
+	if w.kind == "bandage" or w.kind == "cast" or w.kind == "balloon" then
 		RANGE[w.id] = w.range
 	end
 end
@@ -93,6 +95,22 @@ function MedicAim.start(dummyFolder: Instance)
 		return nil
 	end
 
+	-- the body part a balloon would be tied to (server Specials limbOf), or nil
+	local function partOf(hit: Instance): BasePart?
+		local inst = hit
+		while inst.Parent and inst.Parent.Parent ~= dummyFolder do
+			inst = inst.Parent
+		end
+		local model = inst.Parent
+		if not model then
+			return nil
+		end
+		if inst:IsA("BasePart") and inst.Name ~= "HumanoidRootPart" then
+			return inst
+		end
+		return model:FindFirstChild(if inst:IsA("Accessory") then "Head" else "UpperTorso") :: BasePart?
+	end
+
 	RunService.RenderStepped:Connect(function()
 		local char = player.Character
 		local head = char and char:FindFirstChild("Head") :: BasePart?
@@ -113,6 +131,10 @@ function MedicAim.start(dummyFolder: Instance)
 				local cap = stumpOn(head, dir, range)
 				show = if cap then { cap } else {}
 				label.Text = "CLICK TO BANDAGE"
+			elseif item == "Balloon" then
+				local part = hit and (hit.Position - head.Position).Magnitude <= range and partOf(hit.Instance)
+				show = if part then { part } else {}
+				label.Text = "CLICK TO TIE A BALLOON"
 			elseif hit and (hit.Position - head.Position).Magnitude <= range then
 				show = limbOf(hit.Instance) or {}
 				label.Text = "CLICK TO PUT IN A CAST"

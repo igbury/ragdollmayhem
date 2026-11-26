@@ -10,6 +10,11 @@
 --  * Gravgun: a click with nothing held punts what is in front (a dummy flies, marked like a punt, so it
 --    hits the first wall hard; a loose part gets knocked away). Pulling a body in and launching it is
 --    the grab path (init.server grab "gravgun" / punt / release).
+--  * BalloonGun: a balloon on a string tied to the limb it hits; 1 brakes a fall, 2 hover, 3+ lift.
+--  * Balloon (item): the same balloon, tied by hand to the limb in reach that the crosshair is on.
+--  * LeafBlower: held, a cone of wind: dummies in it stagger back, BLOW_TOPPLE s of it knocks them down
+--    and blows them away (marked like a punt: a wall they hit hurts); loose parts blow away too. Aimed
+--    at the ground it lifts the one holding it (client useWeapon, weapon.thrust).
 --  * C4: click sticks a charge to what it hits (MAX_C4), right click sets all of them off.
 --  * Landmine: placed on the floor ahead; armed after a moment, it blows when a dummy steps close.
 --  * Spear: a long thrust that runs through up to SPEAR_PIERCE dummies in a line.
@@ -717,7 +722,322 @@ local function spear(weapon, player: Player, char: Model, origin: Vector3, dir: 
 	end
 end
 
+-- Balloon gun: every hit ties a balloon on a string to the limb it struck. What the balloons do to the
+-- body depends on how many it has: one brakes its fall to BALLOON_FALL studs/s (and can never lift
+-- it), two hold it at the height it had when the count became two, three and more carry it up,
+-- BALLOON_RISE studs/s for each one past two. The lift is a VectorForce on each tied limb, so the body
+-- hangs from the limbs that were hit; the balloon itself only floats at the end of its string. Each
+-- balloon pops after BALLOON_LIFE s (the oldest first when a body gets more than BALLOON_MAX), so a
+-- lifted body comes back down: hovering, then gently.
+local BALLOON_LIFE = 25
+local BALLOON_MAX = 6
+local BALLOON_STRING = 5 -- studs
+local BALLOON_FALL = 7 -- studs/s the last balloon lets it sink at
+local BALLOON_RISE = 6 -- studs/s per balloon past two
+local BALLOON_COLOURS = {
+	Color3.fromRGB(235, 40, 50), Color3.fromRGB(40, 120, 235), Color3.fromRGB(250, 200, 30),
+	Color3.fromRGB(60, 200, 90), Color3.fromRGB(240, 90, 200), Color3.fromRGB(255, 140, 30),
+}
+local BALLOON_LINES = { "Hey! Put me down!", "Whoa, whoa, WHOA!", "I'm floating?!", "Not the balloons!" }
+-- [d] = { balloons = { { part, force, a0, born } }, mass, count (last seen), holdY, nextKnock }
+local lifted = {}
+local liftLoop: RBXScriptConnection? = nil
+local balloonFolder: Folder? = nil
+
+local function popBalloon(b, quiet: boolean?)
+	if not quiet and b.part.Parent then
+		play("ROCKET_JUMP_POP", b.part.Position, 2.2, 0.8)
+	end
+	b.part:Destroy() -- its string goes with it
+	b.force:Destroy()
+	b.a0:Destroy()
+end
+
+local function liftStep()
+	local now = os.clock()
+	local g = workspace.Gravity
+	for d, L in lifted do
+		local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+		for i = #L.balloons, 1, -1 do
+			local b = L.balloons[i]
+			if not d.model.Parent or not torso or now - b.born > BALLOON_LIFE or not b.a0.Parent or not b.a0.Parent.Parent then
+				popBalloon(b, not d.model.Parent)
+				table.remove(L.balloons, i)
+			end
+		end
+		local n = #L.balloons
+		if n == 0 or not torso then
+			lifted[d] = nil
+			continue
+		end
+		local v = torso.AssemblyLinearVelocity
+		if n ~= L.count then
+			L.count = n
+			L.holdY = if n == 2 then torso.Position.Y else nil -- two hold it right where it is now
+		end
+		local up, most
+		if n == 1 then -- a brake, never a lift: up to 0.95 g once it sinks no faster than BALLOON_FALL
+			up = g + 4 * (-BALLOON_FALL - v.Y)
+			most = if v.Y < -BALLOON_FALL then 1.8 else 0.95
+		elseif n == 2 then -- hover: a spring to the height it had, damped
+			up = g + 6 * (L.holdY - torso.Position.Y) - 3 * v.Y
+			most = 2.2
+		else
+			up = g + 4 * (BALLOON_RISE * (n - 2) - v.Y)
+			most = 3
+		end
+		local lift = math.clamp(L.mass * up, 0, most * L.mass * g)
+		local drag = -Vector3.new(v.X, 0, v.Z) * L.mass * 0.8 -- air drag: hanging, not swinging off
+		local each = (Vector3.yAxis * lift + drag) / n
+		for _, b in L.balloons do
+			b.force.Force = each
+		end
+		if d.state ~= "Dead" and now > L.nextKnock then -- limp the whole ride, or it tries to stand in the air
+			L.nextKnock = now + 1
+			K.knockDown(d, 1.5, "Knocked down")
+		end
+	end
+	if next(lifted) == nil and liftLoop then
+		liftLoop:Disconnect()
+		liftLoop = nil
+	end
+end
+
+-- The limb of the body that `inst` belongs to (a hat or hair: the head).
+local function limbOf(d, inst: Instance): BasePart?
+	while inst.Parent and inst.Parent ~= d.model do
+		inst = inst.Parent
+	end
+	if inst:IsA("BasePart") and inst.Name ~= "HumanoidRootPart" then
+		return inst
+	end
+	return d.model:FindFirstChild(if inst:IsA("Accessory") then "Head" else "UpperTorso") :: BasePart?
+end
+
+local function tieBalloon(d, limb: BasePart, at: Vector3)
+	local L = lifted[d]
+	if not L then
+		L = { balloons = {}, mass = 0, count = 0, nextKnock = 0 }
+		lifted[d] = L
+	end
+	if #L.balloons >= BALLOON_MAX then
+		popBalloon(table.remove(L.balloons, 1))
+	end
+	if not (balloonFolder and balloonFolder.Parent) then
+		balloonFolder = Instance.new("Folder")
+		balloonFolder.Name = "Balloons"
+		balloonFolder.Parent = workspace
+	end
+	local mass = 0
+	for _, part in bodyParts(d) do
+		mass += part:GetMass()
+	end
+	L.mass = mass
+	local a0 = Instance.new("Attachment")
+	a0.Name = "BalloonString"
+	a0.Position = limb.CFrame:PointToObjectSpace(at)
+	a0.Parent = limb
+	local force = Instance.new("VectorForce")
+	force.Name = "BalloonLift"
+	force.RelativeTo = Enum.ActuatorRelativeTo.World
+	force.ApplyAtCenterOfMass = false -- pulls at the knot: the body hangs from where it was hit
+	force.Force = Vector3.zero
+	force.Attachment0 = a0
+	force.Parent = limb
+	local balloon = Instance.new("Part")
+	balloon.Name = "Balloon"
+	balloon.Size = Vector3.new(2.2, 2.2, 2.2)
+	balloon.Color = BALLOON_COLOURS[math.random(#BALLOON_COLOURS)]
+	balloon.Material = Enum.Material.SmoothPlastic
+	balloon.Reflectance = 0.15
+	balloon.CanCollide, balloon.CanQuery, balloon.CanTouch = false, false, false
+	balloon.CustomPhysicalProperties = PhysicalProperties.new(0.01, 0, 0)
+	balloon.CFrame = CFrame.new(at + UP * BALLOON_STRING)
+	local shape = Instance.new("SpecialMesh")
+	shape.MeshType = Enum.MeshType.Sphere
+	shape.Scale = Vector3.new(1, 1.22, 1) -- an egg, not a ball
+	shape.Parent = balloon
+	local knot = Instance.new("Attachment")
+	knot.Position = Vector3.new(0, -1.35, 0)
+	knot.Parent = balloon
+	local float = Instance.new("VectorForce") -- its own weight and a little more: the string stays taut
+	float.RelativeTo = Enum.ActuatorRelativeTo.World
+	float.Force = UP * balloon:GetMass() * workspace.Gravity * 1.5
+	float.Attachment0 = knot
+	float.Parent = balloon
+	local line = Instance.new("RopeConstraint")
+	line.Attachment0, line.Attachment1 = a0, knot
+	line.Length = BALLOON_STRING
+	line.Visible, line.Thickness, line.Color = true, 0.06, BrickColor.new("Institutional white")
+	line.Parent = balloon
+	balloon.Parent = balloonFolder
+	table.insert(L.balloons, { part = balloon, force = force, a0 = a0, born = os.clock() })
+	if not liftLoop then
+		liftLoop = game:GetService("RunService").Heartbeat:Connect(liftStep)
+	end
+end
+
+-- Pop the balloon `part` (a shot, a swing or a blast got it): out of its body's list, the lift recounts.
+local function popPart(part: BasePart): boolean
+	for _, L in lifted do
+		for i, b in L.balloons do
+			if b.part == part then
+				table.remove(L.balloons, i)
+				K.fx:FireAllClients("BalloonPop", nil, part.Position, part.Color)
+				popBalloon(b)
+				return true
+			end
+		end
+	end
+	return false
+end
+
+-- Every weapon use goes through here first (init.server): balloons on the line of a shot (or within a
+-- swing's reach) pop, unless something solid is in between. The shot itself carries on as before: a
+-- bullet goes through a balloon. Thrown things and rockets pop them with their blast (popNear).
+function Specials.popBalloons(weapon, char: Model, origin: Vector3, dir: Vector3)
+	if not (balloonFolder and balloonFolder.Parent) or #balloonFolder:GetChildren() == 0 then
+		return
+	end
+	local melee = weapon.kind == "melee"
+	if not (melee or weapon.kind == "gun" or weapon.kind == "knife" or weapon.kind == "bow") then
+		return
+	end
+	local only = RaycastParams.new()
+	only.FilterType = Enum.RaycastFilterType.Include
+	only.FilterDescendantsInstances = { balloonFolder }
+	local reach = (weapon.range or 10) + (if melee then 2 else 0)
+	local walls = exclude(char)
+	local from = origin
+	for _ = 1, 4 do -- a line can pass through a few balloons in a bunch
+		local left = reach - (from - origin).Magnitude
+		if left <= 0 then
+			break
+		end
+		-- the hit test needs CanQuery: on only for this cast (no other ray ever sees a balloon)
+		for _, p in balloonFolder:GetChildren() do
+			p.CanQuery = true
+		end
+		local r = if melee then workspace:Spherecast(from, 2, dir * left, only) else workspace:Raycast(from, dir * left, only)
+		for _, p in balloonFolder:GetChildren() do
+			p.CanQuery = false
+		end
+		if not r then
+			break
+		end
+		local blocked = workspace:Raycast(origin, r.Position - origin, walls)
+		if blocked and (blocked.Position - origin).Magnitude < (r.Position - origin).Magnitude - 1.2 and not melee then
+			break
+		end
+		popPart(r.Instance :: BasePart)
+		from = r.Position + dir * 0.1
+	end
+end
+
+-- A blast pops every balloon within `radius` of `position`.
+function Specials.popNear(position: Vector3, radius: number)
+	if not (balloonFolder and balloonFolder.Parent) then
+		return
+	end
+	for _, p in balloonFolder:GetChildren() do
+		if p:IsA("BasePart") and (p.Position - position).Magnitude < radius + 1.1 then
+			popPart(p)
+		end
+	end
+end
+
+local function balloonGun(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	K.fx:FireAllClients("Shot", char, weapon.id, origin, target, result ~= nil, true)
+	local limb = d and result and result.Instance.Parent and limbOf(d, result.Instance)
+	if not limb then
+		return
+	end
+	takeOver(d)
+	if d.state ~= "Dead" then
+		K.knockDown(d, 2, "Knocked down")
+		if math.random() < 0.4 then
+			K.say(d, BALLOON_LINES[math.random(#BALLOON_LINES)])
+		end
+	end
+	tieBalloon(d, limb, target)
+end
+
+-- The Balloon item: the same balloon, tied by hand to the limb the crosshair is on, within reach.
+local function tieByHand(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local result = workspace:Raycast(origin, dir * weapon.range, exclude(char))
+	local d = result and K.dummyOf(result.Instance)
+	local limb = d and limbOf(d, result.Instance)
+	if not limb or d.model:GetAttribute("TutorialFor") then
+		return
+	end
+	takeOver(d)
+	if d.state ~= "Dead" then
+		K.knockDown(d, 2, "Knocked down")
+		if math.random() < 0.4 then
+			K.say(d, BALLOON_LINES[math.random(#BALLOON_LINES)])
+		end
+	end
+	tieBalloon(d, limb, result.Position)
+end
+
+-- The leaf blower (see the top). One call per cd while the trigger is held.
+local BLOW_CONE = math.cos(math.rad(25))
+local BLOW_TOPPLE = 0.35 -- s of steady wind that takes a dummy off its feet
+local BLOW_PARTS = 25 -- loose parts it moves per tick at most
+local blown = setmetatable({}, { __mode = "k" }) -- [dummy] = { since, last }
+
+local function blow(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	K.fx:FireAllClients("Blow", char, origin, dir, weapon.range)
+	local now = os.clock()
+	local params = exclude(char)
+	for model, d in K.dummies do
+		local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+		local to = torso and torso.Position - origin
+		if to and to.Magnitude < weapon.range and to.Unit:Dot(dir) > BLOW_CONE then
+			local seen = workspace:Raycast(origin, to, params)
+			if not seen or seen.Instance:IsDescendantOf(model) then
+				local b = blown[d]
+				if not b or now - b.last > 0.3 then -- a new gust: it has to stand in it a moment first
+					b = { since = now, last = now }
+					blown[d] = b
+				end
+				b.last = now
+				local gust = weapon.push * (1 - 0.6 * to.Magnitude / weapon.range) -- weaker at the far end
+				if now - b.since < BLOW_TOPPLE then
+					torso.AssemblyLinearVelocity += dir * gust * 0.15 -- leaning into it, sliding back
+				else
+					takeOver(d)
+					if d.state ~= "Dead" then
+						K.knockDown(d, 1.5, "Knocked down")
+					end
+					local flat = Vector3.new(dir.X, math.max(dir.Y, 0), dir.Z)
+					setVelocity(d, flat * gust + UP * gust * 0.3, 1.5)
+					d.punt = { by = player, untilTime = now + 1 }
+				end
+			end
+		end
+	end
+	-- loose parts in the stream (map debris, balloons, props): shoved along by the gust, not the floor
+	local overlap = OverlapParams.new()
+	overlap.FilterDescendantsInstances = { char, workspace:FindFirstChild("Dummies") or char }
+	overlap.FilterType = Enum.RaycastFilterType.Exclude
+	overlap.MaxParts = 80
+	local moved = 0
+	for _, p in workspace:GetPartBoundsInRadius(origin + dir * weapon.range / 2, weapon.range / 2, overlap) do
+		local to = p.Position - origin
+		if not p.Anchored and to.Magnitude > 0.1 and to.Unit:Dot(dir) > BLOW_CONE and not K.dummyOf(p) then
+			p:ApplyImpulse((dir * weapon.push * 0.35 + UP * 6) * math.min(p.AssemblyMass, 40))
+			moved += 1
+			if moved >= BLOW_PARTS then
+				break
+			end
+		end
+	end
+end
+
 local HANDLERS = {
+	LeafBlower = blow,
 	Flamethrower = flame,
 	Frostgun = frost,
 	Boilgun = boil,
@@ -726,6 +1046,8 @@ local HANDLERS = {
 	Harpoon = harpoon,
 	Grapple = grapple,
 	Gravgun = gravPunt,
+	BalloonGun = balloonGun,
+	Balloon = tieByHand,
 	C4 = placeC4,
 	Landmine = placeMine,
 	Spear = spear,

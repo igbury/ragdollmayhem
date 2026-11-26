@@ -18,6 +18,8 @@ local PROFILES = {
 	Harpoon = { back = 7.0, pitch = 6.0, speed = 22 },
 	Grapple = { back = 5.5, pitch = 5.0, speed = 24 },
 	Gravgun = { back = 6.0, pitch = 4.0, speed = 22 },
+	BalloonGun = { back = 3.5, pitch = 5.0, speed = 26 },
+	LeafBlower = { back = 0.5, pitch = 0.4, speed = 40 },
 }
 
 local function step(position: Vector3, velocity: Vector3, speed: number, dt: number): (Vector3, Vector3)

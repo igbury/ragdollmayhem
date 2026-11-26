@@ -800,6 +800,111 @@ def syringe(b):
     b.cyl((0, 0.68, 0), "y", 0.04, 0.12, WHITE, seg=14)  # the thumb pad
 
 
+BG_COLOURS = {"M_Red": (0.78, 0.1, 0.13), "M_Teal": (0.05, 0.64, 0.61), "M_Steel": (0.78, 0.79, 0.79),
+              "M_Yellow": (0.9, 0.77, 0.08), "Ink": HOLE}
+# the hero model's densest parts, collapsed for the game (the grip loft, its pads, the screw heads)
+BG_DECIMATE = {"Grip_Body": 0.3, "Grip_Insert_L": 0.3, "Grip_Insert_R": 0.3, "Grip_BackStrap": 0.3,
+               "Shroud_Rivets": 0.35, "Receiver_Screws": 0.35, "Grip_Screw": 0.35}
+
+
+def from_hero(b, blend, colours, grip, S, decimate=None, ratio=None, mirror=False):
+    """Read an NPR hero model (assets/weapons/<blend>: metres, +X forward, -Y left) into the builder face
+    by face, at S studs a metre with `grip` (metres) at the origin, without its bevels and ink hulls (the
+    outline here is comic.outline's). Colours come from each face's toon material (`colours`, by name);
+    `decimate` collapses named dense parts (0 leaves one out), `ratio` every other part. mirror: the hero's -Y side ends up
+    on the hand's left (the side a first-person view sees)."""
+    decimate = decimate or {}
+    path = os.path.join(HERE, blend)
+    with bpy.data.libraries.load(path) as (src, dst):
+        dst.objects = [n for n in src.objects if n and not n.startswith(("Cam_", "Key_", "Rim_", "Ink_"))]
+    tmp = bpy.data.collections.new("_hero_tmp")
+    bpy.context.scene.collection.children.link(tmp)
+    obs = [o for o in dst.objects if o and o.type == "MESH"]
+    for o in [o for o in obs if decimate.get(o.name) == 0]:  # 0: left out of the game mesh
+        obs.remove(o)
+        bpy.data.objects.remove(o)
+    for o in obs:
+        tmp.objects.link(o)
+        for m in o.modifiers:
+            if m.name in ("Bevel", "InkHull"):
+                m.show_viewport = False
+        r = decimate.get(o.name, ratio)
+        if r:
+            o.modifiers.new("Game", "DECIMATE").ratio = r
+    dg = bpy.context.evaluated_depsgraph_get()
+    sy = -1 if mirror else 1
+    for o in obs:
+        ev = o.evaluated_get(dg)
+        me = ev.to_mesh()
+        mw = o.matrix_world
+        names = [ms.material.name.split(".")[0] if ms.material else "" for ms in ev.material_slots]
+        for poly in me.polygons:
+            i = poly.material_index
+            rgb = colours.get(names[i] if i < len(names) else "", HOLE)
+            vs = []
+            for vi in poly.vertices:
+                c = mw @ me.vertices[vi].co - grip
+                vs.append(b.bm.verts.new((sy * c.y * S, -c.x * S, c.z * S)))
+            try:
+                f = b.bm.faces.new(vs)
+            except ValueError:
+                continue
+            f[b.layer] = 0
+            for loop in f.loops:
+                loop[b.col] = (*rgb, 1)
+        ev.to_mesh_clear()
+    for o in obs:
+        me = o.data
+        bpy.data.objects.remove(o)
+        if me.users == 0:
+            bpy.data.meshes.remove(me)
+    bpy.data.collections.remove(tmp)
+    bmesh.ops.remove_doubles(b.bm, verts=b.bm.verts, dist=1e-5)
+    bmesh.ops.recalc_face_normals(b.bm, faces=b.bm.faces)
+
+
+def balloongun(b):
+    """The balloon gun: the 90s-comic snub revolver from revolver_90s.blend at 5 studs a metre."""
+    from_hero(b, "revolver_90s.blend", BG_COLOURS, V((-0.096, 0.0, -0.045)), 5.0, BG_DECIMATE)  # grip: under the hammer
+
+
+LB_COLOURS = {"M_Housing": (0.86, 0.88, 0.9), "M_Orange": (1.0, 0.35, 0.0), "M_Graphite": (0.18, 0.22, 0.27),
+              "M_Tube": (0.18, 0.22, 0.27), "M_Graphite2": (0.13, 0.15, 0.19), "M_Steel": (0.7, 0.74, 0.78),
+              "M_Yellow": (1.0, 0.82, 0.1), "Ink": HOLE}
+# the hero's screw heads and seam groove are too small to read at game size; its rings and bosses are dense
+LB_DECIMATE = {"Housing_Screws": 0, "Housing_Seam": 0, "Tube_BoreFloor": 0, "Housing_ScrewBosses": 0.2,
+               "Grille_Rings": 0.4, "Grille_BaseRing": 0.5, "Impeller": 0.5, "Rear_FilterCover": 0.5,
+               "Tube_ClampScrew": 0.4, "Handle_GripSleeve": 0.5}
+
+
+def leafblower(b):
+    """The leaf blower: the 90s-comic blower from leafblower_90s.blend at 4 studs a metre, the origin on
+    the top handle's grip (the hand hangs it under the fist), the orange grille on the hand's left."""
+    from_hero(b, "leafblower_90s.blend", LB_COLOURS, V((-0.005, 0.0, 0.459)), 4.0, LB_DECIMATE, ratio=0.7,
+              mirror=True)
+
+
+BALLOON_RED = (0.92, 0.16, 0.2)
+BALLOON_BLUE = (0.16, 0.47, 0.92)
+BALLOON_YELLOW = (0.98, 0.78, 0.12)
+
+
+def balloons(b):
+    """The player's Balloon item: a bunch of three party balloons, their strings gathered in the fist (the
+    origin) and running up (+Z) to the knots; what a click ties to the limb it is aimed at (server
+    Specials tieByHand), the same balloons the Balloon Gun shoots."""
+    for (x, y, z), rgb in (((0.0, 0.0, 2.1), BALLOON_RED), ((-0.42, 0.12, 1.75), BALLOON_BLUE),
+                           ((0.4, -0.1, 1.8), BALLOON_YELLOW)):
+        top = V((x, y, z))
+        b._part(lambda top=top: bmesh.ops.create_uvsphere(  # an egg, not a ball
+            b.bm, u_segments=12, v_segments=8, radius=0.36,
+            matrix=Matrix.Translation(top) @ Matrix.Diagonal((1, 1, 1.22, 1))), rgb)
+        b.ball(top + V((-0.12, -0.2, 0.16)), 0.07, WHITE, seg=6, rings=4)  # the shine
+        b.cyl(top - V((0, 0, 0.46)), "z", 0.08, 0.03, rgb, r2=0.07, seg=8)  # the knot
+        b.tube((0, 0, 0.0), top - V((0, 0, 0.5)), 0.012, WHITE, seg=4)  # the string
+    b.ball((0, 0, 0.0), 0.04, WHITE, seg=6, rings=4)  # the strings' knot in the fist
+
+
 # name -> (builder, comic.shape ops) ; the ops as comic.RULES gives the older ones
 WEAPONS = {
     "Crowbar": (crowbar, [("thick", 1.25)]),
@@ -816,12 +921,15 @@ WEAPONS = {
     "Harpoon": (harpoon, [("thick", 1.3), ("cross", "y", -2.6, -3.1, 1.3)]),
     "Grapple": (grapple, [("thick", 1.1)]),
     "Gravgun": (gravgun, [("thick", 1.05)]),
+    "BalloonGun": (balloongun, []),
+    "LeafBlower": (leafblower, []),
     "TNT": (tnt, [("thick", 1.1)]),
     "C4": (c4, [("thick", 1.1)]),
     "Landmine": (landmine, []),
     "Bandage": (bandage, [("thick", 1.1)]),
     "Cast": (cast_roll, [("thick", 1.1)]),
     "Syringe": (syringe, [("thick", 1.15)]),
+    "Balloon": (balloons, []),
 }
 
 

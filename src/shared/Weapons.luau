@@ -54,6 +54,12 @@ return {
 	-- gravity gun: click punts what is in front (range, push); right click pulls a body in from `reach` and
 	-- holds it at the claws; a click then launches it at `launch` studs/s (server/Specials, client gravity)
 	{ id = "Gravgun", name = "GRAVITY GUN", tag = "gun", short = "GRAV", kind = "gun", cd = 0.5, range = 24, dmg = 1.2, push = 120, reach = 70, launch = 170 },
+	-- balloon gun: each hit ties a balloon to the limb it struck (server/Specials): one slows a fall,
+	-- two hold the body where it is, three and more carry it up
+	{ id = "BalloonGun", name = "BALLOON GUN", tag = "gun", short = "BLN", kind = "gun", cd = 0.45, range = 220 },
+	-- leaf blower: held, a wind cone out to `range` that topples dummies and blows them away at up to
+	-- `push` studs/s (server/Specials blow); aimed down, `thrust` studs/s a tick lifts you (client useWeapon)
+	{ id = "LeafBlower", name = "LEAF BLOWER", tag = "gun", short = "BLOW", kind = "gun", auto = true, cd = 0.1, range = 24, push = 60, thrust = 24 },
 	-- EXPLOSIVES
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },
@@ -69,6 +75,9 @@ return {
 	-- cast: aim at an arm or a leg with a broken bone and click: it goes in a plaster cast (server
 	-- Body.playerCast; client MedicAim lights up the limb)
 	{ id = "Cast", name = "PLASTER CAST", tag = "tool", short = "CAST", kind = "cast", cd = 1.2, range = 10 },
+	-- balloons: aim at a dummy's limb within `range` and click: a balloon is tied to it, the Balloon Gun's
+	-- (server Specials tieByHand): 1 slows a fall, 2 hover, 3+ lift
+	{ id = "Balloon", name = "BALLOONS", tag = "tool", short = "BLNS", kind = "balloon", cd = 0.5, range = 10 },
 	-- syringes: aim at a dummy within `range` and click (server Body.playerSyringe); one mesh, the serum's
 	-- colour set per id (client/WeaponMeshes VARIANTS)
 	{ id = "DeathSyringe", name = "DEATH SYRINGE", tag = "tool", short = "DTH", kind = "syringe", cd = 1.5, range = 9 },

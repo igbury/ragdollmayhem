@@ -1192,8 +1192,8 @@ local HIT_STRENGTH = {
 	BoxingGloves = 1, BoxingHeavy = 2.4, Pan = 2.2, Sledgehammer = 2.6, Bat = 1.8, Axe = 1.8, Crowbar = 1.3,
 	Katana = 1.5, KnifeSlash = 1, Spear = 1.4, Lightsaber = 1.6, Baton = 1.3,
 	Sniper = 2.4, Revolver = 1.2, Shotgun = 1.1, Harpoon = 1.4, Knife = 1.2,
-	Minigun = 0.3, Chainsaw = 0.3, Lasso = 0, Flamethrower = 0, Grapple = 0, Gravgun = 1.6, -- (the throwables' blasts shake on their own; the grapple's kick has its own)
-	Grenade = 0, Molotov = 0, TNT = 0, C4 = 0, Landmine = 0, Rocket = 0, Bandage = 0, Cast = 0, HealSyringe = 0,
+	Minigun = 0.3, Chainsaw = 0.3, Lasso = 0, Flamethrower = 0, Grapple = 0, Gravgun = 1.6, BalloonGun = 0, LeafBlower = 0, -- (the throwables' blasts shake on their own; the grapple's kick has its own)
+	Grenade = 0, Molotov = 0, TNT = 0, C4 = 0, Landmine = 0, Rocket = 0, Bandage = 0, Cast = 0, Balloon = 0, HealSyringe = 0,
 }
 
 function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?,
@@ -1372,6 +1372,95 @@ function EVENTS.Flame(shooter: Model?, from: Vector3, dir: Vector3, range: numbe
 	end
 end
 
+-- The leaf blower's gust (server/Specials blow, one per tick while it is held): comic wind. Curling
+-- white wind lines (a Trail on a point spiralling out along the stream, its curl widening as it goes),
+-- a straight whoosh streak or two, a leaf now and then, and a dust puff where the stream hits the floor.
+local LEAVES = { Color3.fromRGB(214, 120, 30), Color3.fromRGB(170, 60, 20), Color3.fromRGB(120, 150, 40), Color3.fromRGB(230, 180, 50) }
+local BLOWER_NOZZLE = Vector3.new(0, -1.42, -2.8) -- the nozzle's mouth in WeaponMeshes/LeafBlower (assets/weapons/leafblower_90s)
+local WIND = Color3.fromRGB(235, 248, 255)
+local WIND_FADE = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.15), NumberSequenceKeypoint.new(1, 1) })
+local WIND_TAPER = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.15) })
+local WIND_TRAIL = 0.35 -- s a wind line's tail lingers
+
+-- One wind line: an invisible point flying `path(alpha)` for `dur` s with a white Trail behind it
+-- (the point waits WIND_TRAIL s at its end so the tail runs out instead of vanishing).
+local function windLine(dur: number, width: number, path: (number) -> Vector3)
+	local p = part(Enum.PartType.Ball, WIND)
+	p.Transparency = 1
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Position, a1.Position = Vector3.new(0, width / 2, 0), Vector3.new(0, -width / 2, 0)
+	a0.Parent, a1.Parent = p, p
+	local trail = Instance.new("Trail")
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.FaceCamera = true
+	trail.Color = ColorSequence.new(WIND)
+	trail.Transparency = WIND_FADE
+	trail.WidthScale = WIND_TAPER
+	trail.LightEmission = 0.4
+	trail.Lifetime = WIND_TRAIL
+	trail.MinLength = 0.05
+	p.CFrame = CFrame.new(path(0))
+	trail.Parent = p
+	local total = dur + WIND_TRAIL
+	run(total, { p }, function(a)
+		p.CFrame = CFrame.new(path(math.min(a * total / dur, 1)))
+	end)
+end
+
+function EVENTS.Blow(shooter: Model?, from: Vector3, dir: Vector3, range: number)
+	local cf = shooter == player.Character and Fx.weaponPoint and Fx.weaponPoint("LeafBlower", BLOWER_NOZZLE)
+	local muzzle = if cf then cf.Position else from + dir * 2
+	local right = dir:Cross(UP)
+	right = if right.Magnitude > 0.01 then right.Unit else Vector3.xAxis
+	local up = right:Cross(dir).Unit
+	for _ = 1, few(3) do -- curls: a point spiralling out at an even pace, the spiral opening up with the cone
+		local aim = (dir + rng:NextUnitVector() * 0.1).Unit
+		local reach = range * rng:NextNumber(0.6, 1)
+		local phase, turns = rng:NextNumber(0, math.pi * 2), rng:NextNumber(0.7, 1.2) * (if rng:NextNumber() < 0.5 then -1 else 1)
+		local spread = rng:NextNumber(1, 2.2)
+		windLine(rng:NextNumber(0.45, 0.6), 0.22, function(a)
+			local ang = phase + turns * math.pi * 2 * a
+			local r = 0.2 + spread * a
+			return muzzle + aim * reach * a ^ 0.85 + (right * math.cos(ang) + up * math.sin(ang)) * r
+		end)
+	end
+	if rng:NextNumber() < 0.7 then -- the straight whoosh down the middle
+		local aim = (dir + rng:NextUnitVector() * 0.12).Unit
+		local reach = range * rng:NextNumber(0.6, 1)
+		windLine(rng:NextNumber(0.25, 0.35), 0.12, function(a)
+			return muzzle + aim * reach * a ^ 0.85
+		end)
+	end
+	if rng:NextNumber() < 0.45 then -- a leaf caught in it, fluttering
+		local leaf = part(Enum.PartType.Block, LEAVES[rng:NextInteger(1, #LEAVES)], Enum.Material.SmoothPlastic)
+		leaf.Size = Vector3.new(0.35, 0.04, 0.25)
+		local aim = (dir + rng:NextUnitVector() * 0.25).Unit
+		local reach = range * rng:NextNumber(0.5, 0.9)
+		local tumble = rng:NextUnitVector() * 14
+		local phase = rng:NextNumber(0, math.pi * 2)
+		run(rng:NextNumber(0.5, 0.7), { leaf }, function(a)
+			local wobble = (right * math.cos(phase + a * 9) + up * math.sin(phase + a * 9)) * 0.5 * a
+			leaf.CFrame = CFrame.new(muzzle + aim * reach * out(a) + wobble) * CFrame.Angles(tumble.X * a, tumble.Y * a, tumble.Z * a)
+			leaf.Transparency = a ^ 4
+		end)
+	end
+	-- where the stream hits the floor or a wall: a puff of dust blown off it, every other tick or so
+	if rng:NextNumber() < 0.5 then
+		local params = RaycastParams.new()
+		params.FilterDescendantsInstances = { folder, shooter or folder }
+		local hit = workspace:Raycast(muzzle, dir * range, params)
+		if hit then
+			local puff = part(Enum.PartType.Ball, Color3.fromRGB(225, 215, 190), Enum.Material.SmoothPlastic)
+			local drift = (dir - hit.Normal * dir:Dot(hit.Normal)) * 3 + hit.Normal * 1.2
+			run(0.55, { puff }, function(a)
+				puff.Size = Vector3.one * (0.6 + 2.4 * out(a))
+				puff.Position = hit.Position + drift * out(a)
+				puff.Transparency = 0.5 + 0.5 * a
+			end)
+		end
+	end
+end
+
 -- A tased body (server/Specials): crackling sparks round the part the wires hit for `dur` seconds.
 function EVENTS.Tase(_, hitPart: BasePart, dur: number)
 	for tick = 0, dur / 0.12 do
@@ -1459,6 +1548,12 @@ function EVENTS.Grapple(shooter: Model?, anchor: Vector3, ride: number, torso: B
 end
 
 -- The grapple's ride reached the dummy it bit (server/Specials grapple): the flying kick lands.
+-- A balloon popped (server/Specials: shot, swung at or blasted): a POP! and a few scraps of its colour.
+function EVENTS.BalloonPop(_shooter: Model?, position: Vector3, color: Color3)
+	Fx.text(position, "POP!", color, 1.8)
+	Fx.sparks(position, 8, 4, color, UP, 0.3)
+end
+
 function EVENTS.GrappleKick(shooter: Model?, position: Vector3)
 	Fx.hit(position)
 	Fx.shake(position, 0.6, 0.22)

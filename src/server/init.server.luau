@@ -3202,6 +3202,7 @@ local function explode(position: Vector3, sound: string, scale: number?, power: 
 	Sfx.play({ sound, 1 / math.sqrt(s), 1 }, position)
 	fxRemote:FireAllClients("Boom", nil, position, 9 * s)
 	Map.blast(position, 9 * s, 70)
+	require(script.Specials).popNear(position, 13 * s)
 	smash(position, 13 * s, 45 * s * (power or 1), Vector3.zero, 80 * math.sqrt(s), "blast")
 end
 
@@ -3625,6 +3626,7 @@ weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
 		Body.playerSyringe(player, id, origin, dir, weapon.range)
 		return
 	end
+	require(script.Specials).popBalloons(weapon, char, origin, dir) -- shots and swings pop balloons on the way
 	if require(script.Specials).fire(weapon, player, char, origin, dir, aimed == true) then
 		return
 	end
