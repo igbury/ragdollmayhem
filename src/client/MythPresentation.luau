@@ -168,10 +168,13 @@ function Presentation.start(gui, remotes, api)
 			if not model:GetAttribute("Ragdolled") then
 				local since, untilTime = model:GetAttribute("StateSince") or now, model:GetAttribute("StateUntil") or now
 				local phase = math.clamp((now - since) / math.max(untilTime - since, 0.01), 0, 1)
-				Rig.pose(data.joints, state, data.kind, now, model:GetAttribute("Moving") or 0, phase, math.clamp(1 - (now - (model:GetAttribute("HurtAt") or 0)) / 0.3, 0, 1))
+				local hurtAt = model:GetAttribute("HurtAt")
+				Rig.pose(data.joints, state, data.kind, now, model:GetAttribute("Moving") or 0, phase, math.clamp(1 - (now - (hurtAt or 0)) / 0.3, 0, 1), false,
+					{ since = since, attack = model:GetAttribute("AttackClip"), hurtAt = hurtAt })
 				local impact = model:GetAttribute("ImpactAt")
 				if state == "Windup" and impact then
-					local radius = Definitions[data.kind].radius
+					-- the heavy swing's shockwave is a quarter wider (server/Monsters HEAVY_REACH)
+					local radius = Definitions[data.kind].radius * (model:GetAttribute("AttackClip") == "HeavyAttack" and 1.25 or 1)
 					data.ring.Size = Vector3.new(0.08, radius * 2, radius * 2)
 					data.ring.CFrame = CFrame.new(impact) * CFrame.Angles(0, 0, math.pi / 2)
 					if data.kind == "Minotaur" and model.PrimaryPart then
@@ -205,7 +208,8 @@ function Presentation.start(gui, remotes, api)
 			local def = Definitions[best:GetAttribute("MonsterKind")]
 			local state = best:GetAttribute("MonsterState")
 			title.Text, title.TextColor3 = def.name, def.accent
-			hint.Text = state == "Caged" and "Press Y at the pedestal to let it out" or state == "Windup" and def.attack .. "!" or state == "Eat" and "CHOMP CHOMP" or state == "Roar" and "ROAAAR!" or def.hint
+			hint.Text = state == "Caged" and "Press Y at the pedestal to let it out" or state == "Windup" and def.attack .. "!" or state == "Eat" and "CHOMP CHOMP" or state == "Roar" and "ROAAAR!" or state == "Stun" and "DAZED! Hit the weak spot again"
+				or state == "Defeat" and "Back to the pit!" or state == "Spawn" and "Rising in its chains" or def.hint
 		end
 		local weapon = api.weapon()
 		ammo.Visible = weapon.kind == "bow"

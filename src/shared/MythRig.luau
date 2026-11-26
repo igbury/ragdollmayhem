@@ -1,6 +1,7 @@
 -- Articulated part rigs: custom Motor6Ds, local procedural poses, existing Ragdoll constraints.
 local Rig = {}
 local Mythology = require(script.Parent.Mythology)
+local Clips = require(script.Parent.MythClips)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 -- Blender-made bodies (assets/myth/build_bosses.py, installed by assets/myth/install.luau). Each mesh
 -- has a "Place": its CFrame in rig space, rest pose, before Model:ScaleTo.
@@ -153,8 +154,9 @@ function Rig.build(kind)
 	return m
 end
 
--- Procedural posing never modifies the server hit ray or requires unpublished animation ids.
-function Rig.pose(joints, state, kind, elapsed, moving, phase, hurt, authoritative)
+-- The fallback when a kind has no baked clips: procedural poses.
+local function procedural(joints, state, kind, elapsed, moving, phase, hurt, authoritative)
+	if state == "Taunt" then state = "Roar" end
 	local stride = math.sin(elapsed * (kind == "Minotaur" and 9 or 5)) * moving
 	local breath = math.sin(elapsed * 1.8) * 0.025
 	local lift, bend = 0, 0
@@ -192,6 +194,78 @@ function Rig.pose(joints, state, kind, elapsed, moving, phase, hurt, authoritati
 		elseif name:find("Knee") then x = math.max(0, (name == "LeftKnee" and -stride or stride)) * 0.55 end
 		local rest = j:GetAttribute("RigRestC0") or j.C0
 		local pose = rest * CFrame.Angles(x, 0, z)
+		if authoritative then j.C0 = pose
+		else j.Transform = j.C0:ToObjectSpace(pose) end
+	end
+end
+
+-- Which clip a state plays, and how far into it: (name, seconds). `since` is when the state began,
+-- `attack` the swing it winds up (the "AttackClip" attribute: "Attack" or "HeavyAttack").
+local function choose(kind, state, elapsed, moving, since, attack)
+	local t = elapsed - (since or elapsed)
+	if state == "Caged" then return "Caged", elapsed
+	elseif state == "Roar" then return "ChainBreak", t -- let out: it tears the chains off
+	elseif state == "Taunt" then return "Roar", t
+	elseif state == "Windup" or state == "Strike" or state == "Charge" or state == "Recovery" then
+		local clip = attack and Clips.get(kind, attack)
+		if not clip then return "Idle", elapsed end
+		local windup = clip.sections.Windup or 0
+		if state == "Windup" then return attack, t end
+		if state ~= "Recovery" then return attack, windup + t end
+		return attack, windup + (clip.sections.Strike or clip.sections.Charge or 0) + t
+	elseif state == "Eat" or state == "Stun" or state == "Defeat" or state == "Spawn" then return state, t
+	elseif moving > 0 then return "Walk", elapsed end
+	return "Idle", elapsed
+end
+
+local FADE = 0.22 -- seconds a new clip blends in over the last pose
+local memory = setmetatable({}, { __mode = "k" }) -- per joints table: the clip it plays, its last pose
+local scratch, hitScratch = table.create(#Clips.JOINTS), table.create(#Clips.JOINTS)
+
+-- Poses a boss rig. `opts` (optional): since (when the state began), attack ("Attack"/"HeavyAttack"),
+-- hurtAt (when it was last hit: an additive flinch on top). Server bodies are posed with C0
+-- (`authoritative`), the client's own copy with Transform. Never touches the server's hit ray.
+function Rig.pose(joints, state, kind, elapsed, moving, phase, hurt, authoritative, opts)
+	opts = opts or {}
+	local name, t = choose(kind, state, elapsed, moving, opts.since, opts.attack)
+	local clip = Clips.get(kind, name)
+	if not clip then
+		procedural(joints, state, kind, elapsed, moving, phase, hurt, authoritative)
+		return
+	end
+	local m = memory[joints]
+	if not m then
+		local waist = joints.Waist
+		local rest = waist and (waist:GetAttribute("RigRestC0") or waist.C0)
+		-- the waist sits 1.3 studs above the root at scale 1 (Rig.build): its rest offset gives the scale
+		m = { scale = rest and rest.Position.Magnitude / 1.3 or 1, last = {}, from = {} }
+		memory[joints] = m
+	end
+	-- a new clip (or the same one-shot started over) blends in from wherever the body is
+	if m.clip ~= name or (not clip.loop and t < (m.t or 0) - 0.05) then
+		for key, cf in m.last do m.from[key] = cf end
+		m.fadeAt, m.clip = elapsed, name
+	end
+	m.t = t
+	local root = Clips.sample(clip, t, scratch)
+	local hitAge = opts.hurtAt and elapsed - opts.hurtAt
+	local hit = hitAge and hitAge >= 0 and hitAge < 0.5 and Clips.get(kind, "Hit")
+	local hitRoot = hit and Clips.sample(hit, hitAge, hitScratch)
+	local w = m.fadeAt and math.clamp((elapsed - m.fadeAt) / FADE, 0, 1) or 1
+	w = w * w * (3 - 2 * w)
+	for i, jointName in Clips.JOINTS do
+		local j = joints[jointName]
+		if not j then continue end
+		local local_ = scratch[i]
+		if hit then local_ = local_ * hitScratch[i] end
+		if i == 1 then
+			local offset = root + (hitRoot or Vector3.zero)
+			local_ = CFrame.new(offset * m.scale) * local_
+		end
+		if w < 1 and m.from[jointName] then local_ = m.from[jointName]:Lerp(local_, w) end
+		m.last[jointName] = local_
+		local rest = j:GetAttribute("RigRestC0") or j.C0
+		local pose = rest * local_
 		if authoritative then j.C0 = pose
 		else j.Transform = j.C0:ToObjectSpace(pose) end
 	end

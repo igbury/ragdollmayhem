@@ -36,7 +36,12 @@ local LINK_PITCH = 1.9 * LINK_SCALE -- a link 3.7 studs long; the next one hangs
 -- gate over its top. Every one is in its own lair (Map.LAIRS, design "Mayhem Park 2.0"): the Cyclops at a
 -- forge under the volcano, the Minotaur in the hedge labyrinth, Talos on the lake's island. A lair's frame
 -- is the pit's centre on the ground; in lair space the ramp leads out toward +z.
-local ROAR = 1.8 -- seconds it roars when let out, before it goes hunting
+-- Clip lengths (shared/MythClips, keyed in Blender): it tears its chains off (the links snap SNAP into it),
+-- staggers when its weak point is hit, slumps when recalled and rises again in its pit.
+local ROAR, SNAP = 2.4, 0.58 -- seconds it roars when let out, before it goes hunting
+local STUN, STUN_EVERY = 1.6, 6
+local DEFEAT, RISE = 1.4, 1.5
+local HEAVY_EVERY, HEAVY_REACH = 3, 1.25 -- every third swing is the heavy one, its shockwave a quarter wider
 local PIT, DEEP, RAMPART, RAMP_HALF, RAMP_LONG = 22, 3, 6, 9, 6
 local LAIRS = Map.LAIRS
 -- Round each lair (lair space): a pylon either side of the way out, wide of the ramp so a 36-stud boss
@@ -339,11 +344,14 @@ end
 local function release(d)
 	if d.state ~= "Caged" then return end
 	d.prompt.ActionText = "Recall"
-	unchain(d)
 	voice(d, Sfx.ZOMBIE_ATTACK)
-	state(d, "Roar", ROAR) -- MythRig poses it; client/MythPresentation announces it
+	state(d, "Roar", ROAR) -- MythRig plays its ChainBreak clip; client/MythPresentation announces it
 	d.moving = 0
-	if events then events:FireAllClients("loose", d.kind, d.root.Position) end
+	task.delay(SNAP, function() -- the chains hold while it strains, then go at the clip's burst
+		if d.state == "Caged" or not d.model.Parent then return end
+		unchain(d)
+		if events then events:FireAllClients("loose", d.kind, d.root.Position) end
+	end)
 end
 local drop
 -- Chains it once its pose has settled (the server poses it at 20 Hz), unless it got out again meanwhile.
@@ -353,15 +361,27 @@ local function chainSoon(d)
 	end)
 end
 -- The pedestal again: whatever it is doing, it is back in the bottom of its pit, chained.
+-- It slumps where it stands (Defeat), then rises in the pit (Spawn) and is chained again.
 local function recall(d)
-	if d.state == "Caged" then return end
+	if d.state == "Caged" or d.state == "Defeat" or d.state == "Spawn" then return end
 	drop(d)
 	d.moving, d.goal, d.skip = 0, nil, {}
-	d.model:PivotTo(CFrame.new(d.home) * d.turn)
 	d.prompt.ActionText = "Release"
-	state(d, "Caged")
-	chainSoon(d)
+	d.prompt.Enabled = false
+	state(d, "Defeat", DEFEAT)
+	task.delay(DEFEAT, function()
+		if d.state ~= "Defeat" or not d.model.Parent then return end
+		d.model:PivotTo(CFrame.new(d.home) * d.turn)
+		state(d, "Spawn", RISE)
+		task.delay(RISE, function()
+			if d.state ~= "Spawn" or not d.model.Parent then return end
+			state(d, "Caged")
+			d.prompt.Enabled = true
+			chainSoon(d)
+		end)
+	end)
 end
+local STUNNABLE = { Idle = true, Chase = true, Return = true, Windup = true, Charge = true, Recovery = true }
 -- A weapon hit on a boss: it flinches and lets itself out, nothing more. True when `part` is a boss's,
 -- so the shot stops there.
 function Monsters.damage(part, damage, _direction, player)
@@ -373,8 +393,18 @@ function Monsters.damage(part, damage, _direction, player)
 		Funnels.first(player, "BossEncountered")
 		Funnels.first(player, "BossHit")
 	end
+	local wasCaged = d.state == "Caged"
 	release(d)
-	d.model:SetAttribute("HurtAt", workspace:GetServerTimeNow())
+	local now = workspace:GetServerTimeNow()
+	d.model:SetAttribute("HurtAt", now)
+	-- its weak point (the Cyclops' eye, Talos' ankle seal): it staggers, and the swing it was winding up is lost
+	if not wasCaged and part:GetAttribute("WeakPoint") and STUNNABLE[d.state] and now >= (d.stunReady or 0) then
+		d.stunReady = now + STUN_EVERY
+		d.moving = 0
+		d.nextAttack = math.max(d.nextAttack, now + STUN + 1)
+		state(d, "Stun", STUN)
+		voice(d, Sfx.ZOMBIE_HURT, 1)
+	end
 	if os.clock() >= (d.hurtVoiceAt or 0) then -- a grunt, not one per pellet
 		d.hurtVoiceAt = os.clock() + 0.6
 		voice(d, Sfx.ZOMBIE_HURT, 0.9)
@@ -498,14 +528,15 @@ end
 local CRUSH = 6 -- blow power on a dummy (init.server hit()): enough to break the bone it lands on
 local function strike(d)
 	local center = d.impact
-	Sfx.play({ Sfx.SLEDGEHAMMER_SLAM, 0.7, 1 }, center)
-	Map.blast(center, d.def.radius * 0.5, 70, nil, true)
+	local radius = d.def.radius * (d.heavy and HEAVY_REACH or 1)
+	Sfx.play({ Sfx.SLEDGEHAMMER_SLAM, d.heavy and 0.9 or 0.7, d.heavy and 0.85 or 1 }, center)
+	Map.blast(center, radius * 0.5, 70, nil, true)
 	prey.each(function(model, torso)
-		if ((torso.Position - center) * XZ).Magnitude <= d.def.radius and math.abs(torso.Position.Y - center.Y) < 14 then
+		if ((torso.Position - center) * XZ).Magnitude <= radius and math.abs(torso.Position.Y - center.Y) < 14 then
 			prey.crush(model, center, CRUSH)
 		end
 	end)
-	events:FireAllClients("Impact", center, d.def.radius, d.def.accent)
+	events:FireAllClients("Impact", center, radius, d.def.accent)
 end
 -- The dummy in its hands: lifted to the mouth (welded to the boss), bitten limb by limb, then gone.
 local EAT_TIME, BITE_EVERY = 3.2, 0.7
@@ -520,6 +551,7 @@ local function startEating(d, model, torso)
 	weld.Name, weld.Part0, weld.Part1, weld.Parent = "BossBite", d.root, torso, torso
 	d.meal, d.weld, d.nextBite = model, weld, os.clock() + 0.5
 	d.moving = 0
+	d.model:SetAttribute("AttackClip", nil) -- the Recovery after a meal is not a swing's
 	state(d, "Eat", EAT_TIME)
 	voice(d, Sfx.ZOMBIE_ATTACK)
 	return true
@@ -542,9 +574,9 @@ local function chew(d, now)
 	end
 end
 local function think(d, now)
-	if d.state == "Caged" then return end
+	if d.state == "Caged" or d.state == "Defeat" or d.state == "Spawn" then return end
 	if d.state == "Eat" then chew(d, now); return end
-	if d.state == "Roar" then
+	if d.state == "Roar" or d.state == "Stun" then
 		if now < d.untilTime then return end
 		state(d, "Idle")
 	end
@@ -591,6 +623,9 @@ local function think(d, now)
 		d.model:SetAttribute("ChargeDirection", flat(r.Position - d.root.Position))
 		d.nextAttack = now + d.def.windup + d.def.recovery + 1
 		d.moving = 0
+		d.swings = (d.swings or 0) + 1
+		d.heavy = d.swings % HEAVY_EVERY == 0
+		d.model:SetAttribute("AttackClip", d.heavy and "HeavyAttack" or "Attack")
 		state(d, "Windup", d.def.windup)
 		voice(d, Sfx.ZOMBIE_ATTACK)
 	else state(d, "Chase"); d.moving = 1 end
@@ -736,7 +771,9 @@ function Monsters.start(remotes, api)
 			if tickBrain then d.model:SetAttribute("Moving", d.moving) end
 			if tickPose then
 				local phase = math.clamp((now - d.since) / math.max(d.untilTime - d.since, 0.01), 0, 1)
-				Rig.pose(d.joints, d.state, d.kind, now, d.moving, phase, math.clamp(1 - (now - (d.model:GetAttribute("HurtAt") or 0)) / 0.3, 0, 1), true)
+				local hurtAt = d.model:GetAttribute("HurtAt")
+				Rig.pose(d.joints, d.state, d.kind, now, d.moving, phase, math.clamp(1 - (now - (hurtAt or 0)) / 0.3, 0, 1), true,
+					{ since = d.since, attack = d.model:GetAttribute("AttackClip"), hurtAt = hurtAt })
 			end
 		end
 		debug.profileend()

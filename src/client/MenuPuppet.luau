@@ -354,7 +354,7 @@ function MenuPuppet:step(t: number)
 	if self.bossJoints then
 		local roar = (t + 3) % BOSS_ROAR_EVERY -- the first roar 6 s in
 		if roar < BOSS_ROAR then
-			MythRig.pose(self.bossJoints, "Roar", self.bossKind, t, 0, roar / BOSS_ROAR, 0, true)
+			MythRig.pose(self.bossJoints, "Taunt", self.bossKind, t, 0, roar / BOSS_ROAR, 0, true, { since = t - roar })
 		else
 			MythRig.pose(self.bossJoints, "Caged", self.bossKind, t, 0, 0, 0, true)
 		end
