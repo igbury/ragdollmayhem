@@ -15,6 +15,8 @@
 --  * LeafBlower: held, a cone of wind: dummies in it stagger back, BLOW_TOPPLE s of it knocks them down
 --    and blows them away (marked like a punt: a wall they hit hurts); loose parts blow away too. Aimed
 --    at the ground it lifts the one holding it (client useWeapon, weapon.thrust).
+--  * WebShot: sticks the dummy to the wall behind it (or the floor) for a while.
+--  * GroundSlam: the landing of the client's leap: a shockwave that throws the dummies round it.
 --  * C4: click sticks a charge to what it hits (MAX_C4), right click sets all of them off.
 --  * Landmine: placed on the floor ahead; armed after a moment, it blows when a dummy steps close.
 --  * Spear: a long thrust that runs through up to SPEAR_PIERCE dummies in a line.
@@ -1036,7 +1038,113 @@ local function blow(weapon, player: Player, char: Model, origin: Vector3, dir: V
 	end
 end
 
+-- Cosmic Power (an ability, bare hands): held, a beam from the right palm to the dummy under the
+-- crosshair, or the one nearest it within COSMIC_CONE (the beam sticks to a body you sweep across).
+-- One call per cd while the button is held: the dummy stays down, jolts and takes a little harm.
+local COSMIC_CONE = math.cos(math.rad(9))
+local function cosmic(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local hand = char:FindFirstChild("RightHand") :: BasePart?
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	local hitPart = d and result and result.Instance
+	if not d then
+		local best, params = COSMIC_CONE, exclude(char)
+		for model, other in K.dummies do
+			local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+			local to = torso and torso.Position - origin
+			if to and to.Magnitude < weapon.range and to.Unit:Dot(dir) > best then
+				local seen = workspace:Raycast(origin, to, params)
+				if not seen or seen.Instance:IsDescendantOf(model) then
+					best, d, hitPart, target = to.Unit:Dot(dir), other, torso, torso.Position
+				end
+			end
+		end
+	end
+	K.fx:FireAllClients("Cosmic", char, if hand then hand.Position else origin, target, hitPart)
+	if not d or not hitPart then
+		return
+	end
+	takeOver(d)
+	if d.state ~= "Dead" then
+		K.knockDown(d, 0.8, "Knocked down")
+	end
+	K.harm(d, weapon.dmg, "shock", origin)
+	local rng = Random.new()
+	for _, part in bodyParts(d) do -- the jolt: every limb kicks a different way, the whole body shoved a little
+		part.AssemblyAngularVelocity = rng:NextUnitVector() * 9
+		part.AssemblyLinearVelocity += rng:NextUnitVector() * 3 + dir * weapon.push * 0.1
+	end
+end
+
+-- Web Shot: the web sticks the dummy it hits to the wall behind it (or the floor under it) for WEB_HOLD
+-- s: moved flat against it and anchored, like the ice of the frostgun. A miss leaves a splat.
+local WEB_HOLD = 5
+local WEB_REACH = 12 -- studs behind the dummy a wall still catches it
+local WEB_LIFT = 1.5 -- studs it hangs above the web's hit point on a wall
+local function web(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local hand = char:FindFirstChild("RightHand") :: BasePart?
+	local from = if hand then hand.Position else origin
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	if not (d and result and result.Instance.Parent) then
+		K.fx:FireAllClients("Web", char, from, target, result and result.Normal, nil, 0)
+		return
+	end
+	takeOver(d)
+	K.hit(d, result.Instance, dir, weapon.dmg, 0, "blunt", target, origin)
+	local params = exclude(char, workspace:FindFirstChild("Dummies") or d.model)
+	local back = workspace:Raycast(target, dir * WEB_REACH, params) or workspace:Raycast(target, -UP * 12, params)
+	local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
+	if not back or not torso or d.frozenUntil then
+		K.fx:FireAllClients("Web", char, from, target, nil, d.model, 0)
+		return
+	end
+	K.fx:FireAllClients("Web", char, from, back.Position, back.Normal, d.model, WEB_HOLD)
+	if d.state ~= "Dead" then
+		K.knockDown(d, WEB_HOLD + 0.5, "Knocked down") -- it comes round after the web lets go, not stuck on it
+	end
+	if d.webbedUntil then -- already stuck: longer
+		d.webbedUntil = os.clock() + WEB_HOLD
+		return
+	end
+	d.webbedUntil = os.clock() + WEB_HOLD
+	-- on a wall it hangs a little above where the web hit, feet off the ground
+	local lift = if math.abs(back.Normal.Y) < 0.5 then UP * WEB_LIFT else Vector3.zero
+	d.model:PivotTo(d.model:GetPivot() + (back.Position + back.Normal * 0.6 + lift - torso.Position))
+	setVelocity(d, -back.Normal * 25) -- the limbs slap flat against it, then it sets
+	task.spawn(function()
+		task.wait(0.06)
+		local anchored = {}
+		for _, part in bodyParts(d) do
+			if not part.Anchored then
+				part.AssemblyLinearVelocity = Vector3.zero
+				part.Anchored = true
+				table.insert(anchored, part)
+			end
+		end
+		while d.webbedUntil and os.clock() < d.webbedUntil and d.model.Parent and not d.heldBy do
+			task.wait(0.2)
+		end
+		d.webbedUntil = nil
+		for _, part in anchored do
+			if part.Parent then
+				part.Anchored = false
+			end
+		end
+	end)
+end
+
+-- Ground Slam: the client leaps and comes down hard (init.client useWeapon, weapon.leap); this is the
+-- landing: a shockwave off the ground under it that throws every dummy in weapon.range up and away.
+local function groundSlam(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local ground = workspace:Raycast(origin, -UP * 12, exclude(char))
+	local at = if ground then ground.Position else origin - UP * 4.5
+	K.fx:FireAllClients("GroundSlam", char, at, weapon.range)
+	K.smash(at, weapon.range, weapon.dmg, Vector3.zero, weapon.push)
+end
+
 local HANDLERS = {
+	WebShot = web,
+	GroundSlam = groundSlam,
+	CosmicPower = cosmic,
 	LeafBlower = blow,
 	Flamethrower = flame,
 	Frostgun = frost,

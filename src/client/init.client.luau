@@ -1232,6 +1232,12 @@ Fx.weaponPoint = function(id: string, point: Vector3): CFrame?
 	return mesh.CFrame * CFrame.new(point * (HOLD[id] and HOLD[id].scale or 1))
 end
 
+-- Our right fist in the first-person viewmodel this frame (Cosmic Power's beam leaves from it); nil in
+-- third person, where the body's RightHand is used.
+Fx.palm = function(): Vector3?
+	return if isFirstPerson() then hands.right.fist.Position else nil
+end
+
 -- Thrown grenades / molotovs are plain server parts; dress them in the same meshes locally.
 workspace.ChildAdded:Connect(function(child)
 	if not child:GetAttribute("Projectile") then
@@ -1368,6 +1374,37 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 				end
 			end
 		end
+	end
+	if weapon.leap then -- ground slam: up, then down hard; the server hears of it on landing
+		local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+		local hum = char:FindFirstChildOfClass("Humanoid")
+		if not root or not hum or weaponVisual.leaping then
+			return
+		end
+		weaponVisual.leaping = true
+		hum:ChangeState(Enum.HumanoidStateType.Jumping)
+		local ahead = ray.Direction * Vector3.new(1, 0, 1)
+		ahead = if ahead.Magnitude > 0.01 then ahead.Unit else Vector3.zero
+		root.AssemblyLinearVelocity = ahead * 16 + Vector3.yAxis * weapon.leap
+		task.spawn(function()
+			local t0, down = os.clock(), false
+			task.wait(0.15)
+			while os.clock() - t0 < 2.5 and root.Parent and hum.Health > 0 do
+				if not down and root.AssemblyLinearVelocity.Y < 8 then -- the top of the leap: straight down
+					down = true
+					root.AssemblyLinearVelocity = ahead * 8 - Vector3.yAxis * 110
+				end
+				if down and hum.FloorMaterial ~= Enum.Material.Air then
+					break
+				end
+				task.wait()
+			end
+			weaponVisual.leaping = false
+			if root.Parent and hum.Health > 0 and not char:GetAttribute("Ragdolled") then
+				weaponRemote:FireServer(weapon.id, -Vector3.yAxis, head.Position, false)
+			end
+		end)
+		return
 	end
 	-- where the head is now (not where the server last saw it), and whether we are aimed (tight pellets)
 	weaponRemote:FireServer(weapon.id, dir, head.Position, aimed > 0.95, swing)

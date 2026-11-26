@@ -182,6 +182,9 @@ Sfx.WEAPON = {
 	BalloonGun = { fire = { Sfx.ROCKET_JUMP_POP, 1.6, 0.8 } },
 	Balloon = { fire = { Sfx.ROCKET_JUMP_POP, 2.4, 0.35 } },
 	LeafBlower = { fire = { Sfx.DASH_WHOOSH, 0.45, 0.9 } }, -- once every HUSH s
+	WebShot = { fire = { Sfx.LASSO_THROW or Sfx.DASH_WHOOSH, 1.5, 0.8 } },
+	GroundSlam = { fire = { Sfx.SLEDGEHAMMER_SLAM or Sfx.AXE_HIT, Sfx.SLEDGEHAMMER_SLAM and 0.8 or 0.6 } }, -- on landing
+	CosmicPower = { fire = { Sfx.TASER_ZAP or Sfx.HANDGUN, Sfx.TASER_ZAP and 0.75 or 1.6, 0.7 } }, -- once every HUSH s
 	TNT = { fire = { Sfx.THROW, 0.8 } },
 	C4 = { fire = { Sfx.THROW, 1.1 } },
 	Landmine = { fire = { Sfx.THROW, 0.7 } },
@@ -189,7 +192,7 @@ Sfx.WEAPON = {
 	HealSyringe = { fire = { Sfx.SYRINGE_JAB } },
 }
 -- s between fire sounds of the fast auto weapons (server/Specials.hushed, client useWeapon)
-Sfx.HUSH = { Flamethrower = 0.45, Chainsaw = 0.5, LeafBlower = 0.3 }
+Sfx.HUSH = { Flamethrower = 0.45, Chainsaw = 0.5, LeafBlower = 0.3, CosmicPower = 0.35 }
 Sfx.SHATTER = { Sfx.GLASS_BOTTLE_SHATTER, 1, 0.8 } -- a molotov bottle breaking
 Sfx.THUD = { Sfx.BODY_THUD, 1, 1 } -- a body hitting the ground or a wall hard (impacts)
 -- a bullet's impact on what is not a body, by material (anything else: concrete)

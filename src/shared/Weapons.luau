@@ -60,6 +60,13 @@ return {
 	-- leaf blower: held, a wind cone out to `range` that topples dummies and blows them away at up to
 	-- `push` studs/s (server/Specials blow); aimed down, `thrust` studs/s a tick lifts you (client useWeapon)
 	{ id = "LeafBlower", name = "LEAF BLOWER", tag = "gun", short = "BLOW", kind = "gun", auto = true, cd = 0.1, range = 24, push = 60, thrust = 24 },
+	-- cosmic power: an ability, no weapon in hand: held, a beam of comic cosmic energy from the palm that
+	-- holds on the dummy under the crosshair (server/Specials cosmic, client Fx Cosmic)
+	{ id = "CosmicPower", name = "COSMIC POWER", tag = "gun", short = "CSMC", kind = "gun", auto = true, cd = 0.1, range = 70, dmg = 0.5, push = 20 },
+	-- web shot: an ability, no weapon in hand: the web sticks the dummy to the wall behind it (server/Specials web, client Fx Web)
+	{ id = "WebShot", name = "WEB SHOT", tag = "gun", short = "WEB", kind = "gun", cd = 0.6, range = 90, dmg = 1, push = 0 },
+	-- ground slam: an ability: a leap and a hard landing that throws everyone round it (client useWeapon leap, server/Specials groundSlam, client Fx GroundSlam)
+	{ id = "GroundSlam", name = "GROUND SLAM", tag = "gun", short = "SLAM", kind = "gun", cd = 1.6, range = 14, dmg = 20, push = 55, leap = 75 },
 	-- EXPLOSIVES
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
 	{ id = "Molotov", name = "MOLOTOV", tag = "thrown", short = "MOLO", kind = "thrown", cd = 1.5, speed = 60 },

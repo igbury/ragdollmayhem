@@ -242,6 +242,9 @@ function TutorialHud.start()
 			BalloonGun = `{A}: tie a balloon to the limb you hit · 3 lift them up`,
 			Balloon = `{A}: tie a balloon to a limb in reach · 3 lift them up`,
 			LeafBlower = `{HA}: blow them away · aim down: hover`,
+			CosmicPower = `{HA}: cosmic beam`,
+			WebShot = `{A}: web them to the wall`,
+			GroundSlam = `{A}: leap and slam`,
 		}
 		if by[w.id] then
 			return by[w.id]

@@ -12,6 +12,7 @@ local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("A
 local Settings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Settings"))
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
 local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
+local Krackle = require(script.Parent:WaitForChild("Krackle"))
 
 local player = Players.LocalPlayer
 local camera = workspace.CurrentCamera
@@ -1472,6 +1473,467 @@ function EVENTS.Tase(_, hitPart: BasePart, dur: number)
 	end
 end
 
+-- Cosmic Power (server/Specials cosmic, one tick every cd while it is held): a green electric ray in
+-- the comic style (Doom's green lightning), in greens and black ink only.
+-- One ray per caster lives while ticks keep coming (COSMIC_HOLD past the last one):
+--  * zig-zag lightning from the palm to the bite: one heavy bolt and two thin ones, real 3D tubes
+--    (cylinders, balls at the kinks) that kink in every direction, a glowing Neon core in a darker
+--    see-through halo; the zig-zags are redrawn every COSMIC_ZAP s, so it crackles, and the heavy
+--    core flickers between the two palest greens; a green light at each end flickers with it;
+--  * short sparks jag off the heavy bolt into the air, and it forks off the bite in 2-4 jagged
+--    branches to other limbs (it bites off-centre, so it enters asymmetrically);
+--  * black ink dot bunches (client/Krackle, painted at runtime: Roblox has no custom shaders, and
+--    only BillboardGui sprites draw an EditableImage) stream along the ray and boil off the body and
+--    the palm, with a few small clouds and hatched flame tongues on the body;
+--  * per tick: a light green cartoon starburst flickers behind the body and its skeleton strobes through.
+local COSMIC_HOLD = 0.22
+local COSMIC_FADE = 0.12 -- s the ray takes to pinch out after that
+local COSMIC_ZAP = 0.06 -- s between new zig-zags
+-- five greens, darkest to palest, and black ink; nothing else (Krackle paints in DARK and LIGHT)
+local COSMIC_DEEP = Color3.fromRGB(10, 65, 25)
+local COSMIC_DARK = Color3.fromRGB(20, 105, 40)
+local COSMIC_MID = Color3.fromRGB(50, 170, 60)
+local COSMIC_LIGHT = Color3.fromRGB(140, 235, 90)
+local COSMIC_PALE = Color3.fromRGB(205, 255, 175)
+local COSMIC_HALO = 0.6 -- the halo's transparency; it is HALO_WIDTH times the core
+local COSMIC_HALO_WIDTH = 2.6
+-- the bolts palm to bite: { core width (studs), zig-zag reach (studs at the middle of a 10 stud ray), core, halo }
+local COSMIC_BOLTS = {
+	{ 0.16, 0.9, COSMIC_PALE, COSMIC_MID },
+	{ 0.06, 1.4, COSMIC_LIGHT, COSMIC_DARK },
+	{ 0.06, 1.2, COSMIC_LIGHT, COSMIC_DEEP },
+}
+local COSMIC_SPARKS = 5 -- short jags off the heavy bolt into the air
+-- sprites streaming along the ray: [texture] = { how many, size range (studs) }
+local COSMIC_STREAM = { dots = { 40, 0.45, 0.95 } }
+-- sprites boiling off the body and the palm: { texture, pool, per second, life range, size at birth / peak / death, speed range, rise (studs/s²) }
+local COSMIC_AURA = {
+	{ "cloud", 6, 10, 0.25, 0.45, 0.4, 0.8, 0.2, 1, 2.5, 0 },
+	{ "flame", 4, 7, 0.2, 0.35, 0.4, 0.8, 0.15, 2, 4, 6 },
+	{ "dots", 30, 60, 0.3, 0.6, 0.35, 0.85, 0.2, 2, 6, 0 },
+}
+local COSMIC_PALM = {
+	{ "dots", 12, 28, 0.3, 0.5, 0.2, 0.55, 0.1, 2, 4, 0 },
+}
+
+-- A zig-zag bolt of `n` straight segments, a 3D tube: per segment a Neon core cylinder inside a wider
+-- see-through halo cylinder, and a ball of each at every kink so the tube has no gaps. Its kinks are
+-- random offsets across the ray in both directions, largest mid-way, pinned at both ends; cosmicZap
+-- rolls new ones.
+local function cosmicBolt(holder: BasePart, n: number, width: number, reach: number, core: Color3, halo: Color3)
+	local bolt = { n = n, width = width, reach = reach, offs = {}, pts = {}, segs = {}, joints = {}, parts = {} }
+	local function piece(shape: Enum.PartType, color: Color3, transparency: number): Part
+		local p = part(shape, color, Enum.Material.Neon)
+		p.Transparency = transparency
+		p.Parent = holder
+		table.insert(bolt.parts, p)
+		return p
+	end
+	for i = 1, n do
+		bolt.segs[i] = { piece(Enum.PartType.Cylinder, core, 0), piece(Enum.PartType.Cylinder, halo, COSMIC_HALO) }
+	end
+	for i = 1, n - 1 do
+		bolt.joints[i] = { piece(Enum.PartType.Ball, core, 0), piece(Enum.PartType.Ball, halo, COSMIC_HALO) }
+	end
+	return bolt
+end
+
+local function cosmicZap(bolt)
+	for i = 0, bolt.n do
+		bolt.offs[i] = Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1))
+	end
+	bolt.kink = rng:NextNumber(0.75, 1.25) -- some zaps wilder than others
+end
+
+-- Lay `bolt` from A to B this frame, its widths faded by `fade` and thinner at A by `nearA` (our own
+-- palm right at the camera).
+local function cosmicLay(bolt, A: Vector3, B: Vector3, fade: number, nearA: number)
+	local d = B - A
+	local L = d.Magnitude
+	if L < 1e-3 then
+		return
+	end
+	local across = d:Cross(UP)
+	across = if across.Magnitude > 1e-3 then across.Unit else Vector3.xAxis
+	local across2 = across:Cross(d / L)
+	local reach = bolt.reach * bolt.kink * math.clamp(L / 10, 0.25, 1.6)
+	for i = 0, bolt.n do
+		local u = i / bolt.n
+		local o = bolt.offs[i]
+		bolt.pts[i] = A + d * u + (across * o.X + across2 * o.Y) * reach * math.sin(math.pi * u) ^ 0.7
+	end
+	local function width(u: number): number
+		return bolt.width * fade * (nearA + (1 - nearA) * math.min(u * 3, 1))
+	end
+	for i = 1, bolt.n do
+		local p0, p1 = bolt.pts[i - 1], bolt.pts[i]
+		local len = (p1 - p0).Magnitude
+		local w = width((i - 0.5) / bolt.n)
+		local cf = CFrame.lookAt((p0 + p1) / 2, p1) * CFrame.Angles(0, math.pi / 2, 0) -- a cylinder runs along X
+		local core, halo = bolt.segs[i][1], bolt.segs[i][2]
+		core.Size, core.CFrame = Vector3.new(len, w, w), cf
+		halo.Size, halo.CFrame = Vector3.new(len, w * COSMIC_HALO_WIDTH, w * COSMIC_HALO_WIDTH), cf
+	end
+	for i = 1, bolt.n - 1 do
+		local w = width(i / bolt.n)
+		local core, halo = bolt.joints[i][1], bolt.joints[i][2]
+		core.Size, core.Position = Vector3.one * w, bolt.pts[i]
+		halo.Size, halo.Position = Vector3.one * w * COSMIC_HALO_WIDTH, bolt.pts[i]
+	end
+end
+
+-- The heavy bolt's core flickers between the two palest greens, a zap at a time.
+local function cosmicFlicker(bolt)
+	local color = if rng:NextNumber() < 0.5 then COSMIC_PALE else COSMIC_LIGHT
+	for i = 1, bolt.n do
+		bolt.segs[i][1].Color = color
+	end
+	for i = 1, bolt.n - 1 do
+		bolt.joints[i][1].Color = color
+	end
+end
+
+-- The point at u (0..1) along a laid bolt.
+local function cosmicAlong(bolt, u: number): Vector3
+	local x = math.clamp(u, 0, 1) * bolt.n
+	local i = math.min(math.floor(x), bolt.n - 1)
+	return bolt.pts[i]:Lerp(bolt.pts[i + 1], x - i)
+end
+
+-- A flat sprite: one cell of a 2x2 Krackle flipbook on a BillboardGui held by an attachment.
+local function cosmicSprite(holder: BasePart, tex: Content)
+	local a = Instance.new("Attachment")
+	a.Parent = holder
+	local bg = Instance.new("BillboardGui")
+	bg.Adornee, bg.LightInfluence, bg.Enabled = a, 0, false
+	local il = Instance.new("ImageLabel")
+	il.BackgroundTransparency, il.Size = 1, UDim2.fromScale(1, 1)
+	il.ImageContent, il.ImageRectSize = tex, Vector2.new(128, 128)
+	il.Parent = bg
+	bg.Parent = holder
+	return { a = a, bg = bg, il = il }
+end
+
+local function cosmicCell(sp)
+	local i = rng:NextInteger(0, 3)
+	sp.il.ImageRectOffset = Vector2.new((i % 2) * 128, (i // 2) * 128)
+	sp.il.Rotation = rng:NextNumber(0, 360)
+end
+
+local function cosmicShow(sp, at: Vector3, size: number)
+	sp.a.Position = at
+	sp.bg.Size = UDim2.fromScale(size, size)
+	sp.bg.Enabled = size > 0.05
+end
+
+-- A light green starburst in the camera's plane behind `torso`, built from wedge triangles (no textures).
+local function triangle(a: Vector3, b: Vector3, c: Vector3, w0: BasePart, w1: BasePart)
+	local ab, ac, bc = b - a, c - a, c - b
+	local abd, acd, bcd = ab:Dot(ab), ac:Dot(ac), bc:Dot(bc)
+	if abd > acd and abd > bcd then
+		c, a = a, c
+	elseif acd > bcd and acd > abd then
+		a, b = b, a
+	end
+	ab, ac, bc = b - a, c - a, c - b
+	local right = ac:Cross(ab).Unit
+	local up = bc:Cross(right).Unit
+	local back = bc.Unit
+	local height = math.abs(ab:Dot(up))
+	w0.Size = Vector3.new(0.05, height, math.abs(ab:Dot(back)))
+	w0.CFrame = CFrame.fromMatrix((a + b) / 2, right, up, back)
+	w1.Size = Vector3.new(0.05, height, math.abs(ac:Dot(back)))
+	w1.CFrame = CFrame.fromMatrix((a + c) / 2, -right, up, -back)
+end
+
+local function starburst(torso: BasePart, dur: number)
+	local spikes = {}
+	local parts = {}
+	local count = 13
+	local turn = rng:NextNumber(0, math.pi * 2)
+	for i = 1, count do
+		local w0 = Instance.new("WedgePart")
+		local w1 = Instance.new("WedgePart")
+		for _, w in { w0, w1 } do
+			w.Color, w.Material = COSMIC_LIGHT, Enum.Material.SmoothPlastic
+			w.Anchored, w.CanCollide, w.CanQuery, w.CanTouch, w.CastShadow = true, false, false, false, false
+			w.Parent = folder
+			table.insert(parts, w)
+		end
+		-- uneven spikes: long and short, each a little off its slot
+		spikes[i] = { ang = turn + (i + rng:NextNumber(-0.3, 0.3)) * math.pi * 2 / count, len = rng:NextNumber(1.3, 2.4), w0 = w0, w1 = w1 }
+	end
+	run(dur, parts, function(a)
+		if not torso.Parent then
+			return
+		end
+		local cam = camera.CFrame
+		local centre = torso.Position + (torso.Position - cam.Position).Unit * 2.2 -- behind the body
+		local r, u = cam.RightVector, cam.UpVector
+		local grow = 0.7 + 0.3 * out(math.min(a * 3, 1))
+		for _, s in spikes do
+			local dir = r * math.cos(s.ang) + u * math.sin(s.ang)
+			local side = r * math.cos(s.ang + math.pi / 2) + u * math.sin(s.ang + math.pi / 2)
+			local base = 0.75 * grow
+			triangle(centre + dir * base - side * 0.3, centre + dir * base + side * 0.3, centre + dir * s.len * grow, s.w0, s.w1)
+		end
+	end)
+	local disc = part(Enum.PartType.Cylinder, COSMIC_LIGHT, Enum.Material.SmoothPlastic)
+	run(dur, { disc }, function()
+		if torso.Parent then
+			local cam = camera.CFrame
+			local centre = torso.Position + (torso.Position - cam.Position).Unit * 2.2
+			disc.Size = Vector3.new(0.05, 1.65, 1.65)
+			disc.CFrame = CFrame.lookAt(centre, centre + cam.LookVector) * CFrame.Angles(0, math.rad(90), 0)
+		end
+	end)
+end
+
+local cosmicStrobe = setmetatable({}, { __mode = "k" }) -- [dummy Model] = ticks it has been hit
+local cosmicBeams = {} -- [caster Model] = the live ray
+
+-- Where the ray bites `hitPart`: off its centre (asymmetric), in its own space so it rides the jolts.
+local function cosmicAim(s, hitPart: BasePart?, target: Vector3)
+	s.hitPart, s.target = hitPart, target
+	s.entryLocal = if hitPart
+		then hitPart.CFrame:PointToObjectSpace(target)
+			+ Vector3.new(rng:NextNumber(-0.35, 0.35) * hitPart.Size.X, rng:NextNumber(-0.3, 0.3) * hitPart.Size.Y, 0)
+		else nil
+	s.nextFork = 0
+end
+
+-- New jagged forks off the bite to other limbs: 2-4, each its own thickness and fork point.
+local function cosmicFork(s)
+	for _, br in s.branches do
+		for _, p in br.bolt.parts do
+			p:Destroy()
+		end
+	end
+	s.branches = {}
+	s.nextFork = os.clock() + rng:NextNumber(0.18, 0.35)
+	local model = s.hitPart and s.hitPart.Parent
+	if not (model and model:IsA("Model")) then
+		return
+	end
+	local limbs = {}
+	for _, p in model:GetChildren() do
+		if p:IsA("BasePart") and p ~= s.hitPart and p.Name ~= "HumanoidRootPart" then
+			table.insert(limbs, p)
+		end
+	end
+	for _ = 1, math.min(#limbs, rng:NextInteger(2, 4)) do
+		local limb = table.remove(limbs, rng:NextInteger(1, #limbs))
+		local bolt = cosmicBolt(s.holder, 4, rng:NextNumber(0.035, 0.08), 0.6, COSMIC_LIGHT, COSMIC_DARK)
+		cosmicZap(bolt)
+		table.insert(s.branches, { bolt = bolt, limb = limb, fork = rng:NextNumber(0.8, 0.97),
+			tip = Vector3.new(rng:NextNumber(-0.4, 0.4), rng:NextNumber(-0.4, 0.4), rng:NextNumber(-0.4, 0.4)) * limb.Size })
+	end
+end
+
+-- A pool of sprites that boil off an emitter box: they spawn at `rate`/s while it is on, fly, slow,
+-- swell and shrink. ponytail: one pool per kind, a full pool skips a spawn instead of growing.
+local function cosmicPool(holder: BasePart, tex, def)
+	local pool = { def = def, acc = 0, sprites = {} }
+	for _ = 1, def[2] do
+		table.insert(pool.sprites, { sp = cosmicSprite(holder, tex[def[1]]), alive = false })
+	end
+	return pool
+end
+
+local function cosmicBoil(pool, on: boolean, box: CFrame, size: Vector3, dt: number, now: number)
+	local def = pool.def
+	if on then
+		pool.acc += def[3] * dt * (if PerfMode.active() then 0.5 else 1)
+	end
+	for _, p in pool.sprites do
+		if not p.alive and pool.acc >= 1 then
+			pool.acc -= 1
+			p.alive, p.born, p.life = true, now, rng:NextNumber(def[4], def[5])
+			p.pos = box * (Vector3.new(rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5), rng:NextNumber(-0.5, 0.5)) * size)
+			local aim = if def[11] > 0 then (UP + rng:NextUnitVector() * 0.6).Unit else rng:NextUnitVector()
+			p.vel = aim * rng:NextNumber(def[9], def[10])
+			p.spin = rng:NextNumber(-90, 90)
+			cosmicCell(p.sp)
+		end
+		if p.alive then
+			local a = (now - p.born) / p.life
+			if a >= 1 then
+				p.alive = false
+				p.sp.bg.Enabled = false
+			else
+				p.vel = p.vel * math.max(0, 1 - 3 * dt) + UP * def[11] * dt
+				p.pos += p.vel * dt
+				p.sp.il.Rotation += p.spin * dt
+				local size = if a < 0.3 then def[6] + (def[7] - def[6]) * a / 0.3 else def[7] + (def[8] - def[7]) * (a - 0.3) / 0.7
+				cosmicShow(p.sp, p.pos, size)
+			end
+		end
+	end
+	pool.acc = math.min(pool.acc, 2) -- no burst after a full pool
+end
+
+local function cosmicStart(shooter: Model?, from: Vector3)
+	local s = { shooter = shooter, from = from, branches = {}, untilTime = os.clock() + COSMIC_HOLD, nextZap = 0,
+		bolts = {}, sparks = {}, stream = {}, aura = {}, palmPools = {} }
+	s.hand = shooter and shooter:FindFirstChild("RightHand")
+	s.holder = part(Enum.PartType.Block, WHITE)
+	s.holder.Transparency, s.holder.CFrame = 1, CFrame.identity
+	-- a soft green light at each end: the ray lights what is round it a little
+	s.lights = {}
+	for i = 1, 2 do
+		local holder = part(Enum.PartType.Block, WHITE)
+		holder.Transparency, holder.Parent = 1, s.holder
+		local light = Instance.new("PointLight")
+		light.Color, light.Range, light.Shadows = COSMIC_MID, if i == 1 then 6 else 9, false
+		light.Parent = holder
+		s.lights[i] = { part = holder, light = light, glow = 1 }
+	end
+	for _, def in COSMIC_BOLTS do
+		table.insert(s.bolts, cosmicBolt(s.holder, 9, def[1], def[2], def[3], def[4]))
+	end
+	for _ = 1, COSMIC_SPARKS do
+		table.insert(s.sparks, { bolt = cosmicBolt(s.holder, 3, 0.04, 0.35, COSMIC_LIGHT, COSMIC_MID) })
+	end
+	local tex = Krackle.get()
+	if tex then
+		for kind, def in COSMIC_STREAM do
+			for i = 1, few(def[1]) do
+				local sp = cosmicSprite(s.holder, tex[kind])
+				cosmicCell(sp)
+				table.insert(s.stream, { sp = sp, u0 = (i + rng:NextNumber(-0.4, 0.4)) / few(def[1]), last = 0,
+					size = rng:NextNumber(def[2], def[3]), off = Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1)) })
+			end
+		end
+		for _, def in COSMIC_AURA do
+			table.insert(s.aura, cosmicPool(s.holder, tex, def))
+		end
+		for _, def in COSMIC_PALM do
+			table.insert(s.palmPools, cosmicPool(s.holder, tex, def))
+		end
+	end
+	local function palm(): Vector3
+		local own = shooter == player.Character and Fx.palm and Fx.palm()
+		return own or (s.hand and s.hand.Parent and s.hand.Position) or s.from
+	end
+	s.conn = RunService.RenderStepped:Connect(function(dt: number)
+		local now = os.clock()
+		if now > s.untilTime + COSMIC_FADE then
+			cosmicBeams[s.shooter or folder] = nil
+			s.conn:Disconnect()
+			s.holder:Destroy()
+			return
+		end
+		local fade = if now > s.untilTime then 1 - (now - s.untilTime) / COSMIC_FADE else 1
+		local live = now <= s.untilTime
+		local A = palm()
+		local B = if s.hitPart and s.hitPart.Parent then s.hitPart.CFrame * s.entryLocal else s.target
+		local d = B - A
+		if d.Magnitude < 0.1 then
+			return
+		end
+		local cam = camera.CFrame
+		local side = d:Cross(cam.LookVector) -- sideways as the camera sees the ray
+		side = if side.Magnitude > 1e-3 then side.Unit else cam.RightVector
+		local nearA = math.clamp((A - cam.Position).Magnitude / 6, 0.15, 1) -- our own palm at the camera: thin there
+		if now >= s.nextZap then -- crackle: new zig-zags, new sparks
+			s.nextZap = now + COSMIC_ZAP
+			for _, bolt in s.bolts do
+				cosmicZap(bolt)
+			end
+			cosmicFlicker(s.bolts[1])
+			for _, l in s.lights do
+				l.glow = rng:NextNumber(0.6, 1.5)
+			end
+			for _, br in s.branches do
+				cosmicZap(br.bolt)
+			end
+			for _, sp in s.sparks do
+				cosmicZap(sp.bolt)
+				sp.on = rng:NextNumber() < 0.6
+				sp.u = rng:NextNumber(0.1, 0.95)
+				sp.dir = (side * (if rng:NextNumber() < 0.5 then -1 else 1) + d.Unit * rng:NextNumber(-0.6, 0.8)).Unit
+				sp.len = rng:NextNumber(0.6, 2)
+			end
+		end
+		for _, bolt in s.bolts do
+			cosmicLay(bolt, A, B, fade, nearA)
+		end
+		s.lights[1].part.Position, s.lights[2].part.Position = A, B
+		for _, l in s.lights do
+			l.light.Brightness = 1.2 * l.glow * fade
+		end
+		local main = s.bolts[1]
+		for _, sp in s.sparks do
+			local from = cosmicAlong(main, sp.u)
+			cosmicLay(sp.bolt, from, from + sp.dir * sp.len, if sp.on then fade else 0, 1)
+		end
+		if s.hitPart and now > s.nextFork then
+			cosmicFork(s)
+		end
+		for _, br in s.branches do
+			local p0 = cosmicAlong(main, br.fork)
+			local p1 = if br.limb.Parent then br.limb.CFrame * br.tip else B
+			cosmicLay(br.bolt, p0, p1, fade, 1)
+		end
+		-- the ink: dot bunches riding the heavy bolt from the palm to the bite, swapping shape each time round
+		for _, st in s.stream do
+			local u = (st.u0 + now * 0.6) % 1
+			if u < st.last then
+				cosmicCell(st.sp)
+				st.off = Vector2.new(rng:NextNumber(-1, 1), rng:NextNumber(-1, 1))
+			end
+			st.last = u
+			local at = cosmicAlong(main, u) + (cam.RightVector * st.off.X + cam.UpVector * st.off.Y) * 0.6
+			-- each one shrinks near the camera (our own ray in first person) and is gone right at it
+			local away = (at - cam.Position).Magnitude
+			local size = st.size * (0.7 + 0.6 * (1 - math.sin(math.pi * u))) * fade * math.clamp(away / 8, 0.2, 1)
+			cosmicShow(st.sp, at, if away < 2.5 then 0 else size)
+		end
+		local torso = s.hitPart and s.hitPart.Parent and s.hitPart.Parent:FindFirstChild("UpperTorso") :: BasePart?
+		local box = if torso then torso.CFrame else CFrame.new(B)
+		for _, pool in s.aura do
+			local on = live and (pool.def[1] ~= "flame" or torso ~= nil) -- flames only off a body; a wall spits clouds and dots
+			cosmicBoil(pool, on, box, Vector3.new(2, 2.6, 1.2), dt, now)
+		end
+		local ownFirstPerson = shooter == player.Character and Fx.palm ~= nil and Fx.palm() ~= nil
+		for _, pool in s.palmPools do
+			cosmicBoil(pool, live and not ownFirstPerson, CFrame.new(A), Vector3.one * 0.5, dt, now)
+		end
+	end)
+	return s
+end
+
+function EVENTS.Cosmic(shooter: Model?, from: Vector3, target: Vector3, hitPart: BasePart?)
+	local key = shooter or folder
+	local s = cosmicBeams[key]
+	if not s then
+		s = cosmicStart(shooter, from)
+		cosmicBeams[key] = s
+		cosmicAim(s, hitPart, target)
+	elseif hitPart ~= s.hitPart or (not hitPart and (target - s.target).Magnitude > 0.5) then
+		cosmicAim(s, hitPart, target)
+	end
+	s.untilTime = os.clock() + COSMIC_HOLD
+	s.from = from
+
+	-- the body it holds: a flickering starburst behind it and its skeleton strobing through
+	local model = hitPart and hitPart.Parent
+	if model and model:IsA("Model") then
+		local ticks = (cosmicStrobe[model] or 0) + 1
+		cosmicStrobe[model] = ticks
+		local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+		if ticks % 2 == 1 then -- every other tick: a strobe, not a steady glow
+			Fx.scan(model, 0.1)
+			if torso and rng:NextNumber() < 0.75 then
+				starburst(torso, 0.1)
+			end
+		end
+		if rng:NextNumber() < 0.15 then
+			Fx.shake(target, 0.12, 0.08)
+		end
+	end
+end
+
 -- Steam off a scalded body (the boilgun).
 function EVENTS.Steam(_, position: Vector3)
 	for _ = 1, 3 do
@@ -1710,6 +2172,104 @@ function EVENTS.Slam(_, position: Vector3, radius: number)
 	Fx.boom(position, radius, red, radius > 9 and words[rng:NextInteger(1, #words)] or nil, 6)
 	Fx.sparks(position, math.clamp(math.floor(radius * 3), 16, 60), radius * 2.5, red, Vector3.yAxis) -- extra red debris spray
 	Fx.dust(position, 8, radius, radius * 0.3)
+end
+
+-- A straight thin bar from a to b (a web strand, a crack).
+local function bar(p: BasePart, a: Vector3, b: Vector3, w: number, h: number?)
+	p.Size = Vector3.new(w, h or w, math.max((b - a).Magnitude, 0.05))
+	p.CFrame = CFrame.lookAt((a + b) / 2, b)
+end
+
+-- Web Shot (server/Specials web): a strand shoots from the palm; where it lands a spider web splats
+-- flat on the surface (spokes and rings) and, on a stuck dummy, strands tie its limbs down to it.
+-- It stays `hold` s (a miss: WEB_MISS) and fades out at the end.
+local WEB_SPOKES, WEB_RINGS, WEB_MISS = 8, 3, 2
+local WEB = Color3.fromRGB(245, 245, 245)
+function EVENTS.Web(shooter: Model?, from: Vector3, at: Vector3, normal: Vector3?, model: Model?, hold: number)
+	local own = shooter == player.Character and Fx.palm and Fx.palm()
+	from = own or from
+	local strand = part(Enum.PartType.Block, WEB, Enum.Material.SmoothPlastic)
+	run(0.3, { strand }, function(a)
+		bar(strand, from, from:Lerp(at, math.min(a / 0.3, 1)), 0.07)
+		strand.Transparency = math.max(0, a - 0.5) * 2
+	end)
+	if not normal then
+		return
+	end
+	local dur = if hold > 0 then hold else WEB_MISS
+	task.delay(0.08, function()
+		local cf = CFrame.lookAt(at + normal * 0.05, at + normal * 1.05)
+		local R = if model then 3 else 1.6
+		local tips, parts = {}, {}
+		for i = 1, WEB_SPOKES do
+			local angle = (i + rng:NextNumber(-0.2, 0.2)) / WEB_SPOKES * math.pi * 2
+			tips[i] = Vector2.new(math.cos(angle), math.sin(angle)) * R * rng:NextNumber(0.8, 1.15)
+			local p = part(Enum.PartType.Block, WEB, Enum.Material.SmoothPlastic)
+			bar(p, cf.Position, cf * Vector3.new(tips[i].X, tips[i].Y, 0), 0.06)
+			table.insert(parts, p)
+		end
+		for ring = 1, WEB_RINGS do
+			local k = ring / (WEB_RINGS + 0.3)
+			for i = 1, WEB_SPOKES do
+				local t0, t1 = tips[i] * k, tips[i % WEB_SPOKES + 1] * k
+				local p = part(Enum.PartType.Block, WEB, Enum.Material.SmoothPlastic)
+				bar(p, cf * Vector3.new(t0.X, t0.Y, 0), cf * Vector3.new(t1.X, t1.Y, 0), 0.05)
+				table.insert(parts, p)
+			end
+		end
+		local ties = {}
+		if model then
+			local limbs = {} -- strands over the body, limb to the web's rim
+			for _, p in model:GetChildren() do
+				if p:IsA("BasePart") and p.Name ~= "HumanoidRootPart" and p.Transparency < 1 then
+					table.insert(limbs, p)
+				end
+			end
+			for _ = 1, math.min(#limbs, 5) do
+				local limb = table.remove(limbs, rng:NextInteger(1, #limbs))
+				local tip = tips[rng:NextInteger(1, WEB_SPOKES)] * 1.1
+				local p = part(Enum.PartType.Block, WEB, Enum.Material.SmoothPlastic)
+				table.insert(parts, p)
+				table.insert(ties, { p, limb, cf * Vector3.new(tip.X, tip.Y, 0) })
+			end
+		end
+		run(dur, parts, function(a)
+			for _, tie in ties do -- the body sets a moment after it lands: follow it
+				if tie[2].Parent then
+					bar(tie[1], tie[2].Position, tie[3], 0.06)
+				end
+			end
+			local fade = math.clamp((a * dur - (dur - 0.5)) / 0.5, 0, 1)
+			for _, p in parts do
+				p.Transparency = fade
+			end
+		end)
+	end)
+end
+
+-- Ground Slam (server/Specials groundSlam): the sledgehammer's slam, wider, and black cracks that
+-- run out over the ground round it and stay a few seconds.
+local SLAM_CRACKS, SLAM_CRACK_LIFE = 9, 3
+function EVENTS.GroundSlam(_, at: Vector3, radius: number)
+	EVENTS.Slam(nil, at, radius * 0.75)
+	local cracks = {}
+	for i = 1, SLAM_CRACKS do
+		local angle = (i + rng:NextNumber(-0.3, 0.3)) / SLAM_CRACKS * math.pi * 2
+		local p0 = at + UP * 0.04
+		for seg = 1, 3 do -- a jagged run: each leg turns a little and thins
+			angle += rng:NextNumber(-0.5, 0.5)
+			local p1 = p0 + Vector3.new(math.cos(angle), 0, math.sin(angle)) * radius * rng:NextNumber(0.12, 0.25)
+			local p = part(Enum.PartType.Block, BLACK)
+			bar(p, p0, p1, 0.35 / seg, 0.05)
+			table.insert(cracks, p)
+			p0 = p1
+		end
+	end
+	run(SLAM_CRACK_LIFE, cracks, function(a)
+		for _, p in cracks do
+			p.Transparency = math.max(0, a - 0.7) / 0.3
+		end
+	end)
 end
 
 function EVENTS.Fire(_, position: Vector3, radius: number, dur: number)
