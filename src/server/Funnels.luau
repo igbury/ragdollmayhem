@@ -5,7 +5,8 @@
 -- Steps are only ever appended, never inserted or reordered: a changed sequence is a new funnel name.
 --
 --  #  Funnel          Question                                   Steps
---  1  Onboarding      where do new players drop in the tutorial  Joined, Entered arena, First kill, Took pistol
+--  1  Onboarding      where do new players drop in the tutorial  Joined, Entered arena, First kill, Took pistol,
+--                     and right after it (5, 6 added 2026-11-26)  KO after tutorial, Bought 2nd weapon
 --  2  MeleeKills      how far do players get killing             1 / 5 / 10 / 25 / 50 / 100 / 250 / 500 / 1000 kills
 --  3  RangedKills       ... with each weapon group               (same steps; a thrown body counts as melee,
 --  4  ExplosiveKills    (2X CASH does not double them)            the rocket as explosive)
@@ -23,12 +24,20 @@
 -- flip), Menus (stuck at the WeaponWheel, which the Arsenal replaced). Retired 2026-11-25: Moves (crouch
 -- and slide were cut, its last step could no longer be reached).
 --
+-- FirstSession custom event (CustomField01 = the milestone, value = seconds since joining): only a new
+-- player's first session (the save says the tutorial is not done), each milestone once. Unlike the
+-- Onboarding funnel these need not come in order: the optional ones (boss) sit beside the linear ones.
+--   client-reported (Action "fs", names checked here): MenuLoaded, PlayClicked, IntroCompleted,
+--     IntroSkipped, FirstMove
+--   server: FirstWeaponUsed, FirstHit, FirstKO, FirstReward, TutorialCompleted, FirstUnlock,
+--     BossEncountered, BossHit, Session60, Session180, Session300
 -- Custom events (CustomField01 = the value): MoveUsed "Move - <name>", MenuOpened "Menu - <name>"
 -- (once per player each), WeaponBought "Weapon - <id>" (value: its price), PassPrompt
 -- "Pass - <key> - Bought" / "Pass - <key> - Closed", StickerEarned "Sticker - <id>".
 -- AnalyticsService sends only from published servers; in Studio each event is printed instead.
 local AnalyticsService = game:GetService("AnalyticsService")
 local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 
@@ -59,6 +68,10 @@ local MOVES = {
 	kick = "Kick", jump = "Double jump", slam = "Ground slam", dash = "Dash", mantle = "Mantle", vault = "Vault",
 }
 -- what the clients may report as opened (their FireServer("opened", name))
+-- the FirstSession milestones a client may report (Action "fs")
+local CLIENT_MILESTONES = { MenuLoaded = true, PlayClicked = true, IntroCompleted = true, IntroSkipped = true, FirstMove = true }
+local SESSION_MARKS = { 60, 180, 300 } -- FirstSession "Session<s>" once a new player has been here that long
+local ONBOARDING = { "Joined", "Entered arena", "First kill", "Took pistol", "KO after tutorial", "Bought 2nd weapon" }
 local MENUS = { Toolbox = true, WeaponWheel = true, Stats = true, Shop = true, Arsenal = true, Settings = true,
 	Build = true, World = true, Wardrobe = true, Menu = true }
 
@@ -81,6 +94,9 @@ end
 local data = {}
 local shopVisit = {} -- [player] = the Shop funnel's session id for this visit
 local cursorReminder = {} -- [player] = { session, at } of the last Ctrl reminder
+-- [player] = { at = os.clock() on joining, sent = { [milestone] = true }, queued = { {name, seconds} },
+--   new = nil until the save is in, then whether this is their first session }
+local firstSession = {}
 
 local function send(player: Player, funnel: string, step: number, name: string, session: string?)
 	if STUDIO then
@@ -101,7 +117,7 @@ end
 
 local function custom(player: Player, event: string, value: string, amount: number?)
 	if STUDIO then
-		print(`Event {event} {value} ({player.Name})`)
+		print(`Event {event} {value} {amount or 1} ({player.Name})`)
 		return
 	end
 	pcall(AnalyticsService.LogCustomEvent, AnalyticsService, player, event, amount or 1, {
@@ -156,10 +172,53 @@ local function checkAfford(player: Player)
 	end
 end
 
--- Onboarding step `step` (1..4, see the top) for `player`.
+-- Onboarding step `step` (1..4, see the top) for `player`; 5 and 6 come from Funnels.kill / bought.
 function Funnels.tutorial(player: Player, step: number)
-	local names = { "Joined", "Entered arena", "First kill", "Took pistol" }
-	send(player, "Onboarding", step, names[step])
+	send(player, "Onboarding", step, ONBOARDING[step])
+	local d = data[player]
+	if d and step > (d.steps.Onboarding or 0) then
+		d.steps.Onboarding = step -- remembered, so 5 and 6 only follow a tutorial done since they were added
+		Funnels.changed(player)
+	end
+end
+
+local function sessionOf(player: Player)
+	local f = firstSession[player]
+	if not f then
+		f = { at = os.clock(), sent = {}, queued = {}, new = nil }
+		firstSession[player] = f
+	end
+	return f
+end
+Players.PlayerAdded:Connect(sessionOf)
+for _, p in Players:GetPlayers() do
+	sessionOf(p)
+end
+
+-- FirstSession milestone `name` for `player` (see the top): once, timed from joining, new players only.
+-- Before the save is in it waits; once it is, a returning player's are dropped.
+function Funnels.first(player: Player, name: string)
+	if not player.Parent then
+		return -- gone (Funnels.forget has run)
+	end
+	local f = sessionOf(player)
+	if f.new == false or f.sent[name] then
+		return
+	end
+	f.sent[name] = true
+	local seconds = math.round(os.clock() - f.at)
+	if f.new then
+		custom(player, "FirstSession", name, seconds)
+	else
+		table.insert(f.queued, { name, seconds })
+	end
+end
+
+-- A FirstSession milestone the client reports (the Action remote): only the ones it can see.
+function Funnels.reported(player: Player, name: any)
+	if type(name) == "string" and CLIENT_MILESTONES[name] then
+		Funnels.first(player, name)
+	end
 end
 
 -- `player` killed a dummy with `weapon` (as Progress.credit gets it; every kill pays cash).
@@ -169,6 +228,10 @@ function Funnels.kill(player: Player, weapon: string?)
 		return -- not loaded yet
 	end
 	reach(player, "Arsenal", 1, ARSENAL)
+	Funnels.first(player, "FirstKO")
+	if d.steps.Onboarding == 4 and player:GetAttribute("Tutorial") == false then
+		reach(player, "Onboarding", 5, ONBOARDING) -- a KO outside the cage
+	end
 	local group = weapon and groupOf[weapon]
 	if not group then
 		return -- an ability, nobody knows what: no kill group
@@ -186,6 +249,12 @@ function Funnels.bought(player: Player, id: string, price: number)
 	end
 	d.bought += 1
 	custom(player, "WeaponBought", "Weapon - " .. id, price)
+	if d.bought >= 2 then -- the pistol (the tutorial's) is the first
+		Funnels.first(player, "FirstUnlock")
+		if d.steps.Onboarding == 5 then
+			reach(player, "Onboarding", 6, ONBOARDING)
+		end
+	end
 	local step = 0
 	for n, s in BOUGHT_STEPS do
 		if d.bought >= n then
@@ -207,6 +276,9 @@ end
 
 -- `player` equipped weapon `id` (main server script, after the equip went through).
 function Funnels.equipped(player: Player, id: string)
+	if id ~= "Fists" then
+		Funnels.first(player, "FirstWeaponUsed")
+	end
 	if Progression.PRICE[id] and not Progression.START[id] and player:GetAttribute(Progression.own(id)) then
 		reach(player, "Arsenal", 5, ARSENAL) -- a weapon they bought (the pistol too: no longer a gift)
 	end
@@ -325,6 +397,21 @@ function Funnels.load(player: Player, saved: any)
 	if player:GetAttribute("Tutorial") then
 		Funnels.tutorial(player, 1)
 	end
+	local f = sessionOf(player)
+	f.new = player:GetAttribute("Tutorial") == true
+	if f.new then
+		for _, q in f.queued do
+			custom(player, "FirstSession", q[1], q[2])
+		end
+		for _, s in SESSION_MARKS do
+			task.delay(math.max(0, s - (os.clock() - f.at)), function()
+				if player.Parent then
+					Funnels.first(player, `Session{s}`)
+				end
+			end)
+		end
+	end
+	f.queued = {}
 end
 
 -- What to keep in `player`'s save (nil before Funnels.load).
@@ -343,7 +430,7 @@ function Funnels.save(player: Player)
 end
 
 function Funnels.forget(player: Player)
-	data[player], shopVisit[player], cursorReminder[player] = nil, nil, nil
+	data[player], shopVisit[player], cursorReminder[player], firstSession[player] = nil, nil, nil, nil
 end
 
 return Funnels

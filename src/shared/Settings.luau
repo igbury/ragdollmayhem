@@ -21,6 +21,9 @@ Settings.DEFAULTS = {
 	Wardrobe = "", -- the Toolbox WARDROBE style (shared/Wardrobe)
 	PerfMode = "auto", -- performance mode (client/PerfMode): "auto" = on for phones and tablets, "on", "off"
 	TouchSimple = true, -- touch screens: EASY controls (aim assist, fewer moves) or PRO (client/TouchControls)
+	-- SCREEN SHAKE: times the camera shake (client/Fx). Never set + the device's Reduce Motion on = 0.3.
+	ShakeScale = 1,
+	Flashes = true, -- FLASHES: off = no impact frames, softer lightning and blasts (client/Fx, client/Disasters)
 }
 
 Settings.RANGE = {
@@ -29,6 +32,7 @@ Settings.RANGE = {
 	BoneScale = { 0.5, 5 },
 	Gravity = { 0.5, 2 },
 	DamageScale = { 0.5, 10 },
+	ShakeScale = { 0, 1 },
 }
 
 function Settings.get(player: Player?, name: string): any

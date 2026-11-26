@@ -81,17 +81,49 @@ function TutorialHud.start()
 	end
 
 	local HINTS = {
+		punch = "Walk up to it and LEFT CLICK to punch!",
 		grab = "Press F on a ragdoll to grab it",
 		kick = "Look straight ahead and LEFT CLICK to kick it into a wall!",
 		done = "Nice kick!",
 	}
+	-- The punch hint: only for whoever has not landed a blow PUNCH_HINT_AFTER s into the first step
+	-- (most have by then; research: docs/research/pierwsze-5-minut.md). The server sets "HasHit".
+	local PUNCH_HINT_AFTER = 6
+	local killSince: number? = nil
 	local function showHint() -- not over the Arsenal step: one instruction at a time
-		local quiet = TouchControls.active() or player:GetAttribute("TutorialStep") == "pick"
-		setLine(hintLabel, if quiet then nil else HINTS[player:GetAttribute("Hint")])
+		local step = player:GetAttribute("TutorialStep")
+		local quiet = TouchControls.active() or step == "pick"
+		local hint = player:GetAttribute("Hint")
+		if hint == nil and step == "kill" and not player:GetAttribute("HasHit") and killSince and os.clock() - killSince >= PUNCH_HINT_AFTER - 0.05 then
+			hint = "punch"
+		end
+		setLine(hintLabel, if quiet then nil else HINTS[hint])
 	end
 	player:GetAttributeChangedSignal("Hint"):Connect(showHint)
-	player:GetAttributeChangedSignal("TutorialStep"):Connect(showHint)
-	showHint()
+	player:GetAttributeChangedSignal("HasHit"):Connect(showHint)
+	local function stepChanged()
+		if player:GetAttribute("TutorialStep") == "kill" and not killSince then
+			killSince = os.clock()
+			task.delay(PUNCH_HINT_AFTER, showHint)
+		end
+		showHint()
+	end
+	player:GetAttributeChangedSignal("TutorialStep"):Connect(stepChanged)
+	stepChanged()
+
+	-- FirstSession "FirstMove" (server/Funnels): the first step taken on a map
+	task.spawn(function()
+		local action = game:GetService("ReplicatedStorage"):WaitForChild("Remotes"):WaitForChild("Action")
+		while true do
+			task.wait(0.25)
+			local char = player.Character
+			local hum = char and char:FindFirstChildOfClass("Humanoid")
+			if hum and player:GetAttribute("Map") and hum.MoveDirection.Magnitude > 0.1 then
+				action:FireServer("fs", "FirstMove")
+				return
+			end
+		end
+	end)
 
 	local STEPS = {
 		kill = "Take out one of the glowing dummies!",
@@ -231,14 +263,16 @@ function TutorialHud.start()
 				w = each
 			end
 		end
-		local text = w and not controlsShown[w.id] and player:GetAttribute("Map") and controlsOf(w, TouchControls.active())
+		-- not under the menu (client/Menu): its PLAY walk-off runs with the character already on the map
+		local menuUp = player.PlayerGui:FindFirstChild("Menu") ~= nil
+		local text = w and not controlsShown[w.id] and player:GetAttribute("Map") and not menuUp and controlsOf(w, TouchControls.active())
 		if text then
 			controlsShown[w.id] = true -- each weapon's controls once a session
 		end
 		controlsToken += 1
 		local token = controlsToken
 		setLine(controls, text or nil)
-		task.delay(2, function()
+		task.delay(if player:GetAttribute("TutorialStep") then 4 else 2, function() -- longer for a first-timer
 			if controlsToken == token then
 				setLine(controls, nil)
 			end
@@ -252,6 +286,11 @@ function TutorialHud.start()
 	end
 	player.CharacterAdded:Connect(watchCharacter)
 	player:GetAttributeChangedSignal("Map"):Connect(showControls) -- into a map from the menu: what is in hand
+	player.PlayerGui.ChildRemoved:Connect(function(child) -- the menu's cut to the game
+		if child.Name == "Menu" then
+			showControls()
+		end
+	end)
 
 	-- Stickers (shared/Stickers): the current challenge, the first one not earned, under the goal bar;
 	-- and a pop in the middle of the screen when one is earned (its cash is already in, server/Progress).

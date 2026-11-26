@@ -561,6 +561,10 @@ do
 		s.ApplyStrokeMode, s.Parent = Enum.ApplyStrokeMode.Border, parent -- the box, not the key's letter
 		return s
 	end
+	-- One thing at a time in the first-time tutorial (server/Tutorial): no chips while taking out the
+	-- first dummy (the step and hint lines say what to press), only the Arsenal's while buying the pistol.
+	-- The rest come in once it is done.
+	local STEP_CHIPS = { kill = {}, pick = { [Enum.KeyCode.Q] = true } }
 	local paints = {} -- KeyCode -> paint(pressed): held down (or its state on), the chip's colours flip to ink
 	local looks = {} -- function(touch): the chip as keyboard or touch shows it
 	local rows = Instance.new("UIListLayout")
@@ -618,7 +622,8 @@ do
 		pill.Parent = holder
 		holder.Parent = row
 		table.insert(looks, function(touch: boolean)
-			holder.Visible = not touch or chip[4] ~= nil
+			local only = STEP_CHIPS[player:GetAttribute("TutorialStep")]
+			holder.Visible = (not touch or chip[4] ~= nil) and (only == nil or only[chip[3]] == true)
 			key.Text = if touch then chip[4] or chip[1] else chip[1]
 		end)
 		local shown = false
@@ -672,6 +677,7 @@ do
 		end
 	end
 	controlsHint:GetPropertyChangedSignal("Visible"):Connect(showChips)
+	player:GetAttributeChangedSignal("TutorialStep"):Connect(showChips)
 	UserInputService.LastInputTypeChanged:Connect(function()
 		task.defer(showChips) -- after TouchControls has judged the new input
 	end)

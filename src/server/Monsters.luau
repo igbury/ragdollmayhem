@@ -10,6 +10,7 @@ local Rig = require(ReplicatedStorage.Shared.MythRig)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
 local Sfx = require(ReplicatedStorage.Shared.Sfx)
 local Map = require(script.Parent.Map)
+local Funnels = require(script.Parent.Funnels)
 local Monsters = {}
 -- a boss's voice: the zombie clips, pitched down to its size
 local function voice(d, id, volume)
@@ -360,11 +361,15 @@ local function recall(d)
 end
 -- A weapon hit on a boss: it flinches and lets itself out, nothing more. True when `part` is a boss's,
 -- so the shot stops there.
-function Monsters.damage(part, damage, _direction, _player)
+function Monsters.damage(part, damage, _direction, player)
 	if not folder or not part then return false end
 	local d = actorOf(part)
 	if not d then return false end
 	if damage <= 0 then return true end
+	if typeof(player) == "Instance" and player:IsA("Player") then
+		Funnels.first(player, "BossEncountered")
+		Funnels.first(player, "BossHit")
+	end
 	release(d)
 	d.model:SetAttribute("HurtAt", workspace:GetServerTimeNow())
 	if os.clock() >= (d.hurtVoiceAt or 0) then -- a grunt, not one per pellet
@@ -430,6 +435,7 @@ function Monsters.spawn(kind, home, cage, plates, chainKit)
 	local connection = prompt.Triggered:Connect(function(player)
 		local r = playerRoot(player)
 		if r and (r.Position - button.Position).Magnitude <= 14 and player:GetAttribute("Map") == "ARENA" then
+			Funnels.first(player, "BossEncountered")
 			if d.state == "Caged" then release(d) else recall(d) end
 		end
 	end)

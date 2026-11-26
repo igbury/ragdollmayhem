@@ -583,7 +583,7 @@ function BUILD.Nuke(t0: number, data)
 		local flash = Instance.new("Frame") -- the white-out
 		flash.Size, flash.BackgroundColor3, flash.BorderSizePixel, flash.ZIndex, flash.Parent = UDim2.fromScale(1, 1), WHITE, 0, 100, gui
 		local seen = (camPos() - at).Magnitude
-		flash.BackgroundTransparency = math.clamp(seen / 600, 0, 0.7)
+		flash.BackgroundTransparency = math.clamp(seen / 600, if Fx.flashes() then 0 else 0.75, 1) -- FLASHES off: a soft one
 		TweenService:Create(flash, TweenInfo.new(2.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { BackgroundTransparency = 1 }):Play()
 		task.delay(2.6, flash.Destroy, flash)
 		Fx.shake(at, 3, 3)
@@ -778,14 +778,14 @@ function BUILD.Lightning(t0: number, data)
 			local light = Instance.new("PointLight")
 			light.Color, light.Range, light.Brightness, light.Parent = Color3.fromRGB(255, 240, 160), 60, 8, bolt
 			if (camPos() - at).Magnitude < 260 then
-				flashCC.Brightness = 0.45
+				flashCC.Brightness = if Fx.flashes() then 0.45 else 0.12
 				TweenService:Create(flashCC, TweenInfo.new(0.3), { Brightness = 0 }):Play()
 			end
 			if count % 2 == 1 then
 				word(at + UP * 12, "KRA-KOOM!", 3.5)
 			end
 			drive(now(), 0.3, { bolt }, function(t) -- it flickers out
-				bolt.Transparency = if t % 0.1 < 0.05 then 0 else 0.5
+				bolt.Transparency = if t % 0.1 < 0.05 or not Fx.flashes() then 0 else 0.5
 			end, 0.1)
 		end)
 	end

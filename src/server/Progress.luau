@@ -246,6 +246,9 @@ function Progress.credit(player: Player, weapon: string?, kind: string?, share: 
 		player:SetAttribute(attribute, (player:GetAttribute(attribute) or 0) + 1)
 	end
 	Funnels.kill(player, weapon)
+	if paid > 0 then
+		Funnels.first(player, "FirstReward")
+	end
 	dirty[player] = true
 	local kills = player:GetAttribute(Progression.ATTRIBUTE.kills) or 0
 	if kills >= 10 then

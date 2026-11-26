@@ -134,6 +134,7 @@ local function finish(player: Player, completed: boolean)
 		player:SetAttribute("Tutorial", false)
 		hooks.done(player) -- saved: it never comes again
 		Funnels.tutorial(player, 4)
+		Funnels.first(player, "TutorialCompleted")
 	end
 	player:SetAttribute("TutorialStep", nil)
 end

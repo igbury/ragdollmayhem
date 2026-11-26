@@ -1,6 +1,7 @@
 -- Anime-style effects built only from parts (no texture assets), following the Anime vault rules:
 -- white flash first -> coloured body -> sparks/detail -> dust trail, short lives, nothing grows
 -- linearly, colour + black "ink" pairs so shapes read on bright grass. No impact frames.
+local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -8,6 +9,7 @@ local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
 
 local Attacks = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Attacks"))
+local Settings = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Settings"))
 local WeaponMeshes = require(script.Parent:WaitForChild("WeaponMeshes"))
 local PerfMode = require(script.Parent:WaitForChild("PerfMode"))
 
@@ -31,6 +33,20 @@ tint.Parent = Lighting
 
 local Fx = {}
 
+-- Comfort settings (shared/Settings, the Toolbox SETTINGS page). SCREEN SHAKE scales every shake; a
+-- player who never set it but has the device's Reduce Motion on gets 0.3 of it. FLASHES off drops the
+-- full-screen flashes (the sniper's impact frames; client/Disasters dims its own).
+function Fx.shakeScale(): number
+	local set = player:GetAttribute("ShakeScale")
+	if set == nil and GuiService.ReducedMotionEnabled then
+		return 0.3
+	end
+	return math.clamp(if type(set) == "number" then set else 1, 0, 1)
+end
+function Fx.flashes(): boolean
+	return Settings.get(player, "Flashes") ~= false
+end
+
 -- Impact frames (test, on our own scoped sniper hits): a few frames of anime "impact" - the screen
 -- goes hard black and white with whoever the round hit as a solid black silhouette ringed in white,
 -- then the same inverted with a red cast, then black once more, then back. ~0.13 s in all. A miss,
@@ -41,6 +57,10 @@ local impactCC = Instance.new("ColorCorrectionEffect")
 impactCC.Name, impactCC.Enabled, impactCC.Parent = "ImpactFrames", false, Lighting
 local impactToken = 0
 function Fx.impactFrames(at: Vector3)
+	if not Fx.flashes() then
+		Fx.shake(at, 0.6, 0.18)
+		return
+	end
 	impactToken += 1
 	local token = impactToken
 	-- the body the round landed in (a dummy, a player, a monster): the nearest thing with a Humanoid to
@@ -179,9 +199,12 @@ function Fx.ghosts(char: Model, color: Color3, count: number, gap: number, life:
 	end)
 end
 
+-- Shakes don't add up: the strongest one running wins. Capped at MAX_SHAKE studs (an earthquake asked
+-- for 3, which with the FOV wobble on top threw the view about 15 degrees).
+local MAX_SHAKE = 1.2
 function Fx.shake(position: Vector3, magnitude: number, duration: number)
 	local falloff = math.clamp(1 - (camera.CFrame.Position - position).Magnitude / 150, 0, 1)
-	magnitude *= falloff
+	magnitude = math.min(magnitude * falloff, MAX_SHAKE) * Fx.shakeScale()
 	local now = os.clock()
 	if magnitude > (now < shakeEnd and shakeMag or 0) then
 		shakeMag, shakeStart, shakeEnd = magnitude, now, now + duration

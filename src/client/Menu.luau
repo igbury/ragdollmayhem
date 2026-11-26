@@ -745,10 +745,26 @@ end
 refresh()
 
 -- Actions --------------------------------------------------------------------------------------
+local leaving = false
+local skipped = false -- a click, tap or Space during the walk-off cuts straight to the game
+local SKIP_AFTER = 0.5
+local SKIP_KEYS = { [Enum.KeyCode.Space] = true, [Enum.KeyCode.Return] = true, [Enum.KeyCode.ButtonA] = true }
+local skipConn = UserInputService.InputBegan:Connect(function(input: InputObject)
+	-- not gameProcessed-gated: MenuSink sinks Space while the menu is up
+	if leaving and SKIP_KEYS[input.KeyCode] then
+		skipped = true
+	end
+end)
 -- The cut to the game, on the frame the menu camera reaches the back of the avatar's head: the game
 -- camera is put at the same spot behind the real character (the server has moved it to the map
 -- by now) and first person takes it from there.
+local function firstSession(name: string) -- server/Funnels FirstSession (new players only; it checks)
+	if script.Name ~= "MenuAgain" then
+		ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("fs", name)
+	end
+end
 local function handOff()
+	firstSession(if skipped then "IntroSkipped" else "IntroCompleted")
 	RunService:UnbindFromRenderStep("MenuCamera")
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
@@ -762,6 +778,7 @@ local function handOff()
 	camera.CameraType = Enum.CameraType.Custom
 	player.CameraMode = Enum.CameraMode.LockFirstPerson
 	ContextActionService:UnbindAction("MenuSink")
+	skipConn:Disconnect()
 	blur:Destroy()
 	gui:Destroy()
 end
@@ -787,9 +804,9 @@ end
 
 -- PLAY: the avatar hops off its chair, turns and walks off; the camera follows him into the game.
 -- Timed on the menu clock, the same one the avatar runs on, so the cut lands on the right frame.
-local leaving = false
 local function play()
 	leaving = true
+	firstSession("PlayClicked")
 	ReplicatedStorage:WaitForChild("Remotes"):WaitForChild("Action"):FireServer("map", MAPS[mapIndex])
 	tween(burstScale, 0.3, { Scale = 3 })
 	tween(blur, 0.7, { Size = 0 })
@@ -799,13 +816,31 @@ local function play()
 	puppet:leave()
 	local playAt = os.clock() - start
 	local zoomed = false
+	local skipHint: TextLabel? = nil
 	table.insert(tickers, function(t: number)
 		local e = t - playAt
+		-- skippable once the server has had time to put the character on the map (the cut aims at it)
+		if not skipHint and e >= SKIP_AFTER then
+			skipHint = new("TextLabel", gui, {
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, -24),
+				Size = UDim2.fromOffset(260, 34),
+				BackgroundColor3 = BLACK,
+				BackgroundTransparency = 0.35,
+				Text = if UserInputService.TouchEnabled then "TAP TO SKIP" else "CLICK OR SPACE TO SKIP",
+				TextColor3 = WHITE,
+				Font = FONT,
+				TextSize = 20,
+				ZIndex = 40,
+			})
+			new("UICorner", skipHint, { CornerRadius = UDim.new(0.5, 0) })
+		end
 		if not zoomed and e >= MenuPuppet.ZOOM_AT then
 			zoomed = true
 			zoom()
 		end
-		if e >= MenuPuppet.LEAVE_TIME and gui.Parent then
+		-- a skip waits for the server to have put the character on the map (the cut aims at it)
+		if (e >= MenuPuppet.LEAVE_TIME or (skipped and e >= SKIP_AFTER and player:GetAttribute("Map"))) and gui.Parent then
 			handOff()
 		end
 	end)
@@ -940,6 +975,10 @@ STATS_PANELS[6].onClick = backToMenu
 
 local hit = new("TextButton", back, { Text = "", AutoButtonColor = false, BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), ZIndex = 10 })
 hit.Activated:Connect(function()
+	if leaving then
+		skipped = true
+		return
+	end
 	local p = panelAt(UserInputService:GetMouseLocation())
 	if p and p.onClick and Menu.active and not leaving and not turning then
 		pow(p.word)
@@ -1032,6 +1071,7 @@ end
 -- how fast the DataStore answered. PLAY takes them to the tutorial anyway: the server sends anyone
 -- still in it to the arena ("map").
 gui.Enabled = true
+firstSession("MenuLoaded")
 
 -- ...and a first-timer does not wait for that click: once the save says they have not done the
 -- tutorial, PLAY presses itself (no time limit, so it never depends on how fast the DataStore is;

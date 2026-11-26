@@ -1879,6 +1879,10 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 	local culprit = Wanted.culprit()
 	if typeof(culprit) == "Instance" then
 		Tutorial.event(culprit, "hit") -- the controls hints (server/Tutorial)
+		Progress.Funnels.first(culprit, "FirstHit")
+		if not culprit:GetAttribute("HasHit") then
+			culprit:SetAttribute("HasHit", true) -- client/TutorialHud: the punch hint is no longer needed
+		end
 		if culprit:GetAttribute("Tutorial") then
 			power *= 2 -- a player still in the tutorial hits twice as hard
 		end
@@ -2669,6 +2673,10 @@ local MENU_ACTIONS = { map = true, menu = true, spawn = true, clearspawn = true,
 actionRemote.OnServerEvent:Connect(function(player, action, arg, extra, extra2, extra3)
 	if action == "opened" then -- a menu opened, for the Menus funnel (server/Funnels checks the name)
 		Progress.Funnels.menu(player, arg)
+		return
+	end
+	if action == "fs" then -- a first-session milestone the client saw (server/Funnels checks the name)
+		Progress.Funnels.reported(player, arg)
 		return
 	end
 	if action == "cursor" then -- the Ctrl reminder shown / answered, for the CursorReminder funnel
