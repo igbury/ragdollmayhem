@@ -1,3954 +1,4719 @@
 {
- "Cyclops": {
-  "boss": [
-   {
-    "name": "Cyclops_Head__0",
-    "group": "Head",
-    "color": "DED2BA",
-    "material": "SmoothPlastic",
-    "tris": 324,
-    "at": [
-     0.0,
-     9.95,
-     -2.18
-    ],
-    "size": [
-     1.432,
-     0.45,
-     0.232
-    ]
-   },
-   {
-    "name": "Cyclops_Head__1",
-    "group": "Head",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 1320,
-    "at": [
-     0.245,
-     11.7019,
-     -0.7705
-    ],
-    "size": [
-     2.851,
-     2.504,
-     2.011
-    ]
-   },
-   {
-    "name": "Cyclops_Head__2",
-    "group": "Head",
-    "color": "ECB544",
-    "material": "Neon",
-    "tris": 188,
-    "at": [
-     0.0,
-     11.45,
-     -2.66
-    ],
-    "size": [
-     1.04,
-     1.04,
-     0.12
-    ]
-   },
-   {
-    "name": "Cyclops_Head__3",
-    "group": "Head",
-    "color": "E8DEC8",
-    "material": "SmoothPlastic",
-    "tris": 576,
-    "at": [
-     0.0,
-     11.45,
-     -1.85
-    ],
-    "size": [
-     1.688,
-     1.7,
-     1.688
-    ]
-   },
-   {
-    "name": "Cyclops_Head__4",
-    "group": "Head",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 288,
-    "at": [
-     -1.8,
-     10.4,
-     -0.4
-    ],
-    "size": [
-     0.087,
-     0.525,
-     0.525
-    ]
-   },
-   {
-    "name": "Cyclops_Head__5",
-    "group": "Head",
-    "color": "BE7828",
-    "material": "Neon",
-    "tris": 280,
-    "at": [
-     0.0,
-     11.45,
-     -2.73
-    ],
-    "size": [
-     0.9,
-     0.857,
-     0.03
-    ]
-   },
-   {
-    "name": "Cyclops_Head__6",
-    "group": "Head",
-    "color": "96601E",
-    "material": "SmoothPlastic",
-    "tris": 576,
-    "at": [
-     0.0,
-     11.45,
-     -2.7
-    ],
-    "size": [
-     1.085,
-     1.085,
-     0.087
-    ]
-   },
-   {
-    "name": "Cyclops_Head__7",
-    "group": "Head",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 3208,
-    "at": [
-     0.0,
-     11.1107,
-     -0.9021
-    ],
-    "size": [
-     3.98,
-     3.528,
-     3.696
-    ]
-   },
-   {
-    "name": "Cyclops_Head__8",
-    "group": "Head",
-    "color": "B0A28C",
-    "material": "Marble",
-    "tris": 19000,
-    "at": [
-     -0.0035,
-     10.2378,
-     -0.7046
-    ],
-    "size": [
-     3.75,
-     6.543,
-     3.945
-    ]
-   },
-   {
-    "name": "Cyclops_Head__9",
-    "group": "Head",
-    "color": "B0A28C",
-    "material": "Marble",
-    "tris": 12656,
-    "at": [
-     0.0,
-     10.2193,
-     -0.6786
-    ],
-    "size": [
-     3.757,
-     6.506,
-     3.85
-    ]
-   },
-   {
-    "name": "Cyclops_Head__10",
-    "group": "Head",
-    "color": "8E8070",
-    "material": "Marble",
-    "tris": 896,
-    "at": [
-     0.0,
-     11.4902,
-     -1.2942
-    ],
-    "size": [
-     3.871,
-     2.18,
-     2.032
-    ]
-   },
-   {
-    "name": "Cyclops_Head__11",
-    "group": "Head",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 764,
-    "at": [
-     0.0,
-     11.145,
-     -1.8474
-    ],
-    "size": [
-     2.178,
-     2.81,
-     1.901
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerArm__12",
-    "group": "LeftLowerArm",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 1296,
-    "at": [
-     -3.6,
-     4.75,
-     -0.05
-    ],
-    "size": [
-     2.288,
-     0.908,
-     2.254
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerArm__13",
-    "group": "LeftLowerArm",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 3556,
-    "at": [
-     -3.5081,
-     4.2838,
-     -0.3066
-    ],
-    "size": [
-     2.564,
-     6.073,
-     2.913
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerArm__14",
-    "group": "LeftLowerArm",
-    "color": "BEB096",
-    "material": "Marble",
-    "tris": 432,
-    "at": [
-     -2.7346,
-     1.7171,
-     -0.4907
-    ],
-    "size": [
-     0.779,
-     1.017,
-     2.507
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerLeg__15",
-    "group": "LeftLowerLeg",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 1884,
-    "at": [
-     -1.0948,
-     1.5182,
-     -0.4904
-    ],
-    "size": [
-     1.939,
-     3.01,
-     3.532
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerLeg__16",
-    "group": "LeftLowerLeg",
-    "color": "BEB096",
-    "material": "Marble",
-    "tris": 496,
-    "at": [
-     -1.1,
-     0.4,
-     -2.12
-    ],
-    "size": [
-     1.577,
-     0.146,
-     0.194
-    ]
-   },
-   {
-    "name": "Cyclops_LeftLowerLeg__17",
-    "group": "LeftLowerLeg",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 912,
-    "at": [
-     -1.0499,
-     0.9627,
-     -1.3565
-    ],
-    "size": [
-     0.776,
-     0.412,
-     0.714
-    ]
-   },
-   {
-    "name": "Cyclops_LeftUpperArm__18",
-    "group": "LeftUpperArm",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 424,
-    "at": [
-     -3.6777,
-     9.6534,
-     -1.3251
-    ],
-    "size": [
-     0.897,
-     0.68,
-     0.403
-    ]
-   },
-   {
-    "name": "Cyclops_LeftUpperArm__19",
-    "group": "LeftUpperArm",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 1568,
-    "at": [
-     -3.62,
-     8.4804,
-     -0.0
-    ],
-    "size": [
-     3.311,
-     4.341,
-     3.377
-    ]
-   },
-   {
-    "name": "Cyclops_LeftUpperArm__20",
-    "group": "LeftUpperArm",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 1920,
-    "at": [
-     -3.7992,
-     10.49,
-     0.0029
-    ],
-    "size": [
-     1.335,
-     0.194,
-     1.668
-    ]
-   },
-   {
-    "name": "Cyclops_LeftUpperLeg__21",
-    "group": "LeftUpperLeg",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 336,
-    "at": [
-     -0.7442,
-     4.4644,
-     -1.2276
-    ],
-    "size": [
-     0.417,
-     0.438,
-     0.225
-    ]
-   },
-   {
-    "name": "Cyclops_LeftUpperLeg__22",
-    "group": "LeftUpperLeg",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 848,
-    "at": [
-     -1.1,
-     3.878,
-     -0.1591
-    ],
-    "size": [
-     2.163,
-     3.264,
-     2.493
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__23",
-    "group": "LowerTorso",
-    "color": "9A6B34",
-    "material": "Metal",
-    "tris": 2676,
-    "at": [
-     0.0,
-     3.6646,
-     -0.065
-    ],
-    "size": [
-     5.245,
-     3.321,
-     3.31
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__24",
-    "group": "LowerTorso",
-    "color": "80221E",
-    "material": "Fabric",
-    "tris": 412,
-    "at": [
-     0.0,
-     3.4309,
-     -0.1577
-    ],
-    "size": [
-     4.191,
-     3.057,
-     2.834
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__25",
-    "group": "LowerTorso",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1480,
-    "at": [
-     0.0,
-     3.35,
-     -1.62
-    ],
-    "size": [
-     4.798,
-     2.402,
-     0.17
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__26",
-    "group": "LowerTorso",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 44,
-    "at": [
-     0.0,
-     4.85,
-     0.0
-    ],
-    "size": [
-     3.95,
-     0.75,
-     2.85
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__27",
-    "group": "LowerTorso",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 192,
-    "at": [
-     -0.0026,
-     5.697,
-     0.0006
-    ],
-    "size": [
-     3.425,
-     2.428,
-     2.329
-    ]
-   },
-   {
-    "name": "Cyclops_LowerTorso__28",
-    "group": "LowerTorso",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 44,
-    "at": [
-     0.0,
-     4.85,
-     -1.62
-    ],
-    "size": [
-     0.65,
-     0.55,
-     0.12
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerArm__29",
-    "group": "RightLowerArm",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 1296,
-    "at": [
-     3.6,
-     4.75,
-     -0.05
-    ],
-    "size": [
-     2.288,
-     0.908,
-     2.254
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerArm__30",
-    "group": "RightLowerArm",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 3556,
-    "at": [
-     3.5081,
-     4.2655,
-     -0.3066
-    ],
-    "size": [
-     2.564,
-     6.11,
-     2.913
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerArm__31",
-    "group": "RightLowerArm",
-    "color": "BEB096",
-    "material": "Marble",
-    "tris": 432,
-    "at": [
-     2.7313,
-     1.7061,
-     -0.4907
-    ],
-    "size": [
-     0.772,
-     1.04,
-     2.507
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerLeg__32",
-    "group": "RightLowerLeg",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 1528,
-    "at": [
-     1.7081,
-     0.6982,
-     -0.1551
-    ],
-    "size": [
-     3.836,
-     1.454,
-     2.93
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerLeg__33",
-    "group": "RightLowerLeg",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 1884,
-    "at": [
-     1.1052,
-     1.5182,
-     -0.4904
-    ],
-    "size": [
-     1.939,
-     3.01,
-     3.532
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerLeg__34",
-    "group": "RightLowerLeg",
-    "color": "BEB096",
-    "material": "Marble",
-    "tris": 496,
-    "at": [
-     1.1,
-     0.4,
-     -2.12
-    ],
-    "size": [
-     1.588,
-     0.146,
-     0.194
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerLeg__35",
-    "group": "RightLowerLeg",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 960,
-    "at": [
-     1.3347,
-     0.9992,
-     -1.2733
-    ],
-    "size": [
-     1.15,
-     0.529,
-     0.914
-    ]
-   },
-   {
-    "name": "Cyclops_RightLowerLeg__36",
-    "group": "RightLowerLeg",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 28,
-    "at": [
-     1.1,
-     1.0,
-     -1.48
-    ],
-    "size": [
-     0.12,
-     0.3,
-     0.05
-    ]
-   },
-   {
-    "name": "Cyclops_RightUpperArm__37",
-    "group": "RightUpperArm",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 424,
-    "at": [
-     4.2573,
-     9.8369,
-     -1.0081
-    ],
-    "size": [
-     0.901,
-     0.361,
-     0.644
-    ]
-   },
-   {
-    "name": "Cyclops_RightUpperArm__38",
-    "group": "RightUpperArm",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 1568,
-    "at": [
-     3.62,
-     8.4804,
-     -0.0
-    ],
-    "size": [
-     3.311,
-     4.341,
-     3.377
-    ]
-   },
-   {
-    "name": "Cyclops_RightUpperArm__39",
-    "group": "RightUpperArm",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 1920,
-    "at": [
-     3.6268,
-     10.49,
-     -0.004
-    ],
-    "size": [
-     1.632,
-     0.196,
-     1.546
-    ]
-   },
-   {
-    "name": "Cyclops_RightUpperLeg__40",
-    "group": "RightUpperLeg",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 336,
-    "at": [
-     0.9198,
-     4.0275,
-     -1.2864
-    ],
-    "size": [
-     0.499,
-     0.713,
-     0.195
-    ]
-   },
-   {
-    "name": "Cyclops_RightUpperLeg__41",
-    "group": "RightUpperLeg",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 848,
-    "at": [
-     1.1,
-     3.878,
-     -0.1591
-    ],
-    "size": [
-     2.163,
-     3.264,
-     2.493
-    ]
-   },
-   {
-    "name": "Cyclops_UpperTorso__42",
-    "group": "UpperTorso",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 1860,
-    "at": [
-     0.3245,
-     8.3734,
-     -0.2243
-    ],
-    "size": [
-     3.553,
-     2.368,
-     3.672
-    ]
-   },
-   {
-    "name": "Cyclops_UpperTorso__43",
-    "group": "UpperTorso",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 5232,
-    "at": [
-     0.0,
-     8.5795,
-     -0.0694
-    ],
-    "size": [
-     6.615,
-     5.059,
-     4.003
-    ]
-   }
-  ],
-  "cage": [
-   {
-    "name": "Cyclops_Gate__44",
-    "group": "Gate",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 8432,
-    "at": [
-     0.0,
-     10.561,
-     -9.0
-    ],
-    "size": [
-     19.6,
-     20.878,
-     1.6
-    ]
-   },
-   {
-    "name": "Cyclops_Gate__45",
-    "group": "Gate",
-    "color": "703A1E",
-    "material": "CorrodedMetal",
-    "tris": 884,
-    "at": [
-     0.026,
-     9.5881,
-     -9.4375
-    ],
-    "size": [
-     18.281,
-     16.186,
-     0.485
-    ]
-   },
-   {
-    "name": "Cyclops_Static__46",
-    "group": "Static",
-    "color": "ECB544",
-    "material": "Neon",
-    "tris": 352,
-    "at": [
-     0.0,
-     15.0,
-     -12.0
-    ],
-    "size": [
-     25.3,
-     1.6,
-     1.3
-    ]
-   },
-   {
-    "name": "Cyclops_Static__47",
-    "group": "Static",
-    "color": "DED2BA",
-    "material": "SmoothPlastic",
-    "tris": 2060,
-    "at": [
-     0.4422,
-     0.7583,
-     3.7823
-    ],
-    "size": [
-     13.557,
-     1.524,
-     8.774
-    ]
-   },
-   {
-    "name": "Cyclops_Static__48",
-    "group": "Static",
-    "color": "6E4A33",
-    "material": "Brick",
-    "tris": 2112,
-    "at": [
-     0.0004,
-     13.895,
-     -9.2031
-    ],
-    "size": [
-     28.743,
-     24.91,
-     3.416
-    ]
-   },
-   {
-    "name": "Cyclops_Static__49",
-    "group": "Static",
-    "color": "7C5238",
-    "material": "Brick",
-    "tris": 3124,
-    "at": [
-     -0.0002,
-     12.5551,
-     -9.2328
-    ],
-    "size": [
-     28.743,
-     22.233,
-     3.383
-    ]
-   },
-   {
-    "name": "Cyclops_Static__50",
-    "group": "Static",
-    "color": "60402E",
-    "material": "Brick",
-    "tris": 3696,
-    "at": [
-     0.0005,
-     13.8979,
-     -9.1991
-    ],
-    "size": [
-     28.741,
-     24.904,
-     3.438
-    ]
-   },
-   {
-    "name": "Cyclops_Static__51",
-    "group": "Static",
-    "color": "764630",
-    "material": "Brick",
-    "tris": 2332,
-    "at": [
-     -0.0002,
-     13.8988,
-     -9.2091
-    ],
-    "size": [
-     28.742,
-     24.902,
-     3.429
-    ]
-   },
-   {
-    "name": "Cyclops_Static__52",
-    "group": "Static",
-    "color": "78542E",
-    "material": "Metal",
-    "tris": 44,
-    "at": [
-     0.0,
-     23.08,
-     -10.72
-    ],
-    "size": [
-     6.6,
-     1.25,
-     0.3
-    ]
-   },
-   {
-    "name": "Cyclops_Static__53",
-    "group": "Static",
-    "color": "E6D6B4",
-    "material": "SmoothPlastic",
-    "tris": 152,
-    "at": [
-     0.0,
-     14.5,
-     -12.0
-    ],
-    "size": [
-     24.38,
-     0.6,
-     0.4
-    ]
-   },
-   {
-    "name": "Cyclops_Static__54",
-    "group": "Static",
-    "color": "FF9632",
-    "material": "Neon",
-    "tris": 206,
-    "at": [
-     -0.005,
-     17.3504,
-     8.1756
-    ],
-    "size": [
-     0.51,
-     0.819,
-     0.572
-    ]
-   },
-   {
-    "name": "Cyclops_Static__55",
-    "group": "Static",
-    "color": "FFE696",
-    "material": "Neon",
-    "tris": 44,
-    "at": [
-     0.0,
-     17.1726,
-     8.15
-    ],
-    "size": [
-     0.239,
-     0.345,
-     0.256
-    ]
-   },
-   {
-    "name": "Cyclops_Static__56",
-    "group": "Static",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1040,
-    "at": [
-     0.0,
-     23.08,
-     -10.905
-    ],
-    "size": [
-     6.98,
-     1.5,
-     0.33
-    ]
-   },
-   {
-    "name": "Cyclops_Static__57",
-    "group": "Static",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 9296,
-    "at": [
-     0.0,
-     8.5698,
-     -1.6112
-    ],
-    "size": [
-     25.345,
-     17.66,
-     22.122
-    ]
-   },
-   {
-    "name": "Cyclops_Static__58",
-    "group": "Static",
-    "color": "D4C8B2",
-    "material": "Marble",
-    "tris": 1420,
-    "at": [
-     0.0723,
-     0.0805,
-     2.0049
-    ],
-    "size": [
-     14.238,
-     0.84,
-     8.771
-    ]
-   },
-   {
-    "name": "Cyclops_Static__59",
-    "group": "Static",
-    "color": "4A423A",
-    "material": "Concrete",
-    "tris": 152,
-    "at": [
-     0.0,
-     12.0,
-     -9.0
-    ],
-    "size": [
-     28.0,
-     24.0,
-     3.0
-    ]
-   },
-   {
-    "name": "Cyclops_Static__60",
-    "group": "Static",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 12000,
-    "at": [
-     0.0243,
-     1.1655,
-     9.26
-    ],
-    "size": [
-     18.733,
-     3.015,
-     0.204
-    ]
-   },
-   {
-    "name": "Cyclops_Static__61",
-    "group": "Static",
-    "color": "8C8070",
-    "material": "SmoothPlastic",
-    "tris": 7968,
-    "at": [
-     -0.0474,
-     0.0422,
-     -18.3207
-    ],
-    "size": [
-     29.289,
-     0.49,
-     15.111
-    ]
-   },
-   {
-    "name": "Cyclops_Static__62",
-    "group": "Static",
-    "color": "485058",
-    "material": "SmoothPlastic",
-    "tris": 280,
-    "at": [
-     -4.73,
-     0.6625,
-     -9.51
-    ],
-    "size": [
-     7.62,
-     1.315,
-     24.5
-    ]
-   },
-   {
-    "name": "Cyclops_Static__63",
-    "group": "Static",
-    "color": "C4A878",
-    "material": "Sand",
-    "tris": 12,
-    "at": [
-     0.0,
-     -0.1,
-     -18.5
-    ],
-    "size": [
-     30.0,
-     0.2,
-     16.0
-    ]
-   },
-   {
-    "name": "Cyclops_Static__64",
-    "group": "Static",
-    "color": "404246",
-    "material": "Slate",
-    "tris": 19000,
-    "at": [
-     0.0,
-     11.5726,
-     1.1987
-    ],
-    "size": [
-     24.5,
-     23.245,
-     17.524
-    ]
-   },
-   {
-    "name": "Cyclops_Static__65",
-    "group": "Static",
-    "color": "404246",
-    "material": "Slate",
-    "tris": 14000,
-    "at": [
-     0.0,
-     11.5726,
-     1.1987
-    ],
-    "size": [
-     24.5,
-     23.245,
-     17.524
-    ]
-   },
-   {
-    "name": "Cyclops_Static__66",
-    "group": "Static",
-    "color": "34373C",
-    "material": "Slate",
-    "tris": 144,
-    "at": [
-     0.0,
-     11.8,
-     1.5
-    ],
-    "size": [
-     24.0,
-     24.4,
-     19.0
-    ]
-   },
-   {
-    "name": "Cyclops_Static__67",
-    "group": "Static",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 3568,
-    "at": [
-     -0.009,
-     1.4,
-     -6.6521
-    ],
-    "size": [
-     27.031,
-     4.013,
-     27.997
-    ]
-   },
-   {
-    "name": "Cyclops_Static__68",
-    "group": "Static",
-    "color": "967A5C",
-    "material": "Slate",
-    "tris": 3496,
-    "at": [
-     0.0,
-     13.325,
-     -14.2474
-    ],
-    "size": [
-     29.4,
-     26.65,
-     14.395
-    ]
-   },
-   {
-    "name": "Cyclops_Static__69",
-    "group": "Static",
-    "color": "C4A052",
-    "material": "Fabric",
-    "tris": 16720,
-    "at": [
-     0.2179,
-     0.4168,
-     6.4993
-    ],
-    "size": [
-     18.59,
-     1.438,
-     6.0
-    ]
-   },
-   {
-    "name": "Cyclops_Static__70",
-    "group": "Static",
-    "color": "A85C3A",
-    "material": "Brick",
-    "tris": 2534,
-    "at": [
-     -0.015,
-     1.5136,
-     -14.5169
-    ],
-    "size": [
-     26.93,
-     3.201,
-     5.173
-    ]
-   },
-   {
-    "name": "Cyclops_Static__71",
-    "group": "Static",
-    "color": "587034",
-    "material": "SmoothPlastic",
-    "tris": 4028,
-    "at": [
-     0.0381,
-     0.5379,
-     -17.7276
-    ],
-    "size": [
-     28.106,
-     1.134,
-     13.66
-    ]
-   },
-   {
-    "name": "Cyclops_Static__72",
-    "group": "Static",
-    "color": "5C4028",
-    "material": "Wood",
-    "tris": 284,
-    "at": [
-     -4.255,
-     8.3828,
-     5.1277
-    ],
-    "size": [
-     8.79,
-     16.566,
-     7.955
-    ]
-   }
-  ],
-  "boss_lights": [],
-  "cage_lights": [
-   {
-    "group": "Static",
-    "at": [
-     12.0,
-     15.0,
-     -13.3
-    ],
-    "color": "ECB544",
-    "brightness": 1.68,
-    "range": 21.7
-   },
-   {
-    "group": "Static",
-    "at": [
-     -12.0,
-     15.0,
-     -13.3
-    ],
-    "color": "ECB544",
-    "brightness": 1.68,
-    "range": 21.7
-   },
-   {
-    "group": "Static",
-    "at": [
-     0.0,
-     17.6,
-     7.6
-    ],
-    "color": "FF9646",
-    "brightness": 1.77,
-    "range": 22.2
-   }
-  ],
-  "stand": [
-   0.0,
-   0.0,
-   1.5
-  ],
-  "gate_box": [
-   [
-    -9.8,
-    0.12199999999999989,
-    -9.8
+ "Chain_Anchor": [
+  {
+   "name": "Chain_Anchor__3C3E46",
+   "color": "3C3E46",
+   "tris": 108,
+   "kind": "Chain",
+   "section": "Parts",
+   "group": "Anchor",
+   "at": [
+    -0.0,
+    0.0,
+    0.0
    ],
-   [
-    9.8,
-    21.0,
-    -8.2
-   ]
-  ]
- },
- "Minotaur": {
-  "boss": [
-   {
-    "name": "Minotaur_Head__0",
-    "group": "Head",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 1436,
-    "at": [
-     -0.0,
-     11.1498,
-     -0.7579
-    ],
-    "size": [
-     5.666,
-     3.553,
-     3.409
-    ]
-   },
-   {
-    "name": "Minotaur_Head__1",
-    "group": "Head",
-    "color": "EA6C49",
-    "material": "Neon",
-    "tris": 596,
-    "at": [
-     -0.0,
-     12.3855,
-     -1.98
-    ],
-    "size": [
-     2.524,
-     1.911,
-     0.624
-    ]
-   },
-   {
-    "name": "Minotaur_Head__2",
-    "group": "Head",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 8108,
-    "at": [
-     0.0695,
-     12.0682,
-     -0.0645
-    ],
-    "size": [
-     4.475,
-     2.598,
-     3.617
-    ]
-   },
-   {
-    "name": "Minotaur_Head__3",
-    "group": "Head",
-    "color": "222623",
-    "material": "Fabric",
-    "tris": 2732,
-    "at": [
-     -0.0,
-     11.9841,
-     0.5432
-    ],
-    "size": [
-     5.2,
-     2.163,
-     2.454
-    ]
-   },
-   {
-    "name": "Minotaur_Head__4",
-    "group": "Head",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 6536,
-    "at": [
-     -0.0,
-     12.065,
-     -1.6032
-    ],
-    "size": [
-     8.369,
-     5.41,
-     3.914
-    ]
-   },
-   {
-    "name": "Minotaur_Head__5",
-    "group": "Head",
-    "color": "C4B69C",
-    "material": "SmoothPlastic",
-    "tris": 1944,
-    "at": [
-     -0.0,
-     13.0647,
-     -0.6877
-    ],
-    "size": [
-     8.006,
-     2.198,
-     1.707
-    ]
-   },
-   {
-    "name": "Minotaur_Head__6",
-    "group": "Head",
-    "color": "786C5A",
-    "material": "SmoothPlastic",
-    "tris": 1680,
-    "at": [
-     -0.0,
-     12.9932,
-     -0.5445
-    ],
-    "size": [
-     7.53,
-     1.759,
-     1.369
-    ]
-   },
-   {
-    "name": "Minotaur_Head__7",
-    "group": "Head",
-    "color": "6A786E",
-    "material": "Metal",
-    "tris": 384,
-    "at": [
-     -0.0,
-     10.2003,
-     -1.8246
-    ],
-    "size": [
-     2.478,
-     2.546,
-     2.295
-    ]
-   },
-   {
-    "name": "Minotaur_Head__8",
-    "group": "Head",
-    "color": "3E4640",
-    "material": "SmoothPlastic",
-    "tris": 1072,
-    "at": [
-     0.0,
-     10.55,
-     -2.9563
-    ],
-    "size": [
-     2.494,
-     1.44,
-     0.903
-    ]
-   },
-   {
-    "name": "Minotaur_Head__9",
-    "group": "Head",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 292,
-    "at": [
-     -0.0,
-     10.255,
-     -3.155
-    ],
-    "size": [
-     2.397,
-     1.11,
-     0.71
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__10",
-    "group": "LeftLowerArm",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 154,
-    "at": [
-     -3.935,
-     5.25,
-     -0.1
-    ],
-    "size": [
-     2.83,
-     1.8,
-     2.16
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__11",
-    "group": "LeftLowerArm",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 3556,
-    "at": [
-     -3.5081,
-     4.2859,
-     -0.3066
-    ],
-    "size": [
-     2.564,
-     6.192,
-     2.913
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__12",
-    "group": "LeftLowerArm",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 1378,
-    "at": [
-     -3.582,
-     3.9952,
-     0.121
-    ],
-    "size": [
-     2.417,
-     0.954,
-     2.619
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__13",
-    "group": "LeftLowerArm",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1920,
-    "at": [
-     -3.6,
-     5.25,
-     -0.1
-    ],
-    "size": [
-     2.427,
-     1.773,
-     2.427
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__14",
-    "group": "LeftLowerArm",
-    "color": "282420",
-    "material": "SmoothPlastic",
-    "tris": 432,
-    "at": [
-     -2.7335,
-     1.7076,
-     -0.4841
-    ],
-    "size": [
-     0.803,
-     1.037,
-     2.52
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerArm__15",
-    "group": "LeftLowerArm",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 1548,
-    "at": [
-     -3.8653,
-     2.7233,
-     0.0
-    ],
-    "size": [
-     3.451,
-     3.153,
-     2.89
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__16",
-    "group": "LeftLowerLeg",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 44,
-    "at": [
-     -1.1,
-     2.6,
-     -0.95
-    ],
-    "size": [
-     1.7,
-     1.2,
-     0.5
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__17",
-    "group": "LeftLowerLeg",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 1180,
-    "at": [
-     -1.097,
-     1.5515,
-     -0.1834
-    ],
-    "size": [
-     1.941,
-     3.045,
-     2.981
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__18",
-    "group": "LeftLowerLeg",
-    "color": "222623",
-    "material": "Fabric",
-    "tris": 1408,
-    "at": [
-     -1.0985,
-     0.932,
-     0.0387
-    ],
-    "size": [
-     2.05,
-     0.885,
-     2.097
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__19",
-    "group": "LeftLowerLeg",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 240,
-    "at": [
-     -1.1,
-     2.6,
-     -1.22
-    ],
-    "size": [
-     1.356,
-     0.18,
-     0.167
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__20",
-    "group": "LeftLowerLeg",
-    "color": "282420",
-    "material": "SmoothPlastic",
-    "tris": 376,
-    "at": [
-     -1.1,
-     0.48,
-     -0.5388
-    ],
-    "size": [
-     1.79,
-     0.95,
-     2.678
-    ]
-   },
-   {
-    "name": "Minotaur_LeftLowerLeg__21",
-    "group": "LeftLowerLeg",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 44,
-    "at": [
-     -1.1,
-     0.45,
-     -0.45
-    ],
-    "size": [
-     0.08,
-     0.7,
-     2.6
-    ]
-   },
-   {
-    "name": "Minotaur_LeftUpperArm__22",
-    "group": "LeftUpperArm",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 690,
-    "at": [
-     -3.6,
-     10.3,
-     0.0
-    ],
-    "size": [
-     3.648,
-     3.2,
-     3.648
-    ]
-   },
-   {
-    "name": "Minotaur_LeftUpperArm__23",
-    "group": "LeftUpperArm",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 1568,
-    "at": [
-     -3.62,
-     8.5079,
-     -0.0
-    ],
-    "size": [
-     3.455,
-     4.399,
-     3.524
-    ]
-   },
-   {
-    "name": "Minotaur_LeftUpperArm__24",
-    "group": "LeftUpperArm",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 2284,
-    "at": [
-     -3.6943,
-     10.3775,
-     -0.1796
-    ],
-    "size": [
-     3.171,
-     1.058,
-     3.508
-    ]
-   },
-   {
-    "name": "Minotaur_LeftUpperArm__25",
-    "group": "LeftUpperArm",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1632,
-    "at": [
-     -3.6,
-     9.798,
-     0.0
-    ],
-    "size": [
-     3.727,
-     0.604,
-     3.727
-    ]
-   },
-   {
-    "name": "Minotaur_LeftUpperLeg__26",
-    "group": "LeftUpperLeg",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 848,
-    "at": [
-     -1.1,
-     3.9,
-     -0.1745
-    ],
-    "size": [
-     2.257,
-     3.36,
-     2.524
-    ]
-   },
-   {
-    "name": "Minotaur_LowerTorso__27",
-    "group": "LowerTorso",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 896,
-    "at": [
-     -0.0015,
-     4.231,
-     0.9681
-    ],
-    "size": [
-     3.426,
-     5.362,
-     4.264
-    ]
-   },
-   {
-    "name": "Minotaur_LowerTorso__28",
-    "group": "LowerTorso",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 2040,
-    "at": [
-     0.0014,
-     3.5352,
-     -0.0414
-    ],
-    "size": [
-     5.452,
-     2.8,
-     4.491
-    ]
-   },
-   {
-    "name": "Minotaur_LowerTorso__29",
-    "group": "LowerTorso",
-    "color": "222623",
-    "material": "Fabric",
-    "tris": 2544,
-    "at": [
-     0.0068,
-     2.6908,
-     0.4926
-    ],
-    "size": [
-     5.35,
-     3.909,
-     5.298
-    ]
-   },
-   {
-    "name": "Minotaur_LowerTorso__30",
-    "group": "LowerTorso",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 460,
-    "at": [
-     -0.0,
-     4.9,
-     -1.6503
-    ],
-    "size": [
-     1.717,
-     1.24,
-     0.401
-    ]
-   },
-   {
-    "name": "Minotaur_LowerTorso__31",
-    "group": "LowerTorso",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 44,
-    "at": [
-     -0.0,
-     4.9,
-     0.0
-    ],
-    "size": [
-     4.0,
-     0.95,
-     2.95
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__32",
-    "group": "RightLowerArm",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 154,
-    "at": [
-     3.935,
-     5.25,
-     -0.1
-    ],
-    "size": [
-     2.83,
-     1.8,
-     2.16
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__33",
-    "group": "RightLowerArm",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 3556,
-    "at": [
-     3.5081,
-     4.2709,
-     -0.3066
-    ],
-    "size": [
-     2.564,
-     6.222,
-     2.913
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__34",
-    "group": "RightLowerArm",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 1438,
-    "at": [
-     3.5505,
-     3.9977,
-     0.0664
-    ],
-    "size": [
-     2.424,
-     0.955,
-     2.655
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__35",
-    "group": "RightLowerArm",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1920,
-    "at": [
-     3.6,
-     5.25,
-     -0.1
-    ],
-    "size": [
-     2.427,
-     1.773,
-     2.427
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__36",
-    "group": "RightLowerArm",
-    "color": "282420",
-    "material": "SmoothPlastic",
-    "tris": 432,
-    "at": [
-     2.7776,
-     1.6902,
-     -0.4841
-    ],
-    "size": [
-     0.891,
-     1.071,
-     2.52
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerArm__37",
-    "group": "RightLowerArm",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 1548,
-    "at": [
-     3.8666,
-     2.7233,
-     0.0
-    ],
-    "size": [
-     3.453,
-     3.153,
-     2.89
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__38",
-    "group": "RightLowerLeg",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 44,
-    "at": [
-     1.1,
-     2.6,
-     -0.95
-    ],
-    "size": [
-     1.7,
-     1.2,
-     0.5
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__39",
-    "group": "RightLowerLeg",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 1180,
-    "at": [
-     1.103,
-     1.5515,
-     -0.1834
-    ],
-    "size": [
-     1.941,
-     3.045,
-     2.981
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__40",
-    "group": "RightLowerLeg",
-    "color": "222623",
-    "material": "Fabric",
-    "tris": 1398,
-    "at": [
-     1.0854,
-     0.9074,
-     0.0321
-    ],
-    "size": [
-     2.077,
-     0.907,
-     2.118
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__41",
-    "group": "RightLowerLeg",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 240,
-    "at": [
-     1.1,
-     2.6,
-     -1.22
-    ],
-    "size": [
-     1.356,
-     0.18,
-     0.167
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__42",
-    "group": "RightLowerLeg",
-    "color": "282420",
-    "material": "SmoothPlastic",
-    "tris": 376,
-    "at": [
-     1.1,
-     0.48,
-     -0.5388
-    ],
-    "size": [
-     1.79,
-     0.95,
-     2.678
-    ]
-   },
-   {
-    "name": "Minotaur_RightLowerLeg__43",
-    "group": "RightLowerLeg",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 44,
-    "at": [
-     1.1,
-     0.45,
-     -0.45
-    ],
-    "size": [
-     0.08,
-     0.7,
-     2.6
-    ]
-   },
-   {
-    "name": "Minotaur_RightUpperArm__44",
-    "group": "RightUpperArm",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 1568,
-    "at": [
-     3.62,
-     8.5079,
-     -0.0
-    ],
-    "size": [
-     3.455,
-     4.399,
-     3.524
-    ]
-   },
-   {
-    "name": "Minotaur_RightUpperArm__45",
-    "group": "RightUpperArm",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 2264,
-    "at": [
-     3.6756,
-     10.5574,
-     -0.3656
-    ],
-    "size": [
-     3.252,
-     1.497,
-     3.123
-    ]
-   },
-   {
-    "name": "Minotaur_RightUpperLeg__46",
-    "group": "RightUpperLeg",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 848,
-    "at": [
-     1.1,
-     3.9,
-     -0.1745
-    ],
-    "size": [
-     2.257,
-     3.36,
-     2.524
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__47",
-    "group": "UpperTorso",
-    "color": "966C3A",
-    "material": "Metal",
-    "tris": 376,
-    "at": [
-     -1.4205,
-     9.8092,
-     2.15
-    ],
-    "size": [
-     4.2,
-     4.134,
-     0.607
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__48",
-    "group": "UpperTorso",
-    "color": "4E5A52",
-    "material": "Metal",
-    "tris": 5808,
-    "at": [
-     0.0,
-     9.0375,
-     0.2029
-    ],
-    "size": [
-     6.763,
-     5.975,
-     4.604
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__49",
-    "group": "UpperTorso",
-    "color": "CDA86E",
-    "material": "Metal",
-    "tris": 1464,
-    "at": [
-     -0.4827,
-     9.8066,
-     0.3068
-    ],
-    "size": [
-     6.107,
-     4.117,
-     3.986
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__50",
-    "group": "UpperTorso",
-    "color": "323B36",
-    "material": "Fabric",
-    "tris": 14782,
-    "at": [
-     0.0819,
-     11.1405,
-     0.6023
-    ],
-    "size": [
-     7.915,
-     3.005,
-     5.574
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__51",
-    "group": "UpperTorso",
-    "color": "222623",
-    "material": "Fabric",
-    "tris": 5858,
-    "at": [
-     -0.1823,
-     11.4037,
-     1.595
-    ],
-    "size": [
-     7.485,
-     2.744,
-     3.829
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__52",
-    "group": "UpperTorso",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 1132,
-    "at": [
-     -0.225,
-     8.6096,
-     0.0154
-    ],
-    "size": [
-     3.306,
-     3.299,
-     4.569
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__53",
-    "group": "UpperTorso",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 2132,
-    "at": [
-     -0.2,
-     7.563,
-     0.0997
-    ],
-    "size": [
-     5.113,
-     5.634,
-     4.6
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__54",
-    "group": "UpperTorso",
-    "color": "6F9C8A",
-    "material": "SmoothPlastic",
-    "tris": 6552,
-    "at": [
-     0.0698,
-     8.6546,
-     -1.1039
-    ],
-    "size": [
-     4.692,
-     2.655,
-     1.151
-    ]
-   },
-   {
-    "name": "Minotaur_UpperTorso__55",
-    "group": "UpperTorso",
-    "color": "5C4028",
-    "material": "Wood",
-    "tris": 76,
-    "at": [
-     -0.15,
-     7.8,
-     2.15
-    ],
-    "size": [
-     4.608,
-     6.99,
-     0.4
-    ]
-   }
-  ],
-  "cage": [
-   {
-    "name": "Minotaur_Gate__56",
-    "group": "Gate",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 44,
-    "at": [
-     -0.6,
-     10.45,
-     -11.1
-    ],
-    "size": [
-     1.2,
-     1.3,
-     0.5
-    ]
-   },
-   {
-    "name": "Minotaur_Gate__57",
-    "group": "Gate",
-    "color": "23272B",
-    "material": "Metal",
-    "tris": 11436,
-    "at": [
-     -0.0,
-     11.75,
-     -10.4976
-    ],
-    "size": [
-     21.0,
-     15.0,
-     1.395
-    ]
-   },
-   {
-    "name": "Minotaur_Gate__58",
-    "group": "Gate",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 28,
-    "at": [
-     -0.6,
-     10.3,
-     -11.37
-    ],
-    "size": [
-     0.12,
-     0.35,
-     0.05
-    ]
-   },
-   {
-    "name": "Minotaur_Static__59",
-    "group": "Static",
-    "color": "DED2BA",
-    "material": "SmoothPlastic",
-    "tris": 1220,
-    "at": [
-     -0.6416,
-     4.745,
-     -0.2654
-    ],
-    "size": [
-     14.356,
-     1.155,
-     12.946
-    ]
-   },
-   {
-    "name": "Minotaur_Static__60",
-    "group": "Static",
-    "color": "B08840",
-    "material": "Metal",
-    "tris": 3532,
-    "at": [
-     -0.0,
-     4.3,
-     0.0
-    ],
-    "size": [
-     19.16,
-     0.1,
-     19.16
-    ]
-   },
-   {
-    "name": "Minotaur_Static__61",
-    "group": "Static",
-    "color": "80221E",
-    "material": "Fabric",
-    "tris": 88,
-    "at": [
-     -0.0,
-     18.9,
-     -2.3
-    ],
-    "size": [
-     30.2,
-     8.0,
-     0.12
-    ]
-   },
-   {
-    "name": "Minotaur_Static__62",
-    "group": "Static",
-    "color": "1A1816",
-    "material": "Basalt",
-    "tris": 956,
-    "at": [
-     -0.2123,
-     3.9979,
-     -14.5207
-    ],
-    "size": [
-     32.644,
-     0.562,
-     2.243
-    ]
-   },
-   {
-    "name": "Minotaur_Static__63",
-    "group": "Static",
-    "color": "FF561C",
-    "material": "Neon",
-    "tris": 2062,
-    "at": [
-     0.1774,
-     4.0136,
-     -14.4881
-    ],
-    "size": [
-     32.674,
-     0.542,
-     2.108
-    ]
-   },
-   {
-    "name": "Minotaur_Static__64",
-    "group": "Static",
-    "color": "28221E",
-    "material": "SmoothPlastic",
-    "tris": 2376,
-    "at": [
-     0.0385,
-     1.3988,
-     -11.03
-    ],
-    "size": [
-     16.089,
-     2.946,
-     0.12
-    ]
-   },
-   {
-    "name": "Minotaur_Static__65",
-    "group": "Static",
-    "color": "FF9632",
-    "material": "Neon",
-    "tris": 412,
-    "at": [
-     -0.0,
-     4.702,
-     -14.4968
-    ],
-    "size": [
-     31.95,
-     1.546,
-     1.18
-    ]
-   },
-   {
-    "name": "Minotaur_Static__66",
-    "group": "Static",
-    "color": "FFE696",
-    "material": "Neon",
-    "tris": 88,
-    "at": [
-     -0.0,
-     4.4472,
-     -14.5
-    ],
-    "size": [
-     31.46,
-     0.794,
-     0.515
-    ]
-   },
-   {
-    "name": "Minotaur_Static__67",
-    "group": "Static",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 6072,
-    "at": [
-     -0.375,
-     12.1775,
-     -0.5275
-    ],
-    "size": [
-     30.95,
-     21.095,
-     21.295
-    ]
-   },
-   {
-    "name": "Minotaur_Static__68",
-    "group": "Static",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 18496,
-    "at": [
-     -0.0,
-     12.7854,
-     -2.9267
-    ],
-    "size": [
-     34.186,
-     25.623,
-     26.333
-    ]
-   },
-   {
-    "name": "Minotaur_Static__69",
-    "group": "Static",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 2768,
-    "at": [
-     -0.0,
-     12.7854,
-     -3.2161
-    ],
-    "size": [
-     34.186,
-     25.623,
-     25.754
-    ]
-   },
-   {
-    "name": "Minotaur_Static__70",
-    "group": "Static",
-    "color": "23272B",
-    "material": "Metal",
-    "tris": 19000,
-    "at": [
-     -0.0,
-     12.35,
-     0.76
-    ],
-    "size": [
-     22.36,
-     12.92,
-     19.84
-    ]
-   },
-   {
-    "name": "Minotaur_Static__71",
-    "group": "Static",
-    "color": "23272B",
-    "material": "Metal",
-    "tris": 15020,
-    "at": [
-     -0.0,
-     13.3625,
-     0.0
-    ],
-    "size": [
-     28.9,
-     26.725,
-     21.5
-    ]
-   },
-   {
-    "name": "Minotaur_Static__72",
-    "group": "Static",
-    "color": "5E5A52",
-    "material": "Slate",
-    "tris": 1922,
-    "at": [
-     -0.0,
-     1.8114,
-     0.0114
-    ],
-    "size": [
-     26.0,
-     4.377,
-     27.582
-    ]
-   },
-   {
-    "name": "Minotaur_Static__73",
-    "group": "Static",
-    "color": "7A7468",
-    "material": "Slate",
-    "tris": 660,
-    "at": [
-     -0.0,
-     2.125,
-     0.0
-    ],
-    "size": [
-     29.8,
-     4.25,
-     23.7
-    ]
-   },
-   {
-    "name": "Minotaur_Static__74",
-    "group": "Static",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 19000,
-    "at": [
-     -0.0997,
-     0.66,
-     -0.1212
-    ],
-    "size": [
-     26.232,
-     0.202,
-     25.388
-    ]
-   },
-   {
-    "name": "Minotaur_Static__75",
-    "group": "Static",
-    "color": "46602C",
-    "material": "Grass",
-    "tris": 4520,
-    "at": [
-     0.2184,
-     0.66,
-     0.051
-    ],
-    "size": [
-     24.38,
-     0.175,
-     25.043
-    ]
-   },
-   {
-    "name": "Minotaur_Static__76",
-    "group": "Static",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 280,
-    "at": [
-     5.6845,
-     4.74,
-     -6.4505
-    ],
-    "size": [
-     0.68,
-     0.44,
-     0.572
-    ]
-   },
-   {
-    "name": "Minotaur_Static__77",
-    "group": "Static",
-    "color": "C4A052",
-    "material": "Fabric",
-    "tris": 7040,
-    "at": [
-     6.5526,
-     4.5218,
-     6.4998
-    ],
-    "size": [
-     4.984,
-     1.428,
-     5.494
-    ]
-   },
-   {
-    "name": "Minotaur_Static__78",
-    "group": "Static",
-    "color": "5C4028",
-    "material": "Wood",
-    "tris": 120,
-    "at": [
-     -0.0,
-     23.0,
-     -2.3
-    ],
-    "size": [
-     30.6,
-     0.2,
-     0.2
-    ]
-   }
-  ],
-  "boss_lights": [
-   {
-    "group": "Head",
-    "at": [
-     -0.0,
-     12.4,
-     -2.8
-    ],
-    "color": "EA6C49",
-    "brightness": 0.93,
-    "range": 15.6
-   },
-   {
-    "group": "Head",
-    "at": [
-     -0.0,
-     11.8,
-     -3.0
-    ],
-    "color": "EA6C49",
-    "brightness": 0.81,
-    "range": 14.0
-   }
-  ],
-  "cage_lights": [
-   {
-    "group": "Static",
-    "at": [
-     15.5,
-     6.0,
-     -14.5
-    ],
-    "color": "FF8C3C",
-    "brightness": 2.77,
-    "range": 24.0
-   },
-   {
-    "group": "Static",
-    "at": [
-     -15.5,
-     6.0,
-     -14.5
-    ],
-    "color": "FF8C3C",
-    "brightness": 2.77,
-    "range": 24.0
-   },
-   {
-    "group": "Static",
-    "at": [
-     -0.0,
-     15.0,
-     -6.0
-    ],
-    "color": "FFC8A0",
-    "brightness": 2.6,
-    "range": 24.0
-   }
-  ],
-  "stand": [
-   -0.0,
-   4.5,
-   0.0
-  ],
-  "gate_box": [
-   [
-    -10.5,
-    4.25,
-    -11.395
+   "size": [
+    3.2,
+    3.2,
+    0.6
    ],
-   [
+   "neon": false
+  },
+  {
+   "name": "Chain_Anchor__5E626E",
+   "color": "5E626E",
+   "tris": 708,
+   "kind": "Chain",
+   "section": "Parts",
+   "group": "Anchor",
+   "at": [
+    -0.0,
+    -0.0825,
+    -1.15
+   ],
+   "size": [
+    2.707,
+    2.915,
+    1.98
+   ],
+   "neon": false
+  },
+  {
+   "name": "Chain_Anchor__000000",
+   "color": "000000",
+   "tris": 816,
+   "kind": "Chain",
+   "section": "Parts",
+   "group": "Anchor",
+   "at": [
+    -0.0,
+    0.0,
+    -0.9211
+   ],
+   "size": [
+    3.3354,
+    3.3354,
+    2.5777
+   ],
+   "neon": false
+  }
+ ],
+ "Chain_Link": [
+  {
+   "name": "Chain_Link__3C3E46",
+   "color": "3C3E46",
+   "tris": 256,
+   "kind": "Chain",
+   "section": "Parts",
+   "group": "Link",
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    1.7795,
+    2.9354,
+    0.54
+   ],
+   "neon": false
+  },
+  {
+   "name": "Chain_Link__000000",
+   "color": "000000",
+   "tris": 256,
+   "kind": "Chain",
+   "section": "Parts",
+   "group": "Link",
+   "at": [
+    -0.0,
+    0.0,
+    0.0
+   ],
+   "size": [
+    1.9186,
+    3.0719,
+    0.6799
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_Head": [
+  {
+   "name": "Cyclops_Head__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 1468,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.1566,
+    -1.105
+   ],
+   "size": [
+    4.276,
+    4.4132,
+    3.99
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__5E6A7C",
+   "color": "5E6A7C",
+   "tris": 1016,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.9248,
+    -1.8156
+   ],
+   "size": [
+    5.7347,
+    3.5497,
+    2.8687
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__F4F0E0",
+   "color": "F4F0E0",
+   "tris": 484,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.65,
+    -2.53
+   ],
+   "size": [
+    2.4943,
+    2.52,
+    1.32
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__FFB020",
+   "color": "FFB020",
+   "tris": 324,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    0.0,
+    11.53,
+    -3.106
+   ],
+   "size": [
+    1.4181,
+    1.44,
+    0.48
+   ],
+   "neon": true
+  },
+  {
+   "name": "Cyclops_Head__121214",
+   "color": "121214",
+   "tris": 264,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.335,
+    -3.304
+   ],
+   "size": [
+    0.744,
+    1.53,
+    0.276
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__FFFFFF",
+   "color": "FFFFFF",
+   "tris": 100,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    0.384,
+    11.974,
+    -3.25
+   ],
+   "size": [
+    0.3652,
+    0.384,
+    0.144
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 816,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.9544,
+    -2.1491
+   ],
+   "size": [
+    2.7634,
+    5.062,
+    2.16
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__3A1E2A",
+   "color": "3A1E2A",
+   "tris": 360,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    0.0,
+    9.934,
+    -2.674
+   ],
+   "size": [
+    3.36,
+    1.2,
+    0.9
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Head__000000",
+   "color": "000000",
+   "tris": 4832,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.7168,
+    -1.276
+   ],
+   "size": [
+    5.8108,
+    5.6136,
+    4.412
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftFoot": [
+  {
+   "name": "Cyclops_LeftFoot__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 822,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.584,
+    -0.6625
+   ],
+   "size": [
+    2.02,
+    1.232,
+    3.325
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftFoot__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 300,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.42,
+    -2.25
+   ],
+   "size": [
+    1.6965,
+    0.32,
+    0.4
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftFoot__000000",
+   "color": "000000",
+   "tris": 1122,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.5846,
+    -0.725
+   ],
+   "size": [
+    2.1,
+    1.3108,
+    3.53
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftHand": [
+  {
+   "name": "Cyclops_LeftHand__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 1384,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.7453,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.4495,
+    2.84,
+    2.35
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftHand__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 176,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.825,
+    1.9027,
+    -1.0317
+   ],
+   "size": [
+    1.89,
+    1.0351,
+    1.6769
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftHand__000000",
+   "color": "000000",
+   "tris": 1560,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.7409,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.5199,
+    2.92,
+    2.43
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftLowerArm": [
+  {
+   "name": "Cyclops_LeftLowerArm__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 708,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.7886,
+    5.4743,
+    -0.267
+   ],
+   "size": [
+    2.4279,
+    4.2514,
+    2.387
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.0457,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.8585,
+    1.1868,
+    2.609
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.256,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.4581,
+    1.2771,
+    2.7952
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 1332,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.2598,
+    5.4746,
+    -0.4
+   ],
+   "size": [
+    3.5303,
+    4.3307,
+    2.8619
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftLowerLeg": [
+  {
+   "name": "Cyclops_LeftLowerLeg__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 904,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.1325,
+    1.835,
+    0.01
+   ],
+   "size": [
+    1.7649,
+    3.1301,
+    1.82
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerLeg__6A4428",
+   "color": "6A4428",
+   "tris": 120,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.15,
+    1.85,
+    0.02
+   ],
+   "size": [
+    1.78,
+    0.72,
+    1.78
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.357,
+    1.05,
+    0.0
+   ],
+   "size": [
+    2.1359,
+    0.75,
+    1.85
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.5726,
+    1.05,
+    0.0
+   ],
+   "size": [
+    2.7247,
+    0.8384,
+    2.01
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 1648,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.578,
+    1.835,
+    0.0
+   ],
+   "size": [
+    2.794,
+    3.21,
+    2.0694
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftUpperArm": [
+  {
+   "name": "Cyclops_LeftUpperArm__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 1136,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.6,
+    8.2925,
+    0.05
+   ],
+   "size": [
+    2.462,
+    4.5151,
+    2.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftUpperArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 416,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8175,
+    9.6392,
+    0.05
+   ],
+   "size": [
+    2.9988,
+    2.8174,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftUpperArm__5E626E",
+   "color": "5E626E",
+   "tris": 264,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.87,
+    9.65,
+    0.05
+   ],
+   "size": [
+    2.8557,
+    1.3139,
+    3.0487
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftUpperArm__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 144,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -4.2551,
+    11.163,
+    0.05
+   ],
+   "size": [
+    1.3163,
+    1.5082,
+    2.1
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 1960,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8192,
+    8.9752,
+    0.05
+   ],
+   "size": [
+    3.0744,
+    5.9604,
+    3.1278
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LeftUpperLeg": [
+  {
+   "name": "Cyclops_LeftUpperLeg__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 420,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1788,
+    4.203,
+    0.0
+   ],
+   "size": [
+    2.4843,
+    4.5542,
+    2.4124
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LeftUpperLeg__000000",
+   "color": "000000",
+   "tris": 420,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1788,
+    4.203,
+    0.0
+   ],
+   "size": [
+    2.5643,
+    4.634,
+    2.4904
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_LowerTorso": [
+  {
+   "name": "Cyclops_LowerTorso__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 360,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0,
+    5.75,
+    0.1
+   ],
+   "size": [
+    3.9,
+    2.6,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LowerTorso__5E4A3A",
+   "color": "5E4A3A",
+   "tris": 764,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0097,
+    4.8822,
+    0.05
+   ],
+   "size": [
+    5.2018,
+    2.5356,
+    4.2114
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LowerTorso__6A4428",
+   "color": "6A4428",
+   "tris": 284,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    0.05
+   ],
+   "size": [
+    4.3,
+    0.75,
+    3.35
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LowerTorso__C8843A",
+   "color": "C8843A",
+   "tris": 188,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    -1.72
+   ],
+   "size": [
+    1.25,
+    1.25,
+    0.3
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LowerTorso__8E5A26",
+   "color": "8E5A26",
+   "tris": 44,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    -1.76
+   ],
+   "size": [
+    0.6,
+    0.6,
+    0.36
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_LowerTorso__000000",
+   "color": "000000",
+   "tris": 1640,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0114,
+    5.3328,
+    0.05
+   ],
+   "size": [
+    5.2785,
+    3.5145,
+    4.2897
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_Pylon": [
+  {
+   "name": "Cyclops_Pylon__5C5864",
+   "color": "5C5864",
+   "tris": 324,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    0.15,
+    11.1661,
+    0.0
+   ],
+   "size": [
+    6.8957,
+    22.7214,
+    6.3522
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Pylon__FF4E1A",
+   "color": "FF4E1A",
+   "tris": 60,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    0.0748,
+    11.2061,
+    -2.585
+   ],
+   "size": [
+    4.9995,
+    21.0413,
+    1.146
+   ],
+   "neon": true
+  },
+  {
+   "name": "Cyclops_Pylon__3C3942",
+   "color": "3C3942",
+   "tris": 216,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.15,
+    11.4752,
+    0.0
+   ],
+   "size": [
+    6.6388,
+    14.4329,
+    6.0368
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Pylon__3C3E46",
+   "color": "3C3E46",
+   "tris": 188,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    23.1,
+    0.0
+   ],
+   "size": [
+    6.1104,
+    1.6,
+    6.1104
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Pylon__5E626E",
+   "color": "5E626E",
+   "tris": 188,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    24.0075,
+    0.0
+   ],
+   "size": [
+    5.4,
+    1.4016,
+    5.4
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_Pylon__FF7A1E",
+   "color": "FF7A1E",
+   "tris": 32,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    25.5,
+    0.0694
+   ],
+   "size": [
+    4.5301,
+    3.6,
+    4.4613
+   ],
+   "neon": true
+  },
+  {
+   "name": "Cyclops_Pylon__FFD040",
+   "color": "FFD040",
+   "tris": 24,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    0.2961,
+    25.3,
+    0.1345
+   ],
+   "size": [
+    2.7296,
+    3.0,
+    2.6687
+   ],
+   "neon": true
+  },
+  {
+   "name": "Cyclops_Pylon__000000",
+   "color": "000000",
+   "tris": 1032,
+   "kind": "Cyclops",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    0.064,
+    13.5474,
+    0.0
+   ],
+   "size": [
+    7.2056,
+    27.6201,
+    6.4888
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightFoot": [
+  {
+   "name": "Cyclops_RightFoot__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 822,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.584,
+    -0.6625
+   ],
+   "size": [
+    2.02,
+    1.232,
+    3.325
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightFoot__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 300,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.42,
+    -2.25
+   ],
+   "size": [
+    1.6965,
+    0.32,
+    0.4
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightFoot__000000",
+   "color": "000000",
+   "tris": 1122,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.5846,
+    -0.725
+   ],
+   "size": [
+    2.1,
+    1.3108,
+    3.53
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightHand": [
+  {
+   "name": "Cyclops_RightHand__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 1384,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.7453,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.4495,
+    2.84,
+    2.35
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightHand__ECE3CC",
+   "color": "ECE3CC",
+   "tris": 176,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.825,
+    1.9027,
+    -1.0317
+   ],
+   "size": [
+    1.89,
+    1.0351,
+    1.6769
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightHand__000000",
+   "color": "000000",
+   "tris": 1560,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.7409,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.5199,
+    2.92,
+    2.43
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightLowerArm": [
+  {
+   "name": "Cyclops_RightLowerArm__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 708,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.7886,
+    5.4743,
+    -0.267
+   ],
+   "size": [
+    2.4279,
+    4.2514,
+    2.387
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.0457,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.8585,
+    1.1868,
+    2.609
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.256,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.4581,
+    1.2771,
+    2.7952
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerArm__000000",
+   "color": "000000",
+   "tris": 1332,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.2598,
+    5.4746,
+    -0.4
+   ],
+   "size": [
+    3.5303,
+    4.3307,
+    2.8619
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightLowerLeg": [
+  {
+   "name": "Cyclops_RightLowerLeg__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 904,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.1325,
+    1.835,
+    0.01
+   ],
+   "size": [
+    1.7649,
+    3.1301,
+    1.82
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerLeg__6A4428",
+   "color": "6A4428",
+   "tris": 120,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.15,
+    1.85,
+    0.02
+   ],
+   "size": [
+    1.78,
+    0.72,
+    1.78
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.357,
+    1.05,
+    0.0
+   ],
+   "size": [
+    2.1359,
+    0.75,
+    1.85
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.5726,
+    1.05,
+    0.0
+   ],
+   "size": [
+    2.7247,
+    0.8384,
+    2.01
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 1648,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.578,
+    1.835,
+    0.0
+   ],
+   "size": [
+    2.794,
+    3.21,
+    2.0694
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightUpperArm": [
+  {
+   "name": "Cyclops_RightUpperArm__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 1136,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.6,
+    8.2925,
+    0.05
+   ],
+   "size": [
+    2.462,
+    4.5151,
+    2.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightUpperArm__C8843A",
+   "color": "C8843A",
+   "tris": 212,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.63,
+    7.6,
+    -0.03
+   ],
+   "size": [
+    2.2158,
+    0.4,
+    2.25
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 1348,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.6,
+    8.2925,
+    0.05
+   ],
+   "size": [
+    2.5408,
+    4.595,
+    2.58
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_RightUpperLeg": [
+  {
+   "name": "Cyclops_RightUpperLeg__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 420,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1788,
+    4.203,
+    0.0
+   ],
+   "size": [
+    2.4843,
+    4.5542,
+    2.4124
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_RightUpperLeg__000000",
+   "color": "000000",
+   "tris": 420,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1788,
+    4.203,
+    0.0
+   ],
+   "size": [
+    2.5643,
+    4.634,
+    2.4904
+   ],
+   "neon": false
+  }
+ ],
+ "Cyclops_UpperTorso": [
+  {
+   "name": "Cyclops_UpperTorso__7E8CA0",
+   "color": "7E8CA0",
+   "tris": 2208,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.675,
+    0.325
+   ],
+   "size": [
+    5.9,
+    4.65,
+    4.45
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__A9B4C2",
+   "color": "A9B4C2",
+   "tris": 484,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    7.25,
+    -0.5
+   ],
+   "size": [
+    4.5532,
+    3.7,
+    3.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__5E6A7C",
+   "color": "5E6A7C",
+   "tris": 48,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    6.95,
+    -2.22
+   ],
+   "size": [
+    0.4,
+    0.3,
+    0.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__5E4A3A",
+   "color": "5E4A3A",
+   "tris": 848,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    0.0001,
+    10.1911,
+    0.2
+   ],
+   "size": [
+    6.8371,
+    1.1722,
+    5.1418
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__3E3028",
+   "color": "3E3028",
+   "tris": 378,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    0.0003,
+    10.0569,
+    0.1012
+   ],
+   "size": [
+    5.2977,
+    1.0608,
+    3.8214
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__3C3E46",
+   "color": "3C3E46",
+   "tris": 284,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.75,
+    -0.25
+   ],
+   "size": [
+    3.1,
+    0.8,
+    2.635
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__5E626E",
+   "color": "5E626E",
+   "tris": 772,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.65,
+    0.103
+   ],
+   "size": [
+    3.28,
+    1.0724,
+    3.494
+   ],
+   "neon": false
+  },
+  {
+   "name": "Cyclops_UpperTorso__000000",
+   "color": "000000",
+   "tris": 5022,
+   "kind": "Cyclops",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    0.0002,
+    8.2926,
+    0.2
+   ],
+   "size": [
+    6.916,
+    5.8652,
+    5.2206
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_Head": [
+  {
+   "name": "Minotaur_Head__7A4A30",
+   "color": "7A4A30",
+   "tris": 484,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.575,
+    -0.778
+   ],
+   "size": [
+    3.502,
+    3.294,
+    3.294
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__B98A64",
+   "color": "B98A64",
+   "tris": 440,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    0.0,
+    10.355,
+    -2.425
+   ],
+   "size": [
+    2.806,
+    2.3993,
+    3.0994
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__2E2224",
+   "color": "2E2224",
+   "tris": 324,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    0.0,
+    9.928,
+    -3.767
+   ],
+   "size": [
+    2.4029,
+    1.342,
+    1.22
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__121214",
+   "color": "121214",
+   "tris": 204,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    9.7755,
+    -3.7182
+   ],
+   "size": [
+    1.952,
+    0.7686,
+    1.4884
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__F2B53A",
+   "color": "F2B53A",
+   "tris": 192,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    9.379,
+    -4.133
+   ],
+   "size": [
+    1.464,
+    1.464,
+    0.2536
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__FF3A2A",
+   "color": "FF3A2A",
+   "tris": 240,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.392,
+    -2.3396
+   ],
+   "size": [
+    3.0925,
+    0.5164,
+    0.4538
+   ],
+   "neon": true
+  },
+  {
+   "name": "Minotaur_Head__48291A",
+   "color": "48291A",
+   "tris": 550,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    12.4013,
+    -1.3328
+   ],
+   "size": [
+    6.0386,
+    3.4436,
+    3.0005
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__ECE0C4",
+   "color": "ECE0C4",
+   "tris": 392,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    12.9928,
+    -0.8745
+   ],
+   "size": [
+    8.7556,
+    2.859,
+    2.0316
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__5A4E40",
+   "color": "5A4E40",
+   "tris": 168,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    14.8523,
+    -1.9886
+   ],
+   "size": [
+    8.7721,
+    1.3956,
+    1.0249
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Head__000000",
+   "color": "000000",
+   "tris": 2994,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    12.0982,
+    -1.7967
+   ],
+   "size": [
+    8.8353,
+    6.9825,
+    5.4114
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftFoot": [
+  {
+   "name": "Minotaur_LeftFoot__2A2226",
+   "color": "2A2226",
+   "tris": 508,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.578,
+    -0.55
+   ],
+   "size": [
+    1.94,
+    1.144,
+    2.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftFoot__121214",
+   "color": "121214",
+   "tris": 108,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.45,
+    -1.3
+   ],
+   "size": [
+    0.25,
+    0.9,
+    1.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftFoot__000000",
+   "color": "000000",
+   "tris": 616,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.5757,
+    -0.5993
+   ],
+   "size": [
+    2.02,
+    1.2287,
+    2.6787
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftHand": [
+  {
+   "name": "Minotaur_LeftHand__48291A",
+   "color": "48291A",
+   "tris": 1384,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.7453,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.4495,
+    2.84,
+    2.35
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftHand__2A2226",
+   "color": "2A2226",
+   "tris": 176,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.825,
+    1.9027,
+    -1.0317
+   ],
+   "size": [
+    1.89,
+    1.0351,
+    1.6769
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftHand__000000",
+   "color": "000000",
+   "tris": 1560,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.7409,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.5199,
+    2.92,
+    2.43
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftLowerArm": [
+  {
+   "name": "Minotaur_LeftLowerArm__7A4A30",
+   "color": "7A4A30",
+   "tris": 708,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.7715,
+    5.5056,
+    -0.2424
+   ],
+   "size": [
+    2.3372,
+    4.1888,
+    2.3086
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerArm__C8843A",
+   "color": "C8843A",
+   "tris": 212,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.7044,
+    5.6608,
+    -0.2545
+   ],
+   "size": [
+    2.3911,
+    1.3665,
+    2.425
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerArm__EAB66A",
+   "color": "EAB66A",
+   "tris": 96,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.8327,
+    5.65,
+    -0.2
+   ],
+   "size": [
+    1.3395,
+    0.3946,
+    3.0467
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.0452,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.7596,
+    1.1679,
+    2.5101
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.2554,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.3591,
+    1.2582,
+    2.6963
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 1640,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.2222,
+    5.5059,
+    -0.2094
+   ],
+   "size": [
+    3.5056,
+    4.2682,
+    3.1441
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftLowerLeg": [
+  {
+   "name": "Minotaur_LeftLowerLeg__7A4A30",
+   "color": "7A4A30",
+   "tris": 904,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.1099,
+    1.93,
+    0.01
+   ],
+   "size": [
+    1.7198,
+    2.9399,
+    1.82
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerLeg__48291A",
+   "color": "48291A",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.1998,
+    0.7913,
+    0.0
+   ],
+   "size": [
+    2.0512,
+    0.652,
+    2.1549
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.3566,
+    1.35,
+    0.0
+   ],
+   "size": [
+    2.0367,
+    0.75,
+    1.75
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.5723,
+    1.35,
+    0.0
+   ],
+   "size": [
+    2.6255,
+    0.8384,
+    1.91
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 1948,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.5304,
+    1.93,
+    0.0
+   ],
+   "size": [
+    2.7891,
+    3.0199,
+    2.2317
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftUpperArm": [
+  {
+   "name": "Minotaur_LeftUpperArm__7A4A30",
+   "color": "7A4A30",
+   "tris": 1136,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.6,
+    8.3175,
+    0.05
+   ],
+   "size": [
+    2.5605,
+    4.5651,
+    2.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftUpperArm__C8843A",
+   "color": "C8843A",
+   "tris": 416,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8175,
+    9.6892,
+    0.05
+   ],
+   "size": [
+    2.9988,
+    2.8174,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftUpperArm__EAB66A",
+   "color": "EAB66A",
+   "tris": 360,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.87,
+    10.4512,
+    0.05
+   ],
+   "size": [
+    2.8557,
+    2.8163,
+    3.0487
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 1912,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8184,
+    8.947,
+    0.05
+   ],
+   "size": [
+    3.0761,
+    5.9041,
+    3.1278
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LeftUpperLeg": [
+  {
+   "name": "Minotaur_LeftUpperLeg__7A4A30",
+   "color": "7A4A30",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1761,
+    4.2075,
+    0.0
+   ],
+   "size": [
+    2.5089,
+    4.5452,
+    2.4416
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LeftUpperLeg__000000",
+   "color": "000000",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1761,
+    4.2075,
+    0.0
+   ],
+   "size": [
+    2.5888,
+    4.625,
+    2.5196
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_LowerTorso": [
+  {
+   "name": "Minotaur_LowerTorso__7A4A30",
+   "color": "7A4A30",
+   "tris": 500,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0,
+    5.1971,
+    0.5517
+   ],
+   "size": [
+    3.8,
+    3.7058,
+    3.8035
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__C8843A",
+   "color": "C8843A",
+   "tris": 284,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    0.05
+   ],
+   "size": [
+    4.2,
+    0.7,
+    3.3
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__9E2E26",
+   "color": "9E2E26",
+   "tris": 756,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.01,
+    5.0,
+    0.0525
+   ],
+   "size": [
+    4.852,
+    2.057,
+    3.9706
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__EAB66A",
+   "color": "EAB66A",
+   "tris": 1512,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    4.05,
+    0.0565
+   ],
+   "size": [
+    4.8794,
+    0.3415,
+    3.9208
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__4A2E1A",
+   "color": "4A2E1A",
+   "tris": 756,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.01,
+    5.0,
+    0.0525
+   ],
+   "size": [
+    4.852,
+    2.057,
+    3.9706
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__F2B53A",
+   "color": "F2B53A",
+   "tris": 188,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    -1.66
+   ],
+   "size": [
+    1.2,
+    1.2,
+    0.32
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__48291A",
+   "color": "48291A",
+   "tris": 100,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.52,
+    3.15,
+    2.1
+   ],
+   "size": [
+    0.6657,
+    1.1,
+    0.7
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_LowerTorso__000000",
+   "color": "000000",
+   "tris": 4096,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    4.825,
+    0.2594
+   ],
+   "size": [
+    4.9581,
+    4.53,
+    4.4643
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_Pylon": [
+  {
+   "name": "Minotaur_Pylon__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 108,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    0.7,
+    0.0
+   ],
+   "size": [
+    5.6,
+    1.4,
+    5.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__D2CBBE",
+   "color": "D2CBBE",
+   "tris": 448,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    10.3,
+    0.0
+   ],
+   "size": [
+    4.7271,
+    17.8,
+    4.8
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__F1EDE4",
+   "color": "F1EDE4",
+   "tris": 176,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    11.3,
+    0.0
+   ],
+   "size": [
+    5.4,
+    17.8,
+    5.4
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__8E5A26",
+   "color": "8E5A26",
+   "tris": 108,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    23.2,
+    0.0
+   ],
+   "size": [
+    0.6,
+    6.0,
+    0.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__F2B53A",
+   "color": "F2B53A",
+   "tris": 748,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    24.225,
+    -0.0
+   ],
+   "size": [
+    6.5514,
+    5.25,
+    0.9
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__C88A1E",
+   "color": "C88A1E",
+   "tris": 392,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    23.9,
+    0.0
+   ],
+   "size": [
+    3.0599,
+    3.4,
+    0.62
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_Pylon__000000",
+   "color": "000000",
+   "tris": 1980,
+   "kind": "Minotaur",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    0.0,
+    13.4261,
+    0.0
+   ],
+   "size": [
+    6.671,
+    26.9877,
+    5.7354
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightFoot": [
+  {
+   "name": "Minotaur_RightFoot__2A2226",
+   "color": "2A2226",
+   "tris": 508,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.578,
+    -0.55
+   ],
+   "size": [
+    1.94,
+    1.144,
+    2.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightFoot__121214",
+   "color": "121214",
+   "tris": 108,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.45,
+    -1.3
+   ],
+   "size": [
+    0.25,
+    0.9,
+    1.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightFoot__000000",
+   "color": "000000",
+   "tris": 616,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.5757,
+    -0.5993
+   ],
+   "size": [
+    2.02,
+    1.2287,
+    2.6787
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightHand": [
+  {
+   "name": "Minotaur_RightHand__48291A",
+   "color": "48291A",
+   "tris": 1384,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.7453,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.4495,
+    2.84,
+    2.35
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightHand__2A2226",
+   "color": "2A2226",
+   "tris": 176,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.825,
+    1.9027,
+    -1.0317
+   ],
+   "size": [
+    1.89,
+    1.0351,
+    1.6769
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightHand__000000",
+   "color": "000000",
+   "tris": 1560,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.7409,
+    2.78,
+    -0.725
+   ],
+   "size": [
+    2.5199,
+    2.92,
+    2.43
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightLowerArm": [
+  {
+   "name": "Minotaur_RightLowerArm__7A4A30",
+   "color": "7A4A30",
+   "tris": 708,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.7715,
+    5.5056,
+    -0.2424
+   ],
+   "size": [
+    2.3372,
+    4.1888,
+    2.3086
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerArm__C8843A",
+   "color": "C8843A",
+   "tris": 212,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.7044,
+    5.6608,
+    -0.2545
+   ],
+   "size": [
+    2.3911,
+    1.3665,
+    2.425
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerArm__EAB66A",
+   "color": "EAB66A",
+   "tris": 96,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.8327,
+    5.65,
+    -0.2
+   ],
+   "size": [
+    1.3395,
+    0.3946,
+    3.0467
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.0452,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.7596,
+    1.1679,
+    2.5101
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.2554,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.3591,
+    1.2582,
+    2.6963
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerArm__000000",
+   "color": "000000",
+   "tris": 1640,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.2222,
+    5.5059,
+    -0.2094
+   ],
+   "size": [
+    3.5056,
+    4.2682,
+    3.1441
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightLowerLeg": [
+  {
+   "name": "Minotaur_RightLowerLeg__7A4A30",
+   "color": "7A4A30",
+   "tris": 904,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.1099,
+    1.93,
+    0.01
+   ],
+   "size": [
+    1.7198,
+    2.9399,
+    1.82
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerLeg__48291A",
+   "color": "48291A",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.2002,
+    0.7913,
+    0.0
+   ],
+   "size": [
+    2.0512,
+    0.652,
+    2.1549
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.3566,
+    1.35,
+    0.0
+   ],
+   "size": [
+    2.0367,
+    0.75,
+    1.75
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.5723,
+    1.35,
+    0.0
+   ],
+   "size": [
+    2.6255,
+    0.8384,
+    1.91
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 1948,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.5311,
+    1.93,
+    0.0
+   ],
+   "size": [
+    2.7878,
+    3.0199,
+    2.2317
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightUpperArm": [
+  {
+   "name": "Minotaur_RightUpperArm__7A4A30",
+   "color": "7A4A30",
+   "tris": 1136,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.6,
+    8.3175,
+    0.05
+   ],
+   "size": [
+    2.5605,
+    4.5651,
+    2.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightUpperArm__C8843A",
+   "color": "C8843A",
+   "tris": 416,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.8175,
+    9.6892,
+    0.05
+   ],
+   "size": [
+    2.9988,
+    2.8174,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightUpperArm__EAB66A",
+   "color": "EAB66A",
+   "tris": 360,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.87,
+    10.4512,
+    0.05
+   ],
+   "size": [
+    2.8557,
+    2.8163,
+    3.0487
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 1912,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.8184,
+    8.947,
+    0.05
+   ],
+   "size": [
+    3.0761,
+    5.9041,
+    3.1278
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_RightUpperLeg": [
+  {
+   "name": "Minotaur_RightUpperLeg__7A4A30",
+   "color": "7A4A30",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1761,
+    4.2075,
+    0.0
+   ],
+   "size": [
+    2.5089,
+    4.5452,
+    2.4416
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_RightUpperLeg__000000",
+   "color": "000000",
+   "tris": 420,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1761,
+    4.2075,
+    0.0
+   ],
+   "size": [
+    2.5888,
+    4.625,
+    2.5196
+   ],
+   "neon": false
+  }
+ ],
+ "Minotaur_UpperTorso": [
+  {
+   "name": "Minotaur_UpperTorso__7A4A30",
+   "color": "7A4A30",
+   "tris": 2072,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.7,
+    0.4
+   ],
+   "size": [
+    5.6,
+    6.2,
+    4.5
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__B98A64",
+   "color": "B98A64",
+   "tris": 694,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    0.0,
+    8.475,
+    -1.9593
+   ],
+   "size": [
+    2.0511,
+    3.45,
+    1.0185
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__48291A",
+   "color": "48291A",
+   "tris": 378,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    9.8477,
+    1.6022
+   ],
+   "size": [
+    0.6824,
+    3.4771,
+    2.2977
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__C8843A",
+   "color": "C8843A",
+   "tris": 384,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.45,
+    -0.1
+   ],
+   "size": [
+    4.54,
+    0.64,
+    4.54
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__EAB66A",
+   "color": "EAB66A",
+   "tris": 192,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
     10.5,
-    19.25,
-    -9.8001
-   ]
-  ]
- },
- "Talos": {
-  "boss": [
-   {
-    "name": "Talos_Head__0",
-    "group": "Head",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 3980,
-    "at": [
-     -0.0,
-     13.15,
-     -0.2637
-    ],
-    "size": [
-     3.653,
-     6.5,
-     3.687
-    ]
-   },
-   {
-    "name": "Talos_Head__1",
-    "group": "Head",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 932,
-    "at": [
-     -0.0,
-     11.73,
-     -0.4
-    ],
-    "size": [
-     3.347,
-     4.26,
-     3.142
-    ]
-   },
-   {
-    "name": "Talos_Head__2",
-    "group": "Head",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 464,
-    "at": [
-     -0.0,
-     13.2,
-     -0.2115
-    ],
-    "size": [
-     3.783,
-     7.1,
-     4.023
-    ]
-   },
-   {
-    "name": "Talos_Head__3",
-    "group": "Head",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 536,
-    "at": [
-     -0.0,
-     11.075,
-     -0.5799
-    ],
-    "size": [
-     2.3,
-     1.95,
-     2.65
-    ]
-   },
-   {
-    "name": "Talos_Head__4",
-    "group": "Head",
-    "color": "1A120A",
-    "material": "SmoothPlastic",
-    "tris": 88,
-    "at": [
-     -0.0,
-     11.08,
-     -1.92
-    ],
-    "size": [
-     2.4,
-     2.06,
-     0.2
-    ]
-   },
-   {
-    "name": "Talos_HumanoidRootPart__5",
-    "group": "HumanoidRootPart",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 988,
-    "at": [
-     1.3942,
-     5.7837,
-     -1.3566
-    ],
-    "size": [
-     2.465,
-     9.099,
-     0.911
-    ]
-   },
-   {
-    "name": "Talos_HumanoidRootPart__6",
-    "group": "HumanoidRootPart",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 300,
-    "at": [
-     1.35,
-     6.2,
-     -1.51
-    ],
-    "size": [
-     0.818,
-     5.24,
-     1.06
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerArm__7",
-    "group": "LeftLowerArm",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 932,
-    "at": [
-     -3.6,
-     4.4949,
-     0.1261
-    ],
-    "size": [
-     2.1,
-     6.084,
-     2.342
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerArm__8",
-    "group": "LeftLowerArm",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 2664,
-    "at": [
-     -3.5081,
-     3.9856,
-     -0.3816
-    ],
-    "size": [
-     2.564,
-     5.629,
-     2.763
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerArm__9",
-    "group": "LeftLowerArm",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 1004,
-    "at": [
-     -3.572,
-     4.155,
-     -0.2615
-    ],
-    "size": [
-     2.456,
-     5.99,
-     2.965
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerArm__10",
-    "group": "LeftLowerArm",
-    "color": "1A120A",
-    "material": "SmoothPlastic",
-    "tris": 132,
-    "at": [
-     -3.6,
-     5.75,
-     -1.06
-    ],
-    "size": [
-     1.2,
-     0.82,
-     0.1
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerLeg__11",
-    "group": "LeftLowerLeg",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 768,
-    "at": [
-     -1.1,
-     1.99,
-     -0.2624
-    ],
-    "size": [
-     1.9,
-     2.78,
-     2.085
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerLeg__12",
-    "group": "LeftLowerLeg",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 132,
-    "at": [
-     -1.1,
-     1.275,
-     -0.405
-    ],
-    "size": [
-     2.0,
-     2.55,
-     3.01
-    ]
-   },
-   {
-    "name": "Talos_LeftLowerLeg__13",
-    "group": "LeftLowerLeg",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 608,
-    "at": [
-     -1.1,
-     1.838,
-     -0.7597
-    ],
-    "size": [
-     1.91,
-     2.675,
-     3.4
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperArm__14",
-    "group": "LeftUpperArm",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 2012,
-    "at": [
-     -3.65,
-     8.9025,
-     0.0
-    ],
-    "size": [
-     3.48,
-     3.295,
-     3.48
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperArm__15",
-    "group": "LeftUpperArm",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 1196,
-    "at": [
-     -3.65,
-     8.1465,
-     0.0
-    ],
-    "size": [
-     3.276,
-     3.793,
-     3.341
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperArm__16",
-    "group": "LeftUpperArm",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 1896,
-    "at": [
-     -3.65,
-     9.0275,
-     0.0
-    ],
-    "size": [
-     3.474,
-     3.215,
-     3.544
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperLeg__17",
-    "group": "LeftUpperLeg",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 432,
-    "at": [
-     -1.1,
-     4.4775,
-     0.0
-    ],
-    "size": [
-     1.97,
-     3.045,
-     2.09
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperLeg__18",
-    "group": "LeftUpperLeg",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 88,
-    "at": [
-     -1.1,
-     3.6,
-     -0.1
-    ],
-    "size": [
-     1.7,
-     2.8,
-     2.2
-    ]
-   },
-   {
-    "name": "Talos_LeftUpperLeg__19",
-    "group": "LeftUpperLeg",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 240,
-    "at": [
-     -1.1,
-     3.22,
-     -1.04
-    ],
-    "size": [
-     1.023,
-     0.2,
-     0.17
-    ]
-   },
-   {
-    "name": "Talos_LowerTorso__20",
-    "group": "LowerTorso",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 3312,
-    "at": [
-     0.23,
-     3.9713,
-     -0.0745
-    ],
-    "size": [
-     4.94,
-     3.043,
-     3.147
-    ]
-   },
-   {
-    "name": "Talos_LowerTorso__21",
-    "group": "LowerTorso",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 44,
-    "at": [
-     -0.0,
-     5.7,
-     0.0
-    ],
-    "size": [
-     3.5,
-     2.5,
-     2.4
-    ]
-   },
-   {
-    "name": "Talos_LowerTorso__22",
-    "group": "LowerTorso",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 748,
-    "at": [
-     0.325,
-     3.85,
-     -0.0275
-    ],
-    "size": [
-     4.75,
-     2.8,
-     2.905
-    ]
-   },
-   {
-    "name": "Talos_LowerTorso__23",
-    "group": "LowerTorso",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 10716,
-    "at": [
-     0.16,
-     4.435,
-     -0.0124
-    ],
-    "size": [
-     4.619,
-     2.13,
-     3.175
-    ]
-   },
-   {
-    "name": "Talos_LowerTorso__24",
-    "group": "LowerTorso",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 4752,
-    "at": [
-     0.23,
-     2.475,
-     -0.0039
-    ],
-    "size": [
-     4.777,
-     0.85,
-     2.833
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__25",
-    "group": "RightLowerArm",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 1024,
-    "at": [
-     3.6108,
-     4.5128,
-     -1.1818
-    ],
-    "size": [
-     2.122,
-     6.049,
-     6.593
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__26",
-    "group": "RightLowerArm",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 2796,
-    "at": [
-     4.3982,
-     4.013,
-     -2.8173
-    ],
-    "size": [
-     4.344,
-     5.574,
-     7.635
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__27",
-    "group": "RightLowerArm",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 2250,
-    "at": [
-     4.8386,
-     4.1807,
-     -2.1448
-    ],
-    "size": [
-     4.989,
-     5.939,
-     9.145
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__28",
-    "group": "RightLowerArm",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 576,
-    "at": [
-     4.4337,
-     2.09,
-     -5.163
-    ],
-    "size": [
-     4.131,
-     0.15,
-     1.979
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__29",
-    "group": "RightLowerArm",
-    "color": "5B3A1C",
-    "material": "Fabric",
-    "tris": 2880,
-    "at": [
-     3.7059,
-     3.4,
-     -0.6007
-    ],
-    "size": [
-     1.142,
-     0.724,
-     2.584
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__30",
-    "group": "RightLowerArm",
-    "color": "4A4640",
-    "material": "Slate",
-    "tris": 44,
-    "at": [
-     4.9316,
-     3.4,
-     -5.2485
-    ],
-    "size": [
-     4.346,
-     2.4,
-     3.048
-    ]
-   },
-   {
-    "name": "Talos_RightLowerArm__31",
-    "group": "RightLowerArm",
-    "color": "1A120A",
-    "material": "SmoothPlastic",
-    "tris": 132,
-    "at": [
-     3.6,
-     5.75,
-     -1.06
-    ],
-    "size": [
-     1.2,
-     0.82,
-     0.1
-    ]
-   },
-   {
-    "name": "Talos_RightLowerLeg__32",
-    "group": "RightLowerLeg",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 1488,
-    "at": [
-     1.1,
-     1.9132,
-     -0.2642
-    ],
-    "size": [
-     1.9,
-     2.934,
-     2.088
-    ]
-   },
-   {
-    "name": "Talos_RightLowerLeg__33",
-    "group": "RightLowerLeg",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 132,
-    "at": [
-     1.1,
-     1.275,
-     -0.4057
-    ],
-    "size": [
-     2.0,
-     2.55,
-     3.011
-    ]
-   },
-   {
-    "name": "Talos_RightLowerLeg__34",
-    "group": "RightLowerLeg",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 1440,
-    "at": [
-     1.1,
-     1.8291,
-     -0.7588
-    ],
-    "size": [
-     1.917,
-     2.695,
-     3.405
-    ]
-   },
-   {
-    "name": "Talos_RightLowerLeg__35",
-    "group": "RightLowerLeg",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 188,
-    "at": [
-     1.1,
-     1.15,
-     -1.0
-    ],
-    "size": [
-     1.0,
-     1.0,
-     0.4
-    ]
-   },
-   {
-    "name": "Talos_RightUpperArm__36",
-    "group": "RightUpperArm",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 2012,
-    "at": [
-     3.65,
-     8.9025,
-     0.0
-    ],
-    "size": [
-     3.48,
-     3.295,
-     3.48
-    ]
-   },
-   {
-    "name": "Talos_RightUpperArm__37",
-    "group": "RightUpperArm",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 1196,
-    "at": [
-     3.65,
-     8.1465,
-     0.0
-    ],
-    "size": [
-     3.276,
-     3.793,
-     3.341
-    ]
-   },
-   {
-    "name": "Talos_RightUpperArm__38",
-    "group": "RightUpperArm",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 1896,
-    "at": [
-     3.65,
-     9.0275,
-     0.0
-    ],
-    "size": [
-     3.474,
-     3.215,
-     3.544
-    ]
-   },
-   {
-    "name": "Talos_RightUpperLeg__39",
-    "group": "RightUpperLeg",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 432,
-    "at": [
-     1.1,
-     4.4775,
-     0.0
-    ],
-    "size": [
-     1.97,
-     3.045,
-     2.09
-    ]
-   },
-   {
-    "name": "Talos_RightUpperLeg__40",
-    "group": "RightUpperLeg",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 88,
-    "at": [
-     1.1,
-     3.6,
-     -0.1
-    ],
-    "size": [
-     1.7,
-     2.8,
-     2.2
-    ]
-   },
-   {
-    "name": "Talos_RightUpperLeg__41",
-    "group": "RightUpperLeg",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 240,
-    "at": [
-     1.1,
-     3.22,
-     -1.04
-    ],
-    "size": [
-     1.023,
-     0.2,
-     0.17
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__42",
-    "group": "UpperTorso",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 1908,
-    "at": [
-     -0.0,
-     9.075,
-     0.175
-    ],
-    "size": [
-     6.133,
-     5.45,
-     3.79
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__43",
-    "group": "UpperTorso",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 1656,
-    "at": [
-     -0.0,
-     8.345,
-     -0.275
-    ],
-    "size": [
-     5.8,
-     4.41,
-     3.65
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__44",
-    "group": "UpperTorso",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 6024,
-    "at": [
-     -0.0,
-     9.0645,
-     0.0239
-    ],
-    "size": [
-     6.3,
-     5.469,
-     4.223
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__45",
-    "group": "UpperTorso",
-    "color": "C9A247",
-    "material": "Metal",
-    "tris": 480,
-    "at": [
-     -0.0,
-     9.85,
-     -1.92
-    ],
-    "size": [
-     1.511,
-     1.511,
-     0.118
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__46",
-    "group": "UpperTorso",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 140,
-    "at": [
-     -0.0,
-     9.0,
-     1.58
-    ],
-    "size": [
-     3.0,
-     2.12,
-     0.05
-    ]
-   },
-   {
-    "name": "Talos_UpperTorso__47",
-    "group": "UpperTorso",
-    "color": "1A120A",
-    "material": "SmoothPlastic",
-    "tris": 220,
-    "at": [
-     -0.0,
-     9.0,
-     1.62
-    ],
-    "size": [
-     3.0,
-     2.22,
-     0.1
-    ]
-   }
-  ],
-  "cage": [
-   {
-    "name": "Talos_Gate__48",
-    "group": "Gate",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 552,
-    "at": [
-     -0.0,
-     5.35,
-     -0.15
-    ],
-    "size": [
-     17.2,
-     9.4,
-     17.5
-    ]
-   },
-   {
-    "name": "Talos_Gate__49",
-    "group": "Gate",
-    "color": "78542E",
-    "material": "Metal",
-    "tris": 5856,
-    "at": [
-     -0.0,
-     11.8297,
-     0.0
-    ],
-    "size": [
-     16.35,
-     21.859,
-     16.35
-    ]
-   },
-   {
-    "name": "Talos_Gate__50",
-    "group": "Gate",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 19000,
-    "at": [
-     -0.0,
-     13.0678,
-     0.0
-    ],
-    "size": [
-     16.7,
-     24.336,
-     16.7
-    ]
-   },
-   {
-    "name": "Talos_Gate__51",
-    "group": "Gate",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 7096,
-    "at": [
-     0.3051,
-     12.498,
-     -0.4556
-    ],
-    "size": [
-     15.97,
-     21.404,
-     15.704
-    ]
-   },
-   {
-    "name": "Talos_Gate__52",
-    "group": "Gate",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 1728,
-    "at": [
-     -0.0,
-     17.6586,
-     -4.1443
-    ],
-    "size": [
-     0.975,
-     15.117,
-     9.085
-    ]
-   },
-   {
-    "name": "Talos_Gate__53",
-    "group": "Gate",
-    "color": "1E1A16",
-    "material": "SmoothPlastic",
-    "tris": 28,
-    "at": [
-     -0.0,
-     9.3,
-     -8.92
-    ],
-    "size": [
-     0.12,
-     0.3,
-     0.05
-    ]
-   },
-   {
-    "name": "Talos_Static__54",
-    "group": "Static",
-    "color": "3A3C40",
-    "material": "Metal",
-    "tris": 144,
-    "at": [
-     19.4912,
-     3.75,
-     -7.0
-    ],
-    "size": [
-     4.182,
-     2.1,
-     1.3
-    ]
-   },
-   {
-    "name": "Talos_Static__55",
-    "group": "Static",
-    "color": "5B3A1C",
-    "material": "Metal",
-    "tris": 12480,
-    "at": [
-     -0.4125,
-     12.8,
-     0.0
-    ],
-    "size": [
-     31.025,
-     25.6,
-     21.0
-    ]
-   },
-   {
-    "name": "Talos_Static__56",
-    "group": "Static",
-    "color": "A8743A",
-    "material": "Metal",
-    "tris": 660,
-    "at": [
-     -0.0,
-     13.275,
-     0.0
-    ],
-    "size": [
-     30.2,
-     25.35,
-     2.4
-    ]
-   },
-   {
-    "name": "Talos_Static__57",
-    "group": "Static",
-    "color": "D9A55B",
-    "material": "Metal",
-    "tris": 15308,
-    "at": [
-     -0.1375,
-     13.085,
-     0.0
-    ],
-    "size": [
-     31.075,
-     25.83,
-     21.422
-    ]
-   },
-   {
-    "name": "Talos_Static__58",
-    "group": "Static",
-    "color": "1A1816",
-    "material": "Basalt",
-    "tris": 2616,
-    "at": [
-     -22.7939,
-     1.5662,
-     -2.8405
-    ],
-    "size": [
-     7.141,
-     3.592,
-     7.637
-    ]
-   },
-   {
-    "name": "Talos_Static__59",
-    "group": "Static",
-    "color": "FF561C",
-    "material": "Neon",
-    "tris": 2234,
-    "at": [
-     -20.0334,
-     3.1034,
-     -5.7525
-    ],
-    "size": [
-     3.809,
-     0.676,
-     3.515
-    ]
-   },
-   {
-    "name": "Talos_Static__60",
-    "group": "Static",
-    "color": "FF9632",
-    "material": "Neon",
-    "tris": 206,
-    "at": [
-     -20.0336,
-     3.8468,
-     -6.0416
-    ],
-    "size": [
-     1.08,
-     1.646,
-     1.108
-    ]
-   },
-   {
-    "name": "Talos_Static__61",
-    "group": "Static",
-    "color": "FFE696",
-    "material": "Neon",
-    "tris": 4820,
-    "at": [
-     -19.5405,
-     6.5103,
-     -5.8679
-    ],
-    "size": [
-     4.961,
-     6.721,
-     4.432
-    ]
-   },
-   {
-    "name": "Talos_Static__62",
-    "group": "Static",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 380,
-    "at": [
-     -0.0,
-     0.63,
-     0.0
-    ],
-    "size": [
-     7.8,
-     0.06,
-     7.8
-    ]
-   },
-   {
-    "name": "Talos_Static__63",
-    "group": "Static",
-    "color": "5CD2BE",
-    "material": "Neon",
-    "tris": 4896,
-    "at": [
-     -0.0,
-     0.62,
-     0.0
-    ],
-    "size": [
-     17.938,
-     0.141,
-     17.938
-    ]
-   },
-   {
-    "name": "Talos_Static__64",
-    "group": "Static",
-    "color": "2B2F33",
-    "material": "Metal",
-    "tris": 13076,
-    "at": [
-     -0.7992,
-     11.097,
-     -1.6663
-    ],
-    "size": [
-     44.72,
-     22.288,
-     13.651
-    ]
-   },
-   {
-    "name": "Talos_Static__65",
-    "group": "Static",
-    "color": "485058",
-    "material": "SmoothPlastic",
-    "tris": 156,
-    "at": [
-     -21.5,
-     2.9,
-     3.5
-    ],
-    "size": [
-     2.8,
-     0.05,
-     2.8
-    ]
-   },
-   {
-    "name": "Talos_Static__66",
-    "group": "Static",
-    "color": "967A5C",
-    "material": "Slate",
-    "tris": 88,
-    "at": [
-     -0.0,
-     0.6,
-     0.0
-    ],
-    "size": [
-     31.4,
-     1.2,
-     3.4
-    ]
-   },
-   {
-    "name": "Talos_Static__67",
-    "group": "Static",
-    "color": "5C4028",
-    "material": "Wood",
-    "tris": 1348,
-    "at": [
-     -0.3952,
-     3.6,
-     -1.5578
-    ],
-    "size": [
-     45.39,
-     7.2,
-     13.345
-    ]
-   }
-  ],
-  "boss_lights": [
-   {
-    "group": "Head",
-    "at": [
-     -0.0,
-     11.4,
-     -2.6
-    ],
-    "color": "5CD2BE",
-    "brightness": 0.75,
-    "range": 13.1
-   },
-   {
-    "group": "RightLowerLeg",
-    "at": [
-     1.1,
-     1.2,
-     -2.0
-    ],
-    "color": "5CD2BE",
-    "brightness": 0.97,
-    "range": 16.0
-   }
-  ],
-  "cage_lights": [
-   {
-    "group": "Static",
-    "at": [
-     -0.0,
-     2.5,
-     -2.0
-    ],
-    "color": "5CD2BE",
-    "brightness": 2.27,
-    "range": 24.0
-   },
-   {
-    "group": "Static",
-    "at": [
-     -20.0,
-     5.0,
-     -6.0
-    ],
-    "color": "FF8232",
-    "brightness": 3.0,
-    "range": 24.0
-   }
-  ],
-  "stand": [
-   -0.0,
-   0.66,
-   0.0
-  ],
-  "gate_box": [
-   [
-    -8.6,
-    0.6499999999999995,
-    -8.945
+    -0.1
    ],
-   [
-    8.6,
-    25.235799999999998,
-    8.6
-   ]
-  ]
- }
+   "size": [
+    5.2046,
+    0.3953,
+    4.5188
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__3C3E46",
+   "color": "3C3E46",
+   "tris": 284,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.85,
+    -0.15
+   ],
+   "size": [
+    2.9,
+    0.8,
+    2.465
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__5E626E",
+   "color": "5E626E",
+   "tris": 772,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.75,
+    0.1455
+   ],
+   "size": [
+    3.08,
+    1.0724,
+    3.209
+   ],
+   "neon": false
+  },
+  {
+   "name": "Minotaur_UpperTorso__000000",
+   "color": "000000",
+   "tris": 4776,
+   "kind": "Minotaur",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.7,
+    0.1404
+   ],
+   "size": [
+    5.68,
+    6.28,
+    5.2961
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_Head": [
+  {
+   "name": "Talos_Head__B06A2C",
+   "color": "B06A2C",
+   "tris": 840,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.37,
+    -0.8736
+   ],
+   "size": [
+    3.6,
+    4.26,
+    3.9873
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__6E4420",
+   "color": "6E4420",
+   "tris": 592,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.55,
+    -0.59
+   ],
+   "size": [
+    3.207,
+    4.38,
+    4.38
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__121214",
+   "color": "121214",
+   "tris": 216,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    10.89,
+    -2.66
+   ],
+   "size": [
+    2.52,
+    2.1,
+    0.48
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__39D0E6",
+   "color": "39D0E6",
+   "tris": 240,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.64,
+    -2.876
+   ],
+   "size": [
+    2.04,
+    0.408,
+    0.24
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_Head__D69A4C",
+   "color": "D69A4C",
+   "tris": 312,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    11.7499,
+    -2.27
+   ],
+   "size": [
+    3.768,
+    1.5398,
+    1.332
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__B8322A",
+   "color": "B8322A",
+   "tris": 204,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    14.3434,
+    -0.1404
+   ],
+   "size": [
+    0.6,
+    2.9692,
+    5.9962
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__4FA88E",
+   "color": "4FA88E",
+   "tris": 24,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    12.288,
+    0.1
+   ],
+   "size": [
+    3.66,
+    0.672,
+    1.464
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Head__000000",
+   "color": "000000",
+   "tris": 2428,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "Head",
+   "at": [
+    -0.0,
+    12.5344,
+    -0.1402
+   ],
+   "size": [
+    3.848,
+    6.6661,
+    6.0741
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftFoot": [
+  {
+   "name": "Talos_LeftFoot__6E4420",
+   "color": "6E4420",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.5,
+    -0.55
+   ],
+   "size": [
+    2.0,
+    1.0,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftFoot__B06A2C",
+   "color": "B06A2C",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.75,
+    -1.5
+   ],
+   "size": [
+    2.05,
+    0.5,
+    1.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftFoot__000000",
+   "color": "000000",
+   "tris": 216,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftFoot",
+   "at": [
+    -1.2,
+    0.5,
+    -0.575
+   ],
+   "size": [
+    2.1274,
+    1.0774,
+    3.1274
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftHand": [
+  {
+   "name": "Talos_LeftHand__B06A2C",
+   "color": "B06A2C",
+   "tris": 432,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.95,
+    3.1625,
+    -0.6
+   ],
+   "size": [
+    2.2,
+    1.975,
+    2.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftHand__D69A4C",
+   "color": "D69A4C",
+   "tris": 432,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.6375,
+    3.1,
+    -1.4875
+   ],
+   "size": [
+    2.425,
+    1.0,
+    1.275
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftHand__000000",
+   "color": "000000",
+   "tris": 864,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftHand",
+   "at": [
+    -3.7375,
+    3.1625,
+    -0.8125
+   ],
+   "size": [
+    2.7024,
+    2.0524,
+    2.7024
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftLowerArm": [
+  {
+   "name": "Talos_LeftLowerArm__2C2E36",
+   "color": "2C2E36",
+   "tris": 196,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.6,
+    6.7,
+    0.0
+   ],
+   "size": [
+    1.5599,
+    1.6,
+    1.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerArm__39D0E6",
+   "color": "39D0E6",
+   "tris": 60,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.6,
+    6.7,
+    0.0
+   ],
+   "size": [
+    1.85,
+    0.2,
+    1.85
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_LeftLowerArm__B06A2C",
+   "color": "B06A2C",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -3.6547,
+    5.4717,
+    -0.334
+   ],
+   "size": [
+    2.4354,
+    2.3313,
+    2.4843
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerArm__6E4420",
+   "color": "6E4420",
+   "tris": 192,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.248,
+    5.2,
+    -0.22
+   ],
+   "size": [
+    1.2359,
+    0.24,
+    2.54
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.0452,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.7596,
+    1.1679,
+    2.5101
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.2554,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.3591,
+    1.2582,
+    2.6963
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerArm__000000",
+   "color": "000000",
+   "tris": 1284,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerArm",
+   "at": [
+    -4.1863,
+    5.6645,
+    -0.3457
+   ],
+   "size": [
+    3.5775,
+    3.751,
+    2.8715
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftLowerLeg": [
+  {
+   "name": "Talos_LeftLowerLeg__2C2E36",
+   "color": "2C2E36",
+   "tris": 196,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.1,
+    2.6,
+    0.0
+   ],
+   "size": [
+    1.5599,
+    1.6,
+    1.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerLeg__D69A4C",
+   "color": "D69A4C",
+   "tris": 380,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.16,
+    1.9875,
+    -0.1121
+   ],
+   "size": [
+    1.8627,
+    2.425,
+    2.0757
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerLeg__4FA88E",
+   "color": "4FA88E",
+   "tris": 12,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.16,
+    1.75,
+    -0.95
+   ],
+   "size": [
+    0.16,
+    1.2,
+    0.12
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.3566,
+    0.95,
+    0.12
+   ],
+   "size": [
+    2.0367,
+    0.75,
+    1.75
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.5723,
+    0.95,
+    0.12
+   ],
+   "size": [
+    2.6255,
+    0.8384,
+    1.91
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftLowerLeg__000000",
+   "color": "000000",
+   "tris": 1212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftLowerLeg",
+   "at": [
+    -1.5573,
+    1.9659,
+    -0.0427
+   ],
+   "size": [
+    2.7354,
+    2.9482,
+    2.2947
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftUpperArm": [
+  {
+   "name": "Talos_LeftUpperArm__2C2E36",
+   "color": "2C2E36",
+   "tris": 616,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.6059,
+    8.2175,
+    0.0
+   ],
+   "size": [
+    1.9617,
+    4.165,
+    2.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperArm__B06A2C",
+   "color": "B06A2C",
+   "tris": 416,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8051,
+    9.6401,
+    0.05
+   ],
+   "size": [
+    3.2148,
+    3.0962,
+    3.3
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperArm__D69A4C",
+   "color": "D69A4C",
+   "tris": 264,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.87,
+    9.65,
+    0.05
+   ],
+   "size": [
+    3.047,
+    1.57,
+    3.3278
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperArm__39D0E6",
+   "color": "39D0E6",
+   "tris": 100,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -4.25,
+    10.85,
+    0.05
+   ],
+   "size": [
+    0.3804,
+    0.4,
+    0.4
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_LeftUpperArm__6E4420",
+   "color": "6E4420",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.62,
+    7.7,
+    -0.03
+   ],
+   "size": [
+    2.055,
+    1.5,
+    2.0867
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperArm__000000",
+   "color": "000000",
+   "tris": 1608,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperArm",
+   "at": [
+    -3.8064,
+    8.6615,
+    0.05
+   ],
+   "size": [
+    3.2913,
+    5.1328,
+    3.407
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LeftUpperLeg": [
+  {
+   "name": "Talos_LeftUpperLeg__6E4420",
+   "color": "6E4420",
+   "tris": 420,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1786,
+    4.14,
+    0.0
+   ],
+   "size": [
+    2.255,
+    4.3002,
+    2.1893
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperLeg__B06A2C",
+   "color": "B06A2C",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.16,
+    4.1,
+    -0.05
+   ],
+   "size": [
+    2.2525,
+    1.4,
+    2.2872
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LeftUpperLeg__000000",
+   "color": "000000",
+   "tris": 632,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LeftUpperLeg",
+   "at": [
+    -1.1703,
+    4.14,
+    -0.0499
+   ],
+   "size": [
+    2.3515,
+    4.38,
+    2.3671
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_LowerTorso": [
+  {
+   "name": "Talos_LowerTorso__2C2E36",
+   "color": "2C2E36",
+   "tris": 360,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0,
+    5.75,
+    0.1
+   ],
+   "size": [
+    3.8,
+    2.6,
+    2.9
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LowerTorso__6E4420",
+   "color": "6E4420",
+   "tris": 1508,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0349,
+    5.4338,
+    0.053
+   ],
+   "size": [
+    4.8731,
+    2.5323,
+    3.9455
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LowerTorso__B06A2C",
+   "color": "B06A2C",
+   "tris": 648,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    0.0349,
+    5.1,
+    0.053
+   ],
+   "size": [
+    4.8731,
+    1.8647,
+    3.9455
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_LowerTorso__39D0E6",
+   "color": "39D0E6",
+   "tris": 52,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    6.3,
+    -1.7
+   ],
+   "size": [
+    0.9749,
+    1.0,
+    0.3
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_LowerTorso__000000",
+   "color": "000000",
+   "tris": 2568,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "LowerTorso",
+   "at": [
+    -0.0,
+    5.6091,
+    0.053
+   ],
+   "size": [
+    5.0227,
+    2.9617,
+    4.0253
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_Pylon": [
+  {
+   "name": "Talos_Pylon__B9B1A2",
+   "color": "B9B1A2",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    0.6,
+    0.0
+   ],
+   "size": [
+    5.6,
+    1.2,
+    5.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Pylon__26262C",
+   "color": "26262C",
+   "tris": 680,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    10.8,
+    0.0
+   ],
+   "size": [
+    5.8,
+    19.2,
+    5.8
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Pylon__B8322A",
+   "color": "B8322A",
+   "tris": 68,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    9.6,
+    0.0
+   ],
+   "size": [
+    3.9392,
+    15.0,
+    4.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Pylon__F2B53A",
+   "color": "F2B53A",
+   "tris": 464,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    21.0142,
+    0.0
+   ],
+   "size": [
+    5.3046,
+    9.9785,
+    4.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Pylon__39D0E6",
+   "color": "39D0E6",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    12.0,
+    -1.85
+   ],
+   "size": [
+    1.2,
+    1.4,
+    0.7
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_Pylon__8E5A26",
+   "color": "8E5A26",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    12.85,
+    -1.85
+   ],
+   "size": [
+    1.6,
+    0.35,
+    1.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_Pylon__000000",
+   "color": "000000",
+   "tris": 1536,
+   "kind": "Talos",
+   "section": "Lair",
+   "group": "Pylon",
+   "at": [
+    -0.0,
+    13.0002,
+    0.0
+   ],
+   "size": [
+    5.9354,
+    26.1358,
+    5.9354
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightFoot": [
+  {
+   "name": "Talos_RightFoot__6E4420",
+   "color": "6E4420",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.5,
+    -0.55
+   ],
+   "size": [
+    2.0,
+    1.0,
+    3.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightFoot__B06A2C",
+   "color": "B06A2C",
+   "tris": 108,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.75,
+    -1.5
+   ],
+   "size": [
+    2.05,
+    0.5,
+    1.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightFoot__000000",
+   "color": "000000",
+   "tris": 216,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightFoot",
+   "at": [
+    1.2,
+    0.5,
+    -0.575
+   ],
+   "size": [
+    2.1274,
+    1.0774,
+    3.1274
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightHand": [
+  {
+   "name": "Talos_RightHand__B06A2C",
+   "color": "B06A2C",
+   "tris": 432,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.95,
+    3.1625,
+    -0.6
+   ],
+   "size": [
+    2.2,
+    1.975,
+    2.2
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightHand__D69A4C",
+   "color": "D69A4C",
+   "tris": 432,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.6375,
+    3.1,
+    -1.4875
+   ],
+   "size": [
+    2.425,
+    1.0,
+    1.275
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightHand__000000",
+   "color": "000000",
+   "tris": 864,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightHand",
+   "at": [
+    3.7375,
+    3.1625,
+    -0.8125
+   ],
+   "size": [
+    2.7024,
+    2.0524,
+    2.7024
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightLowerArm": [
+  {
+   "name": "Talos_RightLowerArm__2C2E36",
+   "color": "2C2E36",
+   "tris": 196,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.6,
+    6.7,
+    0.0
+   ],
+   "size": [
+    1.5599,
+    1.6,
+    1.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerArm__39D0E6",
+   "color": "39D0E6",
+   "tris": 60,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.6,
+    6.7,
+    0.0
+   ],
+   "size": [
+    1.85,
+    0.2,
+    1.85
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_RightLowerArm__B06A2C",
+   "color": "B06A2C",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    3.6547,
+    5.4717,
+    -0.334
+   ],
+   "size": [
+    2.4354,
+    2.3313,
+    2.4843
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerArm__6E4420",
+   "color": "6E4420",
+   "tris": 192,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.248,
+    5.2,
+    -0.22
+   ],
+   "size": [
+    1.2359,
+    0.24,
+    2.54
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerArm__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.0452,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    2.7596,
+    1.1679,
+    2.5101
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerArm__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.2554,
+    4.45,
+    -0.4
+   ],
+   "size": [
+    3.3591,
+    1.2582,
+    2.6963
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerArm__000000",
+   "color": "000000",
+   "tris": 1284,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerArm",
+   "at": [
+    4.1863,
+    5.6645,
+    -0.3457
+   ],
+   "size": [
+    3.5775,
+    3.751,
+    2.8715
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightLowerLeg": [
+  {
+   "name": "Talos_RightLowerLeg__2C2E36",
+   "color": "2C2E36",
+   "tris": 196,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.1,
+    2.6,
+    0.0
+   ],
+   "size": [
+    1.5599,
+    1.6,
+    1.6
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerLeg__D69A4C",
+   "color": "D69A4C",
+   "tris": 568,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.16,
+    1.8375,
+    -0.1121
+   ],
+   "size": [
+    1.8627,
+    2.725,
+    2.0757
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerLeg__4FA88E",
+   "color": "4FA88E",
+   "tris": 12,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.16,
+    1.75,
+    -0.95
+   ],
+   "size": [
+    0.16,
+    1.2,
+    0.12
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerLeg__39D0E6",
+   "color": "39D0E6",
+   "tris": 196,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.1,
+    1.15,
+    -1.1
+   ],
+   "size": [
+    0.8287,
+    0.85,
+    0.45
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_RightLowerLeg__3C3E46",
+   "color": "3C3E46",
+   "tris": 320,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.3566,
+    0.95,
+    0.12
+   ],
+   "size": [
+    2.0367,
+    0.75,
+    1.75
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerLeg__5E626E",
+   "color": "5E626E",
+   "tris": 304,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.5723,
+    0.95,
+    0.12
+   ],
+   "size": [
+    2.6255,
+    0.8384,
+    1.91
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightLowerLeg__000000",
+   "color": "000000",
+   "tris": 1596,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightLowerLeg",
+   "at": [
+    1.5573,
+    1.9379,
+    -0.1302
+   ],
+   "size": [
+    2.7354,
+    3.0042,
+    2.4697
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightUpperArm": [
+  {
+   "name": "Talos_RightUpperArm__2C2E36",
+   "color": "2C2E36",
+   "tris": 616,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.6059,
+    8.2175,
+    0.0
+   ],
+   "size": [
+    1.9617,
+    4.165,
+    2.0
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperArm__B06A2C",
+   "color": "B06A2C",
+   "tris": 416,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.8051,
+    9.6401,
+    0.05
+   ],
+   "size": [
+    3.2148,
+    3.0962,
+    3.3
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperArm__D69A4C",
+   "color": "D69A4C",
+   "tris": 264,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.87,
+    9.65,
+    0.05
+   ],
+   "size": [
+    3.047,
+    1.57,
+    3.3278
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperArm__39D0E6",
+   "color": "39D0E6",
+   "tris": 100,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    4.25,
+    10.85,
+    0.05
+   ],
+   "size": [
+    0.3804,
+    0.4,
+    0.4
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_RightUpperArm__6E4420",
+   "color": "6E4420",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.62,
+    7.7,
+    -0.03
+   ],
+   "size": [
+    2.055,
+    1.5,
+    2.0867
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperArm__000000",
+   "color": "000000",
+   "tris": 1608,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperArm",
+   "at": [
+    3.8064,
+    8.6615,
+    0.05
+   ],
+   "size": [
+    3.2913,
+    5.1328,
+    3.407
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_RightUpperLeg": [
+  {
+   "name": "Talos_RightUpperLeg__6E4420",
+   "color": "6E4420",
+   "tris": 420,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1786,
+    4.14,
+    0.0
+   ],
+   "size": [
+    2.255,
+    4.3002,
+    2.1893
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperLeg__B06A2C",
+   "color": "B06A2C",
+   "tris": 212,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.16,
+    4.1,
+    -0.05
+   ],
+   "size": [
+    2.2525,
+    1.4,
+    2.2872
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_RightUpperLeg__000000",
+   "color": "000000",
+   "tris": 632,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "RightUpperLeg",
+   "at": [
+    1.1703,
+    4.14,
+    -0.0499
+   ],
+   "size": [
+    2.3515,
+    4.38,
+    2.3671
+   ],
+   "neon": false
+  }
+ ],
+ "Talos_UpperTorso": [
+  {
+   "name": "Talos_UpperTorso__B06A2C",
+   "color": "B06A2C",
+   "tris": 1344,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.3,
+    0.25
+   ],
+   "size": [
+    5.6,
+    5.3,
+    4.3
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__D69A4C",
+   "color": "D69A4C",
+   "tris": 972,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.15,
+    -1.495
+   ],
+   "size": [
+    5.0605,
+    3.9,
+    1.09
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__2C2E36",
+   "color": "2C2E36",
+   "tris": 168,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.5,
+    -0.645
+   ],
+   "size": [
+    1.9,
+    5.0,
+    2.89
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__6E4420",
+   "color": "6E4420",
+   "tris": 696,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.6492,
+    -1.14
+   ],
+   "size": [
+    5.32,
+    2.7183,
+    1.6999
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__4FA88E",
+   "color": "4FA88E",
+   "tris": 24,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    7.7,
+    -1.25
+   ],
+   "size": [
+    4.1835,
+    1.6,
+    0.1786
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__39D0E6",
+   "color": "39D0E6",
+   "tris": 60,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    9.25,
+    -1.82
+   ],
+   "size": [
+    1.0,
+    1.0,
+    0.36
+   ],
+   "neon": true
+  },
+  {
+   "name": "Talos_UpperTorso__3C3E46",
+   "color": "3C3E46",
+   "tris": 284,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.75,
+    -0.15
+   ],
+   "size": [
+    2.6,
+    0.8,
+    2.21
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__5E626E",
+   "color": "5E626E",
+   "tris": 772,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    10.65,
+    0.1593
+   ],
+   "size": [
+    2.78,
+    1.0724,
+    2.9815
+   ],
+   "neon": false
+  },
+  {
+   "name": "Talos_UpperTorso__000000",
+   "color": "000000",
+   "tris": 4320,
+   "kind": "Talos",
+   "section": "Boss",
+   "group": "UpperTorso",
+   "at": [
+    -0.0,
+    8.4176,
+    0.1557
+   ],
+   "size": [
+    5.68,
+    5.6152,
+    4.5687
+   ],
+   "neon": false
+  }
+ ]
 }

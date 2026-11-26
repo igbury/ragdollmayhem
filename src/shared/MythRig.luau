@@ -2,7 +2,7 @@
 local Rig = {}
 local Mythology = require(script.Parent.Mythology)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
--- Blender-made bodies (blender/build_myth_yard.py, installed by assets/myth/install.luau). Each mesh
+-- Blender-made bodies (assets/myth/build_bosses.py, installed by assets/myth/install.luau). Each mesh
 -- has a "Place": its CFrame in rig space, rest pose, before Model:ScaleTo.
 local function kitFor(kind)
 	local kit = ReplicatedStorage:FindFirstChild("MythKit")
@@ -54,6 +54,18 @@ local function detail(model, on, name, size, offset, color, shape, query)
 	w.Part0, w.Part1, w.Parent = on, p, p
 	return p
 end
+-- Where the shackles' chain rings are (rig space, assets/myth/build_bosses.py shackle()): { part, ring, "Wrist" / "Ankle" }.
+local function rings(wrist, ankle)
+	return {
+		{ "LeftLowerArm", Vector3.new(-wrist, 4.45, -0.4), "Wrist" }, { "RightLowerArm", Vector3.new(wrist, 4.45, -0.4), "Wrist" },
+		{ "LeftLowerLeg", ankle * Vector3.new(-1, 1, 1), "Ankle" }, { "RightLowerLeg", ankle, "Ankle" },
+	}
+end
+Rig.RINGS = {
+	Cyclops = rings(5.555, Vector3.new(2.505, 1.05, 0)),
+	Minotaur = rings(5.505, Vector3.new(2.455, 1.35, 0)),
+	Talos = rings(5.505, Vector3.new(2.455, 0.95, 0.12)),
+}
 function Rig.build(kind)
 	local def = assert(Mythology[kind])
 	local m = Instance.new("Model")
@@ -116,6 +128,13 @@ function Rig.build(kind)
 			detail(m, chest, "Pauldron" .. sign, Vector3.new(2.6, 1.3, 3.5), CFrame.new(sign * 2.1, 1.6, 0), Color3.fromRGB(164, 118, 60))
 		end
 	end
+	-- the shackle rings its lair's chains hang from (attachments scale with the model)
+	for _, ring in Rig.RINGS[kind] do
+		local on = m[ring[1]]
+		local a = Instance.new("Attachment")
+		a.Name, a.Position, a.Parent = "ChainRing", on.CFrame:PointToObjectSpace(ring[2]), on
+		a:SetAttribute("Ring", ring[3])
+	end
 	local humanoid = Instance.new("Humanoid")
 	humanoid.RequiresNeck, humanoid.BreakJointsOnDeath, humanoid.EvaluateStateMachine = false, false, false
 	humanoid.DisplayDistanceType = Enum.HumanoidDisplayDistanceType.None
@@ -125,6 +144,11 @@ function Rig.build(kind)
 	local kit = kitFor(kind)
 	if kit then dress(m, kit) end
 	m:ScaleTo(def.scale)
+	-- ScaleTo scales every joint's C0 but not the rest pose kept beside it: keep the scaled one, or posing
+	-- pulls the limbs back to scale-1 offsets (a 3x boss floated with its feet 4 studs off the ground)
+	for _, j in m:GetDescendants() do
+		if j:IsA("Motor6D") then j:SetAttribute("RigRestC0", j.C0) end
+	end
 	m:SetAttribute("MonsterKind", kind)
 	return m
 end

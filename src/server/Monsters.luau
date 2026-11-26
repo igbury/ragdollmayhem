@@ -4,7 +4,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
+local Debris = game:GetService("Debris")
 local Definitions = require(ReplicatedStorage.Shared.Mythology)
 local Rig = require(ReplicatedStorage.Shared.MythRig)
 local Ragdoll = require(ReplicatedStorage.Shared.Ragdoll)
@@ -19,29 +19,17 @@ local actors = {}
 local folder, events, prey
 local groundParams = RaycastParams.new()
 groundParams.FilterType = Enum.RaycastFilterType.Include
--- Blender cages (assets/myth): invisible blocking volumes in cage space (x, y, z = Roblox axes, the
--- cage's front at -z), how far the gate travels when the boss is let out, and where the pedestal is.
-local CAGES = {
-	Cyclops = { lift = Vector3.new(0, 19, 0), button = 20, sign = 16.5, solids = {
-		{ "Wall", Vector3.new(4.2, 24, 3), Vector3.new(-11.9, 12, -9) }, { "Wall", Vector3.new(4.2, 24, 3), Vector3.new(11.9, 12, -9) },
-		{ "Wall", Vector3.new(19.6, 3, 3), Vector3.new(0, 22.5, -9) },
-		{ "Bar", Vector3.new(19.6, 21, 1.6), Vector3.new(0, 10.5, -9) },
-		{ "Wall", Vector3.new(24, 24, 1.5), Vector3.new(0, 12, 10.25) },
-		{ "Wall", Vector3.new(2, 24, 18), Vector3.new(11, 12, 1) }, { "Wall", Vector3.new(2, 24, 18), Vector3.new(-11, 12, 1) },
-	} },
-	Minotaur = { lift = Vector3.new(0, -15.5, 0), button = 19, sign = 16, solids = {
-		{ "Floor", Vector3.new(29.8, 4.25, 25), Vector3.new(0, 2.125, 0) },
-		{ "Wall", Vector3.new(1.2, 15, 21), Vector3.new(-10.5, 11.75, 0) }, { "Wall", Vector3.new(1.2, 15, 21), Vector3.new(10.5, 11.75, 0) },
-		{ "Wall", Vector3.new(22.2, 15, 1.2), Vector3.new(0, 11.75, 10.5) },
-		{ "Wall", Vector3.new(22.2, 1, 22.2), Vector3.new(0, 19.75, 0) },
-		{ "Bar", Vector3.new(21, 15, 1.6), Vector3.new(0, 11.75, -10.6) },
-	} },
-	Talos = { lift = Vector3.new(0, -26, 0), button = 16, sign = 13.5, solids = {
-		{ "Floor", Vector3.new(0.66, 17.2, 17.2), Vector3.new(0, 0.33, 0), true },
-		{ "Bar", Vector3.new(16, 25, 1), Vector3.new(0, 12.5, -8.1) }, { "Bar", Vector3.new(16, 25, 1), Vector3.new(0, 12.5, 8.1) },
-		{ "Bar", Vector3.new(1, 25, 16), Vector3.new(-8.1, 12.5, 0) }, { "Bar", Vector3.new(1, 25, 16), Vector3.new(8.1, 12.5, 0) },
-	} },
+-- Each boss stands chained in the bottom of its pit, in full view (design "Mayhem Park 2.0": no cages).
+-- A chain runs from each wrist shackle back to a plate on the pit's side wall and from each ankle to a ring
+-- in the floor (lair space, x on the shackle's side; y above the ground, or `floor`: lying on the pit's floor). The
+-- pedestal snaps them and lets it out; putting it back chains it again. Links and plates are Blender meshes
+-- (assets/myth: MythKit.Chain), blocks without the kit.
+local CHAINS = {
+	Wrist = { anchor = Vector3.new(20.7, 2, -15), sag = 2.2 },
+	Ankle = { anchor = Vector3.new(13, 0, -10), floor = true, sag = 0.8 },
 }
+local LINK_SCALE = 1.25
+local LINK_PITCH = 1.9 * LINK_SCALE -- a link 3.7 studs long; the next one hangs 2.4 on
 -- Dungeons: each boss sits in a pit cut through the rim's ground down to the bedrock (DEEP), walled
 -- RAMPART above it and crenellated, paved in the arena plaza's stone rings, with a short ramp out and a
 -- gate over its top. Every one is in its own lair (Map.LAIRS, design "Mayhem Park 2.0"): the Cyclops at a
@@ -49,15 +37,18 @@ local CAGES = {
 -- is the pit's centre on the ground; in lair space the ramp leads out toward +z.
 local PIT, DEEP, RAMPART, RAMP_HALF, RAMP_LONG = 22, 3, 6, 9, 6
 local LAIRS = Map.LAIRS
--- Round each lair (lair space, ArenaKit models via Map.structure; turns of 90 degrees, 2 = facing +z):
--- the gate over the ramp's top, what stands outside, and where its name board is (x, z; facing +z).
+-- Round each lair (lair space): a pylon either side of the way out, wide of the ramp so a 36-stud boss
+-- walks out between them with its arms swinging (x, z: MythKit.<Kind>.Lair.Pylon, a post without it); what
+-- stands outside (ArenaKit models via Map.structure; turns of 90 degrees, 2 = facing +z); where its name
+-- board is (x, z; facing +z). No gate over the ramp: the bosses are taller than any arch.
 local LAIR_LOOK = {
-	Cyclops = { gate = "ForgeGate", sign = { 20, 34 }, props = { { "Forge", -22, 38, 3 }, { "Anvil", -12, 39, 2 } } },
-	-- the board out at the labyrinth's way in, the bull in its dead-end corner by the gate
-	Minotaur = { gate = "BullGate", sign = { 17, 57 }, props = { { "BullStatue", -19, 33, 3 } } },
-	Talos = { gate = "TalosGate", sign = { 20, 34 }, props = {
-		{ "MinoanColumn", -16, 31 }, { "MinoanColumn", 16, 31 }, { "Brazier", -10, 33 }, { "Brazier", 10, 33 },
-		{ "TalosHead", -26, 32, 2 },
+	Cyclops = { pylon = { 21.5, 26 }, sign = { 20, 34 }, props = { { "Forge", -22, 38, 3 }, { "Anvil", -12, 39, 2 } } },
+	-- the board out at the labyrinth's way in, the bull in its dead-end corner by the pit; the pylons just
+	-- clear the labyrinth's side hedges
+	Minotaur = { pylon = { 21.5, 26 }, sign = { 17, 57 }, props = { { "BullStatue", -19, 33, 3 } } },
+	-- all of it on the island (lair x and z within 32 and 40)
+	Talos = { pylon = { 21.5, 25.5 }, sign = { 20, 34 }, props = {
+		{ "Brazier", -29, 16 }, { "Brazier", 29, 16 }, { "TalosHead", -26.5, 34, 2 },
 	} },
 }
 local LOOK = {
@@ -130,9 +121,8 @@ local function torch(parent, x, z, y)
 	light.Parent = flame
 end
 -- One boss's dungeon in its lair (frame: the pit's centre on the ground, the ramp out toward its +z). Built
--- round the origin, then moved onto the frame. `themed`: the lair's own gate stands over the ramp (an
--- ArenaKit model), so no red arch. Returns the red arch's lintel, to hang its name on (nil when themed).
-local function dungeon(ground, kind, frame, floors, themed)
+-- round the origin, then moved onto the frame.
+local function dungeon(ground, kind, frame, floors)
 	local model = Instance.new("Model"); model.Name = kind .. "Dungeon"; model.Parent = ground
 	local b, c, low = 0, 0, -DEEP
 	local x0, x1, z0, z1 = b - PIT, b + PIT, c - PIT, c + PIT -- the hole; z1 faces the arena
@@ -174,16 +164,7 @@ local function dungeon(ground, kind, frame, floors, themed)
 	ramp.TopSurface, ramp.BottomSurface = Enum.SurfaceType.Smooth, Enum.SurfaceType.Smooth
 	ramp.Parent = model
 	table.insert(floors, ramp)
-	-- the red arch over the top of the ramp, like the arena's gate (unless the lair has its own), and a
-	-- torch on each corner
-	local top = z1 + RAMP_LONG + 1
-	local lintel
-	if not themed then
-		for _, side in { -1, 1 } do
-			slab(model, "Arch", Vector3.new(2, 16, 2), Vector3.new(b + side * (RAMP_HALF + 2), 8, top), LOOK.gate, Enum.Material.Wood)
-		end
-		lintel = slab(model, "Arch", Vector3.new(2 * RAMP_HALF + 6, 3, 2.4), CFrame.new(b, 17.5, top) * CFrame.Angles(0, math.pi, 0), LOOK.gate, Enum.Material.Wood)
-	end
+	-- a torch on each corner
 	for _, x in { x0 + 0.5, x1 - 0.5 } do
 		for _, z in { z0 + 0.5, z1 - 0.5 } do torch(model, x, z, RAMPART) end
 	end
@@ -218,13 +199,13 @@ local function dungeon(ground, kind, frame, floors, themed)
 	for _, part in model:GetDescendants() do
 		if part:IsA("BasePart") then part.CFrame = frame * part.CFrame end
 	end
-	return lintel
 end
 -- In or out of a dungeon, a boss walks by the ramp: the pit's walls are too tall to climb.
 local function inDungeon(p, frame)
 	local q = frame:PointToObjectSpace(p)
 	local dx, dz = math.abs(q.X), q.Z
-	return dx < PIT and dz > -PIT and dz < PIT or dx < RAMP_HALF + 1 and dz >= PIT and dz < PIT + RAMP_LONG
+	-- the ramp, and the lane on out past the pylons
+	return dx < PIT and dz > -PIT and dz < PIT or dx < RAMP_HALF + 1 and dz >= PIT and dz < PIT + RAMP_LONG + 6
 end
 local function route(d, goal)
 	local frame = d.cage:GetAttribute("Lair")
@@ -237,38 +218,99 @@ local function route(d, goal)
 		local w = frame:PointToWorldSpace(Vector3.new(0, 0, z))
 		return Vector3.new(w.X, at.Y, w.Z)
 	end
-	local foot, head = out(PIT - 3), out(PIT + RAMP_LONG + 4)
+	-- the head of the ramp: far enough out that it turns off clear of the pylons (LAIR_LOOK)
+	local foot, head = out(PIT - 3), out(PIT + RAMP_LONG + 7)
 	if here then -- going out: line up under the ramp, then climb it
 		return (math.abs(q.X) < 3 and q.Z > PIT - 6) and head or foot
 	end
 	-- coming home: to the top of the ramp, down it, then (inside) straight to the goal
-	return (math.abs(q.X) < 3 and q.Z < PIT + RAMP_LONG + 6) and foot or head
+	return (math.abs(q.X) < 3 and q.Z < PIT + RAMP_LONG + 9) and foot or head
 end
 local function groundAt(position, reach)
 	local hit = workspace:Raycast(position + Vector3.yAxis * (reach or 6), Vector3.yAxis * -40, groundParams)
 	return hit and hit.Position.Y
 end
-local function openGate(d, open)
-	local gate = d.cage:FindFirstChild("Gate")
-	if not gate then return end
-	local first = gate:FindFirstChildWhichIsA("BasePart")
-	if first and (d.cage:GetAttribute("GateOpen") or false) ~= open then -- only when it really moves
-		Sfx.play({ Sfx.HEAVY_GATE_SLIDE, open and 1 or 0.85, 1 }, first.Position)
+-- A kit piece (a folder of MeshParts, each with its "Place" in the piece's space) at `cf`, `k` times its size.
+local function placeKit(src, cf, k, parent)
+	local parts = {}
+	for _, s in src:GetChildren() do
+		if not s:IsA("BasePart") then continue end
+		local c = s:Clone()
+		local place = s:GetAttribute("Place")
+		c.Size = s.Size * k
+		c.CFrame = cf * CFrame.new(place.Position * k) * place.Rotation
+		c.Anchored, c.CanCollide, c.CanQuery, c.CanTouch = true, false, false, false
+		c.Parent = parent
+		table.insert(parts, c)
 	end
-	d.cage:SetAttribute("GateOpen", open)
-	for _, p in gate:GetChildren() do
-		local shut = p:GetAttribute("Shut")
-		local goal = open and shut + d.cage:GetAttribute("GateLift") or shut
-		TweenService:Create(p, TweenInfo.new(open and 1.6 or 2.2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), { CFrame = goal }):Play()
+	return parts
+end
+local IRON = Color3.fromRGB(60, 62, 70)
+-- One chain hanging from a to b, `sag` studs low in the middle: links along the curve, every other one
+-- turned a quarter about its length. Each link is a Model whose parts are welded to its first one.
+local function hang(parent, a, b, sag, link)
+	local function at(t) return a:Lerp(b, t) - Vector3.yAxis * sag * 4 * t * (1 - t) end
+	local points, lengths, total = { a }, { 0 }, 0
+	for i = 1, 24 do
+		local p = at(i / 24)
+		total += (p - points[i]).Magnitude
+		points[i + 1], lengths[i + 1] = p, total
+	end
+	local count = math.max(1, math.ceil(total / LINK_PITCH))
+	local k = 1
+	for n = 0, count - 1 do
+		local s = (n + 0.5) * total / count
+		while k < 24 and lengths[k + 1] < s do k += 1 end
+		local p0, p1 = points[k], points[k + 1]
+		local along = (p1 - p0).Unit
+		local side = along:Cross(Vector3.yAxis)
+		if side.Magnitude < 0.05 then side = Vector3.xAxis end
+		local cf = CFrame.fromMatrix(p0:Lerp(p1, (s - lengths[k]) / math.max(lengths[k + 1] - lengths[k], 1e-3)), side.Unit, along)
+			* CFrame.Angles(0, n % 2 * math.pi / 2, 0)
+		local model = Instance.new("Model"); model.Name = "Link"; model.Parent = parent
+		local parts = link and placeKit(link, cf, LINK_SCALE, model) or { slab(model, "Link", Vector3.new(1.4, 2.9, 0.55) * LINK_SCALE, cf, IRON, Enum.Material.Metal) }
+		for i = 2, #parts do
+			local w = Instance.new("WeldConstraint")
+			w.Part0, w.Part1, w.Parent = parts[1], parts[i], parts[i]
+		end
+		parts[1].CanQuery, parts[1].CastShadow = false, true
+		model.PrimaryPart = parts[1]
 	end
 end
-local function setBars(cage, solid)
-	for _, bar in cage:GetDescendants() do
-		if bar:IsA("BasePart") and bar.Name == "Bar" then
-			bar.CanCollide, bar.CanQuery = solid, solid
-			if not bar:GetAttribute("Collider") then bar.Transparency = solid and 0 or 0.8 end
-		end
+-- Chains the boss in its pit: from every shackle ring (MythRig "ChainRing" attachments, posed) to its plate.
+local function chainUp(d)
+	local old = d.cage:FindFirstChild("Chains")
+	if old then old:Destroy() end
+	local chains = Instance.new("Folder"); chains.Name = "Chains"; chains.Parent = d.cage
+	local frame = d.cage:GetAttribute("Lair")
+	for _, ring in d.model:GetDescendants() do
+		if not (ring:IsA("Attachment") and ring.Name == "ChainRing") then continue end
+		local spec = CHAINS[ring:GetAttribute("Ring")]
+		local from = ring.WorldPosition
+		local side = frame:PointToObjectSpace(from).X >= 0 and 1 or -1
+		local plate = d.plates[ring:GetAttribute("Ring") .. side]
+		hang(chains, from, plate.Position, spec.sag, d.chainKit and d.chainKit:FindFirstChild("Link"))
 	end
+end
+-- The pedestal snaps them: every link drops off and is gone a few seconds later.
+local function unchain(d)
+	local chains = d.cage:FindFirstChild("Chains")
+	if not chains then return end
+	chains.Name = "Snapped"
+	local center = d.root.Position
+	for _, link in chains:GetChildren() do
+		local main = link.PrimaryPart
+		for _, p in link:GetDescendants() do
+			if p:IsA("BasePart") then p.Anchored = false end
+		end
+		main.CanCollide = true
+		local out = (main.Position - center) * Vector3.new(1, 0, 1)
+		main.AssemblyLinearVelocity = (out.Magnitude > 0.1 and out.Unit or Vector3.zero) * math.random(8, 16) + Vector3.yAxis * math.random(6, 14)
+		main.AssemblyAngularVelocity = Vector3.new(math.random() - 0.5, math.random() - 0.5, math.random() - 0.5) * 12
+	end
+	Sfx.play({ Sfx.BULLET_HIT_METAL, 0.5, 1 }, center)
+	Sfx.play({ Sfx.FACTORY_PRESS_SLAM, 0.8, 0.8 }, center)
+	Debris:AddItem(chains, 4)
 end
 local XZ = Vector3.new(1, 0, 1)
 local function flat(v)
@@ -295,21 +337,26 @@ end
 local function release(d)
 	if d.state ~= "Caged" then return end
 	d.prompt.ActionText = "Recall"
-	setBars(d.cage, false)
-	openGate(d, true)
+	unchain(d)
+	voice(d, Sfx.ZOMBIE_ATTACK)
 	state(d, "Idle")
 end
 local drop
--- The pedestal again: whatever it is doing, it is back on its stand behind a shut gate.
+-- Chains it once its pose has settled (the server poses it at 20 Hz), unless it got out again meanwhile.
+local function chainSoon(d)
+	task.delay(0.25, function()
+		if d.state == "Caged" and d.model.Parent then chainUp(d) end
+	end)
+end
+-- The pedestal again: whatever it is doing, it is back in the bottom of its pit, chained.
 local function recall(d)
 	if d.state == "Caged" then return end
 	drop(d)
 	d.moving, d.goal, d.skip = 0, nil, {}
 	d.model:PivotTo(CFrame.new(d.home) * d.turn)
 	d.prompt.ActionText = "Release"
-	setBars(d.cage, true)
-	openGate(d, false)
 	state(d, "Caged")
+	chainSoon(d)
 end
 -- A weapon hit on a boss: it flinches and lets itself out, nothing more. True when `part` is a boss's,
 -- so the shot stops there.
@@ -357,7 +404,7 @@ local function plaque(on, message, color, font)
 	pad.PaddingTop, pad.PaddingBottom, pad.PaddingLeft, pad.PaddingRight = UDim.new(0, 8), UDim.new(0, 8), UDim.new(0, 8), UDim.new(0, 8)
 	pad.Parent = t
 end
-function Monsters.spawn(kind, home, cage)
+function Monsters.spawn(kind, home, cage, plates, chainKit)
 	local def = Definitions[kind]
 	local model = Rig.build(kind)
 	-- on its stand it looks out of its lair, up the ramp (lair +z)
@@ -368,20 +415,18 @@ function Monsters.spawn(kind, home, cage)
 	local button = cage:FindFirstChild("Challenge")
 	local prompt = button:FindFirstChildOfClass("ProximityPrompt")
 	prompt.Enabled = true
-	setBars(cage, true)
 	local ray = RaycastParams.new()
-	-- a Blender cage's walls and closed gate stop the boss; the old bar cage is ignored as before
-	local kit = cage:FindFirstChild("Kit")
-	-- the dummies never block it: it walks through them to its meal
+	-- its own lair's bits (pedestal, board, chains, pylons) and the dummies never block it: it walks
+	-- through them to its meal
 	local dummies = workspace:FindFirstChild("Dummies")
-	ray.FilterDescendantsInstances = kit and { model, kit, cage:FindFirstChild("Gate"), cage:FindFirstChild("Floors"), cage:FindFirstChild("Challenge"), cage:FindFirstChild("Sign"), dummies } or { model, cage, dummies }
-	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart,
+	ray.FilterDescendantsInstances = { model, cage, dummies }
+	local d = { kind = kind, def = def, model = model, root = model.PrimaryPart, plates = plates, chainKit = chainKit,
 		home = home, turn = turn, cage = cage, prompt = prompt, ray = ray, moving = 0, nextAttack = 0, nextBite = 0, skip = {} }
 	actors[model] = d
 	d.joints = {}
 	for _, obj in model:GetDescendants() do if obj:IsA("Motor6D") then d.joints[obj.Name] = obj end end
 	state(d, "Caged")
-	openGate(d, false)
+	chainSoon(d)
 	local connection = prompt.Triggered:Connect(function(player)
 		local r = playerRoot(player)
 		if r and (r.Position - button.Position).Magnitude <= 14 and player:GetAttribute("Map") == "ARENA" then
@@ -427,7 +472,8 @@ local function smash(d, at)
 end
 local function move(d, direction, speed, dt)
 	local step = flat(direction) * speed * dt
-	local hit = workspace:Blockcast(d.root.CFrame, Vector3.new(4, 5, 3) * d.def.scale, step, d.ray)
+	-- its body from knee height (a hedge stops it, a ramp or a kerb does not) up to the shoulders
+	local hit = workspace:Blockcast(d.root.CFrame * CFrame.new(0, -1.25 * d.def.scale, 0), Vector3.new(4, 7.5, 3) * d.def.scale, step, d.ray)
 	if hit and hit.Instance.Anchored then -- loose bricks it just wades through
 		smash(d, hit.Position)
 		return false
@@ -525,8 +571,8 @@ local function think(d, now)
 	face(d, route(d, r.Position))
 	if dist < 7 * d.def.scale + 3 and startEating(d, target, r) then return end
 	-- one on its feet gets the attack first; one already down it just walks over to and eats
-	if not target:GetAttribute("Ragdolled") and dist < (d.kind == "Minotaur" and 28 or d.kind == "Talos" and 26 or 16) and now >= d.nextAttack then
-		local at = d.kind == "Talos" and r.Position or d.root.Position + flat(r.Position - d.root.Position) * (d.kind == "Cyclops" and 6 or 25)
+	if not target:GetAttribute("Ragdolled") and dist < d.def.reach and now >= d.nextAttack then
+		local at = d.def.lunge and d.root.Position + flat(r.Position - d.root.Position) * d.def.lunge or r.Position
 		d.impact = Vector3.new(at.X, (groundAt(Vector3.new(at.X, d.root.Position.Y, at.Z), 2) or 0) + 0.08, at.Z)
 		d.model:SetAttribute("ImpactAt", d.impact)
 		d.model:SetAttribute("ChargeDirection", flat(r.Position - d.root.Position))
@@ -544,6 +590,19 @@ function Monsters.start(remotes, api)
 	folder = Instance.new("Folder"); folder.Name = "Monsters"; folder.Parent = workspace
 	events = Instance.new("RemoteEvent"); events.Name = "MythFx"; events.Parent = remotes
 	local ground = Instance.new("Folder"); ground.Name = "MythYard"; ground.Parent = workspace
+	-- Studio only, for tests: ServerStorage.MythTest:Invoke(kind, "release" | "recall") does what the pedestal does
+	if RunService:IsStudio() then
+		local hook = Instance.new("BindableFunction"); hook.Name = "MythTest"; hook.Parent = game:GetService("ServerStorage")
+		hook.OnInvoke = function(kind, action)
+			for _, d in actors do
+				if d.kind == kind then
+					if action == "release" then release(d) else recall(d) end
+					return d.state
+				end
+			end
+			return nil
+		end
+	end
 	local floors, holes = {}, {}
 	-- a lair-space rectangle as the world box round it (the lairs turn by quarter turns: still a rectangle)
 	local function hole(frame, x0, x1, z0, z1)
@@ -567,95 +626,73 @@ function Monsters.start(remotes, api)
 		table.insert(floors, rim)
 	end
 	local kitRoot = ReplicatedStorage:FindFirstChild("MythKit")
-	-- the lairs' own gates and props (Blender, assets/arena) when the arena kit is in; else the red arches
+	local chainKit = kitRoot and kitRoot:FindFirstChild("Chain") and kitRoot.Chain:FindFirstChild("Parts")
+	-- the lairs' props (Blender, assets/arena) when the arena kit is in
 	local themed = ReplicatedStorage:FindFirstChild("ArenaKit") ~= nil
 	for _, kind in { "Cyclops", "Minotaur", "Talos" } do
 		local def = Definitions[kind]
-		local spec = CAGES[kind]
-		local kit = kitRoot and kitRoot:FindFirstChild(kind) and kitRoot[kind]:FindFirstChild("Cage")
 		local frame = LAIRS[kind]
 		local lair = LAIR_LOOK[kind]
-		local arch = dungeon(ground, kind, frame, floors, themed)
+		dungeon(ground, kind, frame, floors)
 		local bottom = frame * CFrame.new(0, -DEEP, 0) -- the pit's floor, in lair space
-		local base = bottom.Position
-		-- the cage faces the way out (lair +z); cage space is turned half round onto the lair
-		local pivot = bottom * CFrame.Angles(0, math.pi, 0)
-		local home = base + Vector3.yAxis * 6 * def.scale
+		-- it stands in the middle of the pit's floor, looking up the ramp
+		local home = bottom.Position + Vector3.yAxis * 6 * def.scale
 		local cage = Instance.new("Model"); cage.Name = kind .. "Cage"; cage.Parent = ground
 		cage:SetAttribute("Lair", frame)
 		if themed then
-			Map.structure(lair.gate, frame * CFrame.new(0, 0, PIT + RAMP_LONG + 1) * CFrame.Angles(0, math.pi, 0))
 			for _, prop in lair.props do
 				Map.structure(prop[1], frame * CFrame.new(prop[2], 0, prop[3]) * CFrame.Angles(0, (prop[4] or 0) * math.pi / 2, 0))
 			end
 		end
-		-- its name board beside the gate, facing whoever comes up to it
+		-- the pylons either side of the way out, facing out of the lair. Players bump into them; a boss's
+		-- spatial queries do not see them (it never gets stuck on one: the way out passes between them).
+		local pylonKit = kitRoot and kitRoot:FindFirstChild(kind) and kitRoot[kind]:FindFirstChild("Lair")
+		pylonKit = pylonKit and pylonKit:FindFirstChild("Pylon")
+		for _, side in { -1, 1 } do
+			local cf = frame * CFrame.new(side * lair.pylon[1], 0, lair.pylon[2]) * CFrame.Angles(0, math.pi, 0)
+			if pylonKit then
+				placeKit(pylonKit, cf, 1, cage)
+				local solid = slab(cage, "Pylon", Vector3.new(4.6, 26, 4.6), cf * CFrame.new(0, 13, 0), LOOK.wall, Enum.Material.Slate)
+				solid.Transparency, solid.CanQuery, solid.CanTouch, solid.CastShadow = 1, false, false, false
+			else
+				for _, part in {
+					slab(cage, "Pylon", Vector3.new(4, 22, 4), cf * CFrame.new(0, 11, 0), LOOK.wall, Enum.Material.Slate),
+					slab(cage, "Pylon", Vector3.new(5.2, 1.2, 5.2), cf * CFrame.new(0, 22.6, 0), LOOK.marble, Enum.Material.Marble),
+				} do part.CanQuery = false end
+				local flame = slab(cage, "Flame", Vector3.new(2, 2.4, 2), cf * CFrame.new(0, 24.4, 0), LOOK.flame, Enum.Material.Neon)
+				flame.CanCollide, flame.CanQuery, flame.CastShadow = false, false, false
+			end
+		end
+		-- the chains' plates: on the side walls behind it for the wrists, in the floor for the ankles
+		local plates = {}
+		for name, spec in CHAINS do
+			for _, side in { -1, 1 } do
+				local c = spec.anchor
+				local cf = if spec.floor
+					then frame * CFrame.new(side * c.X, -DEEP - 0.05 + 0.32, c.Z) * CFrame.Angles(math.pi / 2, 0, 0)
+					else frame * CFrame.new(side * c.X, c.Y, c.Z) * CFrame.Angles(0, side * math.pi / 2, 0)
+				local anchor = chainKit and chainKit:FindFirstChild("Anchor")
+				if anchor then placeKit(anchor, cf, 1, cage) else slab(cage, "Anchor", Vector3.new(3.2, 3.2, 0.6), cf, IRON, Enum.Material.Metal) end
+				plates[name .. side] = cf * CFrame.new(0, -0.55, -1.15) -- the ring bolt
+			end
+		end
+		-- its name board beside the way in, facing whoever comes up to it
 		local entrance = block(ground, "EntranceSign", Vector3.new(14, 4.5, 0.8), Vector3.zero, Color3.fromRGB(28, 30, 33))
 		entrance.CFrame = frame * CFrame.new(lair.sign[1], 5, lair.sign[2]) * CFrame.Angles(0, math.pi, 0)
 		entrance.CanCollide = false
 		plaque(entrance, def.name .. "\nLET ONE OUT  /  FEED IT DUMMIES", def.accent)
-		local front = 16
-		if kit then
-			home = pivot * kit:GetAttribute("Stand") + Vector3.yAxis * 6 * def.scale
-			front = spec.button
-			cage:SetAttribute("GateLift", spec.lift)
-			local look = Instance.new("Folder"); look.Name = "Kit"; look.Parent = cage
-			local gate = Instance.new("Folder"); gate.Name = "Gate"; gate.Parent = cage
-			local solid = Instance.new("Folder"); solid.Name = "Floors"; solid.Parent = cage
-			for _, group in kit:GetChildren() do
-				for _, src in group:GetChildren() do
-					local c = src:Clone()
-					c.CFrame = pivot * c:GetAttribute("Place")
-					c.Anchored = true
-					if c:IsA("BasePart") and c.Material == Enum.Material.Neon then
-						c.Material = Enum.Material.SmoothPlastic -- no neon in the yard; the lanterns only glow softly
-					end
-					for _, light in c:GetDescendants() do
-						if light:IsA("Light") then
-							light.Brightness, light.Range = math.min(light.Brightness, 0.6), math.min(light.Range, 14)
-						end
-					end
-					if group.Name == "Gate" then c:SetAttribute("Shut", c.CFrame) end
-					c.Parent = group.Name == "Gate" and gate or look
-				end
-			end
-			for _, v in spec.solids do
-				local p = Instance.new("Part")
-				p.Name, p.Size, p.Anchored, p.Transparency = v[1], v[2], true, 1
-				p.CFrame = pivot * CFrame.new(v[3]) * (v[4] and CFrame.Angles(0, 0, math.pi / 2) or CFrame.identity)
-				if v[4] then p.Shape = Enum.PartType.Cylinder end
-				p.CanTouch, p.CastShadow = false, false
-				p:SetAttribute("Collider", true)
-				p.Parent = v[1] == "Floor" and solid or cage
-				if v[1] == "Floor" then table.insert(floors, p) end
-			end
-		else
-			for x = -10, 10, 4 do
-				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(x, 8.5, 10), Color3.fromRGB(43, 47, 51))
-				block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(x, 8.5, -10), Color3.fromRGB(43, 47, 51))
-			end
-			for _, sign in { -1, 1 } do
-				for z = -6, 6, 4 do block(cage, "Bar", Vector3.new(0.5, 17, 0.5), bottom * Vector3.new(sign * 10, 8.5, z), Color3.fromRGB(43, 47, 51)) end
-			end
-		end
+		-- the pedestal at the foot of the ramp, a small board on the boss's side of it
 		local button = block(cage, "Challenge", Vector3.new(3, 2.5, 2.5), Vector3.zero, def.accent)
-		button.CFrame = bottom * CFrame.new(0, 1.25, front)
+		button.CFrame = bottom * CFrame.new(0, 1.25, 18)
 		local p = Instance.new("ProximityPrompt")
 		p.ActionText, p.ObjectText = "Release", def.name
 		p.KeyboardKeyCode, p.HoldDuration, p.MaxActivationDistance = Enum.KeyCode.Y, 0.4, 12
 		p.RequiresLineOfSight, p.Parent = false, button
-		local board
-		if kit then
-			board = block(cage, "Sign", Vector3.new(9, 2.6, 0.4), Vector3.zero, Color3.fromRGB(28, 30, 33))
-			board.CFrame = bottom * CFrame.new(0, 4.6, spec.sign) * CFrame.Angles(0, math.pi, 0)
-			board.CanCollide = false
-		else
-			board = block(cage, "Sign", Vector3.new(17, 3.5, 0.6), Vector3.zero, Color3.fromRGB(28, 30, 33))
-			board.CFrame = bottom * CFrame.new(0, 19, 10) * CFrame.Angles(0, math.pi, 0)
-		end
+		local board = block(cage, "Sign", Vector3.new(9, 2.6, 0.4), Vector3.zero, Color3.fromRGB(28, 30, 33))
+		board.CFrame = bottom * CFrame.new(0, 4.6, 15.5) * CFrame.Angles(0, math.pi, 0)
+		board.CanCollide = false
 		plaque(board, def.name .. "\n" .. def.hint, def.accent)
-		if arch then plaque(arch, def.name, LOOK.marble, Enum.Font.FredokaOne) end
-		Monsters.spawn(kind, home, cage)
+		Monsters.spawn(kind, home, cage, plates, chainKit)
 	end
 	if map then table.insert(floors, map) end -- out of the yard it walks the whole arena map
 	groundParams.FilterDescendantsInstances = floors

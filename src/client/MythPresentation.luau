@@ -97,9 +97,11 @@ function Presentation.start(gui, remotes, api)
 					data.ring.CFrame = CFrame.new(impact) * CFrame.Angles(0, 0, math.pi / 2)
 					if data.kind == "Minotaur" and model.PrimaryPart then
 						local direction = model:GetAttribute("ChargeDirection") or model.PrimaryPart.CFrame.LookVector
-						data.ring.Shape, data.ring.Size = Enum.PartType.Block, Vector3.new(12, 0.08, 36)
+						-- the charge's lane (Monsters: 42 studs/s for 0.85 s), as wide as the bull
+						local width = 4 * Definitions[data.kind].scale
+						data.ring.Shape, data.ring.Size = Enum.PartType.Block, Vector3.new(width, 0.08, 36)
 						local center = model.PrimaryPart.Position + direction * 18
-						data.ring.CFrame = CFrame.lookAlong(Vector3.new(center.X, 0.08, center.Z), direction)
+						data.ring.CFrame = CFrame.lookAlong(Vector3.new(center.X, impact.Y, center.Z), direction)
 					end
 					data.ring.Transparency = 0.85 - phase * 0.35
 				else data.ring.Transparency = 1 end
@@ -109,7 +111,7 @@ function Presentation.start(gui, remotes, api)
 		nextHud = os.clock() + 0.1
 		local char = player.Character
 		local root = char and char:FindFirstChild("HumanoidRootPart")
-		local best, distance = nil, 58
+		local best, distance = nil, 90 -- they stand 36 studs tall: the card shows from further off
 		for model in actors do
 			local r = model.PrimaryPart
 			if root and r then
