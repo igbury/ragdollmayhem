@@ -60,6 +60,69 @@ Session60/180/300. Czasy z testu MCP nie są realne (klikanie przez MCP trwa sek
 - **Hitstop** (35–80 ms po stronie klienta): nie ruszałem, bo trafienia już mają impact frames i wstrząs.
 - **Testy na prawdziwym telefonie**: nie robiłem. Interfejs używa Scale, a pigułka „TAP TO SKIP” zmienia tekst na dotyku.
 
+## Etap 2: przegląd po zmianach (26.11.2026)
+
+Ten sam sposób: Studio Play, sterowanie przez MCP, nowy gracz przy każdym starcie. Czasy z konsoli (FirstSession) pochodzą
+z testów MCP i **nie są czasami prawdziwych graczy**. Prawdziwe liczby pokaże dopiero analityka po publikacji.
+
+### Oś czasu: jak jest teraz
+
+| Moment | Co się dzieje | Źródło |
+|---|---|---|
+| menu | Boss w całości w swoim kadrze za awatarem (koncepcja B „Plakat”). Nic nie odlicza czasu, nic się nie wciska samo. | `docs/menu-concepts.md` |
+| PLAY | Animacja z Blendera, 4,67 s: reakcja, wstanie, zdjęcie słuchawek, odwrócenie, marsz, kamera wjeżdża w głowę, cięcie do FPP. Pomijanie po 0,5 s. | `docs/play-intro.md` |
+| pierwszy cel | Klatka, jeden manekin w żółtej obwódce. Linijki „Take out one of the glowing dummies!” i „Walk up to it and LEFT CLICK to punch!”. | test Studio |
+| pierwsze ciosy | Hitstop tylko u gracza, kick kamery, pierścień wokół celu, licznik combo nad ofiarą (x2…x6), dymki komiksowe | `docs/game-feel/combo_ko_studio.mp4` |
+| pierwszy KO | Klatka uderzenia w stylu mangi (żółto-czarna), naklejka KO, „+$15”, banknoty lecą do licznika (0 → 15), od razu krok „Press Q: buy the HANDGUN” | to samo nagranie |
+| 1–5 min | Bossy w dołach, podpowiedź do dołu po 75 s od końca samouczka. Nowym graczom nie trafiają katastrofy (`server/Disasters`, `isNew`). | kod |
+
+W samouczku manekin padł po 6 ciosach (ciosy liczą się tam podwójnie). Przy tempie klikania przez MCP to około 3 s od pierwszego trafienia.
+
+### Presja: czego szukałem i co jest
+
+Sprawdziłem w kodzie wszystko, co mogłoby przyspieszać gracza albo naciskać na zakup w pierwszych 5 minutach:
+
+- **Liczniki czasu i FOMO:** brak. Jedyne odliczanie to banner katastrofy, a katastrofy omijają nowych graczy. Nie ma ofert czasowych, dziennych nagród ani serii logowań.
+- **Zakupy:**
+  - Robux pojawia się tylko po akcji gracza. Wybór broni, na którą go nie stać, najpierw pokazuje „cash / price$ · PICK AGAIN FOR CASH”, a pakiet gotówki otwiera się dopiero przy drugim wyborze w ciągu 4 s.
+  - Passy w SHOP i Toolboksie otwierają się po kliknięciu zablokowanej rzeczy.
+  - Nic nie wyskakuje samo.
+- **Losowe płatne nagrody:** brak.
+- **Prośby (`client/LikePrompt`):**
+  - „Like” dopiero po 10 min gry.
+  - „Favorite” po 3 min gry albo po kupnie drugiej broni.
+  - „Group” po 7 min albo po trzeciej broni.
+  - Wszystkie czekają na koniec samouczka i nic za nie nie daje (poza Frost Gunem za grupę, co jest zgodne z zasadami Roblox).
+- **Combo i KO:**
+  - Licznik combo gaśnie po 1,4 s bez ciosu. Nic nie przepada i nie ma kary za przerwanie.
+  - „KO xN!” to tylko napis.
+
+**Do rozważenia (nie zmieniałem, bo to decyzja produktowa):** natywne okno „Favorite” w 3. minucie może wypaść w środku walki w FPP. Bezpieczniej byłoby pokazać je w spokojnym momencie, np. po zamknięciu Arsenału albo po kilku sekundach bez ciosu. Nie mam danych, czy to zmniejszy liczbę dodań do ulubionych.
+
+### Co poprawiłem w tym etapie po teście
+
+- **Pierścień i błysk ciosu z bliska** (`Fx.radial`, `Fx.hit`): przy ciosie z ~3 studów w FPP zasłaniały połowę ekranu i cel. Teraz skalują się odległością (`docs/game-feel/ring_before_after.jpg`). Z daleka wyglądają jak wcześniej.
+
+### Oceny (po etapie 1 → po etapie 2)
+
+Moje oceny, nie dane graczy.
+
+| Obszar | Po etapie 1 | Po etapie 2 | Dlaczego |
+|---|---|---|---|
+| Menu: pierwsze wrażenie | 7 | 8 | Boss w całości i nie zasłania awatara. Trzy koncepcje, wybrana B. |
+| PLAY → gra | 8 | 8 | Animacja dużo bardziej „filmowa”, ale dłuższa (4,67 s zamiast 3,2 s). Pomijanie bez zmian. |
+| Pierwszy cios | 8 | 9 | Hitstop, kick i combo. Cel widać mimo efektów. |
+| Pierwszy KO / nagroda | 7 | 9 | Klatka uderzenia, naklejka KO, „+$15” i dźwięk kasy. |
+| Bossy (wygląd) | 8 | 8 | Modele v4 i 12 klipów na bossa są gotowe, ale **w grze nadal kit v1**, dopóki nie zrobisz importu (`docs/import-bossow-v4.md`). |
+| Komfort | 8 | 8 | Nowe efekty respektują SCREEN SHAKE, FLASHES i Reduce Motion. |
+
+### Czego nie sprawdziłem
+
+- Prawdziwego telefonu.
+- Emulatora urządzeń Studio (nie da się go przełączyć przez MCP).
+- Czasów prawdziwych graczy.
+- Dźwięku: nagrania MCP nie mają ścieżki audio, więc zróżnicowanie dźwięków ciosów sprawdziłem tylko w kodzie (`Sfx.playLocal`, wysokość ±10% i warianty).
+
 ## Zrzuty (Studio Play, 26.11.2026)
 
 | Przed | Po |
