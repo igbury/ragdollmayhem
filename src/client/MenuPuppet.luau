@@ -8,13 +8,16 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local MythRig = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("MythRig"))
 
 local MenuPuppet = {}
--- One of the arena's bosses looms behind the chair (shared/MythRig, the same rig and procedural poses
--- as in the game), at BOSS_SCALE, BOSS_AT in the scene's space, breathing and now and then straining.
+-- One of the arena's bosses looms behind the avatar (shared/MythRig, the same rig and clips as in the
+-- game), breathing in its chains and now and then roaring. It lives in a ViewportFrame of its own under
+-- the avatar's, so it can never cover the avatar, with a camera fitted to its whole body in every pose
+-- it strikes here, so nothing of it is ever cut off by the panel's edge (frameBoss()).
 local BOSS_KINDS = { "Cyclops", "Minotaur", "Talos" }
-local BOSS_SCALE = 2.7
-local BOSS_AT = CFrame.new(8.7, 0, 63.3) * CFrame.Angles(0, math.rad(14), 0) -- facing the camera
 local BOSS_ROAR_EVERY, BOSS_ROAR = 9, 1.8 -- a roar now and then, as long as the game's
-local BOSS_FEET = -30 -- below the panel's bottom edge, so only the top half looms
+local BOSS_FOV = 30
+local BOSS_YAW = math.rad(-16) -- turned a little toward the avatar on its left
+local BOSS_TILT = math.rad(7) -- the camera looks up at it a little: it looms
+local BOSS_FIT = { left = -0.94, right = 0.94, bottom = -0.97, top = 0.92 } -- of the boss view, -1..1
 MenuPuppet.__index = MenuPuppet
 
 local WOOD = Color3.fromRGB(150, 96, 56)
@@ -84,7 +87,10 @@ end
 
 -- viewport: the ViewportFrame to draw in. character: the live R15 character to copy (yields while
 -- its parts arrive).
-function MenuPuppet.new(viewport: ViewportFrame, character: Model)
+-- `viewport` shows the avatar; `framing` places it there ({x, y}: where the middle of the chair sits
+-- across and down the view, 0..1; zoom: how far back the camera stands, 1 = the old close-up).
+-- `bossView`, an optional ViewportFrame under it, shows the boss filling it whole.
+function MenuPuppet.new(viewport: ViewportFrame, character: Model, bossView: ViewportFrame?, framing: { x: number, y: number, zoom: number }?)
 	local self = setmetatable({}, MenuPuppet)
 	local world = Instance.new("WorldModel")
 	world.Parent = viewport
@@ -207,31 +213,148 @@ function MenuPuppet.new(viewport: ViewportFrame, character: Model)
 	self.base = CFrame.Angles(0, math.rad(-28), 0)
 	chair:PivotTo(self.base * chair:GetPivot())
 
-	local okBoss, boss = pcall(MythRig.build, BOSS_KINDS[math.random(#BOSS_KINDS)])
-	if okBoss and boss then
-		boss:ScaleTo(BOSS_SCALE)
-		self.bossJoints = {}
-		for _, j in boss:GetDescendants() do
-			if j:IsA("Motor6D") then
-				j:SetAttribute("RigRestC0", j.C0) -- ScaleTo moved the joints (see MythRig.build)
-				self.bossJoints[j.Name] = j
-			end
-		end
-		boss:PivotTo(self.base * BOSS_AT)
-		local box, size = boss:GetBoundingBox()
-		boss:PivotTo(boss:GetPivot() + Vector3.new(0, BOSS_FEET - (box.Y - size.Y / 2), 0))
-		self.bossKind = boss:GetAttribute("MonsterKind")
-		boss.Parent = world
+	if bossView then
+		self:buildBoss(bossView)
 	end
 
 	local camera = Instance.new("Camera")
 	camera.FieldOfView = 30
-	camera.CFrame = CFrame.lookAt(Vector3.new(0.8, seatTop + 2.8, -14), Vector3.new(0, seatTop + 1.2, -0.3))
 	camera.Parent = viewport
 	viewport.CurrentCamera = camera
-	self.camera, self.camHome = camera, camera.CFrame
+	self.camera, self.viewport, self.framing = camera, viewport, framing or { x = 0.5, y = 0.5, zoom = 1 }
+	self.lookAt = Vector3.new(0, seatTop + 1.2, -0.3)
+	self.lookFrom = self.lookAt + (Vector3.new(0.8, seatTop + 2.8, -14) - self.lookAt) * self.framing.zoom
+	self:frameAvatar()
+	viewport:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		if not self.leaveAt then
+			self:frameAvatar()
+		end
+	end)
 
 	return self
+end
+
+-- The avatar's camera, slid across and up so the avatar sits at framing.x, framing.y of its view at any
+-- aspect.
+function MenuPuppet:frameAvatar()
+	local size = self.viewport.AbsoluteSize
+	local aspect = if size.Y > 0 then size.X / size.Y else 1
+	local home = CFrame.lookAt(self.lookFrom, self.lookAt)
+	local halfHigh = (self.lookAt - self.lookFrom).Magnitude * math.tan(math.rad(self.camera.FieldOfView / 2))
+	local f = self.framing
+	self.camHome = home + home.RightVector * (0.5 - f.x) * 2 * halfHigh * aspect + home.UpVector * (f.y - 0.5) * 2 * halfHigh
+	self.camera.CFrame = self.camHome
+end
+
+function MenuPuppet:buildBoss(view: ViewportFrame)
+	local world = Instance.new("WorldModel")
+	world.Parent = view
+	local ok, boss = pcall(MythRig.build, BOSS_KINDS[math.random(#BOSS_KINDS)])
+	if not ok or not boss then
+		warn("menu boss:", boss)
+		return
+	end
+	boss:PivotTo(CFrame.Angles(0, BOSS_YAW, 0))
+	boss.Parent = world
+	local joints = {}
+	for _, j in boss:GetDescendants() do
+		if j:IsA("Motor6D") then
+			joints[j.Name] = j
+		end
+	end
+	local kind = boss:GetAttribute("MonsterKind")
+	-- the room every pose the menu plays takes: a breath cycle and a whole roar, posed on a copy of
+	-- the joints table (MythRig keeps its crossfade per table) and boxed as it goes
+	local probe = table.clone(joints)
+	local pivot = boss:GetPivot()
+	local lo, hi = Vector3.one * math.huge, -Vector3.one * math.huge
+	local function grow()
+		local cf, size = boss:GetBoundingBox()
+		local at = pivot:ToObjectSpace(cf)
+		for _, sx in { -1, 1 } do
+			for _, sy in { -1, 1 } do
+				for _, sz in { -1, 1 } do
+					local corner = at * (size / 2 * Vector3.new(sx, sy, sz))
+					lo, hi = lo:Min(corner), hi:Max(corner)
+				end
+			end
+		end
+	end
+	local t = 0
+	for _ = 1, 30 do
+		t += 0.1
+		MythRig.pose(probe, "Caged", kind, t, 0, 0, 0, true)
+		grow()
+	end
+	local since = t
+	for _ = 1, 22 do
+		t += 0.1
+		MythRig.pose(probe, "Taunt", kind, t, 0, math.min(1, (t - since) / BOSS_ROAR), 0, true, { since = since })
+		grow()
+	end
+	-- a shadow under its feet, so it stands on something
+	local feet = pivot * Vector3.new((lo.X + hi.X) / 2, lo.Y, (lo.Z + hi.Z) / 2)
+	local shadow = box(world, Vector3.new(0.2, hi.X - lo.X, (hi.Z - lo.Z) * 0.8), CFrame.new(feet) * CFrame.Angles(0, 0, math.rad(90)), Color3.new(0, 0, 0))
+	shadow.Shape = Enum.PartType.Cylinder
+	shadow.Transparency = 0.6
+	self.bossJoints, self.bossKind, self.bossView = joints, kind, view
+	self.bossBox = { pivot = pivot, lo = lo, hi = hi }
+	local camera = Instance.new("Camera")
+	camera.FieldOfView = BOSS_FOV
+	camera.Parent = view
+	view.CurrentCamera = camera
+	self.bossCamera = camera
+	self:frameBoss()
+	view:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+		self:frameBoss()
+	end)
+end
+
+-- The closest camera, tilted up at BOSS_TILT, that holds all eight corners of the boss's box inside
+-- BOSS_FIT of its view: centred across, feet on the bottom margin. Per axis, each corner allows a range
+-- of camera offsets at a given distance; the distance is searched for the nearest one where every
+-- range still overlaps.
+function MenuPuppet:frameBoss()
+	local size = self.bossView.AbsoluteSize
+	if size.X < 1 or size.Y < 1 then
+		return
+	end
+	local tanV = math.tan(math.rad(BOSS_FOV / 2))
+	local tanH = tanV * size.X / size.Y
+	local b = self.bossBox
+	local turn = CFrame.lookAt(Vector3.zero, Vector3.new(0, math.sin(BOSS_TILT), math.cos(BOSS_TILT))) -- toward +Z, at the boss's face, up a little
+	local corners = {}
+	for _, sx in { b.lo.X, b.hi.X } do
+		for _, sy in { b.lo.Y, b.hi.Y } do
+			for _, sz in { b.lo.Z, b.hi.Z } do
+				table.insert(corners, turn:PointToObjectSpace(b.pivot * Vector3.new(sx, sy, sz)))
+			end
+		end
+	end
+	local function ranges(d: number): (number, number, number, number)
+		local xLo, xHi, yLo, yHi = -math.huge, math.huge, -math.huge, math.huge
+		for _, q in corners do
+			local z = d - q.Z -- depth in front of a camera at local z = d, looking down -Z
+			xLo = math.max(xLo, q.X - BOSS_FIT.right * tanH * z)
+			xHi = math.min(xHi, q.X - BOSS_FIT.left * tanH * z)
+			yLo = math.max(yLo, q.Y - BOSS_FIT.top * tanV * z)
+			yHi = math.min(yHi, q.Y - BOSS_FIT.bottom * tanV * z)
+		end
+		return xLo, xHi, yLo, yHi
+	end
+	local near, far = 0, 2000
+	for _ = 1, 40 do
+		local d = (near + far) / 2
+		local xLo, xHi, yLo, yHi = ranges(d)
+		if xLo <= xHi and yLo <= yHi then
+			far = d
+		else
+			near = d
+		end
+	end
+	local xLo, xHi, _, yHi = ranges(far)
+	-- the highest offset in range drops the boss lowest: its feet on the bottom margin
+	self.bossCamera.CFrame = turn * CFrame.new((xLo + xHi) / 2, yHi, far)
 end
 
 -- Pose ---------------------------------------------------------------------------------------------

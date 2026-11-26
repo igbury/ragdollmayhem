@@ -1,5 +1,5 @@
--- Main menu: a full-screen comic page. Panels: STATS, SHOP, MAP, PLAY (bottom-left) and a
--- rectangular scene with the player's avatar on a chair (MenuPuppet). Panels are real polygons:
+-- Main menu: a full-screen comic page. Panels: STATS and SHOP, PLAY, MAP down the left, and the scene,
+-- the whole right column: the player's avatar on a chair with a boss towering behind it (MenuPuppet). Panels are real polygons:
 -- seam lines are offset by half a gutter, intersected into corners, and each panel is cut to shape by nested CanvasGroups with a hard-stepped UIGradient per
 -- slanted edge (cut()). Outlines are lines drawn corner to corner, so every edge meets its neighbour.
 -- Shading: gradient fills, a tiled halftone (assets/fx/make_halftone.py), drop shadows, 3D lettering.
@@ -46,16 +46,24 @@ local MARGIN = 16 -- px of white page round the panels
 local GAP = 9 -- px, half the white gutter between panels
 local INK = 4 -- px, outline thickness
 
--- Seam lines across the page, each through two points in page scale (extended to infinity).
--- The player scene is a plain rectangle (HS, VS); H1 meets HS on VS so LOADOUT stays convex.
+-- Seam lines across the page, each through two points in page scale (extended to infinity), and the
+-- panels between them: STATS, SHOP, MAP, PLAY, the scene, in that order.
+-- The layout is a poster (docs/menu-concepts.md compares it with the two others tried): the scene is
+-- the whole right column, so the boss stands in it whole and towers behind the avatar; PLAY keeps the
+-- biggest panel on the left. The scene stays a plain rectangle (no slanted edge): its ViewportFrames do
+-- not render inside a CanvasGroup. Each panel has one slanted edge at most (SHOP_SEAMS says why).
 local SEAMS = {
-	H1 = { Vector2.new(0, 0.31), Vector2.new(0.6, 0.31) }, -- under STATS, over PLAY: level with HS, so V1 is the only
-	-- slanted edge of STATS and SHOP (two nest a CanvasGroup in another; those came out white now and then)
-	HS = { Vector2.new(0, 0.31), Vector2.new(1, 0.31) }, -- under LOADOUT, over the scene
-	VS = { Vector2.new(0.6, 0), Vector2.new(0.6, 1) }, -- STATS / PLAY | scene
-	V1 = { Vector2.new(0.52, 0), Vector2.new(0.42, 0.29) }, -- MAP | LOADOUT
-	H2 = { Vector2.new(0, 0.66), Vector2.new(0.6, 0.74) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
-	VM = { Vector2.new(0.31, 0.7), Vector2.new(0.29, 1) }, -- MAP | MODE
+	H1 = { Vector2.new(0, 0.27), Vector2.new(0.56, 0.27) }, -- under STATS and SHOP, over PLAY
+	VS = { Vector2.new(0.56, 0), Vector2.new(0.56, 1) }, -- the left column | the scene
+	V1 = { Vector2.new(0.31, 0), Vector2.new(0.25, 0.27) }, -- STATS | SHOP
+	H2 = { Vector2.new(0, 0.68), Vector2.new(0.56, 0.75) }, -- PLAY over MAP (low, so PLAY gets the bigger panel)
+	VM = { Vector2.new(0.31, 0.75), Vector2.new(0.29, 1) }, -- MAP | MODE
+}
+local SCENE = {
+	avatar = { x = 0.25, y = 0.74, zoom = 1.6 }, -- where the avatar sits in the scene (MenuPuppet.new)
+	-- the boss's view in the scene, above the avatar's feet: its own feet land higher up the panel, so
+	-- it reads as standing behind the chair, not in front of it
+	boss = { UDim2.fromScale(0.12, 0.01), UDim2.fromScale(0.88, 0.84) },
 }
 -- The shop page: three rows of three. Only the top seam slants: a panel with two slanted edges nests
 -- one CanvasGroup in another, and those came out plain white now and then (STATS did too). One cut
@@ -359,11 +367,11 @@ type Panel = {
 	seams: any,
 }
 local PANELS: { Panel } = {
-	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.18, 0.13), color = PURPLE, ink = Color3.fromRGB(45, 15, 90) },
-	{ edges = { "TOP", "RIGHT", "HS", "V1" }, inside = Vector2.new(0.75, 0.15), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }, -- SHOP: green, money's colour (not yellow: PLAY below it is)
-	{ edges = { "H2", SHOW_MODES and "VM" or "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.88), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, bottom left
-	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.3, 0.42), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
-	{ edges = { "HS", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.7), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 },
+	{ edges = { "TOP", "V1", "H1", "LEFT" }, inside = Vector2.new(0.12, 0.13), color = PURPLE, ink = Color3.fromRGB(45, 15, 90) },
+	{ edges = { "TOP", "VS", "H1", "V1" }, inside = Vector2.new(0.43, 0.13), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }, -- SHOP: green, money's colour (not yellow: PLAY below it is)
+	{ edges = { "H2", SHOW_MODES and "VM" or "VS", "BOTTOM", "LEFT" }, inside = Vector2.new(0.15, 0.9), color = RED, ink = Color3.fromRGB(140, 15, 30) }, -- MAP, bottom left
+	{ edges = { "H1", "VS", "H2", "LEFT" }, inside = Vector2.new(0.28, 0.47), color = YELLOW, ink = Color3.fromRGB(235, 105, 25) }, -- PLAY, in the middle
+	{ edges = { "TOP", "RIGHT", "BOTTOM", "VS" }, inside = Vector2.new(0.8, 0.5), color = BLUE, ink = Color3.fromRGB(10, 20, 60), inset = 1 }, -- the scene
 }
 if SHOW_MODES then
 	table.insert(PANELS, { edges = { "H2", "VS", "BOTTOM", "VM" }, inside = Vector2.new(0.45, 0.88), color = GREEN, ink = Color3.fromRGB(30, 70, 25) }) -- MODE, beside MAP
@@ -695,6 +703,16 @@ layout() -- again, now the bursts exist
 
 -- The player scene: speed lines behind the avatar on its chair, name in a caption box.
 rays(sceneP.content :: GuiObject, 0.5, 0.45, 40, 4, 120, WHITE, 0.45, 0, 160)
+-- The boss in a view of its own under the avatar's (MenuPuppet fits it whole into it).
+local bossView = new("ViewportFrame", sceneP.content, {
+	BackgroundTransparency = 1,
+	Position = SCENE.boss[1],
+	Size = SCENE.boss[2],
+	Ambient = Color3.fromRGB(140, 140, 160),
+	LightColor = Color3.fromRGB(255, 240, 225),
+	LightDirection = Vector3.new(0.5, -1, 0.6),
+	ZIndex = 3,
+})
 local viewport = new("ViewportFrame", sceneP.content, {
 	BackgroundTransparency = 1,
 	Size = UDim2.fromScale(1, 1),
@@ -712,7 +730,7 @@ task.spawn(function()
 	if not player:HasAppearanceLoaded() then
 		player.CharacterAppearanceLoaded:Wait()
 	end
-	local ok, made = pcall(MenuPuppet.new, viewport, char)
+	local ok, made = pcall(MenuPuppet.new, viewport, char, bossView, SCENE.avatar)
 	if ok then
 		puppet = made
 	else
