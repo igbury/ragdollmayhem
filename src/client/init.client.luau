@@ -1648,6 +1648,7 @@ local function punch()
 	if result and dummyOf(result.Instance) then
 		punchRemote:FireServer(result.Instance)
 		Fx.hit(result.Position)
+		Fx.ourHit(result.Position, 1, dummyOf(result.Instance), 0.05) -- the hitstop as the fist gets there
 		Sfx.playLocal(Sfx.PUNCH, result.Position) -- ponytail: a dodged punch still smacks for us
 	end
 end
@@ -1694,6 +1695,7 @@ local function kick()
 			punchRemote:FireServer(best)
 			Fx.hit(best.Position)
 			if dummyOf(best) then
+				Fx.ourHit(best.Position, 1.5, dummyOf(best))
 				Sfx.playLocal(Sfx.PUNCH, best.Position)
 			end
 		end
@@ -3079,6 +3081,7 @@ function mv.updateDive(humanoid: Humanoid, root: BasePart)
 		mv.diveUntil, mv.dashUntil = 0, 0
 		actionRemote:FireServer("dive")
 		Fx.hit(foot)
+		Fx.ourHit(foot, 1.8)
 		local back = -(mv.diveDir * XZ) * 18
 		root.AssemblyLinearVelocity = back + Vector3.yAxis * 40
 		carry = back
@@ -3705,7 +3708,7 @@ RunService.RenderStepped:Connect(function(dt)
 	for side, h in hands do
 		local viewTime = side == "right" and (SWING_STYLE[weapon.id] and SWING_STYLE[weapon.id].time
 			or weaponVisual.lib.VIEW_TIME[weapon.id]) or nil -- its own pace (an aimed swing's style, else WeaponAnims)
-		h.t = math.min(h.t + dt / (h.heavy and 0.34 or viewTime or 0.2), 1)
+		h.t = math.min(h.t + dt * Fx.timeScale / (h.heavy and 0.34 or viewTime or 0.2), 1) -- held through a hitstop (Fx)
 		if side == "right" and weaponVisual.freezeU then -- WeaponTest "freeze" (Studio): held at that point
 			h.t = weaponVisual.freezeU
 		end
@@ -4145,3 +4148,4 @@ require(script:WaitForChild("TutorialHud")).start()
 require(script:WaitForChild("MedicAim")).start(dummyFolder)
 require(script:WaitForChild("Disasters")).start() -- tornado, tsunami, meteors, nuke (server/Disasters)
 require(script:WaitForChild("CashHud")).start() -- the cash counter, top right
+require(script:WaitForChild("HitFeel")) -- our blows' combo counter and KO moment (Fx.ourHit)

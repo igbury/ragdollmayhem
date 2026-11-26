@@ -47,47 +47,63 @@ function Fx.flashes(): boolean
 	return Settings.get(player, "Flashes") ~= false
 end
 
--- Impact frames (test, on our own scoped sniper hits): a few frames of anime "impact" - the screen
--- goes hard black and white with whoever the round hit as a solid black silhouette ringed in white,
--- then the same inverted with a red cast, then black once more, then back. ~0.13 s in all. A miss,
--- a hip shot or a round that hits no body gets none.
+-- The body nearest `at` within `radius` (a dummy, a player, a monster): the nearest thing with a
+-- Humanoid, not ourselves. Not just what touches it: a round has usually flung the body clear by the
+-- time the server's Shot reaches us.
+local bodyParams = OverlapParams.new()
+bodyParams.FilterType = Enum.RaycastFilterType.Exclude
+local function victimAt(at: Vector3, radius: number): Model?
+	bodyParams.FilterDescendantsInstances = { folder, player.Character :: Instance }
+	local victim: Model? = nil
+	local best = radius
+	for _, p in workspace:GetPartBoundsInRadius(at, radius, bodyParams) do
+		local m = p:FindFirstAncestorOfClass("Model")
+		while m and not m:FindFirstChildOfClass("Humanoid") do m = m:FindFirstAncestorOfClass("Model") end
+		local dist = m and (p.Position - at).Magnitude
+		if dist and dist < best then victim, best = m, dist end
+	end
+	return victim
+end
+
+-- Impact frames (our own scoped sniper hits, and our KOs): a few frames of manga "impact" - the screen
+-- goes hard black and white with whoever was hit as a solid black silhouette ringed in white, then
+-- the same inverted with a tint, over the comic overlay's ink lines and sticker word (Fx.comic).
+-- ~0.13 s in all. A miss, a hip shot or a round that hits no body gets none. FLASHES off: nothing
+-- flashes, only the sticker word pops (and the shake).
 Fx.IMPACT_FRAMES = true
 Fx.scopedShotAt = -math.huge -- os.clock() of our last sniper shot fired through the scope (set by the client)
 local impactCC = Instance.new("ColorCorrectionEffect")
 impactCC.Name, impactCC.Enabled, impactCC.Parent = "ImpactFrames", false, Lighting
 local impactToken = 0
-function Fx.impactFrames(at: Vector3)
+-- { seconds, brightness, tint, silhouette fill, silhouette outline }; contrast this high leaves
+-- nearly pure black and white (manga ink), the brightness picks which way the greys fall
+local SNIPER_FRAMES = {
+	{ 0.05, -0.25, WHITE, BLACK, WHITE },
+	{ 0.05, 0.35, Color3.fromRGB(255, 90, 80), WHITE, BLACK },
+	{ 0.035, -0.25, WHITE, BLACK, WHITE },
+}
+Fx.KO_FRAMES = { -- shorter, a yellow cast: a KO is a win, not a wound
+	{ 0.04, -0.25, WHITE, BLACK, WHITE },
+	{ 0.045, 0.35, Color3.fromRGB(255, 215, 60), WHITE, BLACK },
+}
+function Fx.impactFrames(at: Vector3, word: string?, frames: { { any } }?, victim: Model?)
+	victim = victim or victimAt(at, 8)
 	if not Fx.flashes() then
 		Fx.shake(at, 0.6, 0.18)
+		if victim and word then
+			Fx.comic(at, word, 3)
+		end
 		return
 	end
+	if not victim then return end -- the round hit a wall or the floor: no impact frames
 	impactToken += 1
 	local token = impactToken
-	-- the body the round landed in (a dummy, a player, a monster): the nearest thing with a Humanoid to
-	-- `at`. Not just what touches it: a sniper round has usually flung the body clear by the time the
-	-- server's Shot reaches us.
-	local victim: Model? = nil
-	local best = 8
-	for _, p in workspace:GetPartBoundsInRadius(at, best) do
-		local m = p:FindFirstAncestorOfClass("Model")
-		while m and not m:FindFirstChildOfClass("Humanoid") do m = m:FindFirstAncestorOfClass("Model") end
-		local dist = m and m ~= player.Character and (p.Position - at).Magnitude
-		if dist and dist < best then victim, best = m, dist end
-	end
-	if not victim then return end -- the round hit a wall or the floor: no impact frames
 	local glow = Instance.new("Highlight")
 	glow.DepthMode, glow.FillTransparency, glow.OutlineTransparency = Enum.HighlightDepthMode.AlwaysOnTop, 0, 0
 	glow.Adornee, glow.Parent = victim, folder
-	-- { seconds, brightness, tint, silhouette fill, silhouette outline }; contrast this high leaves
-	-- nearly pure black and white (manga ink), the brightness picks which way the greys fall
-	local FRAMES = {
-		{ 0.05, -0.25, WHITE, BLACK, WHITE },
-		{ 0.05, 0.35, Color3.fromRGB(255, 90, 80), WHITE, BLACK },
-		{ 0.035, -0.25, WHITE, BLACK, WHITE },
-	}
 	impactCC.Saturation, impactCC.Contrast, impactCC.Enabled = -1, 12, true
 	task.spawn(function()
-		for _, f in FRAMES do
+		for _, f in frames or SNIPER_FRAMES do
 			if token ~= impactToken then break end -- a newer shot took over
 			impactCC.Brightness, impactCC.TintColor = f[2], f[3]
 			glow.FillColor, glow.OutlineColor = f[4], f[5]
@@ -96,6 +112,7 @@ function Fx.impactFrames(at: Vector3)
 		glow:Destroy()
 		if token == impactToken then impactCC.Enabled = false end
 	end)
+	Fx.comic(at, word, 3)
 	Fx.shake(at, 0.6, 0.18)
 end
 
@@ -104,8 +121,16 @@ Fx.muzzle = nil :: ((weaponId: string) -> Vector3?)? -- set by the client: our h
 Fx.weaponPoint = nil :: ((weaponId: string, point: Vector3) -> CFrame?)? -- set by the client: a point on it
 Fx.hookAt = nil :: number? -- os.clock() our crowbar's claw went into a shoulder (EVENTS.Hook)
 Fx.cameraOffset = Vector3.zero -- Humanoid.CameraOffset set by the client (over the shoulder), shake goes on top
-local active = {} -- { t0, dur, fn, parts }
+local active = {} -- { t0, dur, fn, parts, real }
 local shakeMag, shakeStart, shakeEnd = 0, 0, 0
+local shakeOffset = Vector3.zero -- the shake's last jolt, held still through a hitstop
+local fovKick = 0 -- degrees the view punches in on our blows (Fx.kick), springs back
+-- The effects' own clock: real time, but crawling at HITSTOP_SCALE through a hitstop (Fx.hitstop).
+-- Only this client's drawing slows: physics, the server and the remotes never wait on it.
+local fxClock = 0
+Fx.timeScale = 1 -- 1, or HITSTOP_SCALE during a hitstop (the client's viewmodel reads it too)
+local HITSTOP_SCALE = 0.05
+local stopStart, stopEnd = 0, 0
 
 local function out(a: number): number
 	return 1 - (1 - a) ^ 4
@@ -133,17 +158,27 @@ local function few(n: number): number
 	return if PerfMode.active() then math.max(1, math.ceil(n / 2)) else n
 end
 
--- Drive `fn(alpha 0..1)` every frame for `dur` seconds, then destroy `parts`.
-local function run(dur: number, parts: { Instance }, fn: (number) -> ())
-	table.insert(active, { t0 = os.clock(), dur = dur, fn = fn, parts = parts })
+-- Drive `fn(alpha 0..1)` every frame for `dur` seconds, then destroy `parts`. On the effects' clock
+-- (held through a hitstop), or `real` time for the screen overlays that are the hitstop's own frame.
+local function run(dur: number, parts: { Instance }, fn: (number) -> (), real: boolean?)
+	table.insert(active, { t0 = if real then os.clock() else fxClock, dur = dur, fn = fn, parts = parts, real = real })
 	fn(0)
 end
 
-RunService.RenderStepped:Connect(function()
+RunService.RenderStepped:Connect(function(dt: number)
 	local now = os.clock()
+	local stopped = now >= stopStart and now < stopEnd
+	Fx.timeScale = if stopped then HITSTOP_SCALE else 1
+	fxClock += dt * Fx.timeScale
+	if stopped then -- the shake and the kick wait out the freeze where they are
+		shakeStart += dt
+		shakeEnd += dt
+	else
+		fovKick *= math.exp(-dt * 14)
+	end
 	for i = #active, 1, -1 do
 		local a = active[i]
-		local alpha = math.min((now - a.t0) / a.dur, 1)
+		local alpha = math.min(((if a.real then now else fxClock) - a.t0) / a.dur, 1)
 		a.fn(alpha)
 		if alpha >= 1 then
 			for _, p in a.parts do
@@ -154,11 +189,42 @@ RunService.RenderStepped:Connect(function()
 	end
 	local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
 	local left = now < shakeEnd and (shakeEnd - now) / (shakeEnd - shakeStart) or 0
-	if humanoid then
-		humanoid.CameraOffset = Fx.cameraOffset + (left > 0 and rng:NextUnitVector() * shakeMag * left or Vector3.zero)
+	if not stopped then
+		shakeOffset = if left > 0 then rng:NextUnitVector() * shakeMag * left else Vector3.zero
 	end
-	camera.FieldOfView = BASE_FOV + Fx.fovBoost + shakeMag * 5 * left
+	if humanoid then
+		humanoid.CameraOffset = Fx.cameraOffset + shakeOffset
+	end
+	camera.FieldOfView = BASE_FOV + Fx.fovBoost + shakeMag * 5 * left + fovKick
 end)
+
+-- Hitstop: the effects (Fx's clock), the camera's shake and kick and our viewmodel (Fx.timeScale) all
+-- but stop for HITSTOP_MIN..HITSTOP_MAX s, longer the harder the blow (`strength` 1 a jab .. 3 a KO;
+-- under 1 none). Purely this client's drawing. They never stack: one already running is only stretched,
+-- never past HITSTOP_MAX in all, and a lighter one waits HITSTOP_GAP after the last (auto fire never
+-- stutters). SCREEN SHAKE scales it (0 = none) and Reduce Motion halves it; too short to see, it is skipped.
+local HITSTOP_MIN, HITSTOP_MAX, HITSTOP_GAP = 0.035, 0.08, 0.12
+function Fx.hitstop(strength: number, delay: number?)
+	if strength < 1 then
+		return
+	end
+	local scale = Fx.shakeScale() * (if GuiService.ReducedMotionEnabled then 0.5 else 1)
+	local dur = (HITSTOP_MIN + (HITSTOP_MAX - HITSTOP_MIN) * (math.min(strength, 3) - 1) / 2) * scale
+	if dur < 0.025 then
+		return
+	end
+	local start = os.clock() + (delay or 0)
+	if start < stopEnd then
+		stopEnd = math.max(stopEnd, math.min(start + dur, stopStart + HITSTOP_MAX))
+	elseif start >= stopEnd + HITSTOP_GAP or strength >= 3 then
+		stopStart, stopEnd = start, start + dur
+	end
+end
+
+-- Camera kick: the view punches in a few degrees and springs back (SCREEN SHAKE scales it).
+function Fx.kick(strength: number)
+	fovKick = math.min(fovKick, -math.min(0.8 + strength, 4) * Fx.shakeScale())
+end
 
 -- Afterimages of a body (the dash): `count` see-through neon copies of its limbs left behind
 -- along the way, `gap` seconds apart, each fading and thinning out in `life` seconds. The copies
@@ -208,6 +274,9 @@ function Fx.shake(position: Vector3, magnitude: number, duration: number)
 	local now = os.clock()
 	if magnitude > (now < shakeEnd and shakeMag or 0) then
 		shakeMag, shakeStart, shakeEnd = magnitude, now, now + duration
+		if now >= stopStart and now < stopEnd then
+			shakeOffset = rng:NextUnitVector() * magnitude -- in a hitstop: the jolt now, held for the freeze
+		end
 	end
 end
 
@@ -448,12 +517,253 @@ function Fx.text(position: Vector3, text: string, color: Color3, scale: number)
 	end)
 end
 
+-- Comic overlay, on screen over the hit: manga focus lines bursting out of it, a scatter of halftone
+-- dots and, with a `word`, the comic starburst sticker (BURST_IMAGE) popping in with it. One set of
+-- frames, built once and reused (a newer hit takes it over). FLASHES off: only the sticker, no ink.
+-- Runs on real time, so it holds still on screen through the hitstop it comes with.
+local COMIC_LINES, COMIC_DOTS = 16, 10
+local comicSet: { [string]: any }? = nil
+local comicToken, comicAt = 0, -math.huge
+local function comicBuild(): { [string]: any }
+	local screen = Instance.new("ScreenGui")
+	screen.Name, screen.IgnoreGuiInset, screen.ResetOnSpawn, screen.DisplayOrder = "ComicFrames", true, false, 40
+	local set = { screen = screen, lines = {}, dots = {} }
+	local taper = NumberSequence.new({ -- each line thickens away from the hit
+		NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(0.35, 0.15), NumberSequenceKeypoint.new(1, 0),
+	})
+	for i = 1, COMIC_LINES do
+		local line = Instance.new("Frame")
+		line.AnchorPoint, line.BorderSizePixel, line.BackgroundColor3, line.Visible = Vector2.new(0.5, 0.5), 0, BLACK, false
+		local grad = Instance.new("UIGradient")
+		grad.Transparency = taper
+		grad.Parent = line
+		line.Parent = screen
+		set.lines[i] = { frame = line, angle = 0, length = 0, width = 0 }
+	end
+	for i = 1, COMIC_DOTS do
+		local dot = Instance.new("Frame")
+		dot.AnchorPoint, dot.BorderSizePixel, dot.BackgroundColor3, dot.Visible = Vector2.new(0.5, 0.5), 0, BLACK, false
+		local round = Instance.new("UICorner")
+		round.CornerRadius = UDim.new(0.5, 0)
+		round.Parent = dot
+		dot.Parent = screen
+		set.dots[i] = { frame = dot, at = Vector2.zero, size = 0 }
+	end
+	local sticker = Instance.new("ImageLabel")
+	sticker.AnchorPoint, sticker.BackgroundTransparency, sticker.Image, sticker.Visible = Vector2.new(0.5, 0.5), 1, BURST_IMAGE, false
+	sticker.ZIndex = 2
+	local word = Instance.new("TextLabel")
+	word.AnchorPoint, word.Position, word.Size = Vector2.new(0.5, 0.5), UDim2.fromScale(0.52, 0.5), UDim2.fromScale(0.64, 0.46)
+	word.BackgroundTransparency, word.Font, word.TextScaled, word.TextColor3 = 1, Enum.Font.Bangers, true, BURST_YELLOW
+	word.ZIndex = 3
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness, stroke.Color = 4, BURST_INK
+	stroke.Parent = word
+	word.Parent = sticker
+	sticker.Parent = screen
+	set.sticker, set.word, set.stroke = sticker, word, stroke
+	screen.Parent = player:WaitForChild("PlayerGui")
+	return set
+end
+
+function Fx.comic(at: Vector3, word: string?, strength: number)
+	local ink = Fx.flashes()
+	local now = os.clock()
+	if not word and (not ink or now - comicAt < 0.35) then
+		return -- a plain big hit right after another overlay: that one stands
+	end
+	comicAt = now
+	local set = comicSet or comicBuild()
+	comicSet = set
+	comicToken += 1
+	local token = comicToken
+	local view = camera.ViewportSize
+	local base = math.min(view.X, view.Y)
+	local p, onScreen = camera:WorldToViewportPoint(at)
+	local centre = if onScreen then Vector2.new(p.X, p.Y) else view * Vector2.new(0.5, 0.42)
+	local reach = base * (0.3 + 0.06 * strength)
+	for _, l in set.lines do
+		l.angle = rng:NextNumber() * math.pi * 2
+		l.length = base * rng:NextNumber(0.12, 0.26)
+		l.width = math.max(2, base * rng:NextNumber(0.004, 0.011))
+		l.frame.Rotation = math.deg(l.angle)
+		l.frame.Visible = ink
+	end
+	for i, d in set.dots do -- two loose arcs of shrinking dots off the hit: halftone
+		local arc = (if i % 2 == 0 then 0.6 else -2.4) + i * 0.16 + rng:NextNumber(-0.1, 0.1)
+		local r = base * (0.16 + 0.05 * (i % 3))
+		d.at = centre + Vector2.new(math.cos(arc), math.sin(arc)) * r
+		d.size = base * (0.034 - 0.0025 * i) * rng:NextNumber(0.8, 1.2)
+		d.frame.Visible = ink
+	end
+	local sticker = set.sticker
+	local w = base * (0.32 + 0.05 * strength)
+	local life = if word then 0.75 else 0.24
+	sticker.Visible = word ~= nil
+	sticker.Position = UDim2.fromOffset(centre.X, centre.Y - base * 0.1)
+	sticker.Rotation = rng:NextInteger(-10, -4)
+	set.word.Text = word or ""
+	run(life, {}, function(a)
+		if token ~= comicToken then
+			return -- a newer hit has the overlay now
+		end
+		local la = math.min(a * life / 0.24, 1) -- the ink lasts 0.24 s
+		if ink then
+			local r0 = base * 0.08 + reach * 0.15 * out(la)
+			for _, l in set.lines do
+				local len = l.length * (1 - la * 0.6)
+				local mid = centre + Vector2.new(math.cos(l.angle), math.sin(l.angle)) * (r0 + reach * 0.6 * out(la) + len / 2)
+				l.frame.Position = UDim2.fromOffset(mid.X, mid.Y)
+				l.frame.Size = UDim2.fromOffset(len, l.width * (1 - la * 0.7))
+				l.frame.BackgroundTransparency = la * la
+			end
+			for _, d in set.dots do
+				local s = d.size * math.min(la / 0.25, 1) * (1 - la * 0.4)
+				d.frame.Position = UDim2.fromOffset(d.at.X, d.at.Y)
+				d.frame.Size = UDim2.fromOffset(s, s)
+				d.frame.BackgroundTransparency = la ^ 3
+			end
+		end
+		if word then
+			local s = if a < 0.12 then a / 0.12 * 1.25 else 1.25 - 0.25 * math.min((a - 0.12) / 0.1, 1)
+			sticker.Size = UDim2.fromOffset(w * s, w * s / BURST_ASPECT)
+			local fade = math.max(0, (a - 0.7) / 0.3)
+			sticker.ImageTransparency, set.word.TextTransparency, set.stroke.Transparency = fade, fade, fade
+		end
+		if a >= 1 then
+			for _, l in set.lines do l.frame.Visible = false end
+			for _, d in set.dots do d.frame.Visible = false end
+			sticker.Visible = false
+		end
+	end, true)
+end
+
+local HIT_WORDS = { "BAM!", "POW!", "WHAM!", "SMACK!", "THWACK!" }
 function Fx.hit(position: Vector3)
-	Fx.glint(position, 2.4, WHITE, 0.16)
+	-- a punch lands ~3 studs from the eye: there a full-size glint would white out half the screen
+	Fx.glint(position, math.min(2.4, (position - camera.CFrame.Position).Magnitude * 0.45), WHITE, 0.16)
 	Fx.sparks(position, 6, 3.5, Color3.fromRGB(255, 220, 120), nil, 0.25)
 	if rng:NextNumber() < 0.3 then
-		Fx.text(position + UP * 1.5, "BAM!", WHITE, 1.2)
+		Fx.text(position + UP * 1.5, HIT_WORDS[rng:NextInteger(1, #HIT_WORDS)], WHITE, 1.2)
 	end
+end
+
+-- The victim of our blow flashes white (a soft tint with FLASHES off) and fades, held through the
+-- hitstop: the freeze-frame, on this client only. One Highlight, reused: the newest victim takes it.
+local hitGlow = Instance.new("Highlight")
+hitGlow.Name, hitGlow.Enabled, hitGlow.FillColor, hitGlow.OutlineColor = "HitFlash", false, WHITE, BLACK
+hitGlow.DepthMode = Enum.HighlightDepthMode.Occluded
+hitGlow.Parent = folder
+local glowToken = 0
+local function flashVictim(victim: Model, strength: number)
+	glowToken += 1
+	local token = glowToken
+	local fill = if Fx.flashes() then 0.1 else 0.6
+	hitGlow.Adornee, hitGlow.Enabled = victim, true
+	run(0.09 + 0.03 * strength, {}, function(a)
+		if token ~= glowToken then
+			return
+		end
+		hitGlow.FillTransparency = fill + (1 - fill) * a * a
+		hitGlow.OutlineTransparency = 0.3 + 0.7 * a
+		if a >= 1 then
+			hitGlow.Enabled, hitGlow.Adornee = false, nil
+		end
+	end)
+end
+
+-- A thin white ring bursting flat out of the hit, facing the camera: the squash of the blow. Up close
+-- (a punch is ~3 studs off in first person) it is shrunk to stay round the target, about a quarter of
+-- the view high, instead of filling the screen.
+local function radial(at: Vector3, strength: number)
+	local face = CFrame.lookAt(at, camera.CFrame.Position) * CFrame.Angles(math.pi / 2, 0, 0)
+	local size = 1.4 + strength
+	local k = math.min(1, (at - camera.CFrame.Position).Magnitude * 0.3 / size)
+	Fx.ring(face, 0.4 * k, size * k, 0.14 + 0.03 * strength, WHITE, { thick = (0.15 + 0.07 * strength) * k, height = 0.08, sides = 10, ink = false, spin = 2 })
+end
+
+-- Our own blow landing (the client's predicted punch or kick, or the server's Shot for our weapon):
+-- the layers only the attacker gets, on top of what everyone sees (Fx.hit, the Shot's own look).
+-- `strength`: 1 a jab .. 3 the heaviest; under 1 (bullets, sprays) only the victim's flash and a
+-- small kick. `delay`: s until the blow visibly connects (the fist still on its way). No body near
+-- `position`: nothing. client/HitFeel counts the combo and watches for the KO (Fx.onOurHit).
+Fx.onOurHit = nil :: ((position: Vector3, strength: number, victim: Model) -> ())?
+function Fx.ourHit(position: Vector3, strength: number, victim: Model?, delay: number?)
+	local body = victim or victimAt(position, 3)
+	if not body or strength <= 0 then
+		return
+	end
+	flashVictim(body, strength)
+	Fx.kick(strength * 0.8)
+	if strength >= 1 then
+		Fx.hitstop(strength, delay)
+		radial(position, strength)
+		Fx.shake(position, 0.1 + 0.1 * strength, 0.1 + 0.03 * strength)
+	end
+	if strength >= 2.2 then
+		Fx.glint(position, 1.5 + strength, BURST_YELLOW, 0.14)
+		Fx.comic(position, nil, strength) -- ink lines only (FLASHES off: none)
+	end
+	if Fx.onOurHit then
+		Fx.onOurHit(position, strength, body)
+	end
+end
+
+-- Stars flung out of a KO'd body, spinning, on a billboard (always faces the camera).
+local KO_STAR = Color3.fromRGB(255, 220, 60)
+local function starBurst(position: Vector3)
+	local anchor = part(Enum.PartType.Block, WHITE)
+	anchor.Transparency = 1
+	anchor.Position = position
+	local gui = Instance.new("BillboardGui")
+	gui.Size, gui.AlwaysOnTop, gui.LightInfluence = UDim2.fromScale(9, 9), true, 0
+	local stars = {}
+	for i = 1, 7 do
+		local star = Instance.new("TextLabel")
+		star.AnchorPoint, star.Size, star.BackgroundTransparency = Vector2.new(0.5, 0.5), UDim2.fromScale(0.15, 0.15), 1
+		star.Text, star.Font, star.TextScaled = "★", Enum.Font.GothamBold, true
+		star.TextColor3, star.TextStrokeColor3, star.TextStrokeTransparency = if i % 3 == 0 then WHITE else KO_STAR, BLACK, 0
+		star.Parent = gui
+		stars[i] = { label = star, angle = (i + rng:NextNumber(-0.3, 0.3)) / 7 * math.pi * 2, spin = rng:NextNumber(-400, 400) }
+	end
+	gui.Parent = anchor
+	run(0.65, { anchor }, function(a)
+		local r = 0.42 * out(a)
+		local fade = math.max(0, (a - 0.55) / 0.45)
+		for _, s in stars do
+			s.label.Position = UDim2.fromScale(0.5 + math.cos(s.angle) * r, 0.5 + math.sin(s.angle) * r * 0.8 + a * a * 0.08)
+			s.label.Rotation = s.spin * a
+			s.label.TextTransparency, s.label.TextStrokeTransparency = fade, fade
+		end
+	end)
+end
+
+-- The KO moment for a body we just put down (client/HitFeel): the longest hitstop and kick, the
+-- comic impact frames with a "KO!" sticker (the black-and-white frames at most every KO_FRAMES_GAP s;
+-- FLASHES off: the sticker only), a star burst out of it and yellow sparks. `quiet`: a kill that paid
+-- us some time after the blow (a throw, a bleed-out): the word and stars, no freeze, kick or frames.
+local KO_FRAMES_GAP = 2.5
+local koFramesAt = -math.huge
+function Fx.ko(position: Vector3, victim: Model?, quiet: boolean?)
+	if not quiet then
+		Fx.hitstop(3)
+		Fx.kick(3)
+		if victim then
+			flashVictim(victim, 3)
+		end
+	end
+	if not quiet and victim and Fx.flashes() and os.clock() - koFramesAt > KO_FRAMES_GAP then
+		koFramesAt = os.clock()
+		Fx.impactFrames(position, "KO!", Fx.KO_FRAMES, victim)
+	else
+		Fx.comic(position, "KO!", 3)
+		Fx.shake(position, if quiet then 0.2 else 0.6, 0.2)
+	end
+	Fx.glint(position, 5, KO_STAR, 0.2)
+	Fx.ring(CFrame.lookAt(position, camera.CFrame.Position) * CFrame.Angles(math.pi / 2, 0, 0), 0.6, 6, 0.3, WHITE,
+		{ thick = 0.35, height = 0.08, sides = 12, ink = false, spin = 1.5 })
+	Fx.sparks(position, 10, 6, KO_STAR, UP, 0.4)
+	starBurst(position + UP * 1.5)
 end
 
 -- Layered explosion; everything scales from `radius` (strength = scale, not new effects).
@@ -799,6 +1109,16 @@ for _, w in require(ReplicatedStorage.Shared:WaitForChild("Weapons")) do
 end
 MELEE.Baton = true -- the cops' baton: a dummy weapon, not in Weapons
 
+-- How hard our own weapon's blow lands, for the attacker's layers (Fx.ourHit: 1 a jab .. 3 the
+-- heaviest, under 1 no hitstop, 0 none at all). Not listed: melee 1.5, anything else 0.5.
+local HIT_STRENGTH = {
+	BoxingGloves = 1, BoxingHeavy = 2.4, Pan = 2.2, Sledgehammer = 2.6, Bat = 1.8, Axe = 1.8, Crowbar = 1.3,
+	Katana = 1.5, KnifeSlash = 1, Spear = 1.4, Lightsaber = 1.6, Baton = 1.3,
+	Sniper = 2.4, Revolver = 1.2, Shotgun = 1.1, Harpoon = 1.4, Knife = 1.2,
+	Minigun = 0.3, Chainsaw = 0.3, Lasso = 0, Flamethrower = 0, -- (the throwables' blasts shake on their own)
+	Grenade = 0, Molotov = 0, TNT = 0, C4 = 0, Landmine = 0, Rocket = 0, Bandage = 0, Cast = 0, HealSyringe = 0,
+}
+
 function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vector3, landed: boolean, primary: boolean?,
 	swing: Vector3?, center: Vector3?)
 	-- our own shot leaves the muzzle of the gun as it is drawn right now, so it keeps up with the
@@ -806,6 +1126,12 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 	local ownMuzzle = shooter ~= nil and shooter == player.Character and Fx.muzzle and Fx.muzzle(weaponId)
 	local aimCf = CFrame.lookAt(from, to)
 	local distance = (to - from).Magnitude
+	if landed and primary ~= false and shooter ~= nil and shooter == player.Character and (HIT_STRENGTH[weaponId] or 1) > 0 then
+		-- our own weapon landed: the attacker's layers (Fx.ourHit), once the blade or harpoon gets there
+		local strength = HIT_STRENGTH[weaponId] or (if MELEE[weaponId] then 1.5 else 0.5)
+		local flight = if weaponId == "Knife" or weaponId == "Harpoon" then distance / 160 else 0
+		task.delay(flight, Fx.ourHit, to, strength)
+	end
 	if weaponId == "BoxingGloves" or weaponId == "BoxingHeavy" then
 		-- A padded punch gets a compact impact, never a blade's crescent or metal sparks.
 		if landed then
@@ -890,7 +1216,7 @@ function EVENTS.Shot(shooter: Model?, weaponId: string, from: Vector3, to: Vecto
 		-- only a scoped shot of ours (the client stamps Fx.scopedShotAt as it fires) that lands on a body
 		if sniper and Fx.IMPACT_FRAMES and primary ~= false and landed and shooter ~= nil and shooter == player.Character
 			and os.clock() - Fx.scopedShotAt < 1.5 then
-			Fx.impactFrames(to)
+			Fx.impactFrames(to, "BLAM!")
 		end
 		local big = weaponId == "Revolver" or sniper
 		local pellet = weaponId == "Shotgun"

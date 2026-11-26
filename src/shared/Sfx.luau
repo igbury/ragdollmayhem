@@ -216,6 +216,30 @@ function Sfx.loop(parent: Instance, id: string?, volume: number?, range: number?
 end
 Sfx.SCRAPE = { Sfx.STONE, 0.45, 0.35 } -- a dragged body grinding along the ground (F)
 
+-- Hits never repeat one sample: each one a client plays (Sfx.playLocal) lands HIT_PITCH higher or lower
+-- at random, and a clip with kin here takes turns with them, never the same twice running. Each kin is
+-- { id, pitch, volume } times the asked-for ones. Only clips already in this table: none new.
+Sfx.HIT_PITCH = 0.1
+Sfx.VARY = {
+	[Sfx.PUNCH] = { { Sfx.PUNCH, 1, 1 }, { Sfx.PUNCH, 0.9, 1 }, { Sfx.PUNCH, 1.12, 0.95 }, { Sfx.BODY_THUD, 1.3, 0.6 } },
+	[Sfx.BAT_HIT] = { { Sfx.BAT_HIT, 1, 1 }, { Sfx.BATON_HIT, 0.85, 1 } },
+	[Sfx.BATON_HIT] = { { Sfx.BATON_HIT, 1, 1 }, { Sfx.BAT_HIT, 1.15, 0.9 } },
+	[Sfx.KNIFE_HIT] = { { Sfx.KNIFE_HIT, 1, 1 }, { Sfx.SPEAR_STAB, 1.1, 0.8 } },
+	[Sfx.BODY_THUD] = { { Sfx.BODY_THUD, 1, 1 }, { Sfx.BODY_FALL, 1, 1 }, { Sfx.LAND_HARD, 0.9, 0.9 } },
+	[Sfx.BULLET_HIT_BODY] = { { Sfx.BULLET_HIT_BODY, 1, 1 }, { Sfx.BULLET_HIT_BODY, 0.88, 1 }, { Sfx.ARROW_HIT_BODY, 1.25, 0.7 } },
+}
+-- what counts as a hit (pitch varied): every weapon's hit, the body thuds, the bullets' surface hits
+Sfx.HITS = {
+	[Sfx.PUNCH] = true, [Sfx.BODY_THUD] = true, [Sfx.BODY_FALL] = true, [Sfx.LAND_HARD] = true, [Sfx.BONE] = true,
+	[Sfx.BULLET_HIT_CONCRETE] = true, [Sfx.BULLET_HIT_METAL] = true, [Sfx.BULLET_HIT_WOOD] = true,
+	[Sfx.ARROW_HIT_BODY] = true, [Sfx.ARROW_HIT_WALL] = true,
+}
+for _, w in Sfx.WEAPON do
+	if w.hit then
+		Sfx.HITS[w.hit[1]] = true
+	end
+end
+
 -- Skip a clip's leading silence (also on every loop).
 function Sfx.prepare(sound: Sound)
 	local trim = Sfx.TRIM[sound.SoundId:match("%d+") or ""]
@@ -291,10 +315,23 @@ local function voiceAllowed(): boolean
 	return true
 end
 
+local hitRng = Random.new()
+local turn: { [string]: number } = {} -- the kin (Sfx.VARY) each hit clip played last
 function Sfx.playLocal(spec: string | { any }, position: Vector3)
 	local id, pitch, volume = spec, 1, nil
 	if typeof(spec) == "table" then
 		id, pitch, volume = spec[1], spec[2] or 1, spec[3]
+	end
+	if Sfx.HITS[id] then
+		local kin = Sfx.VARY[id]
+		if kin then
+			local n = #kin
+			local i = ((turn[id] or hitRng:NextInteger(0, n - 1)) + hitRng:NextInteger(1, n - 1)) % n
+			turn[id] = i
+			local k = kin[i + 1]
+			id, pitch, volume = k[1], pitch * k[2], (volume or 0.8) * k[3]
+		end
+		pitch *= hitRng:NextNumber(1 - Sfx.HIT_PITCH, 1 + Sfx.HIT_PITCH)
 	end
 	local template = templates[id]
 	if not template or (voiceIds[id] and not voiceAllowed()) then
@@ -311,14 +348,15 @@ function Sfx.playLocal(spec: string | { any }, position: Vector3)
 	Debris:AddItem(at, 10) -- longest clip (grenade boom) is 8 s
 end
 
--- A flat (not 3D) one-shot for the interface, through the Effects volume (client/Music).
-function Sfx.ui(id: string, volume: number?)
+-- A flat (not 3D) one-shot for the interface, through the Effects volume (client/Music), at a pitch (default 1).
+function Sfx.ui(id: string, volume: number?, pitch: number?)
 	local template = templates[id]
 	if not template then
 		return
 	end
 	local sound = template:Clone()
 	sound.Volume = volume or 0.5
+	sound.PlaybackSpeed = pitch or 1
 	sound.SoundGroup = game:GetService("SoundService"):FindFirstChild("Effects") :: SoundGroup?
 	sound.Parent = game:GetService("SoundService")
 	sound:Play()
