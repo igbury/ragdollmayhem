@@ -1374,6 +1374,7 @@ local function kill(d, cause: string)
 			Wanted.crime(by, d.model:GetAttribute("Kind"))
 		end
 		if by then -- a kill for the weapon progression (zombies count)
+			Tutorial.event(by, "kill") -- killed before grabbing it by F: the grab hint is skipped
 			local paid = Progress.credit(by, weapon, d.model:GetAttribute("Kind"), d.model:GetAttribute("Spawned"))
 			local torso = d.model:FindFirstChild("UpperTorso") :: BasePart?
 			if torso then -- the cash flies out of the body to the killer's counter (client/CashHud)
@@ -3341,6 +3342,7 @@ local function throw(weapon, char: Model, origin: Vector3, dir: Vector3)
 		weld.Part0, weld.Part1 = p, stem
 		weld.Parent = stem
 		stem.Parent = p
+		p:SetNetworkOwner(nil) -- again: the weld made a new assembly, back on auto (the thrower's client), so the server saw it ~0.25 s late and burst it short of the ring
 		tomato(p, char, Players:GetPlayerFromCharacter(char))
 		return
 	end

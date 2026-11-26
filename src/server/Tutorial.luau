@@ -200,7 +200,7 @@ end
 -- The controls hints (saved like the tutorial, "HintsDone"; shown on a line of their own, so they run
 -- during the tutorial too): the first time the player hits a ragdoll, "grab it with F"; once they hold one by F, "look ahead and click to kick it
 -- into a wall"; the kick ends them. The step is the "Hint" attribute ("grab" / "kick"), and a "Hint"
--- of "done" for a moment after the kick (client/TutorialHud). `what`: "hit", "grab" (with F), "drop" (let go of it, unkicked: the hints end, never shown again) or "punt".
+-- of "done" for a moment after the kick (client/TutorialHud). `what`: "hit", "grab" (with F), "drop" (let go of it, unkicked: the hints end, never shown again), "kill" (killed while the grab hint shows: the same) or "punt".
 function Tutorial.event(player: Player, what: string)
 	if player:GetAttribute("HintsDone") ~= false then
 		return -- done before, or not loaded yet
@@ -210,7 +210,7 @@ function Tutorial.event(player: Player, what: string)
 		player:SetAttribute("Hint", "grab")
 	elseif what == "grab" and (step == nil or step == "grab") then -- grabbing first skips its own hint
 		player:SetAttribute("Hint", "kick")
-	elseif what == "drop" and step == "kick" then -- let go unkicked: the kick step is skipped, for good (saved)
+	elseif (what == "drop" and step == "kick") or (what == "kill" and step == "grab") then -- let go unkicked, or killed before the grab: the rest is skipped, for good (saved)
 		player:SetAttribute("HintsDone", true)
 		player:SetAttribute("Hint", nil)
 		hooks.done(player)
