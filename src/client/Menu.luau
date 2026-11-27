@@ -617,8 +617,7 @@ playP.words = { playText, playTextBack }
 -- Shop page: the game passes (shared/Shop), one per panel in list order, BACK bottom-left.
 -- A pass not on sale yet (id 0) says SOON!, an owned one OWNED; a click on the rest opens the purchase.
 local SHOP_BACK = 7 -- bottom-left, like BACK on the stats page
-local SHOP_NEXT = 9 -- bottom-right: the next page of passes, not there yet
-local SHOP_SLOTS = { 1, 2, 3, 4, 5, 6, 8 }
+local SHOP_SLOTS = { 1, 2, 3, 4, 5, 6, 8, 9 }
 local SHOP_TITLE = { YELLOW, RED, YELLOW, YELLOW, YELLOW, YELLOW, WHITE, RED, YELLOW } -- per panel, against its colour
 for n, item in Shop.PASSES do
 	local i = SHOP_SLOTS[n]
@@ -656,13 +655,6 @@ do
 	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, -14)
 	title(p, SHOP_BACK, "< BACK", WHITE, false)
 	p.word = "BACK!"
-end
-do
-	local p = SHOP_PANELS[SHOP_NEXT]
-	p.burst = rays(p.content :: GuiObject, 0.5, 0.5, 22, 60, 0, p.color:Lerp(WHITE, 0.35), 0.3, 14)
-	local soon = title(p, SHOP_NEXT, "NEXT PAGE >", SHOP_TITLE[SHOP_NEXT], true) :: TextLabel
-	soon.Text = "COMING SOON"
-	p.word = "SOON!"
 end
 
 -- Stats page: one number per panel, BACK bottom-left like on the shop. The numbers are the

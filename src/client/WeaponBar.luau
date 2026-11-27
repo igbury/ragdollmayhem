@@ -28,8 +28,9 @@ local GROUP = { -- outline colour per weapon group (Weapons `tag`)
 	thrown = Color3.fromRGB(120, 230, 140),
 	heavy = Color3.fromRGB(255, 90, 80),
 	tool = Color3.fromRGB(240, 240, 235),
+	power = Color3.fromRGB(120, 255, 140), -- the Doomsday Pack
 }
-local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVES", heavy = "EXPLOSIVES", tool = "TOOLS" } -- wheel page per group
+local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVES", heavy = "EXPLOSIVES", tool = "TOOLS", power = "DOOMSDAY" } -- wheel page per group
 local ABOUT = {
 	Bow = "Hold attack to draw; release to shoot. Arrows drop.",
 	Fists = "Punches, kicks, dive kicks",
@@ -260,7 +261,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- It starts with the fists and the other starting weapons (shared/Progression.START: a new player
 	-- sees on keys 1-3 that they have a bat and a tomato). Each weapon taken from the wheel (hold Q) or the Arsenal (J)
 	-- that is not on it yet gets a slot of its own, up to MAX_SLOTS; after that it replaces the one in hand.
-	-- The Arsenal's Anime Pack puts every ability on it instead (pack(), past MAX_SLOTS).
 	local MAX_SLOTS = 5
 	local loadout = { 1 } -- Weapons[1], the fists
 	for i, w in weapons do
@@ -610,15 +610,6 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			flip(dirn)
 		end)
 	end
-	-- abilities on the bar: the Anime Pack is out (only it puts them there)
-	local function packOut(): boolean
-		for _, e in loadout do
-			if e > #weapons then
-				return true
-			end
-		end
-		return false
-	end
 	local function choose(i: number?)
 		if not i then
 			show(false)
@@ -630,7 +621,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 			return
 		end
 		if not table.find(loadout, i) then
-			if #loadout < MAX_SLOTS and not packOut() then -- a new slot at the end (with the pack out: in the held one's place)
+			if #loadout < MAX_SLOTS then -- a new slot at the end
 				table.insert(loadout, i)
 				addSlot(#loadout)
 			else -- the bar is full: it takes the place of the one in hand
@@ -645,27 +636,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		show(false)
 	end
 
-	-- The Anime Pack (one card in the Arsenal for all the abilities): every ability on the bar in place of
-	-- what was on it, the first in hand. A weapon taken after it takes the held ability's place (choose).
-	local function pack()
-		if missing(attackFrom + 1) then
-			take(attackFrom + 1) -- says what it needs (the ANIME ATTACKS pass), takes nothing
-			return
-		end
-		for k = #slots, 1, -1 do
-			slots[k].frame:Destroy()
-			slots[k] = nil
-		end
-		table.clear(loadout)
-		for k in attacks do
-			loadout[k] = attackFrom + k
-			addSlot(k)
-		end
-		take(loadout[1])
-	end
-
 	-- the Arsenal grid asks the same locks
-	local bagApi = setmetatable({ locked = missing, buy = buy, attackFrom = attackFrom, pack = pack, packOut = packOut }, { __index = api })
+	local bagApi = setmetatable({ locked = missing, buy = buy, attackFrom = attackFrom }, { __index = api })
 	arsenal = require(script.Parent.Arsenal).start(gui, weapons, viewmodels, fistSpec, icon, ABOUT, bagApi, choose, function() show(false) end)
 
 	-- Unlocks: a notice (below) and the locks redrawn (a new weapon goes on the bar once it is taken).
@@ -690,7 +662,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 	-- disc of its group's colour, its name, its group - sliding in, stacking under the last one, gone
 	-- after NOTICE_TIME (the stack closes up).
 	local NOTICE_TIME = 4.5
-	local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVE", heavy = "EXPLOSIVE" }
+	local CATEGORY = { melee = "MELEE", gun = "RANGED", thrown = "EXPLOSIVE", heavy = "EXPLOSIVE", power = "DOOMSDAY" }
 	local PAPER = Color3.fromRGB(255, 248, 228)
 	local CAPTION = Color3.fromRGB(252, 200, 50)
 	local COMIC = Enum.Font.LuckiestGuy -- the menu's lettering
@@ -841,7 +813,7 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		end
 	end)
 	player:GetAttributeChangedSignal(Progression.GROUP_ATTRIBUTE):Connect(relock)
-	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime" } do -- passes that unlock (shared/Shop)
+	for _, key in { "AllWeapons", "AllGuns", "AllMelee", "AllExplosives", "Anime", "Doomsday" } do -- passes that unlock (shared/Shop)
 		player:GetAttributeChangedSignal("Pass" .. key):Connect(relock)
 	end
 	UserInputService.InputBegan:Connect(function(input, processed)

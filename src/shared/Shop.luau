@@ -15,6 +15,7 @@ Shop.PASSES = {
 	{ key = "DoubleKO", name = "2X CASH", price = 150, pass = 2096772828 }, -- each kill pays double cash (shared/Progression)
 	{ key = "Anime", name = "ANIME ATTACKS", price = 150, pass = 2093668861 }, -- the abilities (shared/Attacks)
 	{ key = "SandboxPlus", name = "SANDBOX +", price = 100, pass = 2094442786 }, -- every Toolbox kind, teams, spawning more than 1, higher caps
+	{ key = "Doomsday", name = "DOOMSDAY PACK", price = 200, pass = 2099725192 }, -- the powers in Shop.DOOMSDAY
 }
 
 -- Cash packs: developer products, bought again and again (server/Shop's ProcessReceipt pays them,
@@ -38,6 +39,8 @@ end
 
 -- [weapon tag (shared/Weapons)] = the pass that unlocks every weapon with it
 Shop.UNLOCKS = { gun = "AllGuns", melee = "AllMelee", thrown = "AllExplosives", heavy = "AllExplosives" }
+-- DOOMSDAY PACK: the powers (shared/Weapons ids) only its pass unlocks (shared/Progression.missing)
+Shop.DOOMSDAY = { CosmicPower = true, WebShot = true, GroundSlam = true }
 -- 2X CASH (key DoubleKO): each kill pays this many times the cash
 Shop.KO_WORTH = 2
 -- SANDBOX +: what the Toolbox (client/Toolbox, server "spawn" / "build") keeps for the pass, and the

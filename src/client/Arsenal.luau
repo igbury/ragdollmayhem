@@ -11,6 +11,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Progression = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Progression"))
 local Sfx = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Sfx"))
+local Shop = require(ReplicatedStorage:WaitForChild("Shared"):WaitForChild("Shop"))
+local MarketplaceService = game:GetService("MarketplaceService")
 local player = Players.LocalPlayer
 local Arsenal = {}
 local WHITE, BLACK = Color3.new(1, 1, 1), Color3.fromRGB(15, 15, 20)
@@ -26,9 +28,19 @@ local KINDS = {
 	gun = { color = Color3.fromRGB(55, 110, 215), ink = Color3.fromRGB(10, 20, 60), label = "GUNS" }, -- ranged
 	thrown = { color = Color3.fromRGB(232, 70, 56), ink = Color3.fromRGB(140, 15, 30), label = "BOOM!" }, -- explosives
 	medical = { color = Color3.fromRGB(95, 190, 75), ink = Color3.fromRGB(30, 70, 25), label = "MEDIC" }, -- bandage, cast
-	ability = { color = Color3.fromRGB(165, 90, 230), ink = Color3.fromRGB(60, 20, 110), label = "ANIME" }, -- the Anime Pack
+	ability = { color = Color3.fromRGB(165, 90, 230), ink = Color3.fromRGB(60, 20, 110), label = "ANIME" }, -- the ANIME ATTACKS pass
+	power = { color = Color3.fromRGB(30, 200, 110), ink = Color3.fromRGB(0, 70, 40), label = "DOOMSDAY" }, -- the Doomsday Pack (shared/Shop.DOOMSDAY)
 }
-local TABS = { "melee", "gun", "thrown", "medical", "ability" } -- the bookmarks, top down
+-- the categories a game pass opens (shared/Shop key): their bookmark and their cards ask for the pass until it is owned
+local PASS_OF = { ability = "Anime", power = "Doomsday" }
+-- true when category `k` is locked: the pass purchase is prompted instead
+local function promptPass(k: string): boolean
+	local key = PASS_OF[k]
+	if not key or not Shop.locked(player, key) then return false end
+	MarketplaceService:PromptGamePassPurchase(player, Shop.item(key).pass)
+	return true
+end
+local TABS = { "melee", "gun", "thrown", "medical", "ability", "power" } -- the bookmarks, top down
 local function kindOf(tag: string): string
 	return if tag == "heavy" or tag == "thrown" then "thrown" elseif tag == "tool" then "medical" elseif KINDS[tag] then tag else "ability"
 end
@@ -269,8 +281,9 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	local function refresh(keepPage: boolean?)
 		for _, card in order do
 			local w, i = card.w, card.i
-			-- the pack: while its abilities are on the bar; a weapon: in hand (an ability in hand holds the fists, not them)
-			local equipped = if card.pack then api.packOut() else api.get() == i and not (api.held and api.held())
+			-- an ability: the one held; a weapon: in hand (an ability in hand holds the fists, not them)
+			local held = api.held and api.held()
+			local equipped = if i > api.attackFrom then held ~= nil and held == api.attacks[i - api.attackFrom] else api.get() == i and not held
 			local lock = api.locked and api.locked(i) -- weapon progression: what it still needs
 			local price = lock and i <= #weapons and Progression.PRICE[w.id]
 			local afford = price and (player:GetAttribute(Progression.CASH) or 0) >= price
@@ -416,19 +429,18 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			if opening then turn(1, true) end -- the cover turns over to the left
 		end
 	end
-	-- cards: the weapons cheapest first (free ones first, the group's Frostgun last), then the abilities
+	-- cards: the weapons cheapest first (free ones first, the group's Frostgun and the Doomsday powers last), then the abilities
 	local entries = {}
 	for i, w in weapons do
-		local price = Progression.PRICE[w.id] or (if Progression.GROUP[w.id] then math.huge else 0)
+		local price = Progression.PRICE[w.id] or (if Progression.GROUP[w.id] or w.tag == "power" then math.huge else 0)
 		table.insert(entries, { i = i, w = w, price = price })
 	end
 	table.sort(entries, function(a, b)
 		return if a.price ~= b.price then a.price < b.price else a.i < b.i
 	end)
-	-- the abilities: one card, the Anime Pack, that puts them all on the hotbar (client/WeaponBar pack());
-	-- its i is the first ability's, which carries their lock (the ANIME ATTACKS pass)
-	if api.attacks and #api.attacks > 0 then
-		table.insert(entries, { i = api.attackFrom + 1, pack = api.attacks, w = { id = "AnimePack", name = "Anime Pack", tag = "ability" } })
+	-- the abilities: a card each (locked by the ANIME ATTACKS pass), an orb in its colour for an icon
+	for k, a in api.attacks or {} do
+		table.insert(entries, { i = api.attackFrom + k, orb = a.color, w = { id = a.id, name = a.name, tag = "ability" } })
 	end
 	for _, e in entries do
 		local i, w = e.i, e.w
@@ -446,16 +458,13 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			BackgroundTransparency = 1, ZIndex = 45,
 		})
 		new("UIAspectRatioConstraint", holder, { AspectRatio = 1 })
-		if e.pack then -- the Anime Pack: an orb per ability in its colour, in a ring
-			for k, a in e.pack do
-				local angle = (k - 1) / #e.pack * math.pi * 2 - math.pi / 2
-				local orb = new("Frame", holder, {
-					AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5 + math.cos(angle) * 0.3, 0.5 + math.sin(angle) * 0.3),
-					Size = UDim2.fromScale(0.27, 0.27), BackgroundColor3 = a.color, ZIndex = 45,
-				})
-				new("UICorner", orb, { CornerRadius = UDim.new(0.5, 0) })
-				ink(orb, INK).LineJoinMode = Enum.LineJoinMode.Round -- (a mitred one ignores the corner)
-			end
+		if e.orb then -- an ability: an orb in its colour
+			local orb = new("Frame", holder, {
+				AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5),
+				Size = UDim2.fromScale(0.55, 0.55), BackgroundColor3 = e.orb, ZIndex = 45,
+			})
+			new("UICorner", orb, { CornerRadius = UDim.new(0.5, 0) })
+			ink(orb, INK).LineJoinMode = Enum.LineJoinMode.Round -- (a mitred one ignores the corner)
 		else
 			vp, turnIcon = icon(models[w.id] or fist, holder, w.id, ICON_ZOOM); vp.ZIndex = 45
 		end
@@ -481,17 +490,14 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			Name = "Pick", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 48,
 		})
 		hit.Activated:Connect(function()
-			if e.pack then
-				api.pack(); setOpen(false) -- (locked: it says what it needs)
-				return
-			end
+			if promptPass(kindOf(w.tag)) then return end -- an ANIME / DOOMSDAY card without its pass
 			if i <= #weapons and api.locked(i) and Progression.PRICE[w.id] then
 				api.buy(i) -- stays open: the card turns to EQUIP once it is theirs (refresh below)
 				return
 			end
 			choose(i); setOpen(false)
 		end)
-		local card = { i = i, kind = kindOf(w.tag), pack = e.pack ~= nil, glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
+		local card = { i = i, kind = kindOf(w.tag), glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
 		-- hover: the panel grows from its centre, drawn over its neighbours
 		local grow = new("UIScale", frame, {})
 		local function hover(on)
@@ -555,7 +561,7 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			end
 		end
 		label.Activated:Connect(function()
-			if turning then return end
+			if turning or promptPass(k) then return end -- ANIME / DOOMSDAY: the pass first
 			kind = if kind == k then nil else k -- the open one again: closed, every category back
 			Sfx.ui(Sfx.COMIC_PAGE_TURN, 0.4)
 			for _, t in tabs do t.show() end
@@ -586,8 +592,8 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 		bars[3].Position, bars[3].Size = UDim2.fromOffset(0, a.Y), UDim2.fromOffset(a.X, b.Y - a.Y) -- left
 		bars[4].Position, bars[4].Size = UDim2.fromOffset(b.X, a.Y), UDim2.fromOffset(full.X - b.X, b.Y - a.Y) -- right
 	end)
-	player.AttributeChanged:Connect(function(attribute) -- cash in, a weapon bought
-		if cover.Visible and (attribute == Progression.CASH or attribute:sub(1, 3) == "Own") then refresh(true) end
+	player.AttributeChanged:Connect(function(attribute) -- cash in, a weapon or a pass bought
+		if cover.Visible and (attribute == Progression.CASH or attribute:sub(1, 3) == "Own" or attribute:sub(1, 4) == "Pass") then refresh(true) end
 	end)
 	backdrop.Activated:Connect(function() setOpen(false) end)
 	UIS.InputBegan:Connect(function(input, processed)

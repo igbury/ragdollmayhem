@@ -114,6 +114,9 @@ function Progression.missing(player: Player, id: string): string?
 	if Progression.GROUP[id] then
 		return if player:GetAttribute(Progression.GROUP_ATTRIBUTE) then nil else Progression.GROUP_NEED
 	end
+	if Shop.DOOMSDAY[id] then
+		return if Shop.locked(player, "Doomsday") then "DOOMSDAY PACK" else nil
+	end
 	local price = Progression.PRICE[id]
 	if not price or Progression.START[id] or player:GetAttribute(Progression.own(id)) then
 		return nil -- not part of the progression (abilities), or theirs
