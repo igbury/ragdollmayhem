@@ -1854,7 +1854,7 @@ end
 -- top-level locals). Right mouse pulls the body looked at, from as far as `reach`, into the claws
 -- (the server's grab "gravgun": a hard GrabAlign) and holds it GRAV.HOLD studs out; right mouse again
 -- drops it, a click launches it (the punt's mark, so its first wall hits hard). With nothing held a
--- click is the punt blast (server/Specials gravPunt). While it holds, the three claws open wider and
+-- click is the punt blast (server/Specials gravPunt). While it holds, the five claws open wider and
 -- an orange tether runs from the emitter to the body.
 weaponVisual.grav = {
 	HOLD = 7,
@@ -1862,8 +1862,10 @@ weaponVisual.grav = {
 	-- each claw's hinge and axis, mesh space (assets/weapons/comic_weapons.py GG_CLAW_HINGE)
 	HINGES = {
 		{ Vector3.new(0, 0.672, -2.48), Vector3.new(1, 0, 0) },
-		{ Vector3.new(-0.36, 0.048, -2.48), Vector3.new(-0.5, 0.866, 0) },
-		{ Vector3.new(0.36, 0.048, -2.48), Vector3.new(-0.5, -0.866, 0) },
+		{ Vector3.new(-0.396, 0.385, -2.48), Vector3.new(0.309, 0.951, 0) },
+		{ Vector3.new(-0.245, -0.081, -2.48), Vector3.new(-0.809, 0.588, 0) },
+		{ Vector3.new(0.245, -0.081, -2.48), Vector3.new(-0.809, -0.588, 0) },
+		{ Vector3.new(0.396, 0.385, -2.48), Vector3.new(0.309, -0.951, 0) },
 	},
 	open = 0,
 	tether = nil :: BasePart?,

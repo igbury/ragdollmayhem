@@ -29,6 +29,7 @@ local KINDS = {
 	thrown = { color = Color3.fromRGB(232, 70, 56), ink = Color3.fromRGB(140, 15, 30), label = "BOOM!" }, -- explosives
 	medical = { color = Color3.fromRGB(95, 190, 75), ink = Color3.fromRGB(30, 70, 25), label = "MEDIC" }, -- bandage, cast
 	ability = { color = Color3.fromRGB(165, 90, 230), ink = Color3.fromRGB(60, 20, 110), label = "ANIME" }, -- the ANIME ATTACKS pass
+	misc = { color = Color3.fromRGB(255, 140, 40), ink = Color3.fromRGB(130, 50, 0), label = "MISC" }, -- gadgets (MISC below)
 	power = { color = Color3.fromRGB(30, 200, 110), ink = Color3.fromRGB(0, 70, 40), label = "DOOMSDAY" }, -- the Doomsday Pack (shared/Shop.DOOMSDAY)
 }
 -- the categories a game pass opens (shared/Shop key): their bookmark and their cards ask for the pass until it is owned
@@ -40,9 +41,12 @@ local function promptPass(k: string): boolean
 	MarketplaceService:PromptGamePassPurchase(player, Shop.item(key).pass)
 	return true
 end
-local TABS = { "melee", "gun", "thrown", "medical", "ability", "power" } -- the bookmarks, top down
-local function kindOf(tag: string): string
-	return if tag == "heavy" or tag == "thrown" then "thrown" elseif tag == "tool" then "medical" elseif KINDS[tag] then tag else "ability"
+local TABS = { "melee", "gun", "thrown", "medical", "misc", "ability", "power" } -- the bookmarks, top down
+-- weapons pulled out of their tag's bookmark into MISC
+local MISC = { BalloonGun = true, Taser = true, LeafBlower = true, Gravgun = true, Grapple = true, Balloon = true, Lasso = true }
+local function kindOf(w): string
+	local tag = w.tag
+	return if MISC[w.id] then "misc" elseif tag == "heavy" or tag == "thrown" then "thrown" elseif tag == "tool" then "medical" elseif KINDS[tag] then tag else "ability"
 end
 local TAB_W, TAB_H, TAB_OUT, TAB_GAP = 0.13, 0.11, 0.085, 0.016 -- book scale: a bookmark's length, height, how far it sticks out, the gap down
 -- A page is three rows of random height, and a row holds two panels side by side or one across: a weapon
@@ -447,7 +451,7 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 	end
 	for _, e in entries do
 		local i, w = e.i, e.w
-		local c = KINDS[kindOf(w.tag)]
+		local c = KINDS[kindOf(w)]
 		local frame = new("Frame", pages[0], {
 			Name = w.id, BorderSizePixel = 0, ZIndex = 43, Visible = false, AnchorPoint = Vector2.new(0.5, 0.5),
 		})
@@ -493,14 +497,14 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			Name = "Pick", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", AutoButtonColor = false, ZIndex = 48,
 		})
 		hit.Activated:Connect(function()
-			if promptPass(kindOf(w.tag)) then return end -- an ANIME / DOOMSDAY card without its pass
+			if promptPass(kindOf(w)) then return end -- an ANIME / DOOMSDAY card without its pass
 			if i <= #weapons and api.locked(i) and Progression.PRICE[w.id] then
 				api.buy(i) -- stays open: the card turns to EQUIP once it is theirs (refresh below)
 				return
 			end
 			choose(i); setOpen(false)
 		end)
-		local card = { i = i, kind = kindOf(w.tag), glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
+		local card = { i = i, kind = kindOf(w), glyphs = glyphs, frame = frame, button = equip, stroke = stroke, gradient = gradient, vp = vp, w = w, turn = turnIcon, hover = false, unhover = nil :: any, holder = nil :: Frame? }
 		-- hover: the panel grows from its centre, drawn over its neighbours
 		local grow = new("UIScale", frame, {})
 		local function hover(on)

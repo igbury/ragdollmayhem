@@ -125,7 +125,7 @@ function WeaponMeshes.bounds(id: string): (Vector3?, Vector3?)
 	return boxes[id][1], boxes[id][2]
 end
 
--- [id] = { part, mesh, users } | true (being built) | false (failed, don't retry)
+-- [id] = { part, mesh, users } | true (being built); nil again after a failure, so a later call retries (the 8-mesh budget may have freed up)
 local live = {}
 
 -- Returns a new anchored, non-colliding MeshPart for the weapon, or nil if this client can't
@@ -151,7 +151,10 @@ function WeaponMeshes.create(id: string, module: ModuleScript?): MeshPart?
 		end)
 		if not ok then
 			warn(`WeaponMeshes: {id} failed, using blocks: {part}`)
-			live[id] = false
+			if mesh then
+				mesh:Destroy()
+			end
+			live[id] = nil
 			return nil
 		end
 		live[id] = { part = part, mesh = mesh, users = 0, pieces = moving }
@@ -204,9 +207,9 @@ function WeaponMeshes.pose(id: string, name: string, off: CFrame)
 end
 
 -- The icon atlases: { parts = { MeshPart }, at = { [id] = { part = index, centre, size } } } | true
--- (being built) | false (failed). Each atlas mesh is filled up to ATLAS_CAP triangles (an EditableMesh
--- holds 20k), outline shells left out, then the next one starts.
-local ATLAS_CAP = 19000
+-- (being built) | false (failed). The weapons are packed first-fit decreasing into atlases of up to ATLAS_CAP triangles (an EditableMesh
+-- holds 20k), outline shells left out.
+local ATLAS_CAP = 19900
 local atlas
 
 -- The triangles fill() adds with noOutline (the pure black ones are the outline shell).
@@ -234,7 +237,6 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 		atlas = true
 		local ok, result = pcall(function()
 			local parts, at = {}, {}
-			local mesh, used, k = nil, 0, 0
 			local entries = {} -- { icon id, data module, tint }
 			for _, data in script:GetChildren() do
 				if data.Name ~= "BoxingGloveLeft" and data.Name ~= "Baton" and data.Name ~= "Syringe" then -- never an icon (the glove's mirror, the cops' baton, the variants' base)
@@ -244,22 +246,40 @@ function WeaponMeshes.icon(id: string): (MeshPart?, Vector3?)
 			for id, variant in VARIANTS do
 				table.insert(entries, { id, script[variant.data], variant.tint })
 			end
+			-- first-fit decreasing: the biggest weapons first, each into the first atlas with room, so
+			-- the set packs into as few atlases as it can (every atlas is one of the client's 8 meshes)
+			-- ponytail: ~57k tris fill 3 atlases with ~2.6k spare; past that a 4th atlas starts
 			for _, entry in entries do
-				local d = require(entry[2])
-				local tris = visibleTris(d)
-				if mesh and used + tris > ATLAS_CAP then -- full: this one starts the next atlas
-					table.insert(parts, meshPart(mesh, "WeaponAtlas"))
-					mesh, used, k = nil, 0, 0
-				end
-				mesh = mesh or AssetService:CreateEditableMesh()
-				k += 1
-				used += tris
-				local offset = Vector3.new(0, k * SPACING, 0)
-				local lo, hi = bounds(d)
-				fill(mesh, d, offset, true, entry[3])
-				at[entry[1]] = { part = #parts + 1, centre = offset + (lo + hi) / 2, size = hi - lo }
+				entry.data = require(entry[2])
+				entry.tris = visibleTris(entry.data)
 			end
-			if mesh then
+			table.sort(entries, function(a, b)
+				return a.tris > b.tris
+			end)
+			local bins = {} -- { used, members }
+			for _, entry in entries do
+				local bin
+				for _, b in bins do
+					if b.used + entry.tris <= ATLAS_CAP then
+						bin = b
+						break
+					end
+				end
+				if not bin then
+					bin = { used = 0, members = {} }
+					table.insert(bins, bin)
+				end
+				bin.used += entry.tris
+				table.insert(bin.members, entry)
+			end
+			for index, bin in bins do
+				local mesh = AssetService:CreateEditableMesh()
+				for k, entry in bin.members do
+					local offset = Vector3.new(0, k * SPACING, 0)
+					local lo, hi = bounds(entry.data)
+					fill(mesh, entry.data, offset, true, entry[3])
+					at[entry[1]] = { part = index, centre = offset + (lo + hi) / 2, size = hi - lo }
+				end
 				table.insert(parts, meshPart(mesh, "WeaponAtlas"))
 			end
 			return { parts = parts, at = at }

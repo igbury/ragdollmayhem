@@ -536,10 +536,10 @@ GG_STEEL = (0.37, 0.42, 0.45)
 GG_ARMOR = (0.23, 0.27, 0.31)
 GG_DARK = (0.12, 0.13, 0.17)
 GG_YOKE = (0.2, 0.15, 0.14)
-GG_COPPER = (0.6, 0.33, 0.19)
+GG_COPPER = (0.22, 0.36, 0.62)
 GG_TAPE = (0.68, 0.7, 0.72)
-GG_GLOW = (1.0, 0.55, 0.05)
-GG_HOT = (1.0, 0.93, 0.6)
+GG_GLOW = (0.1, 0.55, 1.0)
+GG_HOT = (0.7, 0.92, 1.0)
 GG_CLAW_HINGE = []  # filled by gravgun(): per claw (hinge point, hinge axis) in Roblox mesh space
 
 
@@ -548,7 +548,7 @@ def gravgun(b):
     at 4 studs a metre: rear stalk grip (raked down to pistol-like, the origin), dark double yoke
     between two steel drums, ribbed side grip on the left drum (the support hand), a faceted armour
     block with glowing vents, copper collar, the glowing core in a three-frame cage, the emitter, and
-    three truss claws, each its own moving piece ("Claw1".."Claw3": they open wider while it holds a
+    five truss claws, each its own moving piece ("Claw1".."Claw5": they open wider while it holds a
     body, client Fx; GG_CLAW_HINGE gives each one's hinge)."""
     S = 4.0
     gx, gz = -0.268, -0.064  # the grip's middle (hero metres)
@@ -648,7 +648,7 @@ def gravgun(b):
     cx(0.362, 0.367, 0.034, GG_GLOW, seg=12)
     cx(0.364, 0.369, 0.021, GG_STEEL, seg=10)
     b.ball(P(0.37, 0, 0), 0.01 * S, GG_HOT, seg=8, rings=5)
-    # three claws: bracket and axle on the collar stay; the truss arms, elbow, tip and LED move
+    # five claws: bracket and axle on the collar stay; the truss arms, elbow, tip and LED move
     HX, HR = 0.352, 0.104
     a1, l1 = math.radians(58), 0.11
     a2, l2 = math.radians(-36), 0.09
@@ -656,7 +656,7 @@ def gravgun(b):
     Tp = (E[0] + l2 * math.cos(a2), E[1] + l2 * math.sin(a2))
     Tip = (Tp[0] + 0.01, Tp[1] - 0.03)
     GG_CLAW_HINGE.clear()
-    for k, ang in enumerate((90, 210, 330)):
+    for k, ang in enumerate((90, 162, 234, 306, 18)):
         R = rot(ang)
         at, ar = R(0, 1, 0) - R(0, 0, 0), R(0, 0, 1) - R(0, 0, 0)
         obox(R(HX - 0.008, 0, HR - 0.008), (X, at, ar), (0.017, 0.02, 0.01), GG_ARMOR)

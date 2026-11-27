@@ -889,8 +889,8 @@ function WeaponBar.start(gui: ScreenGui, weapons, viewmodels, fistSpec, api)
 		if input.KeyCode == Enum.KeyCode.Q then
 			arsenal(true) -- the Arsenal took the wheel's place
 		elseif input.KeyCode == Enum.KeyCode.F then
-			if not (api.drag and api.drag()) then -- on a dummy in reach F drags it instead
-				step(-1)
+			if api.drag then
+				api.drag() -- F only drags a dummy in reach, never steps the hotbar
 			end
 		elseif input.KeyCode.Value >= Enum.KeyCode.One.Value and input.KeyCode.Value < Enum.KeyCode.One.Value + #loadout then
 			take(loadout[input.KeyCode.Value - Enum.KeyCode.One.Value + 1]) -- 1-5: that hotbar slot
