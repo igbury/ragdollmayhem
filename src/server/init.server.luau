@@ -27,6 +27,7 @@ local Tutorial = require(script.Tutorial)
 local Outfits = require(script.Outfits)
 local PoliceCar = require(script.PoliceCar)
 require(script.Tank) -- adds the tank to PoliceCar.KINDS (its hooks are set below, by explode)
+require(script.Bike) -- the COSMIC bike, a PoliceCar kind too (on even with VEHICLES_ENABLED off)
 
 local PUNCH_RANGE = 11
 local PUNCH_COOLDOWN = 0.2

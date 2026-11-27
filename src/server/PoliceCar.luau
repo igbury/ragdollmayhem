@@ -48,6 +48,7 @@ local SPECS = {
 		cabin = { size = Vector3.new(6.0, 1.4, 8.0), at = Vector3.new(0, 3.95, 1.0) },
 	},
 	Tank = { label = "Tank", wheel = "Tank_Wheel", fit = Vector3.new(11.5, 8, 21) }, -- built by server/Tank.luau
+	Bike = { label = "Bike", fit = Vector3.new(2.6, 4, 7.2) }, -- built by server/Bike.luau
 }
 PoliceCar.KINDS = SPECS
 

@@ -29,6 +29,7 @@ local Inspect = require(script:WaitForChild("Inspect"))
 local WeaponSway = require(script:WaitForChild("WeaponSway"))
 require(script:WaitForChild("Driving")) -- the police car: runs itself (no local: this script is at the 200-local limit)
 require(script:WaitForChild("TankClient")) -- the tank: driving, the turret, the gun; runs itself
+require(script:WaitForChild("BikeClient")) -- the bike: pedal, steer, lean; runs itself
 local WeaponBob = require(script:WaitForChild("WeaponBob"))
 local WeaponRecoil = require(script:WaitForChild("WeaponRecoil"))
 local BoxingGloves = require(ReplicatedStorage.Shared:WaitForChild("BoxingGloves"))

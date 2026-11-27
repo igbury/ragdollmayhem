@@ -31,6 +31,7 @@ local CHARACTERS = {
 	{ name = "Heavy", kind = "Heavy", color = Color3.fromRGB(34, 36, 42), pass = "SandboxPlus" },
 	{ name = "Worker", kind = "Worker", color = Color3.fromRGB(255, 122, 26), pass = "SandboxPlus" },
 	{ name = "Zombie", kind = "Zombie", color = Color3.fromRGB(127, 160, 90), pass = "SandboxPlus" },
+	{ name = "Bike", kind = "Bike", color = Color3.fromRGB(212, 240, 36) }, -- server/Bike: T by the pedal gets on, Space off
 	-- off for now (server VEHICLES_ENABLED): { name = "Police car", kind = "PoliceCar", color = Color3.fromRGB(42, 45, 54) }, -- server/PoliceCar: T by the door gets in, Space out
 	-- off for now (server VEHICLES_ENABLED): { name = "Sport car", kind = "SportCar", color = Color3.fromRGB(227, 36, 43) }, -- the same, and it smashes apart like the map
 	-- off for now (server VEHICLES_ENABLED): { name = "Tank", kind = "Tank", color = Color3.fromRGB(201, 178, 124) }, -- server/Tank: turret, gun, breaks apart too
