@@ -2080,6 +2080,8 @@ local function hit(d, part: BasePart, dir: Vector3, scale: number?, push: number
 			knockDown(d, 8, "Out cold")
 		elseif d.daze >= 45 or d.model:GetAttribute("Ragdolled") then
 			knockDown(d, 3, "Knocked down")
+		elseif d.riding then
+			knockDown(d, 2.5, "Knocked down") -- off the bike (server/BikeRiders)
 		elseif info.limb == "leg" or cutOff or (kind and kind ~= "blunt" and power >= 4) or (power >= 2.5 and info.limb ~= "arm") then
 			knockDown(d, 1.6, "Knocked down") -- legs taken out, a heavy bullet or a bat to the body: down they go
 		elseif info.limb == "arm" then
@@ -5198,6 +5200,9 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 			continue
 		end
+		if d.riding then -- on a Downtown bike: server/BikeRiders steers it
+			continue
+		end
 		local rising = now < d.risingUntil
 		if not rising and not d.crawling then -- crawling, the arms pull: no hand to a wound
 			updatePose(d)
@@ -5235,6 +5240,8 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 end)
+
+require(script.BikeRiders).start(spawnDummy, dummies) -- Downtown's cyclists
 
 -- Factory machines and the arena's lava (Map): dummies go through harm() (`kind` "fire" burns), players
 -- take Humanoid damage and are flung by their own client (it owns their physics).
