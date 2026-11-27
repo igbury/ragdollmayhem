@@ -88,6 +88,12 @@ local CLIPS = {
 		{ 0.75, {} },
 	} },
 	Hold_Twohand = { true, Enum.AnimationPriority.Action, { { 0, HIP }, { 0.5, HIP } } },
+	-- the Laser Visor firing: two fingers held to the right temple, the elbow out to the side
+	Temple_Visor = { true, Enum.AnimationPriority.Action4, (function()
+		-- the hand ends at (0.8, 0.1, -0.1) in the head's space: beside the right eye
+		local touch = { RightUpperArm = rot(60, 40, 20), RightLowerArm = rot(125), RightHand = rot(-10) }
+		return { { 0, touch }, { 0.5, touch } }
+	end)() },
 	-- the crowbar's arm rip (server/Specials ripArm, RIP_TUG 3 s then RIP_HANG 1.4 s): the claw held
 	-- down in the shoulder and heaved on, the body leaning back into each pull, then yanked up with the
 	-- torn arm on it and held up while it hangs there

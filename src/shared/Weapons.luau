@@ -36,6 +36,10 @@ return {
 	{ id = "Lightsaber", name = "LIGHTSABER", tag = "melee", short = "LSBR", kind = "melee", aimSwing = true, hurt = "blade", cd = 0.4, range = 12, dmg = 4, push = 30, chip = 1.5 },
 	{ id = "Chainsaw", name = "CHAINSAW", tag = "melee", short = "CHNS", kind = "melee", auto = true, hurt = "blade", cd = 0.12, range = 9, dmg = 1.2, push = 6, knockdown = 1 },
 	{ id = "Lasso", name = "LASSO", tag = "melee", short = "LSO", kind = "thrown", cd = 1.5, range = 45 },
+	-- slavic shield: thrown flat and spinning, it flies `range` studs at `speed`, glances off what it meets
+	-- (up to 3 times) and always comes back to the hand; dummies on the way out and back take dmg / push
+	-- (server/Specials shieldThrow, client Fx Shield). kind "shield": no generic swing or throw on the client
+	{ id = "Shield", name = "SLAVIC SHIELD", tag = "power", short = "SHLD", kind = "shield", cd = 0.4, range = 80, speed = 95, dmg = 2.5, push = 70 },
 	-- RANGED
 	{ id = "Handgun", name = "HANDGUN", tag = "gun", short = "PSTL", kind = "gun", hurt = "bullet", cd = 0.2, range = 300, dmg = 1.5, push = 22, chip = 1 },
 	{ id = "Bow", name = "HUNTER BOW", tag = "gun", short = "BOW", kind = "bow", hurt = "blade", cd = 0.7, range = 260, dmg = 4, push = 35, speed = 190 },
@@ -66,6 +70,17 @@ return {
 	-- web shot: an ability, no weapon in hand: the web sticks the dummy to the wall behind it (server/Specials web, client Fx Web)
 	{ id = "WebShot", name = "WEB SHOT", tag = "power", short = "WEB", kind = "gun", cd = 0.6, range = 90, dmg = 1, push = 0 },
 	-- ground slam: an ability: a leap and a hard landing that throws everyone round it (client useWeapon leap, server/Specials groundSlam, client Fx GroundSlam)
+	-- laser visor: a power: the silver visor goes on your head while it is out (server/Specials wearVisor); held,
+	-- short green laser bolts from its slit that knock and scorch the dummy under the crosshair (server/Specials visorLaser, client Fx Laser)
+	{ id = "LaserVisor", name = "LASER VISOR", tag = "power", short = "LZR", kind = "gun", auto = true, cd = 1, range = 150, dmg = 6, push = 40, burn = 2 },
+	-- super nova (id FlameOn): a power: you burn all over while it is out (server/Specials flameSuit), and what you touch
+	-- catches fire. Double jump: fly, Superman style (client/FlameFlight); double jump again: land.
+	-- Click: a dummy within `punch` studs in front is struck with a burning fist, else a fireball flies
+	-- at `speed` (a fiery blast of `blast` studs where it lands, knocking `crater` studs of blocks apart);
+	-- flying it is always the fireball. Right mouse, held: a
+	-- flame beam from the right hand (`beam`) that leaves scorch marks for 30 s where it licks. (server/Specials flameOn / flameBeam, client Fx Fireball / FlameBeam)
+	{ id = "FlameOn", name = "SUPER NOVA", tag = "power", short = "NOVA", kind = "gun", cd = 0.4, range = 200, speed = 110, dmg = 3, push = 60, punch = 9, blast = 6, crater = 4,
+		beam = { id = "FlameBeam", equipId = "FlameOn", cooldownGroup = "FlameBeam", kind = "gun", auto = true, cd = 0.1, range = 60, dmg = 1.2, push = 10 } },
 	{ id = "GroundSlam", name = "GROUND SLAM", tag = "power", short = "SLAM", kind = "gun", cd = 1.6, range = 14, dmg = 20, push = 55, leap = 75 },
 	-- EXPLOSIVES
 	{ id = "Grenade", name = "GRENADE", tag = "thrown", short = "GRND", kind = "thrown", cd = 1.5, speed = 70 },
@@ -89,4 +104,14 @@ return {
 	-- colour set per id (client/WeaponMeshes VARIANTS)
 	{ id = "DeathSyringe", name = "DEATH SYRINGE", tag = "tool", short = "DTH", kind = "syringe", cd = 1.5, range = 9 },
 	{ id = "HealSyringe", name = "HEALING SYRINGE", tag = "tool", short = "HEAL", kind = "syringe", cd = 1.5, range = 9 },
+	-- the serums (server/Serums)
+	{ id = "SleepSyringe", name = "SLEEP SYRINGE", tag = "tool", short = "ZZZ", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "SpeedSyringe", name = "ADRENALINE", tag = "tool", short = "ADR", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "JellySyringe", name = "JELLY SYRINGE", tag = "tool", short = "JLY", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "HeliumSyringe", name = "HELIUM SYRINGE", tag = "tool", short = "HE", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "ShrinkSyringe", name = "SHRINK SYRINGE", tag = "tool", short = "MINI", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "GiantSyringe", name = "GIANT SYRINGE", tag = "tool", short = "BIG", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "FireSyringe", name = "FIRE SYRINGE", tag = "tool", short = "FIRE", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "ExplosiveSyringe", name = "BOMB SYRINGE", tag = "tool", short = "BOMB", kind = "syringe", cd = 1.5, range = 9 },
+	{ id = "ZombieSyringe", name = "ZOMBIE SYRINGE", tag = "tool", short = "ZMB", kind = "syringe", cd = 1.5, range = 9 },
 }

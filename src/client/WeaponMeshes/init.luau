@@ -19,6 +19,15 @@ local GLOW = { Lightsaber = Color3.fromRGB(110, 200, 255) } -- weapons that give
 local VARIANTS = {
 	DeathSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(150, 40, 230) } },
 	HealSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(255, 70, 110) } },
+	SleepSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(70, 90, 220) } },
+	SpeedSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(190, 240, 40) } },
+	JellySyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(255, 130, 210) } },
+	HeliumSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(140, 225, 255) } },
+	ShrinkSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(250, 235, 60) } },
+	GiantSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(255, 150, 30) } },
+	FireSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(255, 70, 0) } },
+	ExplosiveSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(40, 40, 40) } },
+	ZombieSyringe = { data = "Syringe", tint = { Liquid = Color3.fromRGB(90, 255, 60) } },
 }
 local function dataOf(id: string): ModuleScript?
 	local variant = VARIANTS[id]

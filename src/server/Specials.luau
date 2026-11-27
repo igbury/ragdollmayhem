@@ -17,6 +17,10 @@
 --    at the ground it lifts the one holding it (client useWeapon, weapon.thrust).
 --  * WebShot: sticks the dummy to the wall behind it (or the floor) for a while.
 --  * GroundSlam: the landing of the client's leap: a shockwave that throws the dummies round it.
+--  * LaserVisor: worn on the head while it is out; held, short green laser bolts from its slit.
+--  * FlameOn: the body burns while it is out (touch sets dummies alight); flight on the client; a fireball
+--    or a burning fist on click, a flame beam on the right mouse (FlameBeam).
+--  * Shield: thrown flat and spinning; it glances off walls and floors and always comes back to the hand.
 --  * C4: click sticks a charge to what it hits (MAX_C4), right click sets all of them off.
 --  * Landmine: placed on the floor ahead; armed after a moment, it blows when a dummy steps close.
 --  * Spear: a long thrust that runs through up to SPEAR_PIERCE dummies in a line.
@@ -75,6 +79,20 @@ local lastSound = {} -- [Player] = { [weapon id] = os.clock() } (HUSH)
 
 function Specials.init(deps)
 	K = deps
+	-- the Laser Visor goes on and off the head with the weapon out (wearVisor, below)
+	local function watch(player: Player)
+		player.CharacterAdded:Connect(function(char)
+			char:GetAttributeChangedSignal("EquippedWeapon"):Connect(function()
+				Specials.wearVisor(char)
+				Specials.flameSuit(char)
+			end)
+		end)
+	end
+	Players.PlayerAdded:Connect(watch)
+	for _, player in Players:GetPlayers() do
+		watch(player)
+	end
+	task.spawn(Specials.flameTouch)
 	Players.PlayerRemoving:Connect(function(player)
 		for _, list in { charges[player], mines[player] } do
 			for _, p in list do
@@ -1042,21 +1060,31 @@ end
 -- crosshair, or the one nearest it within COSMIC_CONE (the beam sticks to a body you sweep across).
 -- One call per cd while the button is held: the dummy stays down, jolts and takes a little harm.
 local COSMIC_CONE = math.cos(math.rad(9))
+-- The dummy in sight whose torso is nearest the aim within `cone` (a cosine) and `range` studs.
+local function inCone(char: Model, origin: Vector3, dir: Vector3, range: number, cone: number)
+	local best, params, found, torsoOf = cone, exclude(char), nil, nil
+	for model, other in K.dummies do
+		local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+		local to = torso and torso.Position - origin
+		if to and to.Magnitude < range and to.Unit:Dot(dir) > best then
+			local seen = workspace:Raycast(origin, to, params)
+			if not seen or seen.Instance:IsDescendantOf(model) then
+				best, found, torsoOf = to.Unit:Dot(dir), other, torso
+			end
+		end
+	end
+	return found, torsoOf
+end
+
 local function cosmic(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
 	local hand = char:FindFirstChild("RightHand") :: BasePart?
 	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
 	local hitPart = d and result and result.Instance
 	if not d then
-		local best, params = COSMIC_CONE, exclude(char)
-		for model, other in K.dummies do
-			local torso = model:FindFirstChild("UpperTorso") :: BasePart?
-			local to = torso and torso.Position - origin
-			if to and to.Magnitude < weapon.range and to.Unit:Dot(dir) > best then
-				local seen = workspace:Raycast(origin, to, params)
-				if not seen or seen.Instance:IsDescendantOf(model) then
-					best, d, hitPart, target = to.Unit:Dot(dir), other, torso, torso.Position
-				end
-			end
+		local torso
+		d, torso = inCone(char, origin, dir, weapon.range, COSMIC_CONE)
+		if torso then
+			hitPart, target = torso, torso.Position
 		end
 	end
 	K.fx:FireAllClients("Cosmic", char, if hand then hand.Position else origin, target, hitPart)
@@ -1141,7 +1169,270 @@ local function groundSlam(weapon, player: Player, char: Model, origin: Vector3, 
 	K.smash(at, weapon.range, weapon.dmg, Vector3.zero, weapon.push)
 end
 
+-- Laser Visor (a power): the silver visor (assets/visor, uploaded into ReplicatedStorage.ArmyKit.LaserVisor)
+-- sits on the head while it is the weapon out, for everyone to see; held, every cd a short laser bolt
+-- leaves its slit for the point under the crosshair (the ray itself is the crosshair's, from the head):
+-- a dummy it hits is knocked like a light hit and scorched a little.
+local VISOR_AT = CFrame.new(0, 0.1, -0.11) -- the visor on the head: up to the eyes, out past the face
+local VISOR_EYE = VISOR_AT * CFrame.new(0, 0.027, -0.47) -- the middle of its slit (the lens), in the head's space
+local function wearVisor(char: Model)
+	local head = char:FindFirstChild("Head") :: BasePart?
+	if not head then
+		return
+	end
+	for _, p in head:GetChildren() do
+		if p.Name == "LaserVisor" then
+			p:Destroy()
+		end
+	end
+	local kit = ReplicatedStorage:FindFirstChild("ArmyKit")
+	local piece = kit and kit:FindFirstChild("LaserVisor")
+	if not piece or char:GetAttribute("EquippedWeapon") ~= "LaserVisor" then
+		return -- taken off; or a place without the kit (the lasers still fire, from the face)
+	end
+	for _, mesh in piece:GetChildren() do
+		local p = mesh:Clone() :: BasePart
+		p.CFrame = head.CFrame * VISOR_AT * (p:GetAttribute("Place") or CFrame.identity)
+		K.Body.stick(head, p, "LaserVisor")
+	end
+end
+
+local function visorLaser(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local head = char:FindFirstChild("Head") :: BasePart?
+	local eye = if head then (head.CFrame * VISOR_EYE).Position else origin
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	K.fx:FireAllClients("Laser", char, eye, target, result ~= nil)
+	if not (d and result and result.Instance.Parent) then
+		return
+	end
+	takeOver(d)
+	K.hit(d, result.Instance, dir, weapon.dmg, weapon.push, "blunt", target, origin)
+	K.harm(d, weapon.burn, "fire", origin) -- scorched: the skin chars where the bolts land
+end
+
+-- Flame On (a power): while it is out the body burns (flameSuit: an orange glow for everyone, the
+-- "Aflame" attribute the client's flames run on) and a dummy that touches it catches fire (the loop in
+-- init). The client flies (client/FlameFlight) and says so ("flameFly" action, the "Flying" attribute).
+-- Click: on the ground a dummy within weapon.punch in front takes a burning fist; otherwise (and always
+-- in the air) a fireball flies down the aim and bursts in flame where it lands. Right mouse: flameBeam.
+local FLAME_TOUCH = 4 -- studs from the root to a dummy's part that set it alight
+local FLAME_PUNCH_CONE = math.cos(math.rad(50))
+local FLAME_BEAM_CONE = math.cos(math.rad(6))
+local SUIT_FILL, SUIT_EDGE = Color3.fromRGB(255, 110, 20), Color3.fromRGB(255, 215, 90)
+local function flameSuit(char: Model)
+	local on = char:GetAttribute("EquippedWeapon") == "FlameOn"
+	char:SetAttribute("Aflame", on or nil)
+	if not on then
+		char:SetAttribute("Flying", nil)
+	end
+	local glow = char:FindFirstChild("FlameSuit")
+	if on and not glow then
+		glow = Instance.new("Highlight")
+		glow.Name = "FlameSuit"
+		glow.FillColor, glow.FillTransparency = SUIT_FILL, 0.3
+		glow.OutlineColor, glow.OutlineTransparency = SUIT_EDGE, 0.15
+		glow.DepthMode = Enum.HighlightDepthMode.Occluded
+		glow.Parent = char
+	elseif not on and glow then
+		glow:Destroy()
+	end
+end
+
+-- A dummy that touches a burning body catches fire (run once, from init).
+function Specials.flameTouch()
+	while true do
+		task.wait(0.15)
+		for _, player in Players:GetPlayers() do
+			local char = player.Character
+			local root = char and char:GetAttribute("Aflame") and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+			if not root then
+				continue
+			end
+			for model, d in K.dummies do
+				local torso = model:FindFirstChild("UpperTorso") :: BasePart?
+				if torso and (torso.Position - root.Position).Magnitude < 12 then -- near: then each part
+					for _, part in bodyParts(d) do
+						if (part.Position - root.Position).Magnitude < FLAME_TOUCH then
+							Specials.alight(d)
+							break
+						end
+					end
+				end
+			end
+		end
+	end
+end
+
+local function flameOn(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local hand = char:FindFirstChild("RightHand") :: BasePart?
+	local from = if hand then hand.Position else origin
+	if not char:GetAttribute("Flying") then
+		local d, torso = inCone(char, origin, dir, weapon.punch, FLAME_PUNCH_CONE)
+		if d and torso then
+			takeOver(d)
+			K.fx:FireAllClients("FirePunch", char, torso.Position)
+			K.hit(d, torso, dir, weapon.dmg, weapon.push, "blunt", torso.Position, origin)
+			K.harm(d, weapon.dmg, "fire", origin) -- alight (harm "fire" calls Specials.alight)
+			return
+		end
+	end
+	local result = workspace:Raycast(origin, dir * weapon.range, exclude(char))
+	local target = if result then result.Position else origin + dir * weapon.range
+	local travel = (target - from).Magnitude / weapon.speed
+	K.fx:FireAllClients("Fireball", char, from, target, travel)
+	task.delay(travel, function()
+		K.fx:FireAllClients("Fire", nil, target, 3, 1.5)
+		if result then
+			K.Map.blast(target, weapon.crater, 50) -- knocks the blocks it lands on apart
+		end
+		K.smash(target, weapon.blast, weapon.dmg, Vector3.zero, weapon.push, "fire")
+	end)
+end
+
+local function flameBeam(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local hand = char:FindFirstChild("RightHand") :: BasePart?
+	local d, result, target = shoot(char, origin, dir, weapon.range, weapon, player)
+	if not d then
+		local torso
+		d, torso = inCone(char, origin, dir, weapon.range, FLAME_BEAM_CONE)
+		if torso then
+			target = torso.Position
+		end
+	end
+	-- on a wall or the floor it leaves a scorch mark (client Fx FlameBeam)
+	local normal = if not d and result and not K.dummyOf(result.Instance) then result.Normal else nil
+	K.fx:FireAllClients("FlameBeam", char, if hand then hand.Position else origin, target, d ~= nil, normal)
+	if d then
+		takeOver(d)
+		K.harm(d, weapon.dmg, "fire", origin)
+		setVelocity(d, dir * weapon.push)
+	elseif result and os.clock() > (nextPatch[player] or 0) then
+		nextPatch[player] = os.clock() + 0.8 -- the floor it licks burns a moment, as the flamethrower's
+		K.fx:FireAllClients("Fire", nil, result.Position, 3, 2)
+		K.smash(result.Position, 4, 2, Vector3.zero, 0, "fire")
+	end
+end
+
+-- Slavic shield: thrown flat, it glances off what it meets and always comes home. The flight out is
+-- worked out at the throw from sphere casts (straight legs between glances); the way back homes on the
+-- thrower's hand every frame, through anything. The client draws the same from the points and the hand
+-- (Fx Shield). While it is out the hand is empty (the "ShieldOut" attribute) and it cannot be thrown again.
+-- A dummy it passes takes a blunt blow and goes down, once on the way out and once on the way back.
+local SHIELD_RADIUS = 1.3 -- studs: how near a wall or the floor its centre gets before it glances off
+local SHIELD_REACH = 3 -- studs from its centre a dummy's body part is struck
+local SHIELD_BOUNCES = 3 -- glances before it turns home
+local SHIELD_AFTER_BOUNCE = 35 -- studs it flies on after the first glance
+local SHIELD_CATCH = 3 -- studs from the hand it is caught
+local SHIELD_MAX = 7 -- s in the air at most: then it is back whatever happened
+
+local function shieldPath(char: Model, origin: Vector3, dir: Vector3, range: number): ({ Vector3 }, { Vector3 }, { number })
+	local skip = { char }
+	for model in K.dummies do
+		table.insert(skip, model)
+	end
+	for _, p in Players:GetPlayers() do
+		if p.Character then
+			table.insert(skip, p.Character)
+		end
+	end
+	local params = exclude(table.unpack(skip))
+	local points, contacts, glances = { origin }, {}, {}
+	local pos, left = origin, range
+	while left > 0.5 and #glances < SHIELD_BOUNCES do
+		local hit = workspace:Spherecast(pos, SHIELD_RADIUS, dir * left, params)
+		if not hit then
+			table.insert(points, pos + dir * left)
+			break
+		end
+		pos += dir * hit.Distance
+		table.insert(points, pos)
+		table.insert(contacts, hit.Position)
+		table.insert(glances, #points)
+		dir = (dir - 2 * dir:Dot(hit.Normal) * hit.Normal).Unit
+		left = if #glances == 1 then SHIELD_AFTER_BOUNCE else left - hit.Distance
+	end
+	return points, contacts, glances
+end
+
+local function shieldThrow(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3)
+	local root = char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if char:GetAttribute("ShieldOut") or not root then
+		return
+	end
+	local points, contacts, glances = shieldPath(char, origin, dir, weapon.range)
+	char:SetAttribute("ShieldOut", true)
+	K.fx:FireAllClients("Shield", char, points, weapon.speed, glances)
+	local overlap = OverlapParams.new()
+	overlap.FilterType = Enum.RaycastFilterType.Exclude
+	overlap.FilterDescendantsInstances = { char }
+	local struck, seen = {}, {}
+	local function strike(pos: Vector3, flying: Vector3)
+		for _, part in workspace:GetPartBoundsInRadius(pos, SHIELD_REACH, overlap) do
+			if seen[part] then
+				continue
+			end
+			seen[part] = true
+			local d = K.dummyOf(part)
+			if d then
+				if not struck[d] and d.state ~= "Dead" then
+					struck[d] = true
+					takeOver(d)
+					K.hit(d, part, flying, weapon.dmg, weapon.push, "blunt", pos, pos - flying * 3)
+					if d.state ~= "Dead" then
+						K.knockDown(d, 2, "Knocked down")
+					end
+				end
+			else
+				local model = part:FindFirstAncestorOfClass("Model")
+				if model and not struck[model] and K.Monsters.damage(part, weapon.dmg * 10, flying, player) then
+					struck[model] = true
+				end
+			end
+		end
+	end
+	local t0 = os.clock()
+	local pos, flying, seg, nextGlance = origin, dir, 1, 1
+	while seg < #points and os.clock() - t0 < SHIELD_MAX do -- out, along the legs
+		local step = weapon.speed * task.wait()
+		while step > 0 and seg < #points do
+			local to = points[seg + 1] - pos
+			if to.Magnitude > step then
+				flying = to.Unit
+				pos += flying * step
+				break
+			end
+			step -= to.Magnitude
+			pos = points[seg + 1]
+			seg += 1
+			if glances[nextGlance] == seg then -- it rings off the wall and knocks a chip out of it
+				play("BULLET_HIT_METAL", contacts[nextGlance], 0.55, 1.2)
+				K.Map.blast(contacts[nextGlance], 1.2, 25)
+				nextGlance += 1
+			end
+		end
+		strike(pos, flying)
+	end
+	table.clear(struck)
+	table.clear(seen)
+	while os.clock() - t0 < SHIELD_MAX and char.Parent and root.Parent do -- home to the hand
+		local step = weapon.speed * task.wait()
+		local hand = (char:FindFirstChild("RightHand") or root) :: BasePart
+		local to = hand.Position - pos
+		if to.Magnitude < SHIELD_CATCH + step then
+			break
+		end
+		flying = to.Unit
+		pos += flying * step
+		strike(pos, flying)
+	end
+	char:SetAttribute("ShieldOut", nil)
+end
+
 local HANDLERS = {
+	FlameOn = flameOn,
+	FlameBeam = flameBeam,
+	Shield = shieldThrow,
+	LaserVisor = visorLaser,
 	WebShot = web,
 	GroundSlam = groundSlam,
 	CosmicPower = cosmic,
@@ -1182,6 +1473,9 @@ function Specials.spinning(weapon, player: Player): boolean
 end
 
 -- true: the weapon was used here (the caller stops), false: on to the generic paths.
+Specials.wearVisor = wearVisor
+Specials.flameSuit = flameSuit
+
 function Specials.fire(weapon, player: Player, char: Model, origin: Vector3, dir: Vector3, aimed: boolean): boolean
 	local handler = HANDLERS[weapon.id]
 	if not handler then

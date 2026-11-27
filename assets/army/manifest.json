@@ -9244,5 +9244,64 @@
    "fabric": false,
    "textured": false
   }
+ ],
+ "LaserVisor": [
+  {
+   "name": "LaserVisor__C9CED6",
+   "color": "C9CED6",
+   "tris": 2996,
+   "at": [
+    -0.0,
+    0.0013,
+    0.0209
+   ],
+   "size": [
+    1.3016,
+    0.4822,
+    1.2639
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "LaserVisor__2BFF4A",
+   "color": "2BFF4A",
+   "tris": 656,
+   "at": [
+    -0.0,
+    0.0272,
+    -0.4617
+   ],
+   "size": [
+    0.8643,
+    0.087,
+    0.1804
+   ],
+   "neon": true,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  },
+  {
+   "name": "LaserVisor__1F5E2E",
+   "color": "1F5E2E",
+   "tris": 792,
+   "at": [
+    -0.0,
+    0.0272,
+    -0.3893
+   ],
+   "size": [
+    0.885,
+    0.2557,
+    0.2339
+   ],
+   "neon": false,
+   "transparency": 0,
+   "fabric": false,
+   "textured": false
+  }
  ]
 }

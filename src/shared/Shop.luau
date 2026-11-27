@@ -40,7 +40,7 @@ end
 -- [weapon tag (shared/Weapons)] = the pass that unlocks every weapon with it
 Shop.UNLOCKS = { gun = "AllGuns", melee = "AllMelee", thrown = "AllExplosives", heavy = "AllExplosives" }
 -- DOOMSDAY PACK: the powers (shared/Weapons ids) only its pass unlocks (shared/Progression.missing)
-Shop.DOOMSDAY = { CosmicPower = true, WebShot = true, GroundSlam = true }
+Shop.DOOMSDAY = { CosmicPower = true, WebShot = true, GroundSlam = true, LaserVisor = true, FlameOn = true, Shield = true }
 -- 2X CASH (key DoubleKO): each kill pays this many times the cash
 Shop.KO_WORTH = 2
 -- SANDBOX +: what the Toolbox (client/Toolbox, server "spawn" / "build") keeps for the pass, and the

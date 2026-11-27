@@ -1603,6 +1603,10 @@ local function pace(d): number
 	if d.zombie then
 		return ZOMBIE.speed
 	end
+	local hyper = require(script.Serums).pace(d) -- an adrenaline jab
+	if hyper then
+		return hyper
+	end
 	if d.crawling then
 		return Body.CRAWL_SPEED
 	elseif Body.mobility(d) == "hop" then
@@ -3145,6 +3149,7 @@ for _, weapon in Weapons do
 	inventoryIds[weapon.id] = true
 	if weapon.slash then weaponById[weapon.slash.id] = weapon.slash end
 	if weapon.heavy then weaponById[weapon.heavy.id] = weapon.heavy end
+	if weapon.beam then weaponById[weapon.beam.id] = weapon.beam end
 end
 
 local boxingState = {}
@@ -3552,6 +3557,10 @@ require(script.Specials).init({
 	setOwner = setOwner, setGroup = setGroup, smash = smash, explode = explode, setGear = setGear, say = say,
 	kill = kill, addInjury = addInjury, sync = syncAttributes, sever = sever, Body = Body,
 	Monsters = Monsters, Map = Map, Sfx = Sfx, fx = fxRemote,
+})
+require(script.Serums).init({
+	say = say, knockDown = knockDown, kill = kill, explode = explode, setOwner = setOwner, walkTo = walkTo,
+	spawn = function(...) return spawnDummy(...) end, Specials = require(script.Specials), Wanted = Wanted, Sfx = Sfx,
 })
 
 weaponRemote.OnServerEvent:Connect(function(player, id, dir, from, aimed, swing)
@@ -3971,6 +3980,14 @@ actionRemote.OnServerEvent:Connect(function(player, action, arg)
 	end
 	if action == "bowCancel" then
 		if player.Character then player.Character:SetAttribute("BowDrawAt", nil) end
+		return
+	end
+	if action == "flameFly" then -- Flame On's flight (client/FlameFlight): no fire punch up there (Specials flameOn)
+		if rateLimited(player, 0.1, "flameFly") then return end
+		local char = player.Character
+		if char then
+			char:SetAttribute("Flying", (arg == true and char:GetAttribute("EquippedWeapon") == "FlameOn") or nil)
+		end
 		return
 	end
 	if action == "lassoCut" then -- the right mouse with the lasso: the dummy caught last comes free
@@ -4540,6 +4557,9 @@ function Body.playerSyringe(player: Player, id: string, origin: Vector3, dir: Ve
 	local hit = workspace:Raycast(origin, dir * range, params)
 	local d = hit and dummies[hit.Instance:FindFirstAncestorOfClass("Model")]
 	if not d or d.model:GetAttribute("TutorialFor") then
+		return
+	end
+	if require(script.Serums).jab(id, d, player) then -- the other serums (server/Serums)
 		return
 	end
 	if id == "HealSyringe" then

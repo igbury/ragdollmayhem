@@ -6,7 +6,7 @@
 -- MERGE true: the import holds only some pieces (e.g. PoliceCar.glb): those replace their folders and
 -- the rest of the kit stays.
 local MODEL_ID = 0
-local MERGE = true -- Casts.glb: the casts, slings and crutch only
+local MERGE = true -- LaserVisor.glb (assets/visor): the visor only
 
 local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space (studs), neon, transparency, fabric }
 	["Bandage_Socket__D9D1BF"] = { "Bandage_Socket", "D9D1BF", Vector3.new(-0.0, 0.0, 0.0), false, 0, true },
@@ -209,6 +209,9 @@ local KIT = { -- [mesh name] = { piece, colour, its centre in the piece's space 
 	["Heli_TailRotor__22251E"] = { "Heli_TailRotor", "22251E", Vector3.new(0.05, 0.5026, 0.0), false, 0, false },
 	["Heli_TailRotor__FFCC22"] = { "Heli_TailRotor", "FFCC22", Vector3.new(0.05, 0.5234, 0.0), false, 0, false },
 	["Heli_TailRotor__000000"] = { "Heli_TailRotor", "000000", Vector3.new(-0.0, 0.5236, 0.0), false, 0, false },
+	["LaserVisor__C9CED6"] = { "LaserVisor", "C9CED6", Vector3.new(-0.0, 0.0013, 0.0209), false, 0, false },
+	["LaserVisor__2BFF4A"] = { "LaserVisor", "2BFF4A", Vector3.new(-0.0, 0.0272, -0.4617), true, 0, false },
+	["LaserVisor__1F5E2E"] = { "LaserVisor", "1F5E2E", Vector3.new(-0.0, 0.0272, -0.3893), false, 0, false },
 	["Park_Boat__C44834"] = { "Park_Boat", "C44834", Vector3.new(-0.0, 0.4, 0.0), false, 0, false },
 	["Park_Boat__966E46"] = { "Park_Boat", "966E46", Vector3.new(-0.0, 1.4, 1.0), false, 0, false },
 	["Park_Boat__121214"] = { "Park_Boat", "121214", Vector3.new(-0.0, 0.7225, 1.09), false, 0, false },
@@ -535,4 +538,4 @@ for name in KIT do
 end
 loaded:Destroy()
 kit.Parent = ReplicatedStorage
-return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 476, table.concat(missing, ", "))
+return ("ArmyKit: %d of %d meshes in; missing: %s"):format(found, 479, table.concat(missing, ", "))

@@ -51,6 +51,7 @@ local TAB_W, TAB_H, TAB_OUT, TAB_GAP = 0.13, 0.11, 0.085, 0.016 -- book scale: a
 -- hold still while the book is open.
 local MARGIN, GX, GY = 0.045, 0.04, 0.028 -- page scale: white margin, gutters across and down
 local ROWS = 3 -- per page
+local EVEN_TABS = { power = true } -- bookmarks whose panels are all one size (DOOMSDAY)
 local LONG_NAME = 10 -- letters: a name this long takes a whole row (FRYING PAN, SLEDGEHAMMER, ...)
 local function weights(rng: Random, k: number, lo: number, hi: number): { number }
 	local out, sum = {}, 0
@@ -58,11 +59,11 @@ local function weights(rng: Random, k: number, lo: number, hi: number): { number
 	for j = 1, k do out[j] /= sum end
 	return out
 end
--- the cards (each with .w.name) in rows of one or two
-local function rowsOf(cards: { any }): { { any } }
+-- the cards (each with .w.name) in rows of one or two; `even`: always two a row, long names too
+local function rowsOf(cards: { any }, even: boolean?): { { any } }
 	local rows, waiting = {}, nil -- waiting: a row with one short name in it, open for the next
 	for _, card in cards do
-		if #card.w.name >= LONG_NAME then
+		if #card.w.name >= LONG_NAME and not even then
 			table.insert(rows, { card })
 		elseif waiting then
 			table.insert(waiting, card)
@@ -76,11 +77,12 @@ local function rowsOf(cards: { any }): { { any } }
 end
 -- one page's panels, row by row, as { x, y, w, h } in page scale; counts[j]: panels in row j (1 or 2). Rows
 -- are cut for a full page, so a category's short last page keeps them their size and leaves the rest blank.
-local function pageRects(rng: Random, counts: { number }): { { number } }
-	local heights = weights(rng, ROWS, 0.7, 1.4)
+-- `even`: rows all the same height
+local function pageRects(rng: Random, counts: { number }, even: boolean?): { { number } }
+	local heights = weights(rng, ROWS, if even then 1 else 0.7, if even then 1 else 1.4)
 	local inner, out, along = 1 - 2 * MARGIN, {}, MARGIN
 	for j, count in counts do
-		local w = inner / count
+		local w = inner / (if even then 2 else count) -- even: a lone last card stays half a row
 		for q = 0, count - 1 do
 			table.insert(out, { MARGIN + q * w + GX / 2, along + GY / 2, w - GX, heights[j] * inner - GY })
 		end
@@ -305,14 +307,15 @@ function Arsenal.start(gui, weapons, models, fist, icon, about, api, choose, clo
 			-- the medic kit lives under its own bookmark only, not in the all-weapons view
 			if (kind == nil and card.kind ~= "medical") or card.kind == kind then table.insert(shown, card) end
 		end
-		local rows = rowsOf(shown)
+		local even = EVEN_TABS[kind] -- every card the same size
+		local rows = rowsOf(shown, even)
 		for first = 1, #rows, ROWS do
 			local p, counts = { cards = {} }, {}
 			for j = first, math.min(first + ROWS - 1, #rows) do
 				table.insert(counts, #rows[j])
 				table.move(rows[j], 1, #rows[j], #p.cards + 1, p.cards)
 			end
-			p.rects = pageRects(Random.new(seed + #layout * 7919), counts)
+			p.rects = pageRects(Random.new(seed + #layout * 7919), counts, even)
 			table.insert(layout, p)
 		end
 		if not keepPage then spread = 0 end

@@ -78,7 +78,7 @@ local MENUS = { Toolbox = true, WeaponWheel = true, Stats = true, Shop = true, A
 local groupOf = { Body = "Melee" } -- [weapon id, its slash / heavy too] = group; a thrown body is hand-to-hand
 for _, w in Weapons do
 	groupOf[w.id] = GROUP_OF_TAG[w.tag]
-	for _, sub in { w.slash, w.heavy } do
+	for _, sub in { w.slash, w.heavy, w.beam } do
 		if sub then
 			groupOf[sub.id] = GROUP_OF_TAG[w.tag]
 		end

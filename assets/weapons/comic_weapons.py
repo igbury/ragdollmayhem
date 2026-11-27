@@ -807,16 +807,18 @@ BG_DECIMATE = {"Grip_Body": 0.3, "Grip_Insert_L": 0.3, "Grip_Insert_R": 0.3, "Gr
                "Shroud_Rivets": 0.35, "Receiver_Screws": 0.35, "Grip_Screw": 0.35}
 
 
-def from_hero(b, blend, colours, grip, S, decimate=None, ratio=None, mirror=False):
+def from_hero(b, blend, colours, grip, S, decimate=None, ratio=None, mirror=False, turn=None):
     """Read an NPR hero model (assets/weapons/<blend>: metres, +X forward, -Y left) into the builder face
     by face, at S studs a metre with `grip` (metres) at the origin, without its bevels and ink hulls (the
     outline here is comic.outline's). Colours come from each face's toon material (`colours`, by name);
     `decimate` collapses named dense parts (0 leaves one out), `ratio` every other part. mirror: the hero's -Y side ends up
-    on the hand's left (the side a first-person view sees)."""
+    on the hand's left (the side a first-person view sees). turn: a Matrix that first turns a hero modelled
+    another way round into +X forward (`grip` is then in the turned frame). Boolean cutters ("Cutter_")
+    come along only as their modifier's operands."""
     decimate = decimate or {}
     path = os.path.join(HERE, blend)
     with bpy.data.libraries.load(path) as (src, dst):
-        dst.objects = [n for n in src.objects if n and not n.startswith(("Cam_", "Key_", "Rim_", "Ink_"))]
+        dst.objects = [n for n in src.objects if n and not n.startswith(("Cam_", "Key_", "Rim_", "Ink_", "Cutter_"))]
     tmp = bpy.data.collections.new("_hero_tmp")
     bpy.context.scene.collection.children.link(tmp)
     obs = [o for o in dst.objects if o and o.type == "MESH"]
@@ -836,7 +838,7 @@ def from_hero(b, blend, colours, grip, S, decimate=None, ratio=None, mirror=Fals
     for o in obs:
         ev = o.evaluated_get(dg)
         me = ev.to_mesh()
-        mw = o.matrix_world
+        mw = turn @ o.matrix_world if turn else o.matrix_world
         names = [ms.material.name.split(".")[0] if ms.material else "" for ms in ev.material_slots]
         for poly in me.polygons:
             i = poly.material_index
@@ -884,6 +886,22 @@ def leafblower(b):
               mirror=True)
 
 
+SH_COLOURS = {"M_Oak_Toon": (0.42, 0.28, 0.17), "M_Steel_Toon": (0.4, 0.42, 0.45), "M_Leather": (0.42, 0.25, 0.13),
+              "M_Folk_Red": (0.75, 0.02, 0.04), "M_Folk_White": (0.9, 0.88, 0.85), "M_Ink": HOLE,
+              "M_Energy_Cyan": (0.0, 0.9, 1.0), "M_Energy_Yellow": (1.0, 0.92, 0.23)}
+# the bolts and krackle are the thrown shield's own effect in the game (client Fx Shield), not mesh; the
+# flange studs are too small to read; the rim's 144 steps, the planks' grid and the boolean-cut boss are dense
+SH_DECIMATE = {"Energy_Bolts_Krackle": 0, "Boss_Studs": 0, "Steel_Outer_Rim": 0.14, "Oak_Planks": 0.05,
+               "Steel_Radial_Straps": 0.2, "Iron_Boss": 0.22, "Grip_Steel_Leather": 0.3}
+
+
+def shield(b):
+    """The Slavic Captain's Shield from assets/shield/slavic_shield.blend (face -Y there) at 3.6 studs a
+    metre: turned face forward (+X), the origin on the hand bar behind the boss."""
+    from_hero(b, os.path.join("..", "shield", "slavic_shield.blend"), SH_COLOURS, V((-0.047, 0.0, -0.07)), 3.6,
+              SH_DECIMATE, turn=Matrix.Rotation(math.radians(90), 4, "Z"))
+
+
 BALLOON_RED = (0.92, 0.16, 0.2)
 BALLOON_BLUE = (0.16, 0.47, 0.92)
 BALLOON_YELLOW = (0.98, 0.78, 0.12)
@@ -903,6 +921,103 @@ def balloons(b):
         b.cyl(top - V((0, 0, 0.46)), "z", 0.08, 0.03, rgb, r2=0.07, seg=8)  # the knot
         b.tube((0, 0, 0.0), top - V((0, 0, 0.5)), 0.012, WHITE, seg=4)  # the string
     b.ball((0, 0, 0.0), 0.04, WHITE, seg=6, rings=4)  # the strings' knot in the fist
+
+
+# Power icons (hotbar / wheel / arsenal only: powers are in no HOLD / GRIP table, so never held).
+# Blender axes here: the icon camera looks from -X, Z is up.
+FLAME_RGB = [(1.0, 0.47, 0.12), (1.0, 0.78, 0.24), (1.0, 0.27, 0.08)]  # client/Fx FLAME
+FIRE_CORE = (1.0, 0.96, 0.78)
+SMOKE = (0.08, 0.07, 0.07)
+
+
+def spun_box(b, centre, half, rot, rgb, bevel=0.0):
+    c = V(centre)
+    b.hexa({k: c + rot @ V([(-half, half)[k[i]] for i in range(3)]) for k in product((0, 1), repeat=3)}, rgb, bevel)
+
+
+def supernova(b):
+    """Super Nova (FlameOn): the game's fire as it renders, a column of tumbling flame cubes (client/Fx
+    burnFx: big and red low down, smaller and yellower as they rise, a white-hot core, a puff of smoke)."""
+    import random
+    rng = random.Random(7)
+    for k in range(5):  # the white-hot core at the foot
+        a = k / 5 * 2 * math.pi
+        spun_box(b, (0.12 * math.cos(a), 0.12 * math.sin(a), 0.1 + 0.12 * k), 0.16,
+                 Matrix.Rotation(rng.uniform(0, 3), 3, rng.choice("XYZ")), FIRE_CORE, 0.02)
+    for k in range(40):
+        t = k / 39  # 0 at the foot, 1 at the tip
+        r = 0.5 * math.sin(math.pi * (0.25 + 0.75 * t)) * (1 - t) ** 0.5 + 0.05  # a flame: bulges, then tapers
+        a = rng.uniform(0, 2 * math.pi)
+        out = rng.uniform(0.4, 1)
+        at = (r * math.cos(a) * out, r * math.sin(a) * out, -0.1 + 2.3 * t)
+        half = 0.2 * (1 - t) + 0.06
+        rot = Matrix.Rotation(rng.uniform(0, 3), 3, "X") @ Matrix.Rotation(rng.uniform(0, 3), 3, "Z")
+        rgb = FLAME_RGB[1] if t > 0.45 else FLAME_RGB[2] if out > 0.93 else FLAME_RGB[0]
+        spun_box(b, at, half, rot, rgb, 0.02)
+    for at, half in (((0.05, 0.1, 2.45), 0.09), ((-0.1, -0.05, 2.65), 0.06)):  # the smoke off the tip
+        spun_box(b, at, half, Matrix.Rotation(0.6, 3, "Y"), SMOKE, 0.01)
+
+
+WEB = (0.95, 0.95, 0.97)
+
+
+def webshot(b):
+    """Web Shot: a spider web facing the camera (the YZ plane), eight spokes and four rings of thread,
+    each thread sagging in towards the middle."""
+    R, n = 1.25, 8
+    spoke = [V((0, R * math.cos(2 * math.pi * k / n + 0.2), R * math.sin(2 * math.pi * k / n + 0.2))) for k in range(n)]
+    for p in spoke:
+        b.tube((0, 0, 0), p * 1.04, 0.035, WEB, seg=4)
+    for ring in (0.25, 0.48, 0.7, 0.92):
+        for k in range(n):
+            p0, p1 = spoke[k] * ring, spoke[(k + 1) % n] * ring
+            mid = (p0 + p1) / 2 * 0.86  # the sag
+            b.sweep([p0, (p0 + mid) / 2 * 1.01, mid, (mid + p1) / 2 * 1.01, p1], 0.028, WEB, seg=4)
+    b.ball((0, 0, 0), 0.08, WEB, seg=6, rings=4)
+
+
+SLAM_GREEN = (0.22, 0.78, 0.2)
+
+
+def groundslam(b):
+    """Ground Slam: a blocky green Roblox fist raised like the fist emoji, knuckles up, wrist down, the
+    curled fingers and the thumb across them facing the camera (-X)."""
+    b.box((-0.3, -0.32, -1.15), (0.3, 0.32, -0.3), SLAM_GREEN, 0.04)  # the wrist
+    b.box((-0.36, -0.44, -0.4), (0.36, 0.44, 0.38), SLAM_GREEN, 0.05)  # the palm / back of the hand
+    for i in range(4):  # the fingers, curled over: a knuckle on top, the finger down the front
+        y0 = -0.44 + i * 0.22
+        drop = 0.04 if i == 3 else 0.0
+        b.box((-0.42, y0 + 0.01, 0.22 - drop), (0.3, y0 + 0.21, 0.56 - drop), SLAM_GREEN, 0.05)
+        b.box((-0.6, y0 + 0.01, -0.12 - drop), (-0.3, y0 + 0.21, 0.5 - drop), SLAM_GREEN, 0.05)
+    b.box((-0.76, -0.5, -0.3), (-0.5, 0.12, -0.04), SLAM_GREEN, 0.05)  # the thumb across them
+
+
+COSMIC_GREEN = (0.2, 0.67, 0.24)  # client/Fx COSMIC_MID
+COSMIC_PALE = (0.8, 1.0, 0.69)  # client/Fx COSMIC_PALE
+BOLT = [(-0.35, 1.3), (0.45, 1.3), (0.05, 0.3), (0.55, 0.3), (-0.45, -1.3), (-0.1, -0.15), (-0.6, -0.15)]
+
+
+def prism(b, outline, x0, x1, rgb):
+    """The (y, z) outline pushed out from x0 to x1 (an outline in the camera's plane, given thickness)."""
+    def make():
+        front = [b.bm.verts.new((x0, y, z)) for y, z in outline]
+        back = [b.bm.verts.new((x1, y, z)) for y, z in outline]
+        b.bm.faces.new(front)
+        b.bm.faces.new(list(reversed(back)))
+        n = len(outline)
+        for i in range(n):
+            b.bm.faces.new([front[i], back[i], back[(i + 1) % n], front[(i + 1) % n]])
+    b._part(make, rgb)
+
+
+def cosmicpower(b):
+    """Cosmic Power: a green comic lightning bolt facing the camera (-X), a pale core down its middle."""
+    prism(b, BOLT, -0.15, 0.15, COSMIC_GREEN)
+    cy = sum(y for y, _ in BOLT) / len(BOLT)
+    cz = sum(z for _, z in BOLT) / len(BOLT)
+    core = [(cy + (y - cy) * 0.55, cz + (z - cz) * 0.7) for y, z in BOLT]
+    prism(b, core, -0.18, -0.14, COSMIC_PALE)
+    prism(b, core, 0.14, 0.18, COSMIC_PALE)  # both faces: the arsenal card turns it round
 
 
 # name -> (builder, comic.shape ops) ; the ops as comic.RULES gives the older ones
@@ -930,6 +1045,11 @@ WEAPONS = {
     "Cast": (cast_roll, [("thick", 1.1)]),
     "Syringe": (syringe, [("thick", 1.15)]),
     "Balloon": (balloons, []),
+    "Shield": (shield, []),
+    "FlameOn": (supernova, []),
+    "WebShot": (webshot, []),
+    "GroundSlam": (groundslam, []),
+    "CosmicPower": (cosmicpower, []),
 }
 
 

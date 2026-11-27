@@ -1159,10 +1159,22 @@ local HOLD = {
 	Bandage = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.9 },
 	Cast = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.85 },
 	Balloon = { grip = CFrame.new(0, 0.1, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 }, -- the bunch held by its strings, balloons up
+	-- the Slavic shield (assets/shield), strapped Captain-style on the RIGHT forearm, face out over the outer side of
+	-- the arm: first person `fist` from the right fist (raised by `guard`), third person `forearm` from RightLowerArm
+	-- (the mesh's origin is its hand bar, its face -Z, its strap up +Y along the forearm)
+	-- (first person the forearm runs forward from the fist, so the shield is turned a quarter in its plane: strap along it)
+	Shield = { grip = CFrame.identity, fist = CFrame.new(0.3, -0.25, 0.05) * CFrame.Angles(0, math.rad(-60), 0) * CFrame.Angles(0, 0, math.rad(-90)),
+		guard = Vector3.new(0, 0, 0.1), forearm = CFrame.new(0.35, -0.5, 0) * CFrame.Angles(0, math.rad(-90), 0),
+		scale = 0.66, bodyScale = 0.94 },
 	-- needle up out of the fist (the mesh points -Z: turned 90 degrees about X)
 	DeathSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
 	HealSyringe = { grip = CFrame.new(0, 0.4, 0) * CFrame.Angles(math.rad(90), 0, 0), hand = Vector3.new(0, 0.1, 0), scale = 0.8 },
 }
+for _, w in Weapons do -- every serum syringe is held like these two
+	if w.kind == "syringe" and not HOLD[w.id] then
+		HOLD[w.id] = HOLD.HealSyringe
+	end
+end
 do -- the minigun's barrels spin while the trigger is held, run up and wind down (WeaponMeshes.pose)
 	local speed, angle = 0, 0
 	RunService.RenderStepped:Connect(function(dt)
@@ -1333,7 +1345,8 @@ local function useWeapon(weapon, swing: Vector3?, detonate: boolean?) -- detonat
 	local now = os.clock()
 	local char = player.Character
 	local head = char and char:FindFirstChild("Head")
-	if now - lastWeaponUse < (weaponVisual.lastCooldown or weapon.cd) or not head or char:GetAttribute("Ragdolled") then
+	if now - lastWeaponUse < (weaponVisual.lastCooldown or weapon.cd) or not head or char:GetAttribute("Ragdolled")
+		or char:GetAttribute("ShieldOut") then -- the shield is still flying (server/Specials shieldThrow)
 		return
 	end
 	lastWeaponUse = now
@@ -2186,6 +2199,15 @@ mv.began = function(input, processed)
 		if Weapons[weaponIndex].id == "Lasso" and not Menu.active then
 			actionRemote:FireServer("lassoCut") -- lets go of the dummy caught last
 		end
+		local beamOf = Weapons[weaponIndex]
+		if beamOf.beam and not Menu.active then -- Flame On: the flame beam for as long as it is held
+			task.spawn(function()
+				while aiming and Weapons[weaponIndex] == beamOf do
+					useWeapon(beamOf.beam)
+					task.wait(beamOf.beam.cd)
+				end
+			end)
+		end
 	elseif input.KeyCode == Enum.KeyCode.Y or input.KeyCode == Enum.KeyCode.DPadUp then
 		local weapon = Weapons[weaponIndex]
 		if (HOLD[weapon.id] or weapon.id == "BoxingGloves") and isFirstPerson() and not holding then
@@ -2566,7 +2588,7 @@ end
 
 local function updateWallRun(dt: number, char: Model, humanoid: Humanoid, root: BasePart)
 	wallParams.FilterDescendantsInstances = { char, workspace:FindFirstChild("Dummies") }
-	if humanoid.SeatPart then -- in a vehicle the root is welded to it: none of this may push it (the tank flew off)
+	if humanoid.SeatPart or require(script.FlameFlight).active then -- in a vehicle the root is welded to it: none of this may push it (the tank flew off); Flame On's flight flies itself
 		hold(root, nil)
 		wall, mantle, carry = nil, nil, Vector3.zero
 		return
@@ -2974,6 +2996,11 @@ local function jumpPressed()
 	end
 	local now = os.clock()
 	local airborne = humanoid.FloorMaterial == Enum.Material.Air
+	local flight = require(script.FlameFlight) -- Flame On: the double jump flies, a jump up there lands
+	if flight.active then
+		flight.stop()
+		return
+	end
 	if wall then
 		-- off a cling there's no run to carry on: push back off the wall instead, and keep W (still
 		-- held, still facing the wall) from steering you straight back into it for a moment
@@ -3006,6 +3033,10 @@ local function jumpPressed()
 		launch(root, 1)
 	elseif airborne and not mv.airJumpUsed and now > doubleJumpFrom then
 		mv.airJumpUsed = true
+		if char:GetAttribute("EquippedWeapon") == "FlameOn" then
+			flight.start(char)
+			return
+		end
 		launch(root, now < doubleJumpUntil and 1 or MOVE.AIR_JUMP)
 		doubleJumpUntil = 0
 	end
@@ -3669,7 +3700,7 @@ RunService.RenderStepped:Connect(function(dt)
 	thirdWeapon = (out.kind ~= nil or heldAbility ~= nil) and not isFirstPerson() and not holding and not Menu.active
 		and humanoid ~= nil and humanoid.Health > 0 and not (char and char:GetAttribute("Ragdolled"))
 		and humanoid.SeatPart == nil -- seated, the root is welded to the vehicle: turning it would turn (and tear) the vehicle
-	if thirdWeapon and turnFree and root then -- face where the camera looks (shift-lock style)
+	if thirdWeapon and turnFree and root and not require(script.FlameFlight).active then -- face where the camera looks (shift-lock style); Flame On's flight lays the body itself
 		local look = (weaponVisual.testFace or camera.CFrame.LookVector) * Vector3.new(1, 0, 1) -- testFace: WeaponTest "face"
 		if look.Magnitude > 0.01 then
 			root.CFrame = CFrame.lookAlong(root.Position, look)
@@ -3683,7 +3714,7 @@ RunService.RenderStepped:Connect(function(dt)
 	Fx.cameraOffset = SHOULDER * (thirdWeapon and 0.5 + 0.5 * thirdAim or 0)
 	-- a gun fired from the hip comes up into the aim pose for a moment (weaponVisual.hipAimUntil, useWeapon)
 	weaponVisual.hipAim = thirdWeapon and out.kind == "gun" and os.clock() < (weaponVisual.hipAimUntil or 0)
-	local pose = thirdWeapon and (aiming or weaponVisual.hipAim) and (out.kind == "gun" and "gun" or out.kind == "rocket" and "rocket"
+	local pose = thirdWeapon and out.id ~= "LaserVisor" and (aiming or weaponVisual.hipAim) and (out.kind == "gun" and "gun" or out.kind == "rocket" and "rocket"
 		or (out.kind == "knife" or out.kind == "thrown") and "throw") or nil
 	-- our crowbar's claw went into a shoulder (Fx.hookAt): the body heaves on it, then yanks the arm off
 	if Fx.hookAt and Fx.hookAt ~= weaponVisual.hookSeen then
@@ -3694,7 +3725,10 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 	-- the comic set's two-handed weapons are carried at the hip in both hands (WeaponAnims.HOLD)
-	local holdClip = thirdWeapon and out.id and weaponVisual.lib.HOLD[out.id] or nil
+	-- the Laser Visor fires with the right hand at the temple (in place of the gun's aim pose, above)
+	local holdClip = thirdWeapon and out.id and (weaponVisual.lib.HOLD[out.id]
+		or out.id == "LaserVisor" and (aiming or weaponVisual.useId == out.id and os.clock() - (weaponVisual.useAt or 0) < 1.15)
+			and "Temple_Visor") or nil -- held through the 1 s gap between shots
 	for name, track in weaponVisual.animTracks do
 		if weaponVisual.lib.CLIPS[name][1] and (name == holdClip) ~= track.IsPlaying then
 			if name == holdClip then
@@ -3823,7 +3857,7 @@ RunService.RenderStepped:Connect(function(dt)
 	end
 
 	local weapon = Weapons[weaponIndex]
-	local hold = not dragView and HOLD[weapon.id] or nil -- holding one with F: no weapon in hand
+	local hold = not dragView and weapon.id ~= "Shield" and HOLD[weapon.id] or nil -- holding one with F: no weapon in hand; the shield is strapped on (HOLD.Shield)
 	local viewCF = camera.CFrame * weaponVisual.sway:update(camera.CFrame, dt,
 		show == true and camera.CameraType ~= Enum.CameraType.Scriptable, ads)
 		* weaponVisual.bob:update(dt, show == true and root ~= nil, root and root.AssemblyLinearVelocity or Vector3.zero,
@@ -3901,6 +3935,14 @@ RunService.RenderStepped:Connect(function(dt)
 		local guard = guardT * (h.heavy and 1 - ext or 1)
 		-- the right hand moves to where this weapon is held, and kicks back with recoil
 		local move = (side == "right" and hold) and hold.hand or Vector3.zero
+		if side == "right" and weapon.id == "Shield" and not dragView then -- the shield arm up in guard
+			move += HOLD.Shield.guard
+		end
+		if side == "right" then -- the Laser Visor firing: the hand comes up beside the head, at the view's right edge
+			local visor = weapon.id == "LaserVisor" and weaponVisual.useId == weapon.id and now - (weaponVisual.useAt or 0) < 1.15 and 1 or 0
+			weaponVisual.visorT = (weaponVisual.visorT or 0) + (visor - (weaponVisual.visorT or 0)) * math.min(dt * 14, 1)
+			move += Vector3.new(0.05, 0.95, 1.25) * weaponVisual.visorT
+		end
 		if special and special.move then
 			move += special.move
 		end
@@ -4150,6 +4192,9 @@ RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 
+	if weapon.id == "Shield" and not dragView and fists.right then -- Captain-style, on the right forearm
+		weaponCF = fists.right * HOLD.Shield.fist
+	end
 	-- weapon in the right hand
 	-- a thrown one has left the hand until its cooldown is over; the lasso keeps its coil, C4's detonator
 	-- (right click) throws nothing, the landmine is in the hand until it has been put down
@@ -4158,6 +4203,7 @@ RunService.RenderStepped:Connect(function(dt)
 		or (weapon.kind == "knife" and weaponVisual.lastAction ~= "KnifeSlash")
 	local since = os.clock() - lastWeaponUse
 	weaponVisual.gone = thrown and since < weapon.cd and since >= (weapon.id == "Landmine" and 0.3 or 0)
+		or (weapon.id == "Shield" and char ~= nil and char:GetAttribute("ShieldOut") == true) -- out until it is caught
 	local inHand = show and weaponCF and not weaponVisual.gone -- it left the hand
 	for _, v in viewParts do
 		local active = v.id == weapon.id and inHand and not viewMeshes[v.id]
@@ -4220,7 +4266,7 @@ RunService.RenderStepped:Connect(function(dt)
 					mesh:Destroy()
 					return
 				end
-				mesh.Size *= HOLD[bodyId].scale or 1
+				mesh.Size *= HOLD[bodyId].bodyScale or HOLD[bodyId].scale or 1
 				mesh.Parent = camera
 				bodyWeapon.part = mesh
 			end)
@@ -4230,6 +4276,10 @@ RunService.RenderStepped:Connect(function(dt)
 	if bodyWeapon.part and rightHand then
 		local grip = rightHand:FindFirstChild("RightGripAttachment") :: Attachment?
 		local meshCF = rightHand.CFrame * (grip and grip.CFrame or DEFAULT_GRIP) * BODY_GRIP * (HOLD[bodyWeapon.id].body or HOLD[bodyWeapon.id].grip)
+		local forearm = HOLD[bodyWeapon.id].forearm and char:FindFirstChild("RightLowerArm") :: BasePart?
+		if forearm then -- strapped to the right forearm (the shield)
+			meshCF = forearm.CFrame * HOLD[bodyWeapon.id].forearm
+		end
 		local leftHand = char:FindFirstChild("LeftHand") :: BasePart?
 		-- aimed (or just fired from the hip), or one of the two-handed ones carried at the hip
 		-- (WeaponAnims.HOLD): held between the hands, pointing where the camera looks

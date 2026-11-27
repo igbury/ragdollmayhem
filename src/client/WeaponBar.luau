@@ -53,6 +53,15 @@ local ABOUT = {
 	Balloon = "Click a ragdoll's limb to tie a balloon on: 1 slows a fall, 2 hover, 3+ lift",
 	DeathSyringe = "Jab a dummy: it staggers, then drops dead",
 	HealSyringe = "Jab a dummy: fully healed, even back from the dead",
+	SleepSyringe = "Jab a dummy: out cold and snoring for 10 s",
+	SpeedSyringe = "Jab a dummy: it sprints about screaming, then collapses",
+	JellySyringe = "Jab a dummy: its bones go soft, it flops like jelly",
+	HeliumSyringe = "Jab a dummy: it floats up into the sky... then drops",
+	ShrinkSyringe = "Jab a dummy: tiny for 15 s",
+	GiantSyringe = "Jab a dummy: a giant for 15 s",
+	FireSyringe = "Jab a dummy: it burns from the inside",
+	ExplosiveSyringe = "Jab a dummy: it beeps for 3 s, then BOOM",
+	ZombieSyringe = "Jab a dummy, alive or dead: it comes back a zombie",
 	Rocket = "Flies straight, blows up anything",
 	Crowbar = "Knocks the weapon out of their hands",
 	Sledgehammer = "Floors them, the ground shakes",
@@ -70,9 +79,12 @@ local ABOUT = {
 	Gravgun = "Right click: pull a body in and hold it. Click: launch it (empty: punt)",
 	BalloonGun = "Ties a balloon to the limb you hit: 1 slows a fall, 2 hover, 3+ lift",
 	LeafBlower = "Hold: blow them off their feet. Aim down: hover",
+	Shield = "Throw it: it spins flat, glances off walls and always comes back to you",
 	WebShot = "Click: web them to the wall behind them",
 	GroundSlam = "Click: leap and slam the ground, throws everyone near",
 	CosmicPower = "Hold: a cosmic beam from your hand fries them",
+	LaserVisor = "Hold: short green lasers from your visor",
+	FlameOn = "Burn all over. Double jump: fly. Click: fireball (close: fire punch). Right: flame beam",
 	TNT = "Three second fuse, huge blast",
 	C4 = "Click: stick a charge. Right click: BOOM",
 	Landmine = "Place it: blows when they step close",
@@ -84,6 +96,12 @@ local SLOT_ZOOM = { Fists = 1.35, BoxingGloves = 1.35, Handgun = 1.35, Grenade =
 -- A 3D picture of a weapon: its viewmodel parts (as init.client builds them) in a ViewportFrame,
 -- with the camera fitted to them and the long side laid across the frame diagonally.
 -- The blocks show at once; the weapon's Blender mesh (WeaponMeshes) replaces them once it is built.
+-- weapons whose icon is their ReplicatedStorage.ArmyKit piece (no WeaponMeshes data), and how it is turned
+local KIT_ICON = { LaserVisor = CFrame.Angles(math.rad(12), math.rad(-60), 0) }
+-- icons looked at from the other side (the shield's painted face is its -Z, the camera starts on +Z)
+local ICON_TURN = { Shield = math.pi }
+-- icons that stand straight instead of leaning like a held melee weapon (Super Nova's flame, Cosmic Power's bolt)
+local ICON_LEVEL = { FlameOn = true, CosmicPower = true }
 local function icon(specs, parent: GuiObject, id: string?, zoom: number?): (ViewportFrame, (number?) -> ())
 	local vp = Instance.new("ViewportFrame")
 	vp.BackgroundTransparency = 1
@@ -104,7 +122,20 @@ local function icon(specs, parent: GuiObject, id: string?, zoom: number?): (View
 		p.Anchored = true
 		p.Parent = model
 	end
+	local kit = id and KIT_ICON[id] and game:GetService("ReplicatedStorage"):FindFirstChild("ArmyKit")
+	local kitPiece = kit and kit:FindFirstChild(id)
+	if kitPiece then -- an uploaded kit piece instead of the blocks, turned to show its face
+		model:ClearAllChildren()
+		for _, mesh in kitPiece:GetChildren() do
+			local p = mesh:Clone() :: BasePart
+			p.CFrame = KIT_ICON[id] * (p:GetAttribute("Place") or CFrame.identity)
+			p.Anchored = true
+			p.Parent = model
+		end
+		id = nil -- WeaponMeshes has none to swap in
+	end
 	model.Parent = vp
+	local weaponId = id
 	local cam = Instance.new("Camera")
 	cam.FieldOfView = 30
 	cam.Parent = vp
@@ -125,9 +156,9 @@ local function icon(specs, parent: GuiObject, id: string?, zoom: number?): (View
 	-- (dt): sway, as on the hotbar; (angle, true): a full turntable, turned on by that many radians
 	local function place(dt: number?, turn: boolean?)
 		spin += (dt or 0) * (if turn then 1 else 1.2)
-		local base = flat and 0.35 or math.pi / 2
+		local base = (flat and 0.35 or math.pi / 2) + (ICON_TURN[weaponId] or 0)
 		local side = CFrame.Angles(0, if turn then base + spin else base + math.sin(spin) * 0.35, 0) -- from the right (+X)
-		cam.CFrame = CFrame.new(box.Position) * side * CFrame.new(0, 0, dist) * CFrame.Angles(0, 0, upright and math.rad(-42) or math.rad(18))
+		cam.CFrame = CFrame.new(box.Position) * side * CFrame.new(0, 0, dist) * CFrame.Angles(0, 0, if ICON_LEVEL[weaponId] then 0 elseif upright then math.rad(-42) else math.rad(18))
 	end
 	place()
 	vp.Parent = parent

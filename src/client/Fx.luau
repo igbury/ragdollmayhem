@@ -31,6 +31,12 @@ folder.Parent = workspace
 
 local tint = Instance.new("ColorCorrectionEffect")
 tint.Parent = Lighting
+-- the Laser Visor's green glass: while it is on our head the whole screen is faintly green
+RunService.Heartbeat:Connect(function()
+	local char = player.Character
+	tint.TintColor = if char and char:GetAttribute("EquippedWeapon") == "LaserVisor"
+		then Color3.fromRGB(222, 255, 226) else Color3.new(1, 1, 1)
+end)
 
 local Fx = {}
 
@@ -2025,6 +2031,78 @@ function EVENTS.GrappleKick(shooter: Model?, position: Vector3)
 	end
 end
 
+-- The Slavic shield in flight (server/Specials shieldThrow): flat, face to the sky, spinning, along the
+-- legs the server worked out; at each glance off a wall sparks and a KLANG!, then home to the thrower's
+-- right hand. A cyan energy smear trails its rim.
+local SHIELD_SPIN = 24 -- rad/s about its own axis
+local SHIELD_CATCH = 3 -- studs from the hand it is caught (Specials SHIELD_CATCH)
+local SHIELD_FLAT = CFrame.Angles(math.rad(90), 0, 0) -- the mesh's face (-Z) up
+local SHIELD_SCALE = 1.1 -- in flight, of the mesh's own size
+local SHIELD_CYAN, SHIELD_YELLOW = Color3.fromRGB(0, 229, 255), Color3.fromRGB(255, 235, 59)
+function EVENTS.Shield(shooter: Model?, points: { Vector3 }, speed: number, glances: { number })
+	local mesh = shooter and WeaponMeshes.create("Shield")
+	if not mesh then
+		return
+	end
+	local lo, hi = WeaponMeshes.bounds("Shield")
+	local centre = if lo and hi then (lo + hi) / 2 else Vector3.zero
+	local a0, a1 = Instance.new("Attachment"), Instance.new("Attachment")
+	a0.Position, a1.Position = centre + Vector3.new(1.4, 0, 0), centre + Vector3.new(1.0, 0, 0)
+	a0.Parent, a1.Parent = mesh, mesh
+	local trail = Instance.new("Trail")
+	trail.Attachment0, trail.Attachment1 = a0, a1
+	trail.Lifetime, trail.LightEmission, trail.FaceCamera = 0.12, 1, false
+	trail.Color = ColorSequence.new(SHIELD_CYAN, SHIELD_YELLOW)
+	trail.Transparency = NumberSequence.new(0.2, 1)
+	trail.Parent = mesh
+	mesh.Size *= SHIELD_SCALE
+	centre *= SHIELD_SCALE
+	mesh.Parent = folder
+	local pos, seg, nextGlance, spin, t0 = points[1], 1, 1, 0, os.clock()
+	local function place()
+		mesh:PivotTo(CFrame.new(pos) * CFrame.Angles(0, spin, 0) * SHIELD_FLAT * CFrame.new(-centre))
+	end
+	place()
+	local conn
+	conn = RunService.RenderStepped:Connect(function(dt: number)
+		spin += SHIELD_SPIN * dt
+		local step = speed * dt
+		local home = shooter.Parent and (shooter:FindFirstChild("RightHand") or shooter:FindFirstChild("HumanoidRootPart")) :: BasePart?
+		while step > 0 and seg < #points do -- out, along the legs
+			local to = points[seg + 1] - pos
+			if to.Magnitude > step then
+				pos += to.Unit * step
+				step = 0
+				break
+			end
+			step -= to.Magnitude
+			pos = points[seg + 1]
+			seg += 1
+			if glances[nextGlance] == seg then
+				nextGlance += 1
+				Fx.sparks(pos, few(10), 6, SHIELD_CYAN, nil, 0.3)
+				Fx.sparks(pos, few(6), 4, SHIELD_YELLOW, nil, 0.25)
+				Fx.text(pos + UP * 2, "KLANG!", SHIELD_YELLOW, 2.2)
+				Fx.shake(pos, 0.35, 0.15)
+			end
+		end
+		if seg >= #points and step > 0 and home then -- home to the hand
+			local to = home.Position - pos
+			if to.Magnitude < SHIELD_CATCH + step then
+				step = -1
+			else
+				pos += to.Unit * step
+			end
+		end
+		if step < 0 or not home or os.clock() - t0 > 7 then
+			conn:Disconnect()
+			mesh:Destroy()
+			return
+		end
+		place()
+	end)
+end
+
 function EVENTS.Rip(_, position: Vector3)
 	Fx.shake(position, 0.6, 0.25)
 end
@@ -2113,14 +2191,17 @@ function EVENTS.Boil(_, model: Model?)
 end
 
 -- Burning dummies (server/Specials.alight sets "Burning"): the flamethrower's flame cubes lick up
--- off the body and a light flickers on it, for as long as it burns.
-local function burnFx(model: Instance)
+-- off the body and a light flickers on it, for as long as it burns. Players with Flame On out burn the
+-- same way (`attribute` "Aflame", server/Specials flameSuit); parts hidden in first person (our own
+-- head) give off none, so they do not cover the view.
+local function burnFx(model: Instance, attribute: string?)
 	if not model:IsA("Model") then
 		return
 	end
+	local attr = attribute or "Burning"
 	local running = false
 	local function start()
-		if running or model:GetAttribute("Burning") ~= true then
+		if running or model:GetAttribute(attr) ~= true then
 			return
 		end
 		running = true
@@ -2128,13 +2209,16 @@ local function burnFx(model: Instance)
 		light.Color, light.Range, light.Brightness = FLAME[1], 12, 2.5
 		light.Parent = model:FindFirstChild("UpperTorso")
 		task.spawn(function()
-			while model.Parent and model:GetAttribute("Burning") == true do
+			while model.Parent and model:GetAttribute(attr) == true do
 				local parts = bodyParts(model)
 				if #parts == 0 then
 					break
 				end
 				for _ = 1, 3 do
 					local p = parts[rng:NextInteger(1, #parts)]
+					if p.LocalTransparencyModifier > 0.5 then
+						continue
+					end
 					local base = p.Position + Vector3.new(rng:NextNumber(-0.5, 0.5) * p.Size.X, rng:NextNumber(-0.5, 0.5) * p.Size.Y,
 						rng:NextNumber(-0.5, 0.5) * p.Size.Z)
 					local smoke = rng:NextNumber() < 0.15
@@ -2154,7 +2238,7 @@ local function burnFx(model: Instance)
 			running = false
 		end)
 	end
-	model:GetAttributeChangedSignal("Burning"):Connect(start)
+	model:GetAttributeChangedSignal(attr):Connect(start)
 	start()
 end
 task.spawn(function()
@@ -2164,6 +2248,128 @@ task.spawn(function()
 	end
 	dummies.ChildAdded:Connect(burnFx)
 end)
+local function aflameFx(p: Player)
+	p.CharacterAdded:Connect(function(char)
+		burnFx(char, "Aflame")
+	end)
+	if p.Character then
+		burnFx(p.Character, "Aflame")
+	end
+end
+Players.PlayerAdded:Connect(aflameFx)
+for _, p in Players:GetPlayers() do
+	aflameFx(p)
+end
+
+-- Flame On (server/Specials flameOn / flameBeam). The fireball: a glowing ball of fire with a white-hot
+-- core flies from the hand to where it lands in `travel` s, shedding flame cubes (the blast there is the
+-- server's "Fire"). The beam (one every cd while held): a flickering fire ray from the right hand, flame
+-- cubes licking off it, sparks where it lands. The fire punch: a burst of flame on the body.
+local FIRE_CORE = Color3.fromRGB(255, 245, 200)
+function EVENTS.Fireball(shooter: Model?, from: Vector3, to: Vector3, travel: number)
+	if shooter == player.Character and Fx.palm and Fx.palm() then
+		from = Fx.palm() :: Vector3
+	end
+	local ball, core = part(Enum.PartType.Ball, FLAME[1]), part(Enum.PartType.Ball, FIRE_CORE)
+	ball.Transparency = 0.2
+	local light = Instance.new("PointLight")
+	light.Color, light.Range, light.Brightness = FLAME[1], 14, 3
+	light.Parent = core
+	local last = 0
+	run(math.max(travel, 0.03), { ball, core }, function(a)
+		local at = from:Lerp(to, a)
+		local wobble = 1 + 0.15 * math.sin(a * 40)
+		ball.Size, ball.Position = Vector3.one * 2.2 * wobble, at
+		core.Size, core.Position = Vector3.one * 1.1, at
+		if a - last > 0.04 then -- a trail of flame cubes
+			last = a
+			local cube = part(Enum.PartType.Block, FLAME[rng:NextInteger(1, 3)])
+			local base, tumble = at + rng:NextUnitVector() * 0.6, rng:NextUnitVector() * 5
+			run(rng:NextNumber(0.25, 0.4), { cube }, function(b)
+				cube.Size = Vector3.one * (1.1 * (1 - b) + 0.05)
+				cube.CFrame = CFrame.new(base + UP * 1.5 * out(b)) * CFrame.Angles(tumble.X * b, tumble.Y * b, tumble.Z * b)
+				cube.Transparency = b ^ 2
+			end)
+		end
+	end)
+end
+
+-- Scorch marks the flame beam leaves on walls and floors: flat charred patches that stay SCORCH_LIFE s and
+-- fade out at the end. A new one within SCORCH_GAP studs of another is skipped (the beam ticks 10 times
+-- a second); at most SCORCH_MAX at once, the oldest goes first.
+local SCORCH_LIFE, SCORCH_FADE, SCORCH_GAP, SCORCH_MAX = 30, 3, 1.1, 150
+local SCORCH = { Color3.fromRGB(28, 22, 18), Color3.fromRGB(45, 32, 24), Color3.fromRGB(20, 18, 17) }
+local scorches = {} -- { { part, at } } oldest first
+local function scorch(at: Vector3, normal: Vector3)
+	for _, s in scorches do
+		if (s.at - at).Magnitude < SCORCH_GAP then
+			return
+		end
+	end
+	if #scorches >= SCORCH_MAX then
+		table.remove(scorches, 1).part:Destroy()
+	end
+	local p = part(Enum.PartType.Cylinder, SCORCH[rng:NextInteger(1, #SCORCH)], Enum.Material.Slate)
+	local r = rng:NextNumber(1.6, 2.6)
+	p.Size = Vector3.new(0.04, r, r)
+	p.Transparency = 0.15
+	-- a cylinder's axis is its X: lay it along the normal, a hair off the surface, turned at random
+	p.CFrame = CFrame.lookAlong(at + normal * 0.03, normal) * CFrame.Angles(0, math.pi / 2, 0)
+		* CFrame.Angles(rng:NextNumber(0, math.pi * 2), 0, 0)
+	local mark = { part = p, at = at }
+	table.insert(scorches, mark)
+	task.delay(SCORCH_LIFE - SCORCH_FADE, function()
+		if not p.Parent then
+			return
+		end
+		run(SCORCH_FADE, {}, function(a)
+			p.Transparency = 0.15 + 0.85 * a
+		end)
+		task.wait(SCORCH_FADE)
+		local i = table.find(scorches, mark)
+		if i then
+			table.remove(scorches, i)
+		end
+		p:Destroy()
+	end)
+end
+
+function EVENTS.FlameBeam(shooter: Model?, from: Vector3, to: Vector3, landed: boolean, normal: Vector3?)
+	if normal then
+		scorch(to, normal)
+	end
+	if shooter == player.Character and Fx.palm and Fx.palm() then
+		from = Fx.palm() :: Vector3
+	end
+	local span = to - from
+	if span.Magnitude < 0.1 then
+		return
+	end
+	local outer, inner = part(Enum.PartType.Block, FLAME[3]), part(Enum.PartType.Block, FLAME[2])
+	outer.Transparency = 0.25
+	local w = rng:NextNumber(0.8, 1.1)
+	run(0.12, { outer, inner }, function(a)
+		stick(outer, from, to, w * (1 - 0.3 * a))
+		stick(inner, from, to, w * 0.4)
+		outer.Transparency = 0.25 + 0.5 * a
+	end)
+	for _ = 1, 3 do -- fire licking off the beam
+		local base = from + span * rng:NextNumber(0.1, 1)
+		local cube = part(Enum.PartType.Block, FLAME[rng:NextInteger(1, 3)])
+		local size, tumble = rng:NextNumber(0.5, 1), rng:NextUnitVector() * 5
+		run(rng:NextNumber(0.25, 0.4), { cube }, function(a)
+			cube.Size = Vector3.one * (size * (1 - a) + 0.05)
+			cube.CFrame = CFrame.new(base + UP * 2 * out(a)) * CFrame.Angles(tumble.X * a, tumble.Y * a, tumble.Z * a)
+			cube.Transparency = a ^ 2
+		end)
+	end
+	Fx.sparks(to, landed and 4 or 2, 2, FLAME[2], -span.Unit, 0.2)
+end
+
+function EVENTS.FirePunch(_, at: Vector3)
+	Fx.boom(at, 3.5, FLAME[1], "FWOOSH!", 5)
+	Fx.sparks(at, 10, 5, FLAME[2], nil, 0.3)
+end
 
 -- Burning pool: flames are small cubes that rise, tumble and shrink; every fifth one is smoke.
 function EVENTS.Slam(_, position: Vector3, radius: number)
@@ -2185,6 +2391,50 @@ end
 -- It stays `hold` s (a miss: WEB_MISS) and fades out at the end.
 local WEB_SPOKES, WEB_RINGS, WEB_MISS = 8, 3, 2
 local WEB = Color3.fromRGB(245, 245, 245)
+-- Laser Visor (server/Specials visorLaser, one bolt every cd while held): a long square green bolt, a white-hot
+-- core in a green sheath, flies from the visor's slit to where the shot lands (LASER_SPEED), with a green
+-- flash at the slit and green sparks where it lands. Our own, in first person, leaves just under the eye.
+local LASER_SPEED = 420 -- studs/s
+local LASER_LENGTH = 12 -- studs of bolt: a long square block
+local LASER_GREEN = Color3.fromRGB(40, 255, 70)
+local LASER_CORE = Color3.fromRGB(225, 255, 230)
+function EVENTS.Laser(shooter: Model?, from: Vector3, to: Vector3, landed: boolean)
+	if shooter == player.Character and Fx.palm and Fx.palm() then
+		from = camera.CFrame * Vector3.new(0, -0.35, -1.2)
+	end
+	local span = to - from
+	local distance = span.Magnitude
+	if distance < 0.1 then
+		return
+	end
+	local dir = span / distance
+	local sheath, core = part(Enum.PartType.Block, LASER_GREEN), part(Enum.PartType.Block, LASER_CORE)
+	sheath.Transparency = 0.15
+	local flash = part(Enum.PartType.Ball, LASER_GREEN)
+	run(0.08, { flash }, function(a)
+		flash.Size = Vector3.one * (0.5 + 0.5 * a)
+		flash.CFrame = CFrame.new(from)
+		flash.Transparency = 0.2 + 0.8 * a
+	end)
+	local flight = distance / LASER_SPEED
+	run(flight, { sheath, core }, function(a)
+		local head = from + dir * (distance * a)
+		local tail = from + dir * math.max(distance * a - LASER_LENGTH, 0)
+		if (head - tail).Magnitude < 0.05 then
+			tail = head - dir * 0.05
+		end
+		stick(sheath, tail, head, 0.6) -- square section: a chunky beam, not a thin line
+		stick(core, tail, head, 0.28)
+	end)
+	task.delay(flight, function()
+		Fx.sparks(to, landed and 7 or 3, 2.2, LASER_GREEN, -dir, 0.22)
+		if landed then
+			Fx.sparks(to, 3, 1.2, LASER_CORE, -dir, 0.15)
+			Fx.shake(to, 0.12, 0.08)
+		end
+	end)
+end
+
 function EVENTS.Web(shooter: Model?, from: Vector3, at: Vector3, normal: Vector3?, model: Model?, hold: number)
 	local own = shooter == player.Character and Fx.palm and Fx.palm()
 	from = own or from

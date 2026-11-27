@@ -67,6 +67,7 @@ return {
 	Swing_Crowbar = "77192268409800",
 	Swing_Lightsaber = "135227834778105",
 	Swing_Sledgehammer = "102165984436237",
+	Temple_Visor = "95114498032158",
 	Throw_Bomb = "102420444323231",
 	Throw_Lasso = "75770699484646",
 	Thrust_Spear = "134371111208919",

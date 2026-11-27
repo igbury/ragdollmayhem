@@ -63,6 +63,17 @@ Progression.PRICE = {
 	Flamethrower = 5500,
 	Minigun = 6000,
 	Rocket = 6000,
+	-- the serum syringes (server/Serums): utility toys, priced like the balloons; the zombie and the bomb
+	-- (a kill and a blast) at the top (2026-11-27)
+	SleepSyringe = 250,
+	SpeedSyringe = 350,
+	JellySyringe = 450,
+	HeliumSyringe = 600,
+	ShrinkSyringe = 700,
+	GiantSyringe = 800,
+	FireSyringe = 1100,
+	ExplosiveSyringe = 1400,
+	ZombieSyringe = 1600,
 }
 Progression.GROUP = { Frostgun = true } -- only for joining the group
 
@@ -82,7 +93,7 @@ local tagOf = {} -- [weapon id] = its shop tag (Shop.UNLOCKS)
 for _, w in Weapons do
 	kindOf[w.id] = w.kind
 	tagOf[w.id] = w.tag
-	for _, sub in { w.slash, w.heavy } do
+	for _, sub in { w.slash, w.heavy, w.beam } do
 		if sub then
 			kindOf[sub.id] = sub.kind
 		end
